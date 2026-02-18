@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import 'dart:async';
 
 import '../services/matrix_service.dart';
+import 'bootstrap_controller.dart';
+import 'bootstrap_views.dart';
 import 'key_verification_dialog.dart';
 
 class BootstrapDialog extends StatefulWidget {
@@ -38,620 +40,90 @@ class BootstrapDialog extends StatefulWidget {
 }
 
 class _BootstrapDialogState extends State<BootstrapDialog> {
-  Bootstrap? _bootstrap;
-  BootstrapState _state = BootstrapState.loading;
-  String? _error;
-  bool _saveToDevice = false;
-  bool _verifying = false;
-  late bool _wipeExisting;
-
+  late final BootstrapController _controller;
   final _recoveryKeyController = TextEditingController();
-  String? _recoveryKeyError;
-  String? _newRecoveryKey;
-  bool _generatingKey = false;
-  bool _awaitingKeyAck = false;
-  StreamSubscription? _secretStoredSub;
 
   @override
   void initState() {
     super.initState();
-    _wipeExisting = widget.wipeExisting;
-    _startBootstrap();
+    _controller = BootstrapController(
+      matrixService: widget.matrixService,
+      wipeExisting: widget.wipeExisting,
+    );
+    _controller.addListener(_onControllerChanged);
+    _controller.startBootstrap();
   }
 
   @override
   void dispose() {
     Clipboard.setData(const ClipboardData(text: ''));
-    _newRecoveryKey = null;
-    _recoveryKeyController.clear();
+    _controller.removeListener(_onControllerChanged);
+    _controller.dispose();
     _recoveryKeyController.dispose();
-    _secretStoredSub?.cancel();
     super.dispose();
   }
 
-  Future<void> _startBootstrap() async {
-    final client = widget.matrixService.client;
-    final encryption = client.encryption;
-    if (encryption == null) {
-      setState(() {
-        _state = BootstrapState.error;
-        _error = 'Encryption is not available';
-      });
-      return;
+  void _onControllerChanged() {
+    // Handle deferred advance (replaces addPostFrameCallback in old code).
+    final advance = _controller.deferredAdvance;
+    if (advance != null) {
+      _controller.deferredAdvance = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) => advance());
     }
 
-    // Wait for the client to finish loading before starting bootstrap,
-    // so the state machine sees up-to-date account data and device keys.
-    try {
-      debugPrint('[Bootstrap] Waiting for roomsLoading...');
-      await client.roomsLoading;
-      debugPrint('[Bootstrap] Waiting for accountDataLoading...');
-      await client.accountDataLoading;
-      debugPrint('[Bootstrap] Waiting for userDeviceKeysLoading...');
-      await client.userDeviceKeysLoading;
-      debugPrint('[Bootstrap] prevBatch=${client.prevBatch}');
-      while (client.prevBatch == null) {
-        debugPrint('[Bootstrap] Waiting for first sync...');
-        await client.onSync.stream.first;
+    // Handle stored recovery key from controller.
+    final storedKey = _controller.consumeStoredRecoveryKey();
+    if (storedKey != null) {
+      _recoveryKeyController.text = storedKey;
+    }
+
+    // Handle pending UI actions.
+    final action = _controller.pendingAction;
+    if (action != BootstrapAction.none) {
+      _controller.clearPendingAction();
+      switch (action) {
+        case BootstrapAction.startVerification:
+          _showVerificationDialog();
+          break;
+        case BootstrapAction.confirmLostKey:
+          _showLostKeyConfirmation();
+          break;
+        case BootstrapAction.done:
+          Clipboard.setData(const ClipboardData(text: ''));
+          Navigator.pop(context, true);
+          break;
+        case BootstrapAction.none:
+          break;
       }
-      debugPrint('[Bootstrap] Updating user device keys...');
-      await client.updateUserDeviceKeys();
-      debugPrint('[Bootstrap] Sync preparation complete');
-    } catch (e, s) {
-      debugPrint('[Bootstrap] Sync preparation failed: $e\n$s');
-      if (!mounted) return;
-      setState(() {
-        _state = BootstrapState.error;
-        _error = 'Failed to sync before bootstrap: $e';
-      });
-      return;
     }
 
-    if (!mounted) return;
-
-    // Workaround for SDK bug: OpenSSSS.store() crashes with a null check
-    // on accountData[type].content['encrypted'] when stale entries exist
-    // without the 'encrypted' field. Removing these entries forces the
-    // polling loop to take the safe oneShotSync() path instead.
-    // See: ssss.dart:793 – tryGetMap<...>('encrypted')! throws on stale data
-    const ssssSecretTypes = [
-      'm.cross_signing.master',
-      'm.cross_signing.self_signing',
-      'm.cross_signing.user_signing',
-      'm.megolm_backup.v1',
-    ];
-    for (final type in ssssSecretTypes) {
-      client.accountData.remove(type);
-    }
-
-    debugPrint('[Bootstrap] Starting bootstrap...');
-    _bootstrap = encryption.bootstrap(onUpdate: _onBootstrapUpdate);
+    setState(() {});
   }
 
-  void _onBootstrapUpdate(Bootstrap bootstrap) {
-    debugPrint('[Bootstrap] onUpdate: state=${bootstrap.state}, mounted=$mounted');
-    if (!mounted) return;
-
-    _bootstrap = bootstrap;
-    final state = bootstrap.state;
-
-    // Auto-advance states that don't need user interaction.
-    // Defer responses to the next frame to avoid reentrancy issues
-    // with the bootstrap state machine's onUpdate callback.
-    switch (state) {
-      case BootstrapState.askWipeSsss:
-        debugPrint('[Bootstrap] Auto-advancing: wipeSsss($_wipeExisting)');
-        WidgetsBinding.instance.addPostFrameCallback(
-          (_) => bootstrap.wipeSsss(_wipeExisting),
-        );
-        return;
-      case BootstrapState.askWipeCrossSigning:
-        debugPrint('[Bootstrap] Auto-advancing: wipeCrossSigning($_wipeExisting)');
-        WidgetsBinding.instance.addPostFrameCallback(
-          (_) => bootstrap.wipeCrossSigning(_wipeExisting),
-        );
-        return;
-      case BootstrapState.askSetupCrossSigning:
-        debugPrint('[Bootstrap] Auto-advancing: askSetupCrossSigning');
-        WidgetsBinding.instance.addPostFrameCallback(
-          (_) => bootstrap.askSetupCrossSigning(
-            setupMasterKey: true,
-            setupSelfSigningKey: true,
-            setupUserSigningKey: true,
-          ),
-        );
-        return;
-      case BootstrapState.askWipeOnlineKeyBackup:
-        debugPrint('[Bootstrap] Auto-advancing: wipeOnlineKeyBackup($_wipeExisting)');
-        WidgetsBinding.instance.addPostFrameCallback(
-          (_) => bootstrap.wipeOnlineKeyBackup(_wipeExisting),
-        );
-        return;
-      case BootstrapState.askSetupOnlineKeyBackup:
-        debugPrint('[Bootstrap] Auto-advancing: askSetupOnlineKeyBackup');
-        WidgetsBinding.instance.addPostFrameCallback(
-          (_) => bootstrap.askSetupOnlineKeyBackup(true),
-        );
-        return;
-      case BootstrapState.askBadSsss:
-        debugPrint('[Bootstrap] Auto-advancing: ignoreBadSecrets');
-        WidgetsBinding.instance.addPostFrameCallback(
-          (_) => bootstrap.ignoreBadSecrets(true),
-        );
-        return;
-      default:
-        break;
-    }
-
-    // If we're awaiting user acknowledgement of the recovery key,
-    // don't let the bootstrap auto-advance the UI state.
-    if (_awaitingKeyAck && state != BootstrapState.error) {
-      return;
-    }
-
-    setState(() {
-      _state = state;
-      if (state == BootstrapState.askNewSsss) {
-        _generateNewSsssKey();
-      }
-      if (state == BootstrapState.openExistingSsss) {
-        _loadStoredRecoveryKey();
-      }
-    });
-  }
-
-  Future<void> _generateNewSsssKey() async {
-    setState(() => _generatingKey = true);
-    try {
-      final bootstrap = _bootstrap;
-      if (bootstrap == null) return;
-      _awaitingKeyAck = true;
-      await bootstrap.newSsss();
-      if (!mounted) return;
-      setState(() {
-        _newRecoveryKey = bootstrap.newSsssKey?.recoveryKey;
-        _generatingKey = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _generatingKey = false;
-        _state = BootstrapState.error;
-        _error = 'Failed to generate recovery key: $e';
-      });
-    }
-  }
-
-  Future<void> _loadStoredRecoveryKey() async {
-    final storedKey = await widget.matrixService.getStoredRecoveryKey();
-    if (storedKey != null && mounted) {
-      setState(() {
-        _recoveryKeyController.text = storedKey;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(_title),
-      content: SizedBox(
-        width: 400,
-        child: _buildContent(),
-      ),
-      actions: _buildActions(),
-    );
-  }
-
-  String get _title {
-    switch (_state) {
-      case BootstrapState.loading:
-      case BootstrapState.askWipeSsss:
-      case BootstrapState.askWipeCrossSigning:
-      case BootstrapState.askSetupCrossSigning:
-      case BootstrapState.askWipeOnlineKeyBackup:
-      case BootstrapState.askSetupOnlineKeyBackup:
-      case BootstrapState.askBadSsss:
-        return 'Setting up backup';
-      case BootstrapState.askNewSsss:
-        return 'Save your recovery key';
-      case BootstrapState.openExistingSsss:
-        return 'Enter recovery key';
-      case BootstrapState.askUseExistingSsss:
-        return 'Existing backup found';
-      case BootstrapState.askUnlockSsss:
-        return 'Unlock backup';
-      case BootstrapState.done:
-        return 'Backup complete';
-      case BootstrapState.error:
-        return 'Backup error';
-    }
-  }
-
-  Widget _buildContent() {
-    switch (_state) {
-      case BootstrapState.loading:
-      case BootstrapState.askWipeSsss:
-      case BootstrapState.askWipeCrossSigning:
-      case BootstrapState.askWipeOnlineKeyBackup:
-      case BootstrapState.askBadSsss:
-        return _buildLoading('Preparing...');
-
-      case BootstrapState.askSetupCrossSigning:
-        return _buildLoading('Setting up cross-signing...');
-
-      case BootstrapState.askSetupOnlineKeyBackup:
-        return _buildLoading('Setting up key backup...');
-
-      case BootstrapState.askNewSsss:
-        return _buildNewSsss();
-
-      case BootstrapState.openExistingSsss:
-        return _buildOpenExistingSsss();
-
-      case BootstrapState.askUseExistingSsss:
-        return _buildAskUseExisting();
-
-      case BootstrapState.askUnlockSsss:
-        return _buildUnlockSsss();
-
-      case BootstrapState.done:
-        return _buildDone();
-
-      case BootstrapState.error:
-        return _buildError();
-    }
-  }
-
-  Widget _buildLoading(String message) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const CircularProgressIndicator(),
-        const SizedBox(height: 16),
-        Text(message),
-      ],
-    );
-  }
-
-  Widget _buildNewSsss() {
-    if (_generatingKey) {
-      return _buildLoading('Generating recovery key...');
-    }
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Store this key somewhere safe. You will need it to '
-          'recover your encrypted messages on a new device.',
-        ),
-        const SizedBox(height: 16),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: SelectableText(
-            _newRecoveryKey ?? '',
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
-          ),
-        ),
-        const SizedBox(height: 8),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton.icon(
-            onPressed: () {
-              if (_newRecoveryKey != null) {
-                Clipboard.setData(ClipboardData(text: _newRecoveryKey!));
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Copied to clipboard')),
-                );
-              }
-            },
-            icon: const Icon(Icons.copy, size: 18),
-            label: const Text('Copy'),
-          ),
-        ),
-        CheckboxListTile(
-          value: _saveToDevice,
-          onChanged: (v) => setState(() => _saveToDevice = v ?? false),
-          title: const Text('Save to device'),
-          controlAffinity: ListTileControlAffinity.leading,
-          contentPadding: EdgeInsets.zero,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildOpenExistingSsss() {
-    if (_verifying) {
-      return _buildLoading('Verifying with another device...');
-    }
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Enter your recovery key to unlock your existing backup.',
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _recoveryKeyController,
-          decoration: InputDecoration(
-            labelText: 'Recovery key',
-            errorText: _recoveryKeyError,
-            border: const OutlineInputBorder(),
-          ),
-          style: const TextStyle(fontFamily: 'monospace'),
-        ),
-        const SizedBox(height: 8),
-        CheckboxListTile(
-          value: _saveToDevice,
-          onChanged: (v) => setState(() => _saveToDevice = v ?? false),
-          title: const Text('Save to device'),
-          controlAffinity: ListTileControlAffinity.leading,
-          contentPadding: EdgeInsets.zero,
-        ),
-        const SizedBox(height: 4),
-        const Divider(),
-        const SizedBox(height: 4),
-        Center(
-          child: OutlinedButton.icon(
-            onPressed: _verifyWithAnotherDevice,
-            icon: const Icon(Icons.devices, size: 18),
-            label: const Text('Verify with another device'),
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextButton(
-          onPressed: _handleLostKey,
-          child: const Text('I lost my recovery key'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAskUseExisting() {
-    return const Text(
-      'An existing key backup was found. Would you like to use it '
-      'or create a new one?',
-    );
-  }
-
-  Widget _buildUnlockSsss() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Text('Enter your recovery key to unlock your secrets.'),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _recoveryKeyController,
-          decoration: InputDecoration(
-            labelText: 'Recovery key',
-            errorText: _recoveryKeyError,
-            border: const OutlineInputBorder(),
-          ),
-          style: const TextStyle(fontFamily: 'monospace'),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDone() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.check_circle,
-          color: Theme.of(context).colorScheme.primary,
-          size: 64,
-        ),
-        const SizedBox(height: 16),
-        const Text('Your chat backup has been set up successfully.'),
-      ],
-    );
-  }
-
-  Widget _buildError() {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.error_outline,
-          color: Theme.of(context).colorScheme.error,
-          size: 64,
-        ),
-        const SizedBox(height: 16),
-        Text(
-          _error ?? 'An unexpected error occurred during backup setup.',
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-
-  List<Widget> _buildActions() {
-    switch (_state) {
-      case BootstrapState.loading:
-      case BootstrapState.askWipeSsss:
-      case BootstrapState.askWipeCrossSigning:
-      case BootstrapState.askSetupCrossSigning:
-      case BootstrapState.askWipeOnlineKeyBackup:
-      case BootstrapState.askSetupOnlineKeyBackup:
-      case BootstrapState.askBadSsss:
-        return [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-        ];
-
-      case BootstrapState.askNewSsss:
-        return [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: _generatingKey ? null : _confirmNewSsss,
-            child: const Text('Next'),
-          ),
-        ];
-
-      case BootstrapState.openExistingSsss:
-        return [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: _unlockExistingSsss,
-            child: const Text('Unlock'),
-          ),
-        ];
-
-      case BootstrapState.askUseExistingSsss:
-        return [
-          TextButton(
-            onPressed: () => _bootstrap?.useExistingSsss(false),
-            child: const Text('Create new'),
-          ),
-          FilledButton(
-            onPressed: () => _bootstrap?.useExistingSsss(true),
-            child: const Text('Use existing backup'),
-          ),
-        ];
-
-      case BootstrapState.askUnlockSsss:
-        return [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: _unlockOldSsss,
-            child: const Text('Unlock'),
-          ),
-        ];
-
-      case BootstrapState.done:
-        return [
-          FilledButton(
-            onPressed: _onDone,
-            child: const Text('Done'),
-          ),
-        ];
-
-      case BootstrapState.error:
-        return [
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
-          ),
-        ];
-    }
-  }
-
-  void _confirmNewSsss() {
-    // Release the gate so bootstrap can advance past askNewSsss
-    Clipboard.setData(const ClipboardData(text: ''));
-    _awaitingKeyAck = false;
-    // The onUpdate callback already fired while the gate was closed,
-    // so re-process the current bootstrap state now.
-    if (_bootstrap != null) {
-      _onBootstrapUpdate(_bootstrap!);
-    }
-  }
-
-  Future<void> _unlockExistingSsss() async {
-    final bootstrap = _bootstrap;
-    final ssssKey = bootstrap?.newSsssKey;
-    if (ssssKey == null) return;
-
-    final key = _recoveryKeyController.text.trim();
-    if (key.isEmpty) {
-      setState(() => _recoveryKeyError = 'Please enter a recovery key');
-      return;
-    }
-
-    try {
-      await ssssKey.unlock(keyOrPassphrase: key);
-    } catch (e) {
-      setState(() => _recoveryKeyError = 'Invalid recovery key');
-      return;
-    }
-
-    setState(() => _recoveryKeyError = null);
-    if (_saveToDevice) {
-      await widget.matrixService.storeRecoveryKey(key);
-    }
-
-    try {
-      await bootstrap!.openExistingSsss();
-    } catch (e) {
-      setState(() {
-        _state = BootstrapState.error;
-        _error = 'Failed to open backup: $e';
-      });
-    }
-  }
-
-  Future<void> _unlockOldSsss() async {
-    final bootstrap = _bootstrap;
-    if (bootstrap == null) return;
-
-    final key = _recoveryKeyController.text.trim();
-    if (key.isEmpty) {
-      setState(() => _recoveryKeyError = 'Please enter a recovery key');
-      return;
-    }
-
-    try {
-      final oldKeys = bootstrap.oldSsssKeys;
-      if (oldKeys != null) {
-        for (final ssssKey in oldKeys.values) {
-          await ssssKey.unlock(keyOrPassphrase: key);
-        }
-      }
-      setState(() => _recoveryKeyError = null);
-      bootstrap.unlockedSsss();
-    } catch (e) {
-      setState(() => _recoveryKeyError = 'Invalid recovery key');
-    }
-  }
-
-  Future<void> _verifyWithAnotherDevice() async {
+  Future<void> _showVerificationDialog() async {
     final client = widget.matrixService.client;
     final encryption = client.encryption;
     if (encryption == null) return;
 
-    setState(() => _verifying = true);
+    _controller.setVerifying(true);
 
     try {
-      // Refresh device keys
       await client.updateUserDeviceKeys();
 
-      // Listen for secrets being stored (from the verification)
-      _secretStoredSub =
+      final sub =
           encryption.ssss.onSecretStored.stream.listen((_) async {
-        // Secrets were transferred via verification, try to continue bootstrap
-        _secretStoredSub?.cancel();
-        _secretStoredSub = null;
+        _controller.cancelSecretStoredSub();
         if (mounted) {
-          setState(() => _verifying = false);
-          // Try unlocking with the now-cached secrets
-          final bootstrap = _bootstrap;
+          _controller.setVerifying(false);
+          final bootstrap = _controller.bootstrap;
           final ssssKey = bootstrap?.newSsssKey;
           if (ssssKey != null && ssssKey.isUnlocked) {
             await bootstrap!.openExistingSsss();
           }
         }
       });
+      _controller.onSecretStoredSub(sub);
 
-      // Create verification request
       final verification = KeyVerification(
         encryption: encryption,
         userId: client.userID!,
@@ -666,25 +138,20 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
       );
 
       if (result != true) {
-        _secretStoredSub?.cancel();
-        _secretStoredSub = null;
+        _controller.cancelSecretStoredSub();
         if (mounted) {
-          setState(() => _verifying = false);
+          _controller.setVerifying(false);
         }
       }
     } catch (e) {
-      _secretStoredSub?.cancel();
-      _secretStoredSub = null;
+      _controller.cancelSecretStoredSub();
       if (mounted) {
-        setState(() {
-          _verifying = false;
-          _recoveryKeyError = 'Verification failed: ${e.toString()}';
-        });
+        _controller.setVerifying(false);
       }
     }
   }
 
-  void _handleLostKey() {
+  void _showLostKeyConfirmation() {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -701,18 +168,8 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
           FilledButton(
             onPressed: () {
               Navigator.pop(ctx);
-              // Restart bootstrap in-place instead of pop+re-show
-              setState(() {
-                _wipeExisting = true;
-                _state = BootstrapState.loading;
-                _error = null;
-                _newRecoveryKey = null;
-                _generatingKey = false;
-                _awaitingKeyAck = false;
-                _recoveryKeyController.clear();
-                _recoveryKeyError = null;
-              });
-              _startBootstrap();
+              _recoveryKeyController.clear();
+              _controller.restartWithWipe();
             },
             child: const Text('Create new backup'),
           ),
@@ -721,14 +178,23 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
     );
   }
 
-  Future<void> _onDone() async {
-    if (_saveToDevice && _newRecoveryKey != null) {
-      await widget.matrixService.storeRecoveryKey(_newRecoveryKey!);
-    }
-    Clipboard.setData(const ClipboardData(text: ''));
-    await widget.matrixService.checkChatBackupStatus();
-    if (mounted) {
-      Navigator.pop(context, true);
-    }
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(_controller.title),
+      content: SizedBox(
+        width: 400,
+        child: buildBootstrapContent(
+          context: context,
+          controller: _controller,
+          recoveryKeyController: _recoveryKeyController,
+        ),
+      ),
+      actions: buildBootstrapActions(
+        context: context,
+        controller: _controller,
+        recoveryKeyController: _recoveryKeyController,
+      ),
+    );
   }
 }
