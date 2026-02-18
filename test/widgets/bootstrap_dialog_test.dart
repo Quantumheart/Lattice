@@ -30,6 +30,13 @@ void main() {
     mockEncryption = MockEncryption();
     when(mockMatrixService.client).thenReturn(mockClient);
     when(mockClient.encryption).thenReturn(mockEncryption);
+
+    // Provide defaults for the sync-waiting calls in _startBootstrap.
+    when(mockClient.roomsLoading).thenAnswer((_) async {});
+    when(mockClient.accountDataLoading).thenAnswer((_) async {});
+    when(mockClient.userDeviceKeysLoading).thenAnswer((_) async {});
+    when(mockClient.prevBatch).thenReturn('fake_batch_token');
+    when(mockClient.updateUserDeviceKeys()).thenAnswer((_) async {});
   });
 
   Widget buildTestWidget({bool wipeExisting = false}) {
@@ -60,8 +67,9 @@ void main() {
       {bool wipeExisting = false}) async {
     await tester.pumpWidget(buildTestWidget(wipeExisting: wipeExisting));
     await tester.tap(find.text('Open'));
-    // Use pump() not pumpAndSettle() because the dialog may show a
-    // CircularProgressIndicator which animates indefinitely.
+    // Pump twice: once for the dialog to appear, once for the async
+    // _startBootstrap to complete and call encryption.bootstrap().
+    await tester.pump();
     await tester.pump();
   }
 
