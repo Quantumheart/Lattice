@@ -19,6 +19,7 @@ dependencies:
   sqflite_common_ffi: ^2.3.7+1
   path_provider: ^2.1.5
   path: ^1.9.1
+  flutter_vodozemac: ^0.5.0
 
 dev_dependencies:
   flutter_test:

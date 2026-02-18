@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 
 import 'services/matrix_service.dart';
 import 'theme/lattice_theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_shell.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await vod.init();
   runApp(const LatticeApp());
 }
 
