@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../services/matrix_service.dart';
 import '../widgets/bootstrap_dialog.dart';
@@ -147,7 +148,7 @@ class SettingsScreen extends StatelessWidget {
                   title: 'Source code',
                   subtitle: 'View on GitHub',
                   onTap: () {
-                    // TODO: open GitHub
+                    launchUrl(Uri.parse('https://github.com/Quantumheart/Lattice'));
                   },
                 ),
               ],

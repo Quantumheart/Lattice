@@ -15,11 +15,11 @@ dependencies:
   flutter_secure_storage: ^10.0.0
   dynamic_color: ^1.7.0
   animations: ^2.0.11
-  url_launcher: ^6.2.6
   sqflite_common_ffi: ^2.3.7+1
   path_provider: ^2.1.5
   path: ^1.9.1
   flutter_vodozemac: ^0.5.0
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
