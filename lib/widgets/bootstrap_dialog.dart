@@ -18,12 +18,12 @@ class BootstrapDialog extends StatefulWidget {
     this.wipeExisting = false,
   });
 
-  static Future<String?> show(
+  static Future<bool?> show(
     BuildContext context, {
     bool wipeExisting = false,
   }) {
     final matrixService = context.read<MatrixService>();
-    return showDialog<String?>(
+    return showDialog<bool?>(
       context: context,
       barrierDismissible: false,
       builder: (_) => BootstrapDialog(
@@ -41,22 +41,29 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
   Bootstrap? _bootstrap;
   BootstrapState _state = BootstrapState.loading;
   String? _error;
-  bool _saveToDevice = true;
+  bool _saveToDevice = false;
   bool _verifying = false;
+  late bool _wipeExisting;
 
   final _recoveryKeyController = TextEditingController();
   String? _recoveryKeyError;
   String? _newRecoveryKey;
+  bool _generatingKey = false;
+  bool _awaitingKeyAck = false;
   StreamSubscription? _secretStoredSub;
 
   @override
   void initState() {
     super.initState();
+    _wipeExisting = widget.wipeExisting;
     _startBootstrap();
   }
 
   @override
   void dispose() {
+    Clipboard.setData(const ClipboardData(text: ''));
+    _newRecoveryKey = null;
+    _recoveryKeyController.clear();
     _recoveryKeyController.dispose();
     _secretStoredSub?.cancel();
     super.dispose();
@@ -84,11 +91,10 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
     // Auto-advance states that don't need user interaction
     switch (state) {
       case BootstrapState.askWipeSsss:
-        bootstrap.wipeSsss(widget.wipeExisting);
+        bootstrap.wipeSsss(_wipeExisting);
         return;
       case BootstrapState.askWipeCrossSigning:
-        // Keep existing cross-signing; only wipe when creating fresh SSSS
-        bootstrap.wipeCrossSigning(widget.wipeExisting);
+        bootstrap.wipeCrossSigning(_wipeExisting);
         return;
       case BootstrapState.askSetupCrossSigning:
         bootstrap.askSetupCrossSigning(
@@ -98,28 +104,56 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
         );
         return;
       case BootstrapState.askWipeOnlineKeyBackup:
-        // Keep existing key backup; only wipe when creating fresh SSSS
-        bootstrap.wipeOnlineKeyBackup(widget.wipeExisting);
+        bootstrap.wipeOnlineKeyBackup(_wipeExisting);
         return;
       case BootstrapState.askSetupOnlineKeyBackup:
         bootstrap.askSetupOnlineKeyBackup(true);
         return;
       case BootstrapState.askBadSsss:
+        debugPrint('BootstrapDialog: askBadSsss – ignoring bad secrets');
         bootstrap.ignoreBadSecrets(true);
         return;
       default:
         break;
     }
 
+    // If we're awaiting user acknowledgement of the recovery key,
+    // don't let the bootstrap auto-advance the UI state.
+    if (_awaitingKeyAck && state != BootstrapState.error) {
+      return;
+    }
+
     setState(() {
       _state = state;
       if (state == BootstrapState.askNewSsss) {
-        _newRecoveryKey = bootstrap.newSsssKey?.recoveryKey;
+        _generateNewSsssKey();
       }
       if (state == BootstrapState.openExistingSsss) {
         _loadStoredRecoveryKey();
       }
     });
+  }
+
+  Future<void> _generateNewSsssKey() async {
+    setState(() => _generatingKey = true);
+    try {
+      final bootstrap = _bootstrap;
+      if (bootstrap == null) return;
+      _awaitingKeyAck = true;
+      await bootstrap.newSsss();
+      if (!mounted) return;
+      setState(() {
+        _newRecoveryKey = bootstrap.newSsssKey?.recoveryKey;
+        _generatingKey = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _generatingKey = false;
+        _state = BootstrapState.error;
+        _error = 'Failed to generate recovery key: $e';
+      });
+    }
   }
 
   Future<void> _loadStoredRecoveryKey() async {
@@ -215,6 +249,9 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
   }
 
   Widget _buildNewSsss() {
+    if (_generatingKey) {
+      return _buildLoading('Generating recovery key...');
+    }
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -254,7 +291,7 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
         ),
         CheckboxListTile(
           value: _saveToDevice,
-          onChanged: (v) => setState(() => _saveToDevice = v ?? true),
+          onChanged: (v) => setState(() => _saveToDevice = v ?? false),
           title: const Text('Save to device'),
           controlAffinity: ListTileControlAffinity.leading,
           contentPadding: EdgeInsets.zero,
@@ -284,7 +321,15 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
           ),
           style: const TextStyle(fontFamily: 'monospace'),
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
+        CheckboxListTile(
+          value: _saveToDevice,
+          onChanged: (v) => setState(() => _saveToDevice = v ?? false),
+          title: const Text('Save to device'),
+          controlAffinity: ListTileControlAffinity.leading,
+          contentPadding: EdgeInsets.zero,
+        ),
+        const SizedBox(height: 4),
         const Divider(),
         const SizedBox(height: 4),
         Center(
@@ -380,7 +425,7 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: _confirmNewSsss,
+            onPressed: _generatingKey ? null : _confirmNewSsss,
             child: const Text('Next'),
           ),
         ];
@@ -439,15 +484,12 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
     }
   }
 
-  Future<void> _confirmNewSsss() async {
-    final bootstrap = _bootstrap;
-    if (bootstrap == null) return;
-
-    if (_saveToDevice && _newRecoveryKey != null) {
-      await widget.matrixService.storeRecoveryKey(_newRecoveryKey!);
-    }
-
-    await bootstrap.newSsss();
+  void _confirmNewSsss() {
+    // Release the gate so bootstrap can advance past askNewSsss
+    Clipboard.setData(const ClipboardData(text: ''));
+    _awaitingKeyAck = false;
+    // The bootstrap has already called newSsss() during _generateNewSsssKey,
+    // so we just need to let the onUpdate callback advance normally.
   }
 
   Future<void> _unlockExistingSsss() async {
@@ -585,8 +627,18 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
           FilledButton(
             onPressed: () {
               Navigator.pop(ctx);
-              Navigator.pop(context);
-              BootstrapDialog.show(context, wipeExisting: true);
+              // Restart bootstrap in-place instead of pop+re-show
+              setState(() {
+                _wipeExisting = true;
+                _state = BootstrapState.loading;
+                _error = null;
+                _newRecoveryKey = null;
+                _generatingKey = false;
+                _awaitingKeyAck = false;
+                _recoveryKeyController.clear();
+                _recoveryKeyError = null;
+              });
+              _startBootstrap();
             },
             child: const Text('Create new backup'),
           ),
@@ -599,9 +651,10 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
     if (_saveToDevice && _newRecoveryKey != null) {
       await widget.matrixService.storeRecoveryKey(_newRecoveryKey!);
     }
+    Clipboard.setData(const ClipboardData(text: ''));
     await widget.matrixService.checkChatBackupStatus();
     if (mounted) {
-      Navigator.pop(context, _newRecoveryKey);
+      Navigator.pop(context, true);
     }
   }
 }
