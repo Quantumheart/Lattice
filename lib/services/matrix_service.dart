@@ -81,12 +81,18 @@ class MatrixService extends ChangeNotifier {
           newDeviceName: 'Lattice Flutter',
         );
         _isLoggedIn = true;
+        _backupSessionState();
         _startSync();
       }
     } catch (e) {
       debugPrint('Session restore failed: $e');
       _isLoggedIn = false;
-      await _storage.deleteAll();
+      // Clear session keys but preserve recovery key
+      await _storage.delete(key: 'lattice_access_token');
+      await _storage.delete(key: 'lattice_user_id');
+      await _storage.delete(key: 'lattice_homeserver');
+      await _storage.delete(key: 'lattice_device_id');
+      await _storage.delete(key: 'lattice_olm_account');
     }
     notifyListeners();
   }
@@ -136,12 +142,19 @@ class MatrixService extends ChangeNotifier {
   // ── Logout ───────────────────────────────────────────────────
   Future<void> logout() async {
     try {
-      await _client.logout();
+      if (_client.homeserver != null && _client.accessToken != null) {
+        await _client.logout();
+      }
     } catch (_) {}
-    await _storage.deleteAll();
+    await _storage.delete(key: 'lattice_access_token');
+    await _storage.delete(key: 'lattice_user_id');
+    await _storage.delete(key: 'lattice_homeserver');
+    await _storage.delete(key: 'lattice_device_id');
+    await _storage.delete(key: 'lattice_olm_account');
     _isLoggedIn = false;
     _selectedSpaceId = null;
     _selectedRoomId = null;
+    _chatBackupNeeded = null;
     notifyListeners();
   }
 
