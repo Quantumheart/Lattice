@@ -2,6 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/encryption.dart';
+import 'package:matrix/encryption/cross_signing.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:matrix/src/utils/space_child.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -11,6 +13,11 @@ import 'package:lattice/services/matrix_service.dart';
   MockSpec<Client>(),
   MockSpec<Room>(),
   MockSpec<FlutterSecureStorage>(),
+  MockSpec<Encryption>(),
+  MockSpec<CrossSigning>(),
+  MockSpec<KeyManager>(),
+  MockSpec<Bootstrap>(),
+  MockSpec<OpenSSSS>(),
 ])
 import 'matrix_service_test.mocks.dart';
 
@@ -240,6 +247,154 @@ void main() {
       expect(service.selectedSpaceId, isNull);
       expect(service.selectedRoomId, isNull);
       verify(mockStorage.deleteAll()).called(1);
+    });
+  });
+
+  group('chat backup', () {
+    late MockEncryption mockEncryption;
+    late MockCrossSigning mockCrossSigning;
+    late MockKeyManager mockKeyManager;
+
+    setUp(() {
+      mockEncryption = MockEncryption();
+      mockCrossSigning = MockCrossSigning();
+      mockKeyManager = MockKeyManager();
+      when(mockEncryption.crossSigning).thenReturn(mockCrossSigning);
+      when(mockEncryption.keyManager).thenReturn(mockKeyManager);
+    });
+
+    group('checkChatBackupStatus', () {
+      test('returns true when cross-signing and key backup are both enabled',
+          () {
+        when(mockClient.encryption).thenReturn(mockEncryption);
+        when(mockCrossSigning.enabled).thenReturn(true);
+        when(mockKeyManager.enabled).thenReturn(true);
+
+        service.checkChatBackupStatus();
+
+        expect(service.chatBackupEnabled, isTrue);
+      });
+
+      test('returns false when client.encryption is null', () {
+        when(mockClient.encryption).thenReturn(null);
+
+        service.checkChatBackupStatus();
+
+        expect(service.chatBackupEnabled, isFalse);
+      });
+
+      test('returns false when only cross-signing is enabled', () {
+        when(mockClient.encryption).thenReturn(mockEncryption);
+        when(mockCrossSigning.enabled).thenReturn(true);
+        when(mockKeyManager.enabled).thenReturn(false);
+
+        service.checkChatBackupStatus();
+
+        expect(service.chatBackupEnabled, isFalse);
+      });
+
+      test('returns false when only key backup is enabled', () {
+        when(mockClient.encryption).thenReturn(mockEncryption);
+        when(mockCrossSigning.enabled).thenReturn(false);
+        when(mockKeyManager.enabled).thenReturn(true);
+
+        service.checkChatBackupStatus();
+
+        expect(service.chatBackupEnabled, isFalse);
+      });
+    });
+
+    group('enableChatBackup', () {
+      test('sets chatBackupLoading true during operation and false after',
+          () async {
+        when(mockClient.encryption).thenReturn(mockEncryption);
+        when(mockEncryption.bootstrap(onUpdate: anyNamed('onUpdate')))
+            .thenAnswer((invocation) {
+          final onUpdate = invocation.namedArguments[#onUpdate]
+              as void Function(Bootstrap);
+          final bootstrap = MockBootstrap();
+          when(bootstrap.state).thenReturn(BootstrapState.done);
+          when(bootstrap.newSsssKey).thenReturn(null);
+          onUpdate(bootstrap);
+          return bootstrap;
+        });
+        when(mockCrossSigning.enabled).thenReturn(true);
+        when(mockKeyManager.enabled).thenReturn(true);
+
+        expect(service.chatBackupLoading, isFalse);
+        final future = service.enableChatBackup();
+        expect(service.chatBackupLoading, isTrue);
+        await future;
+        expect(service.chatBackupLoading, isFalse);
+      });
+
+      test('returns null and sets chatBackupError when encryption is null',
+          () async {
+        when(mockClient.encryption).thenReturn(null);
+
+        final result = await service.enableChatBackup();
+
+        expect(result, isNull);
+        expect(service.chatBackupError, isNotNull);
+      });
+
+      test('sets chatBackupEnabled true on success', () async {
+        when(mockClient.encryption).thenReturn(mockEncryption);
+        when(mockEncryption.bootstrap(onUpdate: anyNamed('onUpdate')))
+            .thenAnswer((invocation) {
+          final onUpdate = invocation.namedArguments[#onUpdate]
+              as void Function(Bootstrap);
+          final bootstrap = MockBootstrap();
+          when(bootstrap.state).thenReturn(BootstrapState.done);
+          when(bootstrap.newSsssKey).thenReturn(null);
+          onUpdate(bootstrap);
+          return bootstrap;
+        });
+        when(mockCrossSigning.enabled).thenReturn(true);
+        when(mockKeyManager.enabled).thenReturn(true);
+
+        await service.enableChatBackup();
+
+        expect(service.chatBackupEnabled, isTrue);
+      });
+    });
+
+    group('disableChatBackup', () {
+      test('calls deleteRoomKeysVersion and sets chatBackupEnabled false',
+          () async {
+        when(mockClient.encryption).thenReturn(mockEncryption);
+        when(mockKeyManager.getRoomKeysBackupInfo()).thenAnswer((_) async =>
+            GetRoomKeysVersionCurrentResponse(
+              algorithm: BackupAlgorithm.mMegolmBackupV1Curve25519AesSha2,
+              authData: {},
+              count: 0,
+              etag: '1',
+              version: '1',
+            ));
+        when(mockClient.deleteRoomKeysVersion('1'))
+            .thenAnswer((_) async {});
+
+        // Pre-set backup as enabled
+        when(mockCrossSigning.enabled).thenReturn(true);
+        when(mockKeyManager.enabled).thenReturn(true);
+        service.checkChatBackupStatus();
+        expect(service.chatBackupEnabled, isTrue);
+
+        await service.disableChatBackup();
+
+        expect(service.chatBackupEnabled, isFalse);
+        verify(mockClient.deleteRoomKeysVersion('1')).called(1);
+      });
+
+      test('sets chatBackupError on failure', () async {
+        when(mockClient.encryption).thenReturn(mockEncryption);
+        when(mockKeyManager.getRoomKeysBackupInfo())
+            .thenThrow(Exception('Network error'));
+
+        await service.disableChatBackup();
+
+        expect(service.chatBackupError, contains('Network error'));
+      });
     });
   });
 }
