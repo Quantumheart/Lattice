@@ -9,11 +9,22 @@ import 'package:path_provider/path_provider.dart';
 /// Central service that owns the [Client] instance and exposes
 /// reactive state to the widget tree via [ChangeNotifier].
 class MatrixService extends ChangeNotifier {
-  MatrixService() {
-    _init();
+  MatrixService({
+    Client? client,
+    FlutterSecureStorage? storage,
+  })  : _injectedClient = client,
+        _storage = storage ?? const FlutterSecureStorage() {
+    if (client != null) {
+      _client = client;
+    } else {
+      init();
+    }
   }
 
-  late final Client _client;
+  final Client? _injectedClient;
+  final FlutterSecureStorage _storage;
+
+  late Client _client;
   Client get client => _client;
 
   bool _isLoggedIn = false;
@@ -36,7 +47,9 @@ class MatrixService extends ChangeNotifier {
       _selectedRoomId != null ? _client.getRoomById(_selectedRoomId!) : null;
 
   // ── Initialization ───────────────────────────────────────────
-  Future<void> _init() async {
+  Future<void> init() async {
+    if (_injectedClient != null) return;
+
     sqfliteFfiInit();
     final dbFactory = databaseFactoryFfi;
     final dir = await getApplicationSupportDirectory();
@@ -53,11 +66,10 @@ class MatrixService extends ChangeNotifier {
 
     // Attempt to restore session from secure storage.
     try {
-      const storage = FlutterSecureStorage();
-      final token = await storage.read(key: 'lattice_access_token');
-      final userId = await storage.read(key: 'lattice_user_id');
-      final homeserver = await storage.read(key: 'lattice_homeserver');
-      final deviceId = await storage.read(key: 'lattice_device_id');
+      final token = await _storage.read(key: 'lattice_access_token');
+      final userId = await _storage.read(key: 'lattice_user_id');
+      final homeserver = await _storage.read(key: 'lattice_homeserver');
+      final deviceId = await _storage.read(key: 'lattice_device_id');
 
       if (token != null && userId != null && homeserver != null) {
         _client.homeserver = Uri.parse(homeserver);
@@ -73,8 +85,7 @@ class MatrixService extends ChangeNotifier {
     } catch (e) {
       debugPrint('Session restore failed: $e');
       _isLoggedIn = false;
-      const storage = FlutterSecureStorage();
-      await storage.deleteAll();
+      await _storage.deleteAll();
     }
     notifyListeners();
   }
@@ -103,13 +114,12 @@ class MatrixService extends ChangeNotifier {
       );
 
       // Persist credentials.
-      const storage = FlutterSecureStorage();
-      await storage.write(
+      await _storage.write(
           key: 'lattice_access_token', value: _client.accessToken);
-      await storage.write(key: 'lattice_user_id', value: _client.userID);
-      await storage.write(
+      await _storage.write(key: 'lattice_user_id', value: _client.userID);
+      await _storage.write(
           key: 'lattice_homeserver', value: _client.homeserver.toString());
-      await storage.write(key: 'lattice_device_id', value: _client.deviceID);
+      await _storage.write(key: 'lattice_device_id', value: _client.deviceID);
 
       _isLoggedIn = true;
       _startSync();
@@ -127,8 +137,7 @@ class MatrixService extends ChangeNotifier {
     try {
       await _client.logout();
     } catch (_) {}
-    const storage = FlutterSecureStorage();
-    await storage.deleteAll();
+    await _storage.deleteAll();
     _isLoggedIn = false;
     _selectedSpaceId = null;
     _selectedRoomId = null;
