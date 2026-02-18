@@ -99,6 +99,8 @@ class _KeyVerificationDialogState extends State<KeyVerificationDialog> {
         return _buildSasEmoji();
 
       case KeyVerificationState.askSSSS:
+        return _buildWaiting('Unlocking encryption secrets...');
+
       case KeyVerificationState.waitingSas:
         return _buildWaiting('Verifying...');
 
@@ -171,14 +173,20 @@ class _KeyVerificationDialogState extends State<KeyVerificationDialog> {
           spacing: 16,
           runSpacing: 8,
           children: emojis
-              .map((e) => Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(e.emoji, style: const TextStyle(fontSize: 32)),
-                      const SizedBox(height: 4),
-                      Text(e.name,
-                          style: Theme.of(context).textTheme.bodySmall),
-                    ],
+              .map((e) => Semantics(
+                    label: e.name,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ExcludeSemantics(
+                          child: Text(e.emoji,
+                              style: const TextStyle(fontSize: 32)),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(e.name,
+                            style: Theme.of(context).textTheme.bodySmall),
+                      ],
+                    ),
                   ))
               .toList(),
         ),

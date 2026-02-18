@@ -231,11 +231,11 @@ class SettingsScreen extends StatelessWidget {
                     foregroundColor: Theme.of(ctx).colorScheme.onError,
                   )
                 : null,
-            onPressed: () {
-              Navigator.pop(ctx);
+            onPressed: () async {
               final nav = Navigator.of(context);
+              Navigator.pop(ctx);
+              await matrix.logout();
               if (nav.canPop()) nav.pop();
-              context.read<MatrixService>().logout();
             },
             child: const Text('Sign Out'),
           ),
