@@ -175,6 +175,7 @@ void main() {
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
       when(mockClient.deviceID).thenReturn('DEV1');
       when(mockClient.onSync).thenReturn(CachedStreamController());
+      when(mockClient.onUiaRequest).thenReturn(CachedStreamController());
 
       final result = await service.login(
         homeserver: 'example.com',
@@ -232,6 +233,7 @@ void main() {
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
       when(mockClient.deviceID).thenReturn('DEV1');
       when(mockClient.onSync).thenReturn(CachedStreamController());
+      when(mockClient.onUiaRequest).thenReturn(CachedStreamController());
 
       await service.login(
         homeserver: 'example.com',
@@ -452,6 +454,7 @@ void main() {
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
       when(mockClient.deviceID).thenReturn('DEV1');
       when(mockClient.onSync).thenReturn(CachedStreamController());
+      when(mockClient.onUiaRequest).thenReturn(CachedStreamController());
 
       await service.login(
         homeserver: 'example.com',

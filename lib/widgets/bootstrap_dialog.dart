@@ -69,8 +69,9 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
     super.dispose();
   }
 
-  void _startBootstrap() {
-    final encryption = widget.matrixService.client.encryption;
+  Future<void> _startBootstrap() async {
+    final client = widget.matrixService.client;
+    final encryption = client.encryption;
     if (encryption == null) {
       setState(() {
         _state = BootstrapState.error;
@@ -79,39 +80,104 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
       return;
     }
 
+    // Wait for the client to finish loading before starting bootstrap,
+    // so the state machine sees up-to-date account data and device keys.
+    try {
+      debugPrint('[Bootstrap] Waiting for roomsLoading...');
+      await client.roomsLoading;
+      debugPrint('[Bootstrap] Waiting for accountDataLoading...');
+      await client.accountDataLoading;
+      debugPrint('[Bootstrap] Waiting for userDeviceKeysLoading...');
+      await client.userDeviceKeysLoading;
+      debugPrint('[Bootstrap] prevBatch=${client.prevBatch}');
+      while (client.prevBatch == null) {
+        debugPrint('[Bootstrap] Waiting for first sync...');
+        await client.onSync.stream.first;
+      }
+      debugPrint('[Bootstrap] Updating user device keys...');
+      await client.updateUserDeviceKeys();
+      debugPrint('[Bootstrap] Sync preparation complete');
+    } catch (e, s) {
+      debugPrint('[Bootstrap] Sync preparation failed: $e\n$s');
+      if (!mounted) return;
+      setState(() {
+        _state = BootstrapState.error;
+        _error = 'Failed to sync before bootstrap: $e';
+      });
+      return;
+    }
+
+    if (!mounted) return;
+
+    // Workaround for SDK bug: OpenSSSS.store() crashes with a null check
+    // on accountData[type].content['encrypted'] when stale entries exist
+    // without the 'encrypted' field. Removing these entries forces the
+    // polling loop to take the safe oneShotSync() path instead.
+    // See: ssss.dart:793 – tryGetMap<...>('encrypted')! throws on stale data
+    const ssssSecretTypes = [
+      'm.cross_signing.master',
+      'm.cross_signing.self_signing',
+      'm.cross_signing.user_signing',
+      'm.megolm_backup.v1',
+    ];
+    for (final type in ssssSecretTypes) {
+      client.accountData.remove(type);
+    }
+
+    debugPrint('[Bootstrap] Starting bootstrap...');
     _bootstrap = encryption.bootstrap(onUpdate: _onBootstrapUpdate);
   }
 
   void _onBootstrapUpdate(Bootstrap bootstrap) {
+    debugPrint('[Bootstrap] onUpdate: state=${bootstrap.state}, mounted=$mounted');
     if (!mounted) return;
 
     _bootstrap = bootstrap;
     final state = bootstrap.state;
 
-    // Auto-advance states that don't need user interaction
+    // Auto-advance states that don't need user interaction.
+    // Defer responses to the next frame to avoid reentrancy issues
+    // with the bootstrap state machine's onUpdate callback.
     switch (state) {
       case BootstrapState.askWipeSsss:
-        bootstrap.wipeSsss(_wipeExisting);
+        debugPrint('[Bootstrap] Auto-advancing: wipeSsss($_wipeExisting)');
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => bootstrap.wipeSsss(_wipeExisting),
+        );
         return;
       case BootstrapState.askWipeCrossSigning:
-        bootstrap.wipeCrossSigning(_wipeExisting);
+        debugPrint('[Bootstrap] Auto-advancing: wipeCrossSigning($_wipeExisting)');
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => bootstrap.wipeCrossSigning(_wipeExisting),
+        );
         return;
       case BootstrapState.askSetupCrossSigning:
-        bootstrap.askSetupCrossSigning(
-          setupMasterKey: true,
-          setupSelfSigningKey: true,
-          setupUserSigningKey: true,
+        debugPrint('[Bootstrap] Auto-advancing: askSetupCrossSigning');
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => bootstrap.askSetupCrossSigning(
+            setupMasterKey: true,
+            setupSelfSigningKey: true,
+            setupUserSigningKey: true,
+          ),
         );
         return;
       case BootstrapState.askWipeOnlineKeyBackup:
-        bootstrap.wipeOnlineKeyBackup(_wipeExisting);
+        debugPrint('[Bootstrap] Auto-advancing: wipeOnlineKeyBackup($_wipeExisting)');
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => bootstrap.wipeOnlineKeyBackup(_wipeExisting),
+        );
         return;
       case BootstrapState.askSetupOnlineKeyBackup:
-        bootstrap.askSetupOnlineKeyBackup(true);
+        debugPrint('[Bootstrap] Auto-advancing: askSetupOnlineKeyBackup');
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => bootstrap.askSetupOnlineKeyBackup(true),
+        );
         return;
       case BootstrapState.askBadSsss:
-        debugPrint('BootstrapDialog: askBadSsss – ignoring bad secrets');
-        bootstrap.ignoreBadSecrets(true);
+        debugPrint('[Bootstrap] Auto-advancing: ignoreBadSecrets');
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => bootstrap.ignoreBadSecrets(true),
+        );
         return;
       default:
         break;
@@ -416,7 +482,12 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
       case BootstrapState.askWipeOnlineKeyBackup:
       case BootstrapState.askSetupOnlineKeyBackup:
       case BootstrapState.askBadSsss:
-        return [];
+        return [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ];
 
       case BootstrapState.askNewSsss:
         return [
@@ -488,8 +559,11 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
     // Release the gate so bootstrap can advance past askNewSsss
     Clipboard.setData(const ClipboardData(text: ''));
     _awaitingKeyAck = false;
-    // The bootstrap has already called newSsss() during _generateNewSsssKey,
-    // so we just need to let the onUpdate callback advance normally.
+    // The onUpdate callback already fired while the gate was closed,
+    // so re-process the current bootstrap state now.
+    if (_bootstrap != null) {
+      _onBootstrapUpdate(_bootstrap!);
+    }
   }
 
   Future<void> _unlockExistingSsss() async {

@@ -51,6 +51,15 @@ class MatrixService extends ChangeNotifier {
   // ── Sync subscription ──────────────────────────────────────────
   StreamSubscription? _syncSub;
   StreamSubscription? _firstSyncSub;
+  StreamSubscription? _uiaSub;
+
+  // ── UIA (User-Interactive Authentication) ──────────────────────
+  String? _cachedPassword;
+
+  /// Expose UIA requests that need user interaction (e.g. password prompt).
+  /// The UI should listen to this and call [completeUiaWithPassword].
+  final _uiaController = StreamController<UiaRequest>.broadcast();
+  Stream<UiaRequest> get onUiaRequest => _uiaController.stream;
 
   // ── Initialization ───────────────────────────────────────────
   Future<void> init() async {
@@ -68,6 +77,8 @@ class MatrixService extends ChangeNotifier {
     _client = Client(
       'Lattice',
       database: database,
+      logLevel: kReleaseMode ? Level.warning : Level.verbose,
+      defaultNetworkRequestTimeout: const Duration(minutes: 2),
       nativeImplementations: NativeImplementationsIsolate(
         compute,
         vodozemacInit: () => vod.init(),
@@ -82,6 +93,8 @@ class MatrixService extends ChangeNotifier {
       final deviceId = await _storage.read(key: 'lattice_device_id');
 
       if (token != null && userId != null && homeserver != null) {
+        debugPrint('[Lattice] Restoring session for $userId on $homeserver '
+            '(deviceId=$deviceId)');
         _client.homeserver = Uri.parse(homeserver);
         await _client.init(
           newToken: token,
@@ -89,11 +102,16 @@ class MatrixService extends ChangeNotifier {
           newDeviceID: deviceId,
           newDeviceName: 'Lattice Flutter',
         );
+        debugPrint('[Lattice] Session restored – '
+            'encryption=${_client.encryption != null ? "available" : "null"}, '
+            'encryptionEnabled=${_client.encryptionEnabled}');
         _isLoggedIn = true;
+        _listenForUia();
         _startSync();
       }
-    } catch (e) {
-      debugPrint('Session restore failed: $e');
+    } catch (e, s) {
+      debugPrint('[Lattice] Session restore failed: $e');
+      debugPrint('[Lattice] Stack trace:\n$s');
       _isLoggedIn = false;
       await _clearSessionKeys();
     }
@@ -113,15 +131,23 @@ class MatrixService extends ChangeNotifier {
       var hs = homeserver.trim();
       if (!hs.startsWith('http')) hs = 'https://$hs';
 
+      debugPrint('[Lattice] Checking homeserver: $hs');
       _client.homeserver = Uri.parse(hs);
       await _client.checkHomeserver(Uri.parse(hs));
+      debugPrint('[Lattice] Homeserver OK');
 
+      debugPrint('[Lattice] Logging in as $username ...');
       await _client.login(
         LoginType.mLoginPassword,
         identifier: AuthenticationUserIdentifier(user: username.trim()),
         password: password,
         initialDeviceDisplayName: 'Lattice Flutter',
       );
+      debugPrint('[Lattice] Login complete – '
+          'deviceId=${_client.deviceID}, '
+          'userId=${_client.userID}, '
+          'encryption=${_client.encryption != null ? "available" : "null"}, '
+          'encryptionEnabled=${_client.encryptionEnabled}');
 
       // Persist credentials.
       await _storage.write(
@@ -131,11 +157,15 @@ class MatrixService extends ChangeNotifier {
           key: 'lattice_homeserver', value: _client.homeserver.toString());
       await _storage.write(key: 'lattice_device_id', value: _client.deviceID);
 
+      _cachedPassword = password;
       _isLoggedIn = true;
+      _listenForUia();
       _startSync();
       notifyListeners();
       return true;
-    } catch (e) {
+    } catch (e, s) {
+      debugPrint('[Lattice] Login failed: $e');
+      debugPrint('[Lattice] Stack trace:\n$s');
       _loginError = e.toString();
       notifyListeners();
       return false;
@@ -153,10 +183,69 @@ class MatrixService extends ChangeNotifier {
     }
     await _clearSessionKeys();
     _isLoggedIn = false;
+    _cachedPassword = null;
+    _uiaSub?.cancel();
     _selectedSpaceId = null;
     _selectedRoomId = null;
     _chatBackupNeeded = null;
     notifyListeners();
+  }
+
+  // ── UIA Handler ──────────────────────────────────────────────
+  void _listenForUia() {
+    _uiaSub?.cancel();
+    _uiaSub = _client.onUiaRequest.stream.listen(_handleUiaRequest);
+  }
+
+  Future<void> _handleUiaRequest(UiaRequest uiaRequest) async {
+    if (uiaRequest.state != UiaRequestState.waitForUser ||
+        uiaRequest.nextStages.isEmpty) {
+      return;
+    }
+
+    final stage = uiaRequest.nextStages.first;
+    debugPrint('[Lattice] UIA request: stage=$stage');
+
+    switch (stage) {
+      case AuthenticationTypes.password:
+        final password = _cachedPassword;
+        if (password != null) {
+          debugPrint('[Lattice] UIA: completing with cached password');
+          return uiaRequest.completeStage(
+            AuthenticationPassword(
+              session: uiaRequest.session,
+              password: password,
+              identifier:
+                  AuthenticationUserIdentifier(user: _client.userID!),
+            ),
+          );
+        }
+        // No cached password — forward to UI for prompting.
+        debugPrint('[Lattice] UIA: no cached password, forwarding to UI');
+        _uiaController.add(uiaRequest);
+        break;
+      case AuthenticationTypes.dummy:
+        return uiaRequest.completeStage(
+          AuthenticationData(
+            type: AuthenticationTypes.dummy,
+            session: uiaRequest.session,
+          ),
+        );
+      default:
+        debugPrint('[Lattice] UIA: unsupported stage $stage, cancelling');
+        uiaRequest.cancel();
+    }
+  }
+
+  /// Complete a UIA request with the user's password.
+  void completeUiaWithPassword(UiaRequest request, String password) {
+    request.completeStage(
+      AuthenticationPassword(
+        session: request.session,
+        password: password,
+        identifier: AuthenticationUserIdentifier(user: _client.userID!),
+      ),
+    );
   }
 
   // ── Sync ─────────────────────────────────────────────────────
@@ -314,6 +403,8 @@ class MatrixService extends ChangeNotifier {
   void dispose() {
     _syncSub?.cancel();
     _firstSyncSub?.cancel();
+    _uiaSub?.cancel();
+    _uiaController.close();
     _client.dispose();
     super.dispose();
   }
