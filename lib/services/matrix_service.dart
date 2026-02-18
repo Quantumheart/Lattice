@@ -1,7 +1,5 @@
-import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:matrix/matrix.dart';
-import 'package:matrix/encryption.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' as p;
@@ -165,7 +163,9 @@ class MatrixService extends ChangeNotifier {
     _client.onSync.stream.listen((_) {
       notifyListeners();
     });
-    _client.onSync.stream.first.then((_) => checkChatBackupStatus());
+    _client.onSync.stream.first.then((_) async {
+      await checkChatBackupStatus();
+    });
   }
 
   // ── Selection ────────────────────────────────────────────────
@@ -180,8 +180,10 @@ class MatrixService extends ChangeNotifier {
   }
 
   // ── Chat Backup ─────────────────────────────────────────────
-  bool _chatBackupEnabled = false;
-  bool get chatBackupEnabled => _chatBackupEnabled;
+  /// null = loading/unknown, true = needs setup, false = ok
+  bool? _chatBackupNeeded;
+  bool? get chatBackupNeeded => _chatBackupNeeded;
+  bool get chatBackupEnabled => _chatBackupNeeded == false;
 
   bool _chatBackupLoading = false;
   bool get chatBackupLoading => _chatBackupLoading;
@@ -189,97 +191,49 @@ class MatrixService extends ChangeNotifier {
   String? _chatBackupError;
   String? get chatBackupError => _chatBackupError;
 
-  void checkChatBackupStatus() {
+  Future<void> checkChatBackupStatus() async {
     final encryption = _client.encryption;
     if (encryption == null) {
-      _chatBackupEnabled = false;
-    } else {
-      _chatBackupEnabled =
-          encryption.crossSigning.enabled && encryption.keyManager.enabled;
+      _chatBackupNeeded = true;
+      notifyListeners();
+      return;
     }
+
+    final crossSigningEnabled = encryption.crossSigning.enabled;
+    final keyBackupEnabled = encryption.keyManager.enabled;
+
+    if (!crossSigningEnabled || !keyBackupEnabled) {
+      _chatBackupNeeded = true;
+      notifyListeners();
+      return;
+    }
+
+    final crossSigningCached = await encryption.crossSigning.isCached();
+    final keyBackupCached = await encryption.keyManager.isCached();
+    final isUnknown = _client.isUnknownSession;
+
+    _chatBackupNeeded = !crossSigningCached || !keyBackupCached || isUnknown;
     notifyListeners();
   }
 
-  Future<String?> enableChatBackup() async {
-    _chatBackupError = null;
-    _chatBackupLoading = true;
-    notifyListeners();
+  // ── Recovery Key Storage ──────────────────────────────────────
 
-    final encryption = _client.encryption;
-    if (encryption == null) {
-      _chatBackupError = 'Encryption is not available';
-      _chatBackupLoading = false;
-      notifyListeners();
-      return null;
-    }
+  Future<String?> getStoredRecoveryKey() async {
+    final userId = _client.userID;
+    if (userId == null) return null;
+    return _storage.read(key: 'ssss_recovery_key_$userId');
+  }
 
-    final completer = Completer<String?>();
+  Future<void> storeRecoveryKey(String key) async {
+    final userId = _client.userID;
+    if (userId == null) return;
+    await _storage.write(key: 'ssss_recovery_key_$userId', value: key);
+  }
 
-    try {
-      encryption.bootstrap(onUpdate: (bootstrap) async {
-        try {
-          switch (bootstrap.state) {
-            case BootstrapState.askWipeSsss:
-              bootstrap.wipeSsss(true);
-              break;
-            case BootstrapState.askNewSsss:
-              await bootstrap.newSsss();
-              break;
-            case BootstrapState.askUseExistingSsss:
-              bootstrap.useExistingSsss(false);
-              break;
-            case BootstrapState.askBadSsss:
-              bootstrap.ignoreBadSecrets(true);
-              break;
-            case BootstrapState.askWipeCrossSigning:
-              await bootstrap.wipeCrossSigning(true);
-              break;
-            case BootstrapState.askSetupCrossSigning:
-              await bootstrap.askSetupCrossSigning(
-                setupMasterKey: true,
-                setupSelfSigningKey: true,
-                setupUserSigningKey: true,
-              );
-              break;
-            case BootstrapState.askWipeOnlineKeyBackup:
-              bootstrap.wipeOnlineKeyBackup(true);
-              break;
-            case BootstrapState.askSetupOnlineKeyBackup:
-              await bootstrap.askSetupOnlineKeyBackup(true);
-              break;
-            case BootstrapState.done:
-              if (!completer.isCompleted) {
-                checkChatBackupStatus();
-                completer.complete(bootstrap.newSsssKey?.recoveryKey);
-              }
-              break;
-            case BootstrapState.error:
-              if (!completer.isCompleted) {
-                _chatBackupError = 'Bootstrap failed';
-                completer.complete(null);
-              }
-              break;
-            default:
-              break;
-          }
-        } catch (e) {
-          if (!completer.isCompleted) {
-            _chatBackupError = e.toString();
-            completer.complete(null);
-          }
-        }
-      });
-    } catch (e) {
-      if (!completer.isCompleted) {
-        _chatBackupError = e.toString();
-        completer.complete(null);
-      }
-    }
-
-    final result = await completer.future;
-    _chatBackupLoading = false;
-    notifyListeners();
-    return result;
+  Future<void> deleteStoredRecoveryKey() async {
+    final userId = _client.userID;
+    if (userId == null) return;
+    await _storage.delete(key: 'ssss_recovery_key_$userId');
   }
 
   Future<void> disableChatBackup() async {
@@ -294,7 +248,8 @@ class MatrixService extends ChangeNotifier {
       }
       final info = await encryption.keyManager.getRoomKeysBackupInfo();
       await _client.deleteRoomKeysVersion(info.version);
-      _chatBackupEnabled = false;
+      await deleteStoredRecoveryKey();
+      _chatBackupNeeded = true;
     } catch (e) {
       _chatBackupError = e.toString();
     } finally {
