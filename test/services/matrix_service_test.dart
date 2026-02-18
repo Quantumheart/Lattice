@@ -209,7 +209,7 @@ void main() {
   });
 
   group('logout', () {
-    test('clears state and secure storage', () async {
+    test('deletes only session keys, not recovery key', () async {
       // First log in
       when(mockClient.checkHomeserver(any)).thenAnswer((_) async => (
             null,
@@ -246,7 +246,16 @@ void main() {
       expect(service.isLoggedIn, isFalse);
       expect(service.selectedSpaceId, isNull);
       expect(service.selectedRoomId, isNull);
-      verify(mockStorage.deleteAll()).called(1);
+      // Should delete individual session keys, NOT deleteAll
+      verify(mockStorage.delete(key: 'lattice_access_token')).called(1);
+      verify(mockStorage.delete(key: 'lattice_user_id')).called(1);
+      verify(mockStorage.delete(key: 'lattice_homeserver')).called(1);
+      verify(mockStorage.delete(key: 'lattice_device_id')).called(1);
+      verify(mockStorage.delete(key: 'lattice_olm_account')).called(1);
+      verifyNever(mockStorage.deleteAll());
+    });
+  });
+
     });
   });
 
