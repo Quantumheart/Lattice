@@ -181,13 +181,13 @@ class _SpaceListMobile extends StatelessWidget {
                   leading: CircleAvatar(
                     backgroundColor: cs.primaryContainer,
                     child: Text(
-                      space.displayname.isNotEmpty
-                          ? space.displayname[0].toUpperCase()
+                      space.getLocalizedDisplayname().isNotEmpty
+                          ? space.getLocalizedDisplayname()[0].toUpperCase()
                           : '?',
                       style: TextStyle(color: cs.onPrimaryContainer),
                     ),
                   ),
-                  title: Text(space.displayname),
+                  title: Text(space.getLocalizedDisplayname()),
                   subtitle: Text(
                     '${space.spaceChildren.length} rooms',
                     style: tt.bodyMedium,

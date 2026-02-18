@@ -68,11 +68,11 @@ void main() {
     test('filters rooms to only spaces and sorts alphabetically', () {
       final space1 = MockRoom();
       when(space1.isSpace).thenReturn(true);
-      when(space1.displayname).thenReturn('B Space');
+      when(space1.getLocalizedDisplayname()).thenReturn('B Space');
 
       final space2 = MockRoom();
       when(space2.isSpace).thenReturn(true);
-      when(space2.displayname).thenReturn('A Space');
+      when(space2.getLocalizedDisplayname()).thenReturn('A Space');
 
       final room1 = MockRoom();
       when(room1.isSpace).thenReturn(false);
@@ -81,8 +81,8 @@ void main() {
 
       final spaces = service.spaces;
       expect(spaces, hasLength(2));
-      expect(spaces[0].displayname, 'A Space');
-      expect(spaces[1].displayname, 'B Space');
+      expect(spaces[0].getLocalizedDisplayname(), 'A Space');
+      expect(spaces[1].getLocalizedDisplayname(), 'B Space');
     });
   });
 

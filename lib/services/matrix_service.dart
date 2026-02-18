@@ -170,7 +170,7 @@ class MatrixService extends ChangeNotifier {
   List<Room> get spaces => _client.rooms
       .where((r) => r.isSpace)
       .toList()
-    ..sort((a, b) => a.displayname.compareTo(b.displayname));
+    ..sort((a, b) => a.getLocalizedDisplayname().compareTo(b.getLocalizedDisplayname()));
 
   /// Returns non-space rooms, optionally filtered by current space.
   List<Room> get rooms {

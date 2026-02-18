@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:matrix/matrix.dart' hide Colors;
+import 'package:matrix/matrix.dart';
 
 import '../services/matrix_service.dart';
 import 'room_avatar.dart';
@@ -32,7 +32,7 @@ class _RoomListState extends State<RoomList> {
     if (_query.isNotEmpty) {
       final q = _query.toLowerCase();
       rooms = rooms
-          .where((r) => r.displayname.toLowerCase().contains(q))
+          .where((r) => r.getLocalizedDisplayname().toLowerCase().contains(q))
           .toList();
     }
 
@@ -41,7 +41,7 @@ class _RoomListState extends State<RoomList> {
         title: Text(
           matrix.selectedSpaceId != null
               ? (matrix.client.getRoomById(matrix.selectedSpaceId!)
-                      ?.displayname ??
+                      ?.getLocalizedDisplayname() ??
                   'Space')
               : 'Chats',
         ),
@@ -169,7 +169,7 @@ class _RoomTile extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        room.displayname,
+                        room.getLocalizedDisplayname(),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: tt.titleMedium?.copyWith(

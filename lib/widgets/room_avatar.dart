@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart' hide Colors;
+import 'package:matrix/matrix.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 /// Displays a room's avatar with a colored-initial fallback.
@@ -16,17 +16,18 @@ class RoomAvatarWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final avatarUrl = room.avatar?.getThumbnail(
+    final avatarUrl = room.avatar?.getThumbnailUri(
       room.client,
       width: (size * 2).toInt(),
       height: (size * 2).toInt(),
     );
 
-    final initial = room.displayname.isNotEmpty
-        ? room.displayname[0].toUpperCase()
+    final name = room.getLocalizedDisplayname();
+    final initial = name.isNotEmpty
+        ? name[0].toUpperCase()
         : '#';
 
-    final bgColor = _colorFromString(room.displayname, cs);
+    final bgColor = _colorFromString(name, cs);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(size * 0.28),

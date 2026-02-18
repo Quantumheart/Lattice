@@ -44,10 +44,10 @@ class SpaceRail extends StatelessWidget {
               itemBuilder: (context, i) {
                 final space = spaces[i];
                 return _RailIcon(
-                  label: space.displayname.isNotEmpty
-                      ? space.displayname[0].toUpperCase()
+                  label: space.getLocalizedDisplayname().isNotEmpty
+                      ? space.getLocalizedDisplayname()[0].toUpperCase()
                       : '?',
-                  tooltip: space.displayname,
+                  tooltip: space.getLocalizedDisplayname(),
                   isSelected: matrix.selectedSpaceId == space.id,
                   avatarUrl: space.avatar?.toString(),
                   color: _spaceColor(i, cs),

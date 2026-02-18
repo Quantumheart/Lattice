@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart' hide Colors;
+import 'package:matrix/matrix.dart';
 
 class MessageBubble extends StatelessWidget {
   const MessageBubble({

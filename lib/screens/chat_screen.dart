@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:matrix/matrix.dart' hide Colors;
+import 'package:matrix/matrix.dart';
 
 import '../services/matrix_service.dart';
 import '../widgets/room_avatar.dart';
@@ -130,7 +130,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    room.displayname,
+                    room.getLocalizedDisplayname(),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: tt.titleMedium,
