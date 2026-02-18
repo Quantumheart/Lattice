@@ -4,6 +4,7 @@ import 'package:mockito/mockito.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/encryption/cross_signing.dart';
+import 'package:matrix/encryption/olm_manager.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:matrix/src/utils/space_child.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -18,6 +19,7 @@ import 'package:lattice/services/matrix_service.dart';
   MockSpec<KeyManager>(),
   MockSpec<Bootstrap>(),
   MockSpec<OpenSSSS>(),
+  MockSpec<OlmManager>(),
 ])
 import 'matrix_service_test.mocks.dart';
 
@@ -416,6 +418,91 @@ void main() {
 
         expect(service.chatBackupError, contains('Network error'));
       });
+    });
+  });
+
+  group('session state backup', () {
+    late MockEncryption mockEncryption;
+    late MockOlmManager mockOlmManager;
+
+    setUp(() {
+      mockEncryption = MockEncryption();
+      mockOlmManager = MockOlmManager();
+      when(mockEncryption.olmManager).thenReturn(mockOlmManager);
+    });
+
+    test('backupSessionState writes OLM pickle to secure storage after login',
+        () async {
+      when(mockClient.checkHomeserver(any)).thenAnswer((_) async => (
+            null,
+            GetVersionsResponse.fromJson({'versions': ['v1.1']}),
+            <LoginFlow>[],
+            null,
+          ));
+      when(mockClient.login(
+        any,
+        identifier: anyNamed('identifier'),
+        password: anyNamed('password'),
+        initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+      )).thenAnswer((_) async => LoginResponse.fromJson({
+            'access_token': 'token123',
+            'device_id': 'DEV1',
+            'user_id': '@user:example.com',
+          }));
+      when(mockClient.accessToken).thenReturn('token123');
+      when(mockClient.userID).thenReturn('@user:example.com');
+      when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
+      when(mockClient.deviceID).thenReturn('DEV1');
+      when(mockClient.onSync).thenReturn(CachedStreamController());
+      when(mockClient.encryption).thenReturn(mockEncryption);
+      when(mockOlmManager.pickledOlmAccount).thenReturn('pickled-olm-data');
+
+      await service.login(
+        homeserver: 'example.com',
+        username: 'user',
+        password: 'pass',
+      );
+
+      verify(mockStorage.write(
+        key: 'lattice_olm_account',
+        value: 'pickled-olm-data',
+      )).called(1);
+    });
+
+    test('backupSessionState is a no-op when encryption is null', () async {
+      when(mockClient.checkHomeserver(any)).thenAnswer((_) async => (
+            null,
+            GetVersionsResponse.fromJson({'versions': ['v1.1']}),
+            <LoginFlow>[],
+            null,
+          ));
+      when(mockClient.login(
+        any,
+        identifier: anyNamed('identifier'),
+        password: anyNamed('password'),
+        initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+      )).thenAnswer((_) async => LoginResponse.fromJson({
+            'access_token': 'token123',
+            'device_id': 'DEV1',
+            'user_id': '@user:example.com',
+          }));
+      when(mockClient.accessToken).thenReturn('token123');
+      when(mockClient.userID).thenReturn('@user:example.com');
+      when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
+      when(mockClient.deviceID).thenReturn('DEV1');
+      when(mockClient.onSync).thenReturn(CachedStreamController());
+      when(mockClient.encryption).thenReturn(null);
+
+      await service.login(
+        homeserver: 'example.com',
+        username: 'user',
+        password: 'pass',
+      );
+
+      verifyNever(mockStorage.write(
+        key: 'lattice_olm_account',
+        value: anyNamed('value'),
+      ));
     });
   });
 }

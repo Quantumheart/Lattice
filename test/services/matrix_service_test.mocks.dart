@@ -6,6 +6,7 @@
 import 'dart:async' as _i5;
 import 'dart:typed_data' as _i14;
 
+import 'package:async/async.dart' as _i20;
 import 'package:flutter/foundation.dart' as _i17;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart' as _i7;
 import 'package:http/http.dart' as _i4;
@@ -13,6 +14,7 @@ import 'package:matrix/encryption.dart' as _i8;
 import 'package:matrix/encryption/cross_signing.dart' as _i11;
 import 'package:matrix/encryption/key_verification_manager.dart' as _i10;
 import 'package:matrix/encryption/olm_manager.dart' as _i9;
+import 'package:matrix/encryption/utils/olm_session.dart' as _i19;
 import 'package:matrix/encryption/utils/outbound_group_session.dart' as _i12;
 import 'package:matrix/encryption/utils/session_key.dart' as _i18;
 import 'package:matrix/matrix.dart' as _i2;
@@ -11169,6 +11171,354 @@ class MockOpenSSSS extends _i1.Mock implements _i8.OpenSSSS {
   _i5.Future<void> maybeCacheAll() => (super.noSuchMethod(
         Invocation.method(
           #maybeCacheAll,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+}
+
+/// A class which mocks [OlmManager].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockOlmManager extends _i1.Mock implements _i9.OlmManager {
+  @override
+  _i8.Encryption get encryption => (super.noSuchMethod(
+        Invocation.getter(#encryption),
+        returnValue: _FakeEncryption_84(
+          this,
+          Invocation.getter(#encryption),
+        ),
+        returnValueForMissingStub: _FakeEncryption_84(
+          this,
+          Invocation.getter(#encryption),
+        ),
+      ) as _i8.Encryption);
+
+  @override
+  _i2.Client get client => (super.noSuchMethod(
+        Invocation.getter(#client),
+        returnValue: _FakeClient_66(
+          this,
+          Invocation.getter(#client),
+        ),
+        returnValueForMissingStub: _FakeClient_66(
+          this,
+          Invocation.getter(#client),
+        ),
+      ) as _i2.Client);
+
+  @override
+  bool get enabled => (super.noSuchMethod(
+        Invocation.getter(#enabled),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  Map<String, List<_i19.OlmSession>> get olmSessions => (super.noSuchMethod(
+        Invocation.getter(#olmSessions),
+        returnValue: <String, List<_i19.OlmSession>>{},
+        returnValueForMissingStub: <String, List<_i19.OlmSession>>{},
+      ) as Map<String, List<_i19.OlmSession>>);
+
+  @override
+  set ourDeviceId(String? value) => super.noSuchMethod(
+        Invocation.setter(
+          #ourDeviceId,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  set currentUpload(_i20.CancelableOperation<Map<String, int>>? value) =>
+      super.noSuchMethod(
+        Invocation.setter(
+          #currentUpload,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  String? pickleOlmAccountWithKey(String? key) => (super.noSuchMethod(
+        Invocation.method(
+          #pickleOlmAccountWithKey,
+          [key],
+        ),
+        returnValueForMissingStub: null,
+      ) as String?);
+
+  @override
+  _i5.Future<void> init({
+    String? olmAccount,
+    required String? deviceId,
+    String? pickleKey,
+    String? dehydratedDeviceAlgorithm,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #init,
+          [],
+          {
+            #olmAccount: olmAccount,
+            #deviceId: deviceId,
+            #pickleKey: pickleKey,
+            #dehydratedDeviceAlgorithm: dehydratedDeviceAlgorithm,
+          },
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  Map<String, Object?> signJson(Map<String, Object?>? payload) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #signJson,
+          [payload],
+        ),
+        returnValue: <String, Object?>{},
+        returnValueForMissingStub: <String, Object?>{},
+      ) as Map<String, Object?>);
+
+  @override
+  String signString(String? s) => (super.noSuchMethod(
+        Invocation.method(
+          #signString,
+          [s],
+        ),
+        returnValue: _i13.dummyValue<String>(
+          this,
+          Invocation.method(
+            #signString,
+            [s],
+          ),
+        ),
+        returnValueForMissingStub: _i13.dummyValue<String>(
+          this,
+          Invocation.method(
+            #signString,
+            [s],
+          ),
+        ),
+      ) as String);
+
+  @override
+  _i5.Future<bool> uploadKeys({
+    bool? uploadDeviceKeys = false,
+    int? oldKeyCount = 0,
+    bool? updateDatabase = true,
+    bool? unusedFallbackKey = false,
+    String? dehydratedDeviceAlgorithm,
+    String? dehydratedDevicePickleKey,
+    int? retry = 1,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #uploadKeys,
+          [],
+          {
+            #uploadDeviceKeys: uploadDeviceKeys,
+            #oldKeyCount: oldKeyCount,
+            #updateDatabase: updateDatabase,
+            #unusedFallbackKey: unusedFallbackKey,
+            #dehydratedDeviceAlgorithm: dehydratedDeviceAlgorithm,
+            #dehydratedDevicePickleKey: dehydratedDevicePickleKey,
+            #retry: retry,
+          },
+        ),
+        returnValue: _i5.Future<bool>.value(false),
+        returnValueForMissingStub: _i5.Future<bool>.value(false),
+      ) as _i5.Future<bool>);
+
+  @override
+  _i5.Future<void> handleDeviceOneTimeKeysCount(
+    Map<String, int>? countJson,
+    List<String>? unusedFallbackKeyTypes,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #handleDeviceOneTimeKeysCount,
+          [
+            countJson,
+            unusedFallbackKeyTypes,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> storeOlmSession(_i19.OlmSession? session) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #storeOlmSession,
+          [session],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<List<_i19.OlmSession>> getOlmSessionsFromDatabase(
+          String? senderKey) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getOlmSessionsFromDatabase,
+          [senderKey],
+        ),
+        returnValue:
+            _i5.Future<List<_i19.OlmSession>>.value(<_i19.OlmSession>[]),
+        returnValueForMissingStub:
+            _i5.Future<List<_i19.OlmSession>>.value(<_i19.OlmSession>[]),
+      ) as _i5.Future<List<_i19.OlmSession>>);
+
+  @override
+  _i5.Future<void> getOlmSessionsForDevicesFromDatabase(
+          List<String>? senderKeys) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getOlmSessionsForDevicesFromDatabase,
+          [senderKeys],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<List<_i19.OlmSession>> getOlmSessions(
+    String? senderKey, {
+    bool? getFromDb = true,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getOlmSessions,
+          [senderKey],
+          {#getFromDb: getFromDb},
+        ),
+        returnValue:
+            _i5.Future<List<_i19.OlmSession>>.value(<_i19.OlmSession>[]),
+        returnValueForMissingStub:
+            _i5.Future<List<_i19.OlmSession>>.value(<_i19.OlmSession>[]),
+      ) as _i5.Future<List<_i19.OlmSession>>);
+
+  @override
+  _i5.Future<void> restoreOlmSession(
+    String? userId,
+    String? senderKey,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #restoreOlmSession,
+          [
+            userId,
+            senderKey,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<_i2.ToDeviceEvent> decryptToDeviceEvent(
+          _i2.ToDeviceEvent? event) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #decryptToDeviceEvent,
+          [event],
+        ),
+        returnValue: _i5.Future<_i2.ToDeviceEvent>.value(_FakeToDeviceEvent_82(
+          this,
+          Invocation.method(
+            #decryptToDeviceEvent,
+            [event],
+          ),
+        )),
+        returnValueForMissingStub:
+            _i5.Future<_i2.ToDeviceEvent>.value(_FakeToDeviceEvent_82(
+          this,
+          Invocation.method(
+            #decryptToDeviceEvent,
+            [event],
+          ),
+        )),
+      ) as _i5.Future<_i2.ToDeviceEvent>);
+
+  @override
+  _i5.Future<void> startOutgoingOlmSessions(List<_i2.DeviceKeys>? deviceKeys) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #startOutgoingOlmSessions,
+          [deviceKeys],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<Map<String, dynamic>> encryptToDeviceMessagePayload(
+    _i2.DeviceKeys? device,
+    String? type,
+    Map<String, dynamic>? payload, {
+    bool? getFromDb = true,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #encryptToDeviceMessagePayload,
+          [
+            device,
+            type,
+            payload,
+          ],
+          {#getFromDb: getFromDb},
+        ),
+        returnValue:
+            _i5.Future<Map<String, dynamic>>.value(<String, dynamic>{}),
+        returnValueForMissingStub:
+            _i5.Future<Map<String, dynamic>>.value(<String, dynamic>{}),
+      ) as _i5.Future<Map<String, dynamic>>);
+
+  @override
+  _i5.Future<
+      Map<String, Map<String, Map<String, dynamic>>>> encryptToDeviceMessage(
+    List<_i2.DeviceKeys>? deviceKeys,
+    String? type,
+    Map<String, dynamic>? payload,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #encryptToDeviceMessage,
+          [
+            deviceKeys,
+            type,
+            payload,
+          ],
+        ),
+        returnValue:
+            _i5.Future<Map<String, Map<String, Map<String, dynamic>>>>.value(
+                <String, Map<String, Map<String, dynamic>>>{}),
+        returnValueForMissingStub:
+            _i5.Future<Map<String, Map<String, Map<String, dynamic>>>>.value(
+                <String, Map<String, Map<String, dynamic>>>{}),
+      ) as _i5.Future<Map<String, Map<String, Map<String, dynamic>>>>);
+
+  @override
+  _i5.Future<void> handleToDeviceEvent(_i2.ToDeviceEvent? event) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #handleToDeviceEvent,
+          [event],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> dispose() => (super.noSuchMethod(
+        Invocation.method(
+          #dispose,
           [],
         ),
         returnValue: _i5.Future<void>.value(),
