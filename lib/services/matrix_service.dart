@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:matrix/matrix.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -67,6 +68,10 @@ class MatrixService extends ChangeNotifier {
     _client = Client(
       'Lattice',
       database: database,
+      nativeImplementations: NativeImplementationsIsolate(
+        compute,
+        vodozemacInit: () => vod.init(),
+      ),
     );
 
     // Attempt to restore session from secure storage.
