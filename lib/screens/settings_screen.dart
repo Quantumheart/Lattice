@@ -105,13 +105,21 @@ class SettingsScreen extends StatelessWidget {
           Card(
             child: Column(
               children: [
-                _SettingsTile(
-                  icon: Icons.key_rounded,
-                  title: 'Encryption keys',
-                  subtitle: 'Manage cross-signing',
-                  onTap: () {
-                    // TODO: key management
-                  },
+                SwitchListTile(
+                  secondary: Icon(Icons.cloud_outlined,
+                      color: cs.onSurfaceVariant),
+                  title: const Text('Chat backup'),
+                  subtitle: Text(
+                    matrix.chatBackupLoading
+                        ? 'Setting up...'
+                        : matrix.chatBackupEnabled
+                            ? 'Your keys are backed up'
+                            : 'Off',
+                  ),
+                  value: matrix.chatBackupEnabled,
+                  onChanged: matrix.chatBackupLoading
+                      ? null
+                      : (v) => _handleBackupToggle(context, v),
                 ),
                 const Divider(height: 1, indent: 56),
                 _SettingsTile(
@@ -190,9 +198,108 @@ class SettingsScreen extends StatelessWidget {
           FilledButton(
             onPressed: () {
               Navigator.pop(ctx);
+              final nav = Navigator.of(context);
+              if (nav.canPop()) nav.pop();
               context.read<MatrixService>().logout();
             },
             child: const Text('Sign Out'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleBackupToggle(BuildContext context, bool enable) async {
+    final matrix = context.read<MatrixService>();
+    if (enable) {
+      final recoveryKey = await matrix.enableChatBackup();
+      if (!context.mounted) return;
+      if (recoveryKey != null) {
+        _showRecoveryKeyDialog(context, recoveryKey);
+      } else if (matrix.chatBackupError != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(matrix.chatBackupError!)),
+        );
+      }
+    } else {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Disable chat backup?'),
+          content: const Text(
+            'You will lose the ability to recover encrypted messages '
+            'on new devices. This cannot be undone.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Disable'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed == true) {
+        await matrix.disableChatBackup();
+        if (!context.mounted) return;
+        if (matrix.chatBackupError != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(matrix.chatBackupError!)),
+          );
+        }
+      }
+    }
+  }
+
+  void _showRecoveryKeyDialog(BuildContext context, String recoveryKey) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Save your recovery key'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Store this key somewhere safe. You will need it to '
+              'recover your encrypted messages on a new device.',
+            ),
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Theme.of(ctx).colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: SelectableText(
+                recoveryKey,
+                style: const TextStyle(fontFamily: 'monospace', fontSize: 14),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: recoveryKey));
+                  ScaffoldMessenger.of(ctx).showSnackBar(
+                    const SnackBar(content: Text('Copied to clipboard')),
+                  );
+                },
+                icon: const Icon(Icons.copy, size: 18),
+                label: const Text('Copy'),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('I saved my key'),
           ),
         ],
       ),

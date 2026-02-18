@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../screens/settings_screen.dart';
 import '../services/matrix_service.dart';
 
 /// A vertical icon rail showing the user's Matrix spaces.
@@ -63,7 +64,7 @@ class SpaceRail extends StatelessWidget {
 
           // Add space button
           Padding(
-            padding: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.only(bottom: 6),
             child: _RailIcon(
               label: '+',
               tooltip: 'Join or create a space',
@@ -72,6 +73,23 @@ class SpaceRail extends StatelessWidget {
               outlined: true,
               onTap: () {
                 // TODO: join/create space dialog
+              },
+            ),
+          ),
+
+          // Settings button
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: IconButton(
+              icon: Icon(Icons.settings_outlined,
+                  color: cs.onSurfaceVariant),
+              tooltip: 'Settings',
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const SettingsScreen(),
+                  ),
+                );
               },
             ),
           ),
