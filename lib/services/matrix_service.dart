@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/encryption.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' as p;
@@ -151,6 +152,7 @@ class MatrixService extends ChangeNotifier {
     _client.onSync.stream.listen((_) {
       notifyListeners();
     });
+    _client.onSync.stream.first.then((_) => checkChatBackupStatus());
   }
 
   // ── Selection ────────────────────────────────────────────────
@@ -162,6 +164,130 @@ class MatrixService extends ChangeNotifier {
   void selectRoom(String? roomId) {
     _selectedRoomId = roomId;
     notifyListeners();
+  }
+
+  // ── Chat Backup ─────────────────────────────────────────────
+  bool _chatBackupEnabled = false;
+  bool get chatBackupEnabled => _chatBackupEnabled;
+
+  bool _chatBackupLoading = false;
+  bool get chatBackupLoading => _chatBackupLoading;
+
+  String? _chatBackupError;
+  String? get chatBackupError => _chatBackupError;
+
+  void checkChatBackupStatus() {
+    final encryption = _client.encryption;
+    if (encryption == null) {
+      _chatBackupEnabled = false;
+    } else {
+      _chatBackupEnabled =
+          encryption.crossSigning.enabled && encryption.keyManager.enabled;
+    }
+    notifyListeners();
+  }
+
+  Future<String?> enableChatBackup() async {
+    _chatBackupError = null;
+    _chatBackupLoading = true;
+    notifyListeners();
+
+    final encryption = _client.encryption;
+    if (encryption == null) {
+      _chatBackupError = 'Encryption is not available';
+      _chatBackupLoading = false;
+      notifyListeners();
+      return null;
+    }
+
+    final completer = Completer<String?>();
+
+    try {
+      encryption.bootstrap(onUpdate: (bootstrap) async {
+        try {
+          switch (bootstrap.state) {
+            case BootstrapState.askWipeSsss:
+              bootstrap.wipeSsss(true);
+              break;
+            case BootstrapState.askNewSsss:
+              await bootstrap.newSsss();
+              break;
+            case BootstrapState.askUseExistingSsss:
+              bootstrap.useExistingSsss(false);
+              break;
+            case BootstrapState.askBadSsss:
+              bootstrap.ignoreBadSecrets(true);
+              break;
+            case BootstrapState.askWipeCrossSigning:
+              await bootstrap.wipeCrossSigning(true);
+              break;
+            case BootstrapState.askSetupCrossSigning:
+              await bootstrap.askSetupCrossSigning(
+                setupMasterKey: true,
+                setupSelfSigningKey: true,
+                setupUserSigningKey: true,
+              );
+              break;
+            case BootstrapState.askWipeOnlineKeyBackup:
+              bootstrap.wipeOnlineKeyBackup(true);
+              break;
+            case BootstrapState.askSetupOnlineKeyBackup:
+              await bootstrap.askSetupOnlineKeyBackup(true);
+              break;
+            case BootstrapState.done:
+              if (!completer.isCompleted) {
+                checkChatBackupStatus();
+                completer.complete(bootstrap.newSsssKey?.recoveryKey);
+              }
+              break;
+            case BootstrapState.error:
+              if (!completer.isCompleted) {
+                _chatBackupError = 'Bootstrap failed';
+                completer.complete(null);
+              }
+              break;
+            default:
+              break;
+          }
+        } catch (e) {
+          if (!completer.isCompleted) {
+            _chatBackupError = e.toString();
+            completer.complete(null);
+          }
+        }
+      });
+    } catch (e) {
+      if (!completer.isCompleted) {
+        _chatBackupError = e.toString();
+        completer.complete(null);
+      }
+    }
+
+    final result = await completer.future;
+    _chatBackupLoading = false;
+    notifyListeners();
+    return result;
+  }
+
+  Future<void> disableChatBackup() async {
+    _chatBackupError = null;
+    _chatBackupLoading = true;
+    notifyListeners();
+
+    try {
+      final encryption = _client.encryption;
+      if (encryption == null) {
+        throw Exception('Encryption is not available');
+      }
+      final info = await encryption.keyManager.getRoomKeysBackupInfo();
+      await _client.deleteRoomKeysVersion(info.version);
+      _chatBackupEnabled = false;
+    } catch (e) {
+      _chatBackupError = e.toString();
+    } finally {
+      _chatBackupLoading = false;
+      notifyListeners();
+    }
   }
 
   // ── Helpers ──────────────────────────────────────────────────
