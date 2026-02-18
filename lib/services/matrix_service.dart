@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:matrix/matrix.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -45,6 +47,10 @@ class MatrixService extends ChangeNotifier {
   Room? get selectedRoom =>
       _selectedRoomId != null ? _client.getRoomById(_selectedRoomId!) : null;
 
+  // ── Sync subscription ──────────────────────────────────────────
+  StreamSubscription? _syncSub;
+  StreamSubscription? _firstSyncSub;
+
   // ── Initialization ───────────────────────────────────────────
   Future<void> init() async {
     if (_injectedClient != null) return;
@@ -79,18 +85,12 @@ class MatrixService extends ChangeNotifier {
           newDeviceName: 'Lattice Flutter',
         );
         _isLoggedIn = true;
-        _backupSessionState();
         _startSync();
       }
     } catch (e) {
       debugPrint('Session restore failed: $e');
       _isLoggedIn = false;
-      // Clear session keys but preserve recovery key
-      await _storage.delete(key: 'lattice_access_token');
-      await _storage.delete(key: 'lattice_user_id');
-      await _storage.delete(key: 'lattice_homeserver');
-      await _storage.delete(key: 'lattice_device_id');
-      await _storage.delete(key: 'lattice_olm_account');
+      await _clearSessionKeys();
     }
     notifyListeners();
   }
@@ -127,7 +127,6 @@ class MatrixService extends ChangeNotifier {
       await _storage.write(key: 'lattice_device_id', value: _client.deviceID);
 
       _isLoggedIn = true;
-      _backupSessionState();
       _startSync();
       notifyListeners();
       return true;
@@ -144,12 +143,10 @@ class MatrixService extends ChangeNotifier {
       if (_client.homeserver != null && _client.accessToken != null) {
         await _client.logout();
       }
-    } catch (_) {}
-    await _storage.delete(key: 'lattice_access_token');
-    await _storage.delete(key: 'lattice_user_id');
-    await _storage.delete(key: 'lattice_homeserver');
-    await _storage.delete(key: 'lattice_device_id');
-    await _storage.delete(key: 'lattice_olm_account');
+    } catch (e) {
+      debugPrint('Logout error: $e');
+    }
+    await _clearSessionKeys();
     _isLoggedIn = false;
     _selectedSpaceId = null;
     _selectedRoomId = null;
@@ -161,20 +158,25 @@ class MatrixService extends ChangeNotifier {
   void _startSync() {
     _syncing = true;
     notifyListeners();
-    _client.onSync.stream.listen((_) {
+    _syncSub?.cancel();
+    _syncSub = _client.onSync.stream.listen((_) {
       notifyListeners();
     });
-    _client.onSync.stream.first.then((_) async {
-      await checkChatBackupStatus();
+    _firstSyncSub?.cancel();
+    _firstSyncSub = _client.onSync.stream.first.asStream().listen((_) async {
+      if (_isLoggedIn) {
+        await checkChatBackupStatus();
+      }
     });
   }
 
-  // ── Session State Backup ────────────────────────────────────
-  Future<void> _backupSessionState() async {
-    final pickle = _client.encryption?.olmManager.pickledOlmAccount;
-    if (pickle != null) {
-      await _storage.write(key: 'lattice_olm_account', value: pickle);
-    }
+  // ── Session Key Management ────────────────────────────────────
+  Future<void> _clearSessionKeys() async {
+    await _storage.delete(key: 'lattice_access_token');
+    await _storage.delete(key: 'lattice_user_id');
+    await _storage.delete(key: 'lattice_homeserver');
+    await _storage.delete(key: 'lattice_device_id');
+    await _storage.delete(key: 'lattice_olm_account');
   }
 
   // ── Selection ────────────────────────────────────────────────
@@ -201,28 +203,34 @@ class MatrixService extends ChangeNotifier {
   String? get chatBackupError => _chatBackupError;
 
   Future<void> checkChatBackupStatus() async {
-    final encryption = _client.encryption;
-    if (encryption == null) {
+    try {
+      final encryption = _client.encryption;
+      if (encryption == null) {
+        _chatBackupNeeded = true;
+        notifyListeners();
+        return;
+      }
+
+      final crossSigningEnabled = encryption.crossSigning.enabled;
+      final keyBackupEnabled = encryption.keyManager.enabled;
+
+      if (!crossSigningEnabled || !keyBackupEnabled) {
+        _chatBackupNeeded = true;
+        notifyListeners();
+        return;
+      }
+
+      final crossSigningCached = await encryption.crossSigning.isCached();
+      final keyBackupCached = await encryption.keyManager.isCached();
+      final isUnknown = _client.isUnknownSession;
+
+      _chatBackupNeeded = !crossSigningCached || !keyBackupCached || isUnknown;
+      notifyListeners();
+    } catch (e) {
+      debugPrint('checkChatBackupStatus error: $e');
       _chatBackupNeeded = true;
       notifyListeners();
-      return;
     }
-
-    final crossSigningEnabled = encryption.crossSigning.enabled;
-    final keyBackupEnabled = encryption.keyManager.enabled;
-
-    if (!crossSigningEnabled || !keyBackupEnabled) {
-      _chatBackupNeeded = true;
-      notifyListeners();
-      return;
-    }
-
-    final crossSigningCached = await encryption.crossSigning.isCached();
-    final keyBackupCached = await encryption.keyManager.isCached();
-    final isUnknown = _client.isUnknownSession;
-
-    _chatBackupNeeded = !crossSigningCached || !keyBackupCached || isUnknown;
-    notifyListeners();
   }
 
   // ── Recovery Key Storage ──────────────────────────────────────
@@ -260,7 +268,8 @@ class MatrixService extends ChangeNotifier {
       await deleteStoredRecoveryKey();
       _chatBackupNeeded = true;
     } catch (e) {
-      _chatBackupError = e.toString();
+      debugPrint('disableChatBackup error: $e');
+      _chatBackupError = 'Failed to disable chat backup. Please try again.';
     } finally {
       _chatBackupLoading = false;
       notifyListeners();
@@ -298,6 +307,8 @@ class MatrixService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _syncSub?.cancel();
+    _firstSyncSub?.cancel();
     _client.dispose();
     super.dispose();
   }
