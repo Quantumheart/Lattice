@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-/// Helix theme: Material You-inspired with expressive typography
+/// Lattice theme: Material You-inspired with expressive typography
 /// and elevation layers. Falls back to a deep violet seed color
 /// when the platform does not supply a dynamic palette.
-class HelixTheme {
-  HelixTheme._();
+class LatticeTheme {
+  LatticeTheme._();
 
   static const Color _seedColor = Color(0xFF6750A4);
 

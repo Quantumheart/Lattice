@@ -1,6 +1,6 @@
-# Helix — A Flutter Matrix Client
+# Lattice — A Flutter Matrix Client
 
-A modern, adaptive Matrix chat client built with Flutter and the `matrix` Dart SDK.
+A modern, adaptive Matrix chat client built with Flutter and the `matrix` Dart SDK. Supports multiple layouts.
 
 ## Architecture
 
@@ -8,7 +8,7 @@ A modern, adaptive Matrix chat client built with Flutter and the `matrix` Dart S
 lib/
 ├── main.dart                 # App entry, providers, dynamic color
 ├── theme/
-│   └── helix_theme.dart      # Material You theme (light + dark)
+│   └── lattice_theme.dart    # Material You theme (light + dark)
 ├── services/
 │   └── matrix_service.dart   # Matrix SDK wrapper (login, sync, state)
 ├── screens/
@@ -23,9 +23,9 @@ lib/
     └── message_bubble.dart   # Chat message bubble
 ```
 
-## Layout: Helix
+## Layouts
 
-The **Helix** layout adapts between mobile and desktop:
+Lattice supports multiple adaptive layouts:
 
 | Width          | Layout                                         |
 | -------------- | ---------------------------------------------- |
@@ -52,7 +52,7 @@ The **Helix** layout adapts between mobile and desktop:
 
 ```bash
 # Clone the project
-cd helix_matrix
+cd lattice
 
 # Install dependencies
 flutter pub get

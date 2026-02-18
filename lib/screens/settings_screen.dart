@@ -134,7 +134,7 @@ class SettingsScreen extends StatelessWidget {
               children: [
                 _SettingsTile(
                   icon: Icons.info_outline_rounded,
-                  title: 'Helix Matrix Client',
+                  title: 'Lattice',
                   subtitle: 'v1.0.0 • Built with Flutter',
                   onTap: () {},
                 ),

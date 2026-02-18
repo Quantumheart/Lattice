@@ -40,24 +40,24 @@ class MatrixService extends ChangeNotifier {
     sqfliteFfiInit();
     final dbFactory = databaseFactoryFfi;
     final dir = await getApplicationSupportDirectory();
-    final dbPath = p.join(dir.path, 'helix_matrix.db');
+    final dbPath = p.join(dir.path, 'lattice.db');
     final sqfliteDb = await dbFactory.openDatabase(dbPath);
     final database = await MatrixSdkDatabase.init(
-      'helix_matrix',
+      'lattice',
       database: sqfliteDb,
     );
     _client = Client(
-      'HelixMatrix',
+      'Lattice',
       database: database,
     );
 
     // Attempt to restore session from secure storage.
     try {
       const storage = FlutterSecureStorage();
-      final token = await storage.read(key: 'helix_access_token');
-      final userId = await storage.read(key: 'helix_user_id');
-      final homeserver = await storage.read(key: 'helix_homeserver');
-      final deviceId = await storage.read(key: 'helix_device_id');
+      final token = await storage.read(key: 'lattice_access_token');
+      final userId = await storage.read(key: 'lattice_user_id');
+      final homeserver = await storage.read(key: 'lattice_homeserver');
+      final deviceId = await storage.read(key: 'lattice_device_id');
 
       if (token != null && userId != null && homeserver != null) {
         _client.homeserver = Uri.parse(homeserver);
@@ -65,7 +65,7 @@ class MatrixService extends ChangeNotifier {
           newToken: token,
           newUserID: userId,
           newDeviceID: deviceId,
-          newDeviceName: 'Helix Flutter',
+          newDeviceName: 'Lattice Flutter',
         );
         _isLoggedIn = true;
         _startSync();
@@ -99,17 +99,17 @@ class MatrixService extends ChangeNotifier {
         LoginType.mLoginPassword,
         identifier: AuthenticationUserIdentifier(user: username.trim()),
         password: password,
-        initialDeviceDisplayName: 'Helix Flutter',
+        initialDeviceDisplayName: 'Lattice Flutter',
       );
 
       // Persist credentials.
       const storage = FlutterSecureStorage();
       await storage.write(
-          key: 'helix_access_token', value: _client.accessToken);
-      await storage.write(key: 'helix_user_id', value: _client.userID);
+          key: 'lattice_access_token', value: _client.accessToken);
+      await storage.write(key: 'lattice_user_id', value: _client.userID);
       await storage.write(
-          key: 'helix_homeserver', value: _client.homeserver.toString());
-      await storage.write(key: 'helix_device_id', value: _client.deviceID);
+          key: 'lattice_homeserver', value: _client.homeserver.toString());
+      await storage.write(key: 'lattice_device_id', value: _client.deviceID);
 
       _isLoggedIn = true;
       _startSync();

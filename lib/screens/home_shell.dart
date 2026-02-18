@@ -8,7 +8,7 @@ import 'chat_screen.dart';
 import 'settings_screen.dart';
 
 /// The root layout shell. On wide screens it shows the three-column
-/// Helix layout (rail + room list + chat). On narrow screens it uses
+/// Lattice layout (rail + room list + chat). On narrow screens it uses
 /// a bottom navigation bar with stack navigation.
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});

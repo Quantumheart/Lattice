@@ -1,5 +1,5 @@
-name: helix_matrix
-description: A Flutter Matrix client with adaptive Helix layout.
+name: lattice
+description: A Flutter Matrix client with multiple adaptive layouts.
 publish_to: "none"
 version: 1.0.0+1
 

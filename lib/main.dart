@@ -3,17 +3,17 @@ import 'package:provider/provider.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 
 import 'services/matrix_service.dart';
-import 'theme/helix_theme.dart';
+import 'theme/lattice_theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_shell.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const HelixMatrixApp());
+  runApp(const LatticeApp());
 }
 
-class HelixMatrixApp extends StatelessWidget {
-  const HelixMatrixApp({super.key});
+class LatticeApp extends StatelessWidget {
+  const LatticeApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -23,11 +23,11 @@ class HelixMatrixApp extends StatelessWidget {
         builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
           return Consumer<MatrixService>(
             builder: (context, matrix, _) {
-              final theme = HelixTheme.light(lightDynamic);
-              final darkTheme = HelixTheme.dark(darkDynamic);
+              final theme = LatticeTheme.light(lightDynamic);
+              final darkTheme = LatticeTheme.dark(darkDynamic);
 
               return MaterialApp(
-                title: 'Helix',
+                title: 'Lattice',
                 debugShowCheckedModeBanner: false,
                 theme: theme,
                 darkTheme: darkTheme,

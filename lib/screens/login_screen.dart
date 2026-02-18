@@ -85,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen>
                     ),
                   ),
                   const SizedBox(height: 20),
-                  Text('Helix', style: tt.displayLarge),
+                  Text('Lattice', style: tt.displayLarge),
                   const SizedBox(height: 4),
                   Text(
                     'Sign in to the Matrix network',
