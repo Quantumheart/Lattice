@@ -127,6 +127,7 @@ class MatrixService extends ChangeNotifier {
       await _storage.write(key: 'lattice_device_id', value: _client.deviceID);
 
       _isLoggedIn = true;
+      _backupSessionState();
       _startSync();
       notifyListeners();
       return true;
@@ -166,6 +167,14 @@ class MatrixService extends ChangeNotifier {
     _client.onSync.stream.first.then((_) async {
       await checkChatBackupStatus();
     });
+  }
+
+  // ── Session State Backup ────────────────────────────────────
+  Future<void> _backupSessionState() async {
+    final pickle = _client.encryption?.olmManager.pickledOlmAccount;
+    if (pickle != null) {
+      await _storage.write(key: 'lattice_olm_account', value: pickle);
+    }
   }
 
   // ── Selection ────────────────────────────────────────────────
