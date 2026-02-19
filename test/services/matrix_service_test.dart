@@ -203,14 +203,10 @@ void main() {
   });
 
   group('setAvatar', () {
-    test('uploads content and sets avatar on the client', () async {
+    test('calls client.setAvatar with a MatrixFile and notifies listeners',
+        () async {
       final fakeBytes = Uint8List.fromList([1, 2, 3, 4]);
-      final mxcUri = Uri.parse('mxc://example.com/abc123');
 
-      when(mockClient.uploadContent(
-        any,
-        filename: anyNamed('filename'),
-      )).thenAnswer((_) async => mxcUri);
       when(mockClient.setAvatar(any)).thenAnswer((_) async {});
 
       var notified = false;
@@ -218,33 +214,29 @@ void main() {
 
       await service.setAvatar(fakeBytes, filename: 'photo.png');
 
-      verify(mockClient.uploadContent(fakeBytes, filename: 'photo.png'))
-          .called(1);
-      verify(mockClient.setAvatar(mxcUri)).called(1);
+      final captured =
+          verify(mockClient.setAvatar(captureAny)).captured.single;
+      expect(captured, isA<MatrixFile>());
+      expect((captured as MatrixFile).name, 'photo.png');
+      expect(captured.bytes, fakeBytes);
       expect(notified, isTrue);
     });
 
     test('uses default filename when none provided', () async {
       final fakeBytes = Uint8List.fromList([5, 6, 7]);
-      final mxcUri = Uri.parse('mxc://example.com/def456');
 
-      when(mockClient.uploadContent(
-        any,
-        filename: anyNamed('filename'),
-      )).thenAnswer((_) async => mxcUri);
       when(mockClient.setAvatar(any)).thenAnswer((_) async {});
 
       await service.setAvatar(fakeBytes);
 
-      verify(mockClient.uploadContent(fakeBytes, filename: 'avatar.png'))
-          .called(1);
+      final captured =
+          verify(mockClient.setAvatar(captureAny)).captured.single;
+      expect((captured as MatrixFile).name, 'avatar.png');
     });
 
-    test('propagates errors from upload', () async {
-      when(mockClient.uploadContent(
-        any,
-        filename: anyNamed('filename'),
-      )).thenThrow(Exception('Upload failed'));
+    test('propagates errors from setAvatar', () async {
+      when(mockClient.setAvatar(any))
+          .thenThrow(Exception('Upload failed'));
 
       expect(
         () => service.setAvatar(Uint8List.fromList([1])),
@@ -255,25 +247,25 @@ void main() {
 
   group('fetchOwnProfile', () {
     test('delegates to client.fetchOwnProfile', () async {
-      final profile = CachedProfileInformation.fromProfile(Profile(
+      final profile = Profile(
         userId: '@user:example.com',
         displayName: 'Test User',
         avatarUrl: Uri.parse('mxc://example.com/avatar'),
-      ));
+      );
 
       when(mockClient.fetchOwnProfile()).thenAnswer((_) async => profile);
 
       final result = await service.fetchOwnProfile();
 
-      expect(result.displayname, 'Test User');
+      expect(result.displayName, 'Test User');
       expect(result.avatarUrl, Uri.parse('mxc://example.com/avatar'));
       verify(mockClient.fetchOwnProfile()).called(1);
     });
   });
 
   group('avatarThumbnailUrl', () {
-    test('returns null when mxcUri is null', () {
-      final result = service.avatarThumbnailUrl(null);
+    test('returns null when mxcUri is null', () async {
+      final result = await service.avatarThumbnailUrl(null);
       expect(result, isNull);
     });
   });

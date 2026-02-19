@@ -13,7 +13,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  Uri? _avatarUrl;
+  Uri? _thumbnailUrl;
   String? _displayName;
   bool _loadingProfile = true;
   bool _uploadingAvatar = false;
@@ -28,9 +28,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final matrix = context.read<MatrixService>();
     try {
       final profile = await matrix.fetchOwnProfile();
+      final thumbUrl = await matrix.avatarThumbnailUrl(
+        profile.avatarUrl,
+        dimension: 128,
+      );
       if (!mounted) return;
       setState(() {
-        _avatarUrl = profile.avatarUrl;
+        _thumbnailUrl = thumbUrl;
         _displayName = profile.displayname;
         _loadingProfile = false;
       });
@@ -41,6 +45,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _pickAndUploadAvatar() async {
+    final matrix = context.read<MatrixService>();
+    final messenger = ScaffoldMessenger.of(context);
     final picker = ImagePicker();
     final picked = await picker.pickImage(
       source: ImageSource.gallery,
@@ -52,12 +58,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _uploadingAvatar = true);
     try {
       final bytes = await picked.readAsBytes();
-      final matrix = context.read<MatrixService>();
       await matrix.setAvatar(bytes, filename: picked.name);
       await _loadProfile();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger.showSnackBar(
         SnackBar(content: Text('Failed to update avatar: $e')),
       );
     } finally {
@@ -76,8 +81,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ? client.userID![1].toUpperCase()
         : (client.userID ?? '?')[0].toUpperCase();
 
-    final thumbnailUrl = matrix.avatarThumbnailUrl(_avatarUrl, dimension: 128);
-
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
       body: ListView(
@@ -93,7 +96,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onTap: _uploadingAvatar ? null : _pickAndUploadAvatar,
                     child: Stack(
                       children: [
-                        _buildAvatar(cs, initial, thumbnailUrl),
+                        _buildAvatar(cs, initial, _thumbnailUrl),
                         Positioned(
                           bottom: 0,
                           right: 0,
@@ -113,7 +116,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         if (_uploadingAvatar)
                           Positioned.fill(
                             child: Container(
-                              decoration: BoxDecoration(
+                              decoration: const BoxDecoration(
                                 color: Colors.black38,
                                 shape: BoxShape.circle,
                               ),
