@@ -166,8 +166,10 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
       final verification = KeyVerification(
         encryption: encryption,
         userId: client.userID!,
+        deviceId: '*',
       );
-      verification.start();
+      await verification.start();
+      encryption.keyVerificationManager.addRequest(verification);
 
       if (!mounted) return;
 
@@ -181,38 +183,40 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
         return;
       }
 
-      // After successful verification, wait for secrets to propagate.
+      // After successful verification, briefly wait for secrets to propagate
+      // from the other device. The SDK requests secrets automatically after
+      // SAS verification, but the response may take a few seconds.
       if (!mounted) return;
 
-      final allCached = await encryption.keyManager.isCached() &&
-          await encryption.crossSigning.isCached();
-      if (!allCached) {
-        // Single subscription with a timeout to avoid hanging forever.
-        final completer = Completer<void>();
-        final sub = encryption.ssss.onSecretStored.stream.listen((_) {
-          if (!completer.isCompleted) completer.complete();
-        });
-        _controller.onSecretStoredSub(sub);
-        try {
-          await completer.future.timeout(const Duration(seconds: 30));
-        } on TimeoutException {
-          debugPrint('[Bootstrap] Timed out waiting for secrets after verification');
-        } finally {
-          _controller.cancelSecretStoredSub();
-        }
+      if (!await _waitForSecrets(encryption)) {
+        debugPrint('[Bootstrap] Secrets not received after verification');
       }
 
       if (!mounted) return;
 
-      // Secrets are cached — finalize the bootstrap.
+      // Finalize regardless — if secrets arrived, backup will show as
+      // enabled. If not, the auto-unlock on next app launch will handle it.
       _controller.setVerifying(false);
       await _controller.onDone();
     } catch (e) {
-      _controller.cancelSecretStoredSub();
       if (mounted) {
         _controller.setVerifying(false);
       }
     }
+  }
+
+  /// Polls for secrets to be cached after device verification.
+  /// Returns true if all secrets arrived, false on timeout.
+  Future<bool> _waitForSecrets(Encryption encryption) async {
+    // Poll every second for up to 5 seconds. This avoids a long spinner
+    // while still giving the other device a reasonable window to respond.
+    for (var i = 0; i < 5; i++) {
+      final cached = await encryption.keyManager.isCached() &&
+          await encryption.crossSigning.isCached();
+      if (cached) return true;
+      await Future.delayed(const Duration(seconds: 1));
+    }
+    return false;
   }
 
   void _showCancelConfirmation() {
