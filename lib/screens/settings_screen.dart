@@ -5,8 +5,15 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/matrix_service.dart';
 import '../widgets/bootstrap_dialog.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  String? _lastShownError;
 
   @override
   Widget build(BuildContext context) {
@@ -14,6 +21,20 @@ class SettingsScreen extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final client = matrix.client;
+
+    // Surface backup errors via SnackBar.
+    final error = matrix.chatBackupError;
+    if (error != null && error != _lastShownError) {
+      _lastShownError = error;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error)),
+        );
+      });
+    } else if (error == null) {
+      _lastShownError = null;
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -109,14 +130,18 @@ class SettingsScreen extends StatelessWidget {
                 _SettingsTile(
                   icon: Icons.cloud_outlined,
                   title: 'Chat backup',
-                  subtitle: matrix.chatBackupNeeded == null
-                      ? 'Checking...'
-                      : matrix.chatBackupEnabled
-                          ? 'Your keys are backed up'
-                          : 'Not set up',
-                  onTap: () => matrix.chatBackupEnabled
-                      ? _showBackupInfo(context)
-                      : BootstrapDialog.show(context),
+                  subtitle: matrix.chatBackupLoading
+                      ? 'Setting up…'
+                      : matrix.chatBackupNeeded == null
+                          ? 'Checking...'
+                          : matrix.chatBackupEnabled
+                              ? 'Your keys are backed up'
+                              : 'Not set up',
+                  onTap: matrix.chatBackupLoading
+                      ? () {}
+                      : () => matrix.chatBackupEnabled
+                          ? _showBackupInfo(context)
+                          : BootstrapDialog.show(context),
                 ),
                 const Divider(height: 1, indent: 56),
                 _SettingsTile(
@@ -224,30 +249,8 @@ class SettingsScreen extends StatelessWidget {
     final matrix = context.read<MatrixService>();
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Disable chat backup?'),
-        content: const Text(
-          'You will lose access to your encrypted message history '
-          'on new devices unless you set up backup again.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(ctx).colorScheme.error,
-              foregroundColor: Theme.of(ctx).colorScheme.onError,
-            ),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await matrix.disableChatBackup();
-            },
-            child: const Text('Disable'),
-          ),
-        ],
-      ),
+      barrierDismissible: false,
+      builder: (ctx) => _DisableBackupDialog(matrix: matrix),
     );
   }
 
@@ -338,6 +341,67 @@ class _SectionHeader extends StatelessWidget {
           letterSpacing: 1.5,
         ),
       ),
+    );
+  }
+}
+
+class _DisableBackupDialog extends StatefulWidget {
+  const _DisableBackupDialog({required this.matrix});
+  final MatrixService matrix;
+
+  @override
+  State<_DisableBackupDialog> createState() => _DisableBackupDialogState();
+}
+
+class _DisableBackupDialogState extends State<_DisableBackupDialog> {
+  bool _disabling = false;
+
+  Future<void> _disable() async {
+    setState(() => _disabling = true);
+    await widget.matrix.disableChatBackup();
+    if (!mounted) return;
+    Navigator.pop(context);
+    if (widget.matrix.chatBackupError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(widget.matrix.chatBackupError!)),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return AlertDialog(
+      title: const Text('Disable chat backup?'),
+      content: _disabling
+          ? const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Disabling backup…'),
+              ],
+            )
+          : const Text(
+              'You will lose access to your encrypted message history '
+              'on new devices unless you set up backup again.',
+            ),
+      actions: _disabling
+          ? []
+          : [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: cs.error,
+                  foregroundColor: cs.onError,
+                ),
+                onPressed: _disable,
+                child: const Text('Disable'),
+              ),
+            ],
     );
   }
 }

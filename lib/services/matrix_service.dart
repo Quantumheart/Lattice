@@ -420,12 +420,18 @@ class MatrixService extends ChangeNotifier {
       if (encryption == null) {
         throw Exception('Encryption is not available');
       }
-      final info = await encryption.keyManager.getRoomKeysBackupInfo();
-      await _client.deleteRoomKeysVersion(info.version);
+      try {
+        final info = await encryption.keyManager.getRoomKeysBackupInfo();
+        await _client.deleteRoomKeysVersion(info.version);
+      } on MatrixException catch (e) {
+        // M_NOT_FOUND means no backup exists — treat as already disabled.
+        if (e.errcode != 'M_NOT_FOUND') rethrow;
+        debugPrint('[Lattice] No server-side key backup to delete');
+      }
       await deleteStoredRecoveryKey();
       _chatBackupNeeded = true;
     } catch (e) {
-      debugPrint('disableChatBackup error: $e');
+      debugPrint('[Lattice] disableChatBackup error: $e');
       _chatBackupError = 'Failed to disable chat backup. Please try again.';
     } finally {
       _chatBackupLoading = false;
