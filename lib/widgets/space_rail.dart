@@ -168,11 +168,7 @@ class _RailIcon extends StatelessWidget {
                   style: TextStyle(
                     fontSize: outlined ? 20 : 16,
                     fontWeight: FontWeight.w600,
-                    color: isSelected
-                        ? cs.onPrimary
-                        : outlined
-                            ? cs.onSurfaceVariant
-                            : cs.onSurfaceVariant,
+                    color: isSelected ? cs.onPrimary : cs.onSurfaceVariant,
                   ),
                 ),
               ),

@@ -59,7 +59,9 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
 
   @override
   void dispose() {
-    Clipboard.setData(const ClipboardData(text: ''));
+    if (_controller.keyCopied) {
+      Clipboard.setData(const ClipboardData(text: ''));
+    }
     _uiaSub?.cancel();
     _controller.removeListener(_onControllerChanged);
     _controller.dispose();
@@ -137,7 +139,9 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
             _showCancelConfirmation();
             break;
           case BootstrapAction.done:
-            Clipboard.setData(const ClipboardData(text: ''));
+            if (_controller.keyCopied) {
+              Clipboard.setData(const ClipboardData(text: ''));
+            }
             Navigator.pop(context, true);
             break;
           case BootstrapAction.none:
@@ -177,18 +181,25 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
         return;
       }
 
-      // After successful verification, wait for secrets to propagate
-      // (matching FluffyChat's approach).
+      // After successful verification, wait for secrets to propagate.
       if (!mounted) return;
 
       final allCached = await encryption.keyManager.isCached() &&
           await encryption.crossSigning.isCached();
       if (!allCached) {
-        // Wait for secrets to arrive via sync.
-        final sub = encryption.ssss.onSecretStored.stream.listen((_) {});
+        // Single subscription with a timeout to avoid hanging forever.
+        final completer = Completer<void>();
+        final sub = encryption.ssss.onSecretStored.stream.listen((_) {
+          if (!completer.isCompleted) completer.complete();
+        });
         _controller.onSecretStoredSub(sub);
-        await encryption.ssss.onSecretStored.stream.first;
-        _controller.cancelSecretStoredSub();
+        try {
+          await completer.future.timeout(const Duration(seconds: 30));
+        } on TimeoutException {
+          debugPrint('[Bootstrap] Timed out waiting for secrets after verification');
+        } finally {
+          _controller.cancelSecretStoredSub();
+        }
       }
 
       if (!mounted) return;

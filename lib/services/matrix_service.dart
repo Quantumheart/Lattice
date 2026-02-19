@@ -211,14 +211,14 @@ class MatrixService extends ChangeNotifier {
     switch (stage) {
       case AuthenticationTypes.password:
         final password = _cachedPassword;
-        if (password != null) {
+        final userId = _client.userID;
+        if (password != null && userId != null) {
           debugPrint('[Lattice] UIA: completing with cached password');
           return uiaRequest.completeStage(
             AuthenticationPassword(
               session: uiaRequest.session,
               password: password,
-              identifier:
-                  AuthenticationUserIdentifier(user: _client.userID!),
+              identifier: AuthenticationUserIdentifier(user: userId),
             ),
           );
         }
@@ -241,13 +241,21 @@ class MatrixService extends ChangeNotifier {
 
   /// Complete a UIA request with the user's password.
   void completeUiaWithPassword(UiaRequest request, String password) {
+    final userId = _client.userID;
+    if (userId == null) return;
     request.completeStage(
       AuthenticationPassword(
         session: request.session,
         password: password,
-        identifier: AuthenticationUserIdentifier(user: _client.userID!),
+        identifier: AuthenticationUserIdentifier(user: userId),
       ),
     );
+  }
+
+  /// Clear the cached login password from memory.
+  /// Should be called after bootstrap completes to minimize exposure.
+  void clearCachedPassword() {
+    _cachedPassword = null;
   }
 
   // ── Sync ─────────────────────────────────────────────────────
