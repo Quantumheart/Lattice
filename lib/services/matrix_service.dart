@@ -193,6 +193,32 @@ class MatrixService extends ChangeNotifier {
     return list;
   }
 
+  // ── Profile / Avatar ────────────────────────────────────────
+
+  /// Fetches the logged-in user's profile from the homeserver.
+  Future<Profile> fetchOwnProfile() async {
+    return await _client.fetchOwnProfile();
+  }
+
+  /// Resolves an MXC URI to an HTTPS thumbnail URL.
+  Future<Uri?> avatarThumbnailUrl(Uri? mxcUri, {int dimension = 128}) async {
+    if (mxcUri == null) return null;
+    return await mxcUri.getThumbnailUri(
+      _client,
+      width: dimension,
+      height: dimension,
+    );
+  }
+
+  /// Uploads [imageBytes] as the user's avatar and notifies listeners.
+  Future<void> setAvatar(Uint8List imageBytes, {String? filename}) async {
+    await _client.setAvatar(MatrixFile(
+      bytes: imageBytes,
+      name: filename ?? 'avatar.png',
+    ));
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _client.dispose();

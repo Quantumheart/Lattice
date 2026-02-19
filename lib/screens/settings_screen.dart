@@ -1,10 +1,74 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../services/matrix_service.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  Uri? _thumbnailUrl;
+  String? _displayName;
+  bool _loadingProfile = true;
+  bool _uploadingAvatar = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final matrix = context.read<MatrixService>();
+    try {
+      final profile = await matrix.fetchOwnProfile();
+      final thumbUrl = await matrix.avatarThumbnailUrl(
+        profile.avatarUrl,
+        dimension: 128,
+      );
+      if (!mounted) return;
+      setState(() {
+        _thumbnailUrl = thumbUrl;
+        _displayName = profile.displayName;
+        _loadingProfile = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _loadingProfile = false);
+    }
+  }
+
+  Future<void> _pickAndUploadAvatar() async {
+    final matrix = context.read<MatrixService>();
+    final messenger = ScaffoldMessenger.of(context);
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+    );
+    if (picked == null) return;
+
+    setState(() => _uploadingAvatar = true);
+    try {
+      final bytes = await picked.readAsBytes();
+      await matrix.setAvatar(bytes, filename: picked.name);
+      await _loadProfile();
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('Failed to update avatar: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _uploadingAvatar = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -12,6 +76,10 @@ class SettingsScreen extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final client = matrix.client;
+
+    final initial = (client.userID != null && client.userID!.length > 1)
+        ? client.userID![1].toUpperCase()
+        : (client.userID ?? '?')[0].toUpperCase();
 
     return Scaffold(
       appBar: AppBar(title: const Text('Settings')),
@@ -24,18 +92,47 @@ class SettingsScreen extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: cs.primaryContainer,
-                    child: Text(
-                      (client.userID != null && client.userID!.length > 1)
-                          ? client.userID![1].toUpperCase()
-                          : (client.userID ?? '?')[0].toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                        color: cs.onPrimaryContainer,
-                      ),
+                  GestureDetector(
+                    onTap: _uploadingAvatar ? null : _pickAndUploadAvatar,
+                    child: Stack(
+                      children: [
+                        _buildAvatar(cs, initial, _thumbnailUrl),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: cs.primary,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.camera_alt,
+                              size: 14,
+                              color: cs.onPrimary,
+                            ),
+                          ),
+                        ),
+                        if (_uploadingAvatar)
+                          Positioned.fill(
+                            child: Container(
+                              decoration: const BoxDecoration(
+                                color: Colors.black38,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -43,9 +140,16 @@ class SettingsScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (_displayName != null && _displayName!.isNotEmpty)
+                          Text(
+                            _displayName!,
+                            style: tt.titleMedium,
+                          ),
                         Text(
                           client.userID ?? 'Unknown',
-                          style: tt.titleMedium,
+                          style: _displayName != null
+                              ? tt.bodyMedium
+                              : tt.titleMedium,
                         ),
                         const SizedBox(height: 2),
                         Text(
@@ -169,6 +273,63 @@ class SettingsScreen extends StatelessWidget {
 
           const SizedBox(height: 32),
         ],
+      ),
+    );
+  }
+
+  Widget _buildAvatar(ColorScheme cs, String initial, Uri? thumbnailUrl) {
+    if (_loadingProfile) {
+      return CircleAvatar(
+        radius: 28,
+        backgroundColor: cs.primaryContainer,
+        child: SizedBox(
+          width: 20,
+          height: 20,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: cs.onPrimaryContainer,
+          ),
+        ),
+      );
+    }
+
+    if (thumbnailUrl != null) {
+      return CachedNetworkImage(
+        imageUrl: thumbnailUrl.toString(),
+        imageBuilder: (_, imageProvider) => CircleAvatar(
+          radius: 28,
+          backgroundImage: imageProvider,
+        ),
+        placeholder: (_, __) => CircleAvatar(
+          radius: 28,
+          backgroundColor: cs.primaryContainer,
+          child: Text(
+            initial,
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+              color: cs.onPrimaryContainer,
+            ),
+          ),
+        ),
+        errorWidget: (_, __, ___) => _initialAvatar(cs, initial),
+      );
+    }
+
+    return _initialAvatar(cs, initial);
+  }
+
+  Widget _initialAvatar(ColorScheme cs, String initial) {
+    return CircleAvatar(
+      radius: 28,
+      backgroundColor: cs.primaryContainer,
+      child: Text(
+        initial,
+        style: TextStyle(
+          fontSize: 22,
+          fontWeight: FontWeight.w600,
+          color: cs.onPrimaryContainer,
+        ),
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -198,6 +199,74 @@ void main() {
       expect(result, isFalse);
       expect(service.isLoggedIn, isFalse);
       expect(service.loginError, contains('Connection refused'));
+    });
+  });
+
+  group('setAvatar', () {
+    test('calls client.setAvatar with a MatrixFile and notifies listeners',
+        () async {
+      final fakeBytes = Uint8List.fromList([1, 2, 3, 4]);
+
+      when(mockClient.setAvatar(any)).thenAnswer((_) async {});
+
+      var notified = false;
+      service.addListener(() => notified = true);
+
+      await service.setAvatar(fakeBytes, filename: 'photo.png');
+
+      final captured =
+          verify(mockClient.setAvatar(captureAny)).captured.single;
+      expect(captured, isA<MatrixFile>());
+      expect((captured as MatrixFile).name, 'photo.png');
+      expect(captured.bytes, fakeBytes);
+      expect(notified, isTrue);
+    });
+
+    test('uses default filename when none provided', () async {
+      final fakeBytes = Uint8List.fromList([5, 6, 7]);
+
+      when(mockClient.setAvatar(any)).thenAnswer((_) async {});
+
+      await service.setAvatar(fakeBytes);
+
+      final captured =
+          verify(mockClient.setAvatar(captureAny)).captured.single;
+      expect((captured as MatrixFile).name, 'avatar.png');
+    });
+
+    test('propagates errors from setAvatar', () async {
+      when(mockClient.setAvatar(any))
+          .thenThrow(Exception('Upload failed'));
+
+      expect(
+        () => service.setAvatar(Uint8List.fromList([1])),
+        throwsA(isA<Exception>()),
+      );
+    });
+  });
+
+  group('fetchOwnProfile', () {
+    test('delegates to client.fetchOwnProfile', () async {
+      final profile = Profile(
+        userId: '@user:example.com',
+        displayName: 'Test User',
+        avatarUrl: Uri.parse('mxc://example.com/avatar'),
+      );
+
+      when(mockClient.fetchOwnProfile()).thenAnswer((_) async => profile);
+
+      final result = await service.fetchOwnProfile();
+
+      expect(result.displayName, 'Test User');
+      expect(result.avatarUrl, Uri.parse('mxc://example.com/avatar'));
+      verify(mockClient.fetchOwnProfile()).called(1);
+    });
+  });
+
+  group('avatarThumbnailUrl', () {
+    test('returns null when mxcUri is null', () async {
+      final result = await service.avatarThumbnailUrl(null);
+      expect(result, isNull);
     });
   });
 
