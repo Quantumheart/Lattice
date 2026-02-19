@@ -175,8 +175,26 @@ class BootstrapController extends ChangeNotifier {
         _notify();
         return;
       case BootstrapState.askWipeOnlineKeyBackup:
-        debugPrint('[Bootstrap] Auto-advancing: wipeOnlineKeyBackup($_wipeExisting)');
-        deferredAdvance = () => bootstrap.wipeOnlineKeyBackup(_wipeExisting);
+        deferredAdvance = () async {
+          // Check if a backup version actually exists on the server.
+          // If it was deleted (e.g. via disableChatBackup), pass true
+          // to trigger askSetupOnlineKeyBackup and create a new one.
+          var wipe = _wipeExisting;
+          if (!wipe) {
+            try {
+              await matrixService.client.encryption?.keyManager
+                  .getRoomKeysBackupInfo(false);
+            } on MatrixException catch (e) {
+              if (e.errcode == 'M_NOT_FOUND') {
+                debugPrint('[Bootstrap] No server-side backup found, '
+                    'triggering creation');
+                wipe = true;
+              }
+            } catch (_) {}
+          }
+          debugPrint('[Bootstrap] Auto-advancing: wipeOnlineKeyBackup($wipe)');
+          bootstrap.wipeOnlineKeyBackup(wipe);
+        };
         _notify();
         return;
       case BootstrapState.askSetupOnlineKeyBackup:
@@ -400,8 +418,15 @@ class BootstrapController extends ChangeNotifier {
       await client.updateUserDeviceKeys();
     }
 
-    // Re-request keys for previously undecryptable messages.
-    _requestMissingKeys();
+    // Restore room keys from the online key backup.
+    try {
+      await encryption?.keyManager.loadAllKeys();
+      debugPrint('[Bootstrap] Room keys restored from online backup');
+    } catch (e) {
+      debugPrint('[Bootstrap] Failed to load keys from backup: $e');
+      // Fall back to requesting keys from other devices.
+      _requestMissingKeys();
+    }
 
     await matrixService.checkChatBackupStatus();
     matrixService.clearCachedPassword();
