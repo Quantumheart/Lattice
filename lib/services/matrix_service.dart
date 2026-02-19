@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
@@ -50,11 +51,11 @@ class MatrixService extends ChangeNotifier {
 
   // ── Sync subscription ──────────────────────────────────────────
   StreamSubscription? _syncSub;
-  StreamSubscription? _firstSyncSub;
   StreamSubscription? _uiaSub;
 
   // ── UIA (User-Interactive Authentication) ──────────────────────
   String? _cachedPassword;
+  Timer? _passwordExpiryTimer;
 
   /// Expose UIA requests that need user interaction (e.g. password prompt).
   /// The UI should listen to this and call [completeUiaWithPassword].
@@ -107,15 +108,20 @@ class MatrixService extends ChangeNotifier {
         debugPrint('[Lattice] Session restored – '
             'encryption=${_client.encryption != null ? "available" : "null"}, '
             'encryptionEnabled=${_client.encryptionEnabled}');
-        _isLoggedIn = true;
         _listenForUia();
-        _startSync();
+        await _startSync();
+        _isLoggedIn = true;
       }
     } catch (e, s) {
       debugPrint('[Lattice] Session restore failed: $e');
       debugPrint('[Lattice] Stack trace:\n$s');
       _isLoggedIn = false;
-      await _clearSessionKeys();
+      // Only clear stored credentials for permanent auth failures (e.g.
+      // revoked token). Transient errors (network timeout, DNS) should not
+      // destroy the session — the user can retry on next app launch.
+      if (_isPermanentAuthFailure(e)) {
+        await _clearSessionKeys();
+      }
     }
     notifyListeners();
   }
@@ -159,10 +165,10 @@ class MatrixService extends ChangeNotifier {
           key: 'lattice_homeserver', value: _client.homeserver.toString());
       await _storage.write(key: 'lattice_device_id', value: _client.deviceID);
 
-      _cachedPassword = password;
-      _isLoggedIn = true;
+      _setCachedPassword(password);
       _listenForUia();
-      _startSync();
+      await _startSync();
+      _isLoggedIn = true;
       notifyListeners();
       return true;
     } catch (e, s) {
@@ -185,7 +191,7 @@ class MatrixService extends ChangeNotifier {
     }
     await _clearSessionKeys();
     _isLoggedIn = false;
-    _cachedPassword = null;
+    clearCachedPassword();
     _uiaSub?.cancel();
     _selectedSpaceId = null;
     _selectedRoomId = null;
@@ -252,29 +258,61 @@ class MatrixService extends ChangeNotifier {
     );
   }
 
+  /// Cache the password with an auto-expiry so it doesn't linger in memory
+  /// indefinitely if the user never runs bootstrap.
+  void _setCachedPassword(String password) {
+    _cachedPassword = password;
+    _passwordExpiryTimer?.cancel();
+    _passwordExpiryTimer = Timer(const Duration(minutes: 5), () {
+      _cachedPassword = null;
+      _passwordExpiryTimer = null;
+    });
+  }
+
   /// Clear the cached login password from memory.
   /// Should be called after bootstrap completes to minimize exposure.
   void clearCachedPassword() {
     _cachedPassword = null;
+    _passwordExpiryTimer?.cancel();
+    _passwordExpiryTimer = null;
   }
 
   // ── Sync ─────────────────────────────────────────────────────
-  void _startSync() {
+  Future<void> _startSync() async {
     _syncing = true;
     notifyListeners();
+
+    // Wait for the first sync so account data & device keys are available,
+    // then keep notifying on subsequent syncs.
+    final firstSync = Completer<void>();
     _syncSub?.cancel();
     _syncSub = _client.onSync.stream.listen((_) {
+      if (!firstSync.isCompleted) firstSync.complete();
       notifyListeners();
     });
-    _firstSyncSub?.cancel();
-    _firstSyncSub = _client.onSync.stream.first.asStream().listen((_) async {
-      if (_isLoggedIn) {
-        await checkChatBackupStatus();
-      }
-    });
+
+    await firstSync.future;
+
+    await checkChatBackupStatus();
+    if (_chatBackupNeeded == true) {
+      await _tryAutoUnlockBackup();
+    }
   }
 
   // ── Session Key Management ────────────────────────────────────
+
+  /// Returns true if the error indicates the stored session is permanently
+  /// invalid (e.g. token revoked, unknown device). Transient network errors
+  /// return false so credentials are preserved for the next app launch.
+  bool _isPermanentAuthFailure(Object error) {
+    if (error is MatrixException) {
+      return error.errcode == 'M_UNKNOWN_TOKEN' ||
+          error.errcode == 'M_FORBIDDEN' ||
+          error.errcode == 'M_USER_DEACTIVATED';
+    }
+    return false;
+  }
+
   Future<void> _clearSessionKeys() async {
     await _storage.delete(key: 'lattice_access_token');
     await _storage.delete(key: 'lattice_user_id');
@@ -339,6 +377,34 @@ class MatrixService extends ChangeNotifier {
       debugPrint('checkChatBackupStatus error: $e');
       _chatBackupNeeded = true;
       notifyListeners();
+    }
+  }
+
+  // ── Auto-unlock Backup ──────────────────────────────────────
+
+  /// Attempts to silently unlock the existing backup using a stored recovery
+  /// key. Runs a headless bootstrap, auto-advancing all states and unlocking
+  /// SSSS when [openExistingSsss] is reached. If no stored key is available
+  /// or the key is invalid, this is a no-op.
+  Future<void> _tryAutoUnlockBackup() async {
+    final storedKey = await getStoredRecoveryKey();
+    if (storedKey == null) return;
+
+    debugPrint('[AutoUnlock] Attempting auto-unlock with stored key');
+
+    try {
+      final state = await _client.getCryptoIdentityState();
+      if (!state.initialized || state.connected) {
+        debugPrint('[AutoUnlock] Skip: initialized=${state.initialized}, connected=${state.connected}');
+        return;
+      }
+
+      await _client.restoreCryptoIdentity(storedKey);
+      await checkChatBackupStatus();
+      debugPrint('[AutoUnlock] Complete, chatBackupNeeded=$_chatBackupNeeded');
+    } catch (e) {
+      debugPrint('[AutoUnlock] Failed: $e');
+      // Silent failure — user can still unlock manually via settings.
     }
   }
 
@@ -417,8 +483,8 @@ class MatrixService extends ChangeNotifier {
   @override
   void dispose() {
     _syncSub?.cancel();
-    _firstSyncSub?.cancel();
     _uiaSub?.cancel();
+    _passwordExpiryTimer?.cancel();
     _uiaController.close();
     _client.dispose();
     super.dispose();

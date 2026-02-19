@@ -174,8 +174,12 @@ void main() {
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
       when(mockClient.deviceID).thenReturn('DEV1');
-      when(mockClient.onSync).thenReturn(CachedStreamController());
+      final syncController = CachedStreamController<SyncUpdate>();
+      when(mockClient.onSync).thenReturn(syncController);
       when(mockClient.onUiaRequest).thenReturn(CachedStreamController());
+
+      // Emit a sync event so _startSync() completes.
+      Future.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
 
       final result = await service.login(
         homeserver: 'example.com',
@@ -232,9 +236,11 @@ void main() {
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
       when(mockClient.deviceID).thenReturn('DEV1');
-      when(mockClient.onSync).thenReturn(CachedStreamController());
+      final syncController = CachedStreamController<SyncUpdate>();
+      when(mockClient.onSync).thenReturn(syncController);
       when(mockClient.onUiaRequest).thenReturn(CachedStreamController());
 
+      Future.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
       await service.login(
         homeserver: 'example.com',
         username: 'user',
@@ -453,9 +459,11 @@ void main() {
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
       when(mockClient.deviceID).thenReturn('DEV1');
-      when(mockClient.onSync).thenReturn(CachedStreamController());
+      final syncController = CachedStreamController<SyncUpdate>();
+      when(mockClient.onSync).thenReturn(syncController);
       when(mockClient.onUiaRequest).thenReturn(CachedStreamController());
 
+      Future.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
       await service.login(
         homeserver: 'example.com',
         username: 'user',
