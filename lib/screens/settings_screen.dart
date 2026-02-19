@@ -35,7 +35,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       setState(() {
         _thumbnailUrl = thumbUrl;
-        _displayName = profile.displayname;
+        _displayName = profile.displayName;
         _loadingProfile = false;
       });
     } catch (_) {
