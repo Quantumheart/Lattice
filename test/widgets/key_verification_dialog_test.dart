@@ -1,6 +1,9 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:matrix/encryption.dart';
+import 'package:matrix/matrix.dart';
 import 'package:lattice/widgets/key_verification_dialog.dart';
 
 /// A fake [KeyVerification] for testing. We cannot use Mockito because
@@ -23,10 +26,14 @@ class FakeKeyVerification extends Fake implements KeyVerification {
   @override
   List<KeyVerificationEmoji> get sasEmojis => _sasEmojis;
 
+  @override
+  List<String> possibleMethods = [];
+
   bool cancelCalled = false;
   bool acceptVerificationCalled = false;
   bool acceptSasCalled = false;
   bool rejectSasCalled = false;
+  String? continueVerificationMethod;
 
   FakeKeyVerification({
     this.state = KeyVerificationState.waitingAccept,
@@ -67,6 +74,12 @@ class FakeKeyVerification extends Fake implements KeyVerification {
 
   @override
   Future<void> acceptQRScanConfirmation() async {}
+
+  @override
+  Future<void> continueVerification(String type,
+      {Uint8List? qrDataRawBytes}) async {
+    continueVerificationMethod = type;
+  }
 
   @override
   Future<void> start() async {}
@@ -192,6 +205,35 @@ void main() {
       await openDialog(tester, verification: verification);
 
       expect(find.text('Unlocking encryption secrets...'), findsOneWidget);
+    });
+
+    testWidgets('askChoice auto-selects SAS verification', (tester) async {
+      final verification = FakeKeyVerification(
+        state: KeyVerificationState.waitingAccept,
+      );
+      verification.possibleMethods = [EventTypes.Sas, EventTypes.QRShow];
+
+      await openDialog(tester, verification: verification);
+
+      // Transition to askChoice (e.g. other device supports QR + SAS)
+      verification.simulateStateChange(KeyVerificationState.askChoice);
+      await tester.pump();
+      await tester.pump();
+
+      // Should have auto-selected SAS
+      expect(verification.continueVerificationMethod, EventTypes.Sas);
+    });
+
+    testWidgets('askChoice at dialog open auto-selects SAS', (tester) async {
+      final verification = FakeKeyVerification(
+        state: KeyVerificationState.askChoice,
+      );
+      verification.possibleMethods = [EventTypes.Sas];
+
+      await openDialog(tester, verification: verification);
+      await tester.pump();
+
+      expect(verification.continueVerificationMethod, EventTypes.Sas);
     });
 
     testWidgets('state transitions update the UI', (tester) async {

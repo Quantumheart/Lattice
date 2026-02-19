@@ -41,6 +41,7 @@ class BootstrapController extends ChangeNotifier {
   bool _keyCopied = false;
   bool _verifying = false;
   String? _recoveryKeyError;
+  OpenSSSS? _unlockedSsssKey;
   StreamSubscription? _secretStoredSub;
 
   bool _isDisposed = false;
@@ -140,21 +141,6 @@ class BootstrapController extends ChangeNotifier {
     }
 
     if (_isDisposed) return;
-
-    // Workaround for SDK bug: OpenSSSS.store() crashes with a null check
-    // on accountData[type].content['encrypted'] when stale entries exist
-    // without the 'encrypted' field (ssss.dart:793).
-    const ssssTypes = {
-      'm.cross_signing.master',
-      'm.cross_signing.self_signing',
-      'm.cross_signing.user_signing',
-      'm.megolm_backup.v1',
-    };
-    client.accountData.removeWhere((type, event) {
-      if (!ssssTypes.contains(type)) return false;
-      if (!event.content.containsKey('encrypted')) return false;
-      return event.content['encrypted'] is! Map;
-    });
 
     debugPrint('[Bootstrap] Starting bootstrap...');
     _bootstrap = encryption.bootstrap(onUpdate: _onBootstrapUpdate);
@@ -307,6 +293,7 @@ class BootstrapController extends ChangeNotifier {
 
     try {
       await ssssKey.unlock(keyOrPassphrase: key);
+      _unlockedSsssKey = ssssKey;
     } catch (e) {
       _recoveryKeyError = 'Invalid recovery key';
       _notify();
@@ -384,6 +371,7 @@ class BootstrapController extends ChangeNotifier {
     _awaitingKeyAck = false;
     _keyCopied = false;
     _recoveryKeyError = null;
+    _unlockedSsssKey = null;
     _notify();
   }
 
@@ -395,9 +383,11 @@ class BootstrapController extends ChangeNotifier {
     // The bootstrap stored secrets in SSSS on the server but the local
     // cache may not reflect them yet. Explicitly cache and self-sign so
     // that checkChatBackupStatus sees the correct state.
+    // Prefer the key we unlocked in unlockExistingSsss (which may differ
+    // from the bootstrap's current newSsssKey after state transitions).
     final client = matrixService.client;
     final encryption = client.encryption;
-    final ssssKey = _bootstrap?.newSsssKey;
+    final ssssKey = _unlockedSsssKey ?? _bootstrap?.newSsssKey;
     if (encryption != null && ssssKey != null && ssssKey.isUnlocked) {
       try {
         await ssssKey.maybeCacheAll();
@@ -453,6 +443,7 @@ class BootstrapController extends ChangeNotifier {
     _isDisposed = true;
     _newRecoveryKey = null;
     _storedRecoveryKey = null;
+    _unlockedSsssKey = null;
     _secretStoredSub?.cancel();
     super.dispose();
   }

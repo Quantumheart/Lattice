@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:matrix/encryption.dart';
+import 'package:matrix/matrix.dart';
 
 class KeyVerificationDialog extends StatefulWidget {
   final KeyVerification verification;
@@ -32,13 +33,32 @@ class _KeyVerificationDialogState extends State<KeyVerificationDialog> {
     super.initState();
     widget.verification.onUpdate = _onUpdate;
     _state = widget.verification.state;
+    if (_state == KeyVerificationState.askChoice) {
+      _autoSelectSas();
+    }
   }
 
   void _onUpdate() {
     if (!mounted) return;
+    final newState = widget.verification.state;
+
+    // Auto-select SAS when the SDK asks the user to choose a method.
+    // QR verification is not yet supported, so skip the choice screen.
+    if (newState == KeyVerificationState.askChoice) {
+      _autoSelectSas();
+    }
+
     setState(() {
-      _state = widget.verification.state;
+      _state = newState;
     });
+  }
+
+  Future<void> _autoSelectSas() async {
+    final methods = widget.verification.possibleMethods;
+    if (methods.contains(EventTypes.Sas)) {
+      debugPrint('[Verification] Auto-selecting SAS verification');
+      await widget.verification.continueVerification(EventTypes.Sas);
+    }
   }
 
   @override

@@ -114,7 +114,9 @@ class SettingsScreen extends StatelessWidget {
                       : matrix.chatBackupEnabled
                           ? 'Your keys are backed up'
                           : 'Not set up',
-                  onTap: () => BootstrapDialog.show(context),
+                  onTap: () => matrix.chatBackupEnabled
+                      ? _showBackupInfo(context)
+                      : BootstrapDialog.show(context),
                 ),
                 const Divider(height: 1, indent: 56),
                 _SettingsTile(
@@ -172,6 +174,78 @@ class SettingsScreen extends StatelessWidget {
           ),
 
           const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+
+  void _showBackupInfo(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Chat backup'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.check_circle,
+              color: Theme.of(ctx).colorScheme.primary,
+              size: 64,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Your keys are backed up. Your encrypted messages are '
+              'secure and accessible from any device.',
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _confirmDisableBackup(context);
+            },
+            child: Text(
+              'Disable backup',
+              style: TextStyle(color: Theme.of(ctx).colorScheme.error),
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _confirmDisableBackup(BuildContext context) {
+    final matrix = context.read<MatrixService>();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Disable chat backup?'),
+        content: const Text(
+          'You will lose access to your encrypted message history '
+          'on new devices unless you set up backup again.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+              foregroundColor: Theme.of(ctx).colorScheme.onError,
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await matrix.disableChatBackup();
+            },
+            child: const Text('Disable'),
+          ),
         ],
       ),
     );

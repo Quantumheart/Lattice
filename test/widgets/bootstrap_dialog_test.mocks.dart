@@ -7799,6 +7799,15 @@ class MockMatrixService extends _i1.Mock implements _i13.MatrixService {
       );
 
   @override
+  void clearCachedPassword() => super.noSuchMethod(
+        Invocation.method(
+          #clearCachedPassword,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
   void selectSpace(String? spaceId) => super.noSuchMethod(
         Invocation.method(
           #selectSpace,
