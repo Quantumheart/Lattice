@@ -108,6 +108,7 @@ class BootstrapController extends ChangeNotifier {
     }
 
     try {
+      const syncTimeout = Duration(seconds: 30);
       debugPrint('[Bootstrap] Waiting for roomsLoading...');
       await client.roomsLoading;
       debugPrint('[Bootstrap] Waiting for accountDataLoading...');
@@ -115,13 +116,20 @@ class BootstrapController extends ChangeNotifier {
       debugPrint('[Bootstrap] Waiting for userDeviceKeysLoading...');
       await client.userDeviceKeysLoading;
       debugPrint('[Bootstrap] prevBatch=${client.prevBatch}');
-      while (client.prevBatch == null) {
+      if (client.prevBatch == null) {
         debugPrint('[Bootstrap] Waiting for first sync...');
-        await client.onSync.stream.first;
+        await client.onSync.stream.first.timeout(syncTimeout);
       }
       debugPrint('[Bootstrap] Updating user device keys...');
       await client.updateUserDeviceKeys();
       debugPrint('[Bootstrap] Sync preparation complete');
+    } on TimeoutException {
+      debugPrint('[Bootstrap] Timed out waiting for first sync');
+      if (_isDisposed) return;
+      _state = BootstrapState.error;
+      _error = 'Timed out waiting for sync. Check your connection and retry.';
+      _notify();
+      return;
     } catch (e, s) {
       debugPrint('[Bootstrap] Sync preparation failed: $e\n$s');
       if (_isDisposed) return;
@@ -406,6 +414,7 @@ class BootstrapController extends ChangeNotifier {
     _requestMissingKeys();
 
     await matrixService.checkChatBackupStatus();
+    matrixService.clearCachedPassword();
     pendingAction = BootstrapAction.done;
     _notify();
   }
@@ -442,6 +451,8 @@ class BootstrapController extends ChangeNotifier {
   @override
   void dispose() {
     _isDisposed = true;
+    _newRecoveryKey = null;
+    _storedRecoveryKey = null;
     _secretStoredSub?.cancel();
     super.dispose();
   }

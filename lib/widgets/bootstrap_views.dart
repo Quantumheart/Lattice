@@ -156,18 +156,20 @@ Widget _buildNewSsss(BuildContext context, BootstrapController controller) {
       Align(
         alignment: Alignment.centerRight,
         child: TextButton.icon(
-          onPressed: () {
-            if (controller.newRecoveryKey != null) {
-              Clipboard.setData(
-                  ClipboardData(text: controller.newRecoveryKey!));
-              controller.setKeyCopied();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Copied to clipboard')),
-              );
-            }
-          },
-          icon: const Icon(Icons.copy, size: 18),
-          label: const Text('Copy'),
+          onPressed: controller.keyCopied
+              ? null
+              : () {
+                  if (controller.newRecoveryKey != null) {
+                    Clipboard.setData(
+                        ClipboardData(text: controller.newRecoveryKey!));
+                    controller.setKeyCopied();
+                  }
+                },
+          icon: Icon(
+            controller.keyCopied ? Icons.check : Icons.copy,
+            size: 18,
+          ),
+          label: Text(controller.keyCopied ? 'Copied' : 'Copy'),
         ),
       ),
       CheckboxListTile(

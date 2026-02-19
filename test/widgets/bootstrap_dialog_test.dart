@@ -312,6 +312,10 @@ void main() {
       onUpdateCb(mockBootstrap);
       await tester.pumpAndSettle();
 
+      // Copy the recovery key (sets keyCopied = true)
+      await tester.tap(find.text('Copy'));
+      await tester.pumpAndSettle();
+
       // Close dialog (cancel) which triggers confirmation dialog
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
@@ -321,6 +325,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify that clipboard was cleared (empty string set) during dispose
+      // because the key was copied
       expect(clipboardCalls, contains(''));
 
       // Restore default handler
