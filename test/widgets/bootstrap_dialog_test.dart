@@ -312,8 +312,12 @@ void main() {
       onUpdateCb(mockBootstrap);
       await tester.pumpAndSettle();
 
-      // Close dialog (cancel) which triggers dispose
+      // Close dialog (cancel) which triggers confirmation dialog
       await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      // Confirm skip in the cancel confirmation dialog
+      await tester.tap(find.text('Skip'));
       await tester.pumpAndSettle();
 
       // Verify that clipboard was cleared (empty string set) during dispose
