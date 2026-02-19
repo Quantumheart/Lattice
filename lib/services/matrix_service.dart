@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:matrix/matrix.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -191,6 +192,32 @@ class MatrixService extends ChangeNotifier {
     });
 
     return list;
+  }
+
+  // ── Profile / Avatar ────────────────────────────────────────
+
+  /// Fetches the logged-in user's profile from the homeserver.
+  Future<CachedProfileInformation> fetchOwnProfile() async {
+    return await _client.fetchOwnProfile();
+  }
+
+  /// Resolves an MXC URI to an HTTPS thumbnail URL.
+  Uri? avatarThumbnailUrl(Uri? mxcUri, {int dimension = 128}) {
+    return mxcUri?.getThumbnailUri(
+      _client,
+      width: dimension,
+      height: dimension,
+    );
+  }
+
+  /// Uploads [imageBytes] as the user's avatar and notifies listeners.
+  Future<void> setAvatar(Uint8List imageBytes, {String? filename}) async {
+    final mxcUri = await _client.uploadContent(
+      imageBytes,
+      filename: filename ?? 'avatar.png',
+    );
+    await _client.setAvatar(mxcUri);
+    notifyListeners();
   }
 
   @override
