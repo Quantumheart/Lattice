@@ -80,6 +80,10 @@ class MatrixService extends ChangeNotifier {
       database: database,
       logLevel: kReleaseMode ? Level.warning : Level.verbose,
       defaultNetworkRequestTimeout: const Duration(minutes: 2),
+      verificationMethods: {
+        KeyVerificationMethod.emoji,
+        KeyVerificationMethod.numbers,
+      },
       nativeImplementations: NativeImplementationsIsolate(
         compute,
         vodozemacInit: () => vod.init(),
@@ -346,32 +350,10 @@ class MatrixService extends ChangeNotifier {
 
   Future<void> checkChatBackupStatus() async {
     try {
-      final encryption = _client.encryption;
-      if (encryption == null) {
-        debugPrint('[BackupStatus] encryption is null');
-        _chatBackupNeeded = true;
-        notifyListeners();
-        return;
-      }
-
-      final crossSigningEnabled = encryption.crossSigning.enabled;
-      final keyBackupEnabled = encryption.keyManager.enabled;
-
-      if (!crossSigningEnabled || !keyBackupEnabled) {
-        debugPrint('[BackupStatus] crossSigningEnabled=$crossSigningEnabled, '
-            'keyBackupEnabled=$keyBackupEnabled');
-        _chatBackupNeeded = true;
-        notifyListeners();
-        return;
-      }
-
-      final crossSigningCached = await encryption.crossSigning.isCached();
-      final keyBackupCached = await encryption.keyManager.isCached();
-      final isUnknown = _client.isUnknownSession;
-
-      debugPrint('[BackupStatus] crossSigningCached=$crossSigningCached, '
-          'keyBackupCached=$keyBackupCached, isUnknown=$isUnknown');
-      _chatBackupNeeded = !crossSigningCached || !keyBackupCached || isUnknown;
+      final state = await _client.getCryptoIdentityState();
+      debugPrint('[BackupStatus] initialized=${state.initialized}, '
+          'connected=${state.connected}');
+      _chatBackupNeeded = !state.initialized || !state.connected;
       notifyListeners();
     } catch (e) {
       debugPrint('checkChatBackupStatus error: $e');
@@ -396,16 +378,16 @@ class MatrixService extends ChangeNotifier {
       final state = await _client.getCryptoIdentityState();
       if (!state.initialized || state.connected) {
         debugPrint('[AutoUnlock] Skip: initialized=${state.initialized}, connected=${state.connected}');
-        return;
+      } else {
+        await _client.restoreCryptoIdentity(storedKey);
       }
-
-      await _client.restoreCryptoIdentity(storedKey);
-      await checkChatBackupStatus();
-      debugPrint('[AutoUnlock] Complete, chatBackupNeeded=$_chatBackupNeeded');
     } catch (e) {
       debugPrint('[AutoUnlock] Failed: $e');
       // Silent failure — user can still unlock manually via settings.
     }
+
+    await checkChatBackupStatus();
+    debugPrint('[AutoUnlock] Complete, chatBackupNeeded=$_chatBackupNeeded');
   }
 
   // ── Recovery Key Storage ──────────────────────────────────────
