@@ -413,13 +413,8 @@ void main() {
         (tester) async {
       when(mockClient.encryption).thenReturn(null);
 
-      late void Function(Bootstrap) onUpdateCb;
       when(mockEncryption.bootstrap(onUpdate: anyNamed('onUpdate')))
-          .thenAnswer((invocation) {
-        onUpdateCb = invocation.namedArguments[const Symbol('onUpdate')]
-            as void Function(Bootstrap);
-        return MockBootstrap();
-      });
+          .thenAnswer((invocation) => MockBootstrap());
 
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Open'));
