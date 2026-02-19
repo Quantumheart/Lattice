@@ -31,10 +31,8 @@ Widget buildBootstrapContent({
       return _buildOpenExistingSsss(context, controller, recoveryKeyController);
 
     case BootstrapState.askUseExistingSsss:
-      return _buildAskUseExisting();
-
     case BootstrapState.askUnlockSsss:
-      return _buildUnlockSsss(controller, recoveryKeyController);
+      return _buildLoading('Preparing...');
 
     case BootstrapState.done:
       return _buildDone(context);
@@ -58,21 +56,25 @@ List<Widget> buildBootstrapActions({
     case BootstrapState.askWipeOnlineKeyBackup:
     case BootstrapState.askSetupOnlineKeyBackup:
     case BootstrapState.askBadSsss:
+    case BootstrapState.askUseExistingSsss:
+    case BootstrapState.askUnlockSsss:
       return [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: controller.requestCancel,
           child: const Text('Cancel'),
         ),
       ];
 
     case BootstrapState.askNewSsss:
+      final canProceed =
+          !controller.generatingKey && controller.canConfirmNewKey;
       return [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: controller.requestCancel,
           child: const Text('Cancel'),
         ),
         FilledButton(
-          onPressed: controller.generatingKey ? null : controller.confirmNewSsss,
+          onPressed: canProceed ? controller.confirmNewSsss : null,
           child: const Text('Next'),
         ),
       ];
@@ -80,37 +82,12 @@ List<Widget> buildBootstrapActions({
     case BootstrapState.openExistingSsss:
       return [
         TextButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: controller.requestCancel,
           child: const Text('Cancel'),
         ),
         FilledButton(
           onPressed: () => controller
               .unlockExistingSsss(recoveryKeyController.text.trim()),
-          child: const Text('Unlock'),
-        ),
-      ];
-
-    case BootstrapState.askUseExistingSsss:
-      return [
-        TextButton(
-          onPressed: () => controller.useExistingSsss(false),
-          child: const Text('Create new'),
-        ),
-        FilledButton(
-          onPressed: () => controller.useExistingSsss(true),
-          child: const Text('Use existing backup'),
-        ),
-      ];
-
-    case BootstrapState.askUnlockSsss:
-      return [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () =>
-              controller.unlockOldSsss(recoveryKeyController.text.trim()),
           child: const Text('Unlock'),
         ),
       ];
@@ -125,9 +102,13 @@ List<Widget> buildBootstrapActions({
 
     case BootstrapState.error:
       return [
-        FilledButton(
+        TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('Close'),
+        ),
+        FilledButton(
+          onPressed: controller.retry,
+          child: const Text('Retry'),
         ),
       ];
   }
@@ -179,6 +160,7 @@ Widget _buildNewSsss(BuildContext context, BootstrapController controller) {
             if (controller.newRecoveryKey != null) {
               Clipboard.setData(
                   ClipboardData(text: controller.newRecoveryKey!));
+              controller.setKeyCopied();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Copied to clipboard')),
               );
@@ -246,35 +228,6 @@ Widget _buildOpenExistingSsss(
       TextButton(
         onPressed: controller.requestLostKeyConfirmation,
         child: const Text('I lost my recovery key'),
-      ),
-    ],
-  );
-}
-
-Widget _buildAskUseExisting() {
-  return const Text(
-    'An existing key backup was found. Would you like to use it '
-    'or create a new one?',
-  );
-}
-
-Widget _buildUnlockSsss(
-  BootstrapController controller,
-  TextEditingController recoveryKeyController,
-) {
-  return Column(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      const Text('Enter your recovery key to unlock your secrets.'),
-      const SizedBox(height: 16),
-      TextField(
-        controller: recoveryKeyController,
-        decoration: InputDecoration(
-          labelText: 'Recovery key',
-          errorText: controller.recoveryKeyError,
-          border: const OutlineInputBorder(),
-        ),
-        style: const TextStyle(fontFamily: 'monospace'),
       ),
     ],
   );

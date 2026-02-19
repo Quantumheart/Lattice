@@ -95,11 +95,13 @@ class MatrixService extends ChangeNotifier {
       if (token != null && userId != null && homeserver != null) {
         debugPrint('[Lattice] Restoring session for $userId on $homeserver '
             '(deviceId=$deviceId)');
-        _client.homeserver = Uri.parse(homeserver);
+        final homeserverUri = Uri.parse(homeserver);
+        _client.homeserver = homeserverUri;
         await _client.init(
           newToken: token,
           newUserID: userId,
           newDeviceID: deviceId,
+          newHomeserver: homeserverUri,
           newDeviceName: 'Lattice Flutter',
         );
         debugPrint('[Lattice] Session restored – '
@@ -300,6 +302,7 @@ class MatrixService extends ChangeNotifier {
     try {
       final encryption = _client.encryption;
       if (encryption == null) {
+        debugPrint('[BackupStatus] encryption is null');
         _chatBackupNeeded = true;
         notifyListeners();
         return;
@@ -309,6 +312,8 @@ class MatrixService extends ChangeNotifier {
       final keyBackupEnabled = encryption.keyManager.enabled;
 
       if (!crossSigningEnabled || !keyBackupEnabled) {
+        debugPrint('[BackupStatus] crossSigningEnabled=$crossSigningEnabled, '
+            'keyBackupEnabled=$keyBackupEnabled');
         _chatBackupNeeded = true;
         notifyListeners();
         return;
@@ -318,6 +323,8 @@ class MatrixService extends ChangeNotifier {
       final keyBackupCached = await encryption.keyManager.isCached();
       final isUnknown = _client.isUnknownSession;
 
+      debugPrint('[BackupStatus] crossSigningCached=$crossSigningCached, '
+          'keyBackupCached=$keyBackupCached, isUnknown=$isUnknown');
       _chatBackupNeeded = !crossSigningCached || !keyBackupCached || isUnknown;
       notifyListeners();
     } catch (e) {

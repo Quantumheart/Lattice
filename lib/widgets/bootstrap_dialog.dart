@@ -1,9 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:matrix/encryption.dart';
+import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
-
-import 'dart:async';
 
 import '../services/matrix_service.dart';
 import 'bootstrap_controller.dart';
@@ -42,6 +43,7 @@ class BootstrapDialog extends StatefulWidget {
 class _BootstrapDialogState extends State<BootstrapDialog> {
   late final BootstrapController _controller;
   final _recoveryKeyController = TextEditingController();
+  StreamSubscription? _uiaSub;
 
   @override
   void initState() {
@@ -51,16 +53,56 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
       wipeExisting: widget.wipeExisting,
     );
     _controller.addListener(_onControllerChanged);
+    _uiaSub = widget.matrixService.onUiaRequest.listen(_showUiaPasswordPrompt);
     _controller.startBootstrap();
   }
 
   @override
   void dispose() {
     Clipboard.setData(const ClipboardData(text: ''));
+    _uiaSub?.cancel();
     _controller.removeListener(_onControllerChanged);
     _controller.dispose();
     _recoveryKeyController.dispose();
     super.dispose();
+  }
+
+  Future<void> _showUiaPasswordPrompt(UiaRequest request) async {
+    if (!mounted) return;
+    final passwordController = TextEditingController();
+    final password = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Authentication required'),
+        content: TextField(
+          controller: passwordController,
+          obscureText: true,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Password',
+            border: OutlineInputBorder(),
+          ),
+          onSubmitted: (value) => Navigator.pop(ctx, value),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, passwordController.text),
+            child: const Text('Submit'),
+          ),
+        ],
+      ),
+    );
+    passwordController.dispose();
+    if (password != null && password.isNotEmpty) {
+      widget.matrixService.completeUiaWithPassword(request, password);
+    } else {
+      request.cancel();
+    }
   }
 
   void _onControllerChanged() {
@@ -77,27 +119,34 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
       _recoveryKeyController.text = storedKey;
     }
 
-    // Handle pending UI actions.
+    // Handle pending UI actions — deferred to avoid Navigator operations
+    // during the notification/build phase.
     final action = _controller.pendingAction;
     if (action != BootstrapAction.none) {
       _controller.clearPendingAction();
-      switch (action) {
-        case BootstrapAction.startVerification:
-          _showVerificationDialog();
-          break;
-        case BootstrapAction.confirmLostKey:
-          _showLostKeyConfirmation();
-          break;
-        case BootstrapAction.done:
-          Clipboard.setData(const ClipboardData(text: ''));
-          Navigator.pop(context, true);
-          break;
-        case BootstrapAction.none:
-          break;
-      }
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        switch (action) {
+          case BootstrapAction.startVerification:
+            _showVerificationDialog();
+            break;
+          case BootstrapAction.confirmLostKey:
+            _showLostKeyConfirmation();
+            break;
+          case BootstrapAction.confirmCancel:
+            _showCancelConfirmation();
+            break;
+          case BootstrapAction.done:
+            Clipboard.setData(const ClipboardData(text: ''));
+            Navigator.pop(context, true);
+            break;
+          case BootstrapAction.none:
+            break;
+        }
+      });
     }
 
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   Future<void> _showVerificationDialog() async {
@@ -109,20 +158,6 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
 
     try {
       await client.updateUserDeviceKeys();
-
-      final sub =
-          encryption.ssss.onSecretStored.stream.listen((_) async {
-        _controller.cancelSecretStoredSub();
-        if (mounted) {
-          _controller.setVerifying(false);
-          final bootstrap = _controller.bootstrap;
-          final ssssKey = bootstrap?.newSsssKey;
-          if (ssssKey != null && ssssKey.isUnlocked) {
-            await bootstrap!.openExistingSsss();
-          }
-        }
-      });
-      _controller.onSecretStoredSub(sub);
 
       final verification = KeyVerification(
         encryption: encryption,
@@ -138,17 +173,61 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
       );
 
       if (result != true) {
-        _controller.cancelSecretStoredSub();
-        if (mounted) {
-          _controller.setVerifying(false);
-        }
+        if (mounted) _controller.setVerifying(false);
+        return;
       }
+
+      // After successful verification, wait for secrets to propagate
+      // (matching FluffyChat's approach).
+      if (!mounted) return;
+
+      final allCached = await encryption.keyManager.isCached() &&
+          await encryption.crossSigning.isCached();
+      if (!allCached) {
+        // Wait for secrets to arrive via sync.
+        final sub = encryption.ssss.onSecretStored.stream.listen((_) {});
+        _controller.onSecretStoredSub(sub);
+        await encryption.ssss.onSecretStored.stream.first;
+        _controller.cancelSecretStoredSub();
+      }
+
+      if (!mounted) return;
+
+      // Secrets are cached — finalize the bootstrap.
+      _controller.setVerifying(false);
+      await _controller.onDone();
     } catch (e) {
       _controller.cancelSecretStoredSub();
       if (mounted) {
         _controller.setVerifying(false);
       }
     }
+  }
+
+  void _showCancelConfirmation() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Skip backup setup?'),
+        content: const Text(
+          'Without a chat backup, you may lose access to your '
+          'encrypted messages if you lose this device.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Continue setup'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              Navigator.pop(context, false);
+            },
+            child: const Text('Skip'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showLostKeyConfirmation() {

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:matrix/encryption.dart';
+import 'package:matrix/matrix.dart';
 
 import '../services/matrix_service.dart';
 
@@ -10,6 +11,7 @@ enum BootstrapAction {
   none,
   startVerification,
   confirmLostKey,
+  confirmCancel,
   done,
 }
 
@@ -36,6 +38,7 @@ class BootstrapController extends ChangeNotifier {
   bool _generatingKey = false;
   bool _awaitingKeyAck = false;
   bool _saveToDevice = false;
+  bool _keyCopied = false;
   bool _verifying = false;
   String? _recoveryKeyError;
   StreamSubscription? _secretStoredSub;
@@ -50,6 +53,8 @@ class BootstrapController extends ChangeNotifier {
   String? get newRecoveryKey => _newRecoveryKey;
   bool get generatingKey => _generatingKey;
   bool get saveToDevice => _saveToDevice;
+  bool get keyCopied => _keyCopied;
+  bool get canConfirmNewKey => _keyCopied || _saveToDevice;
   bool get verifying => _verifying;
   String? get recoveryKeyError => _recoveryKeyError;
 
@@ -81,9 +86,8 @@ class BootstrapController extends ChangeNotifier {
       case BootstrapState.openExistingSsss:
         return 'Enter recovery key';
       case BootstrapState.askUseExistingSsss:
-        return 'Existing backup found';
       case BootstrapState.askUnlockSsss:
-        return 'Unlock backup';
+        return 'Setting up backup';
       case BootstrapState.done:
         return 'Backup complete';
       case BootstrapState.error:
@@ -132,7 +136,14 @@ class BootstrapController extends ChangeNotifier {
     // Workaround for SDK bug: OpenSSSS.store() crashes with a null check
     // on accountData[type].content['encrypted'] when stale entries exist
     // without the 'encrypted' field (ssss.dart:793).
+    const ssssTypes = {
+      'm.cross_signing.master',
+      'm.cross_signing.self_signing',
+      'm.cross_signing.user_signing',
+      'm.megolm_backup.v1',
+    };
     client.accountData.removeWhere((type, event) {
+      if (!ssssTypes.contains(type)) return false;
       if (!event.content.containsKey('encrypted')) return false;
       return event.content['encrypted'] is! Map;
     });
@@ -182,6 +193,16 @@ class BootstrapController extends ChangeNotifier {
       case BootstrapState.askBadSsss:
         debugPrint('[Bootstrap] Auto-advancing: ignoreBadSecrets');
         deferredAdvance = () => bootstrap.ignoreBadSecrets(true);
+        _notify();
+        return;
+      case BootstrapState.askUseExistingSsss:
+        debugPrint('[Bootstrap] Auto-advancing: useExistingSsss(${!_wipeExisting})');
+        deferredAdvance = () => bootstrap.useExistingSsss(!_wipeExisting);
+        _notify();
+        return;
+      case BootstrapState.askUnlockSsss:
+        debugPrint('[Bootstrap] Auto-advancing: unlockedSsss');
+        deferredAdvance = () => bootstrap.unlockedSsss();
         _notify();
         return;
       default:
@@ -251,9 +272,12 @@ class BootstrapController extends ChangeNotifier {
     _notify();
   }
 
-  void useExistingSsss(bool use) {
-    _bootstrap?.useExistingSsss(use);
+  void setKeyCopied() {
+    _keyCopied = true;
+    _notify();
   }
+
+  // useExistingSsss and skipOldSsssUnlock removed — now auto-advanced.
 
   void confirmNewSsss() {
     _awaitingKeyAck = false;
@@ -288,6 +312,12 @@ class BootstrapController extends ChangeNotifier {
 
     try {
       await bootstrap!.openExistingSsss();
+      // Self-sign immediately after unlocking, matching FluffyChat behavior.
+      final encryption = matrixService.client.encryption;
+      if (encryption != null && encryption.crossSigning.enabled) {
+        debugPrint('[Bootstrap] Self-signing after SSSS unlock');
+        await encryption.crossSigning.selfSign(recoveryKey: key);
+      }
     } catch (e) {
       _state = BootstrapState.error;
       _error = 'Failed to open backup: $e';
@@ -295,34 +325,14 @@ class BootstrapController extends ChangeNotifier {
     }
   }
 
-  Future<void> unlockOldSsss(String key) async {
-    final bootstrap = _bootstrap;
-    if (bootstrap == null) return;
-
-    if (key.isEmpty) {
-      _recoveryKeyError = 'Please enter a recovery key';
-      _notify();
-      return;
-    }
-
-    try {
-      final oldKeys = bootstrap.oldSsssKeys;
-      if (oldKeys != null) {
-        for (final ssssKey in oldKeys.values) {
-          await ssssKey.unlock(keyOrPassphrase: key);
-        }
-      }
-      _recoveryKeyError = null;
-      bootstrap.unlockedSsss();
-      _notify();
-    } catch (e) {
-      _recoveryKeyError = 'Invalid recovery key';
-      _notify();
-    }
-  }
 
   void requestVerification() {
     pendingAction = BootstrapAction.startVerification;
+    _notify();
+  }
+
+  void requestCancel() {
+    pendingAction = BootstrapAction.confirmCancel;
     _notify();
   }
 
@@ -347,28 +357,81 @@ class BootstrapController extends ChangeNotifier {
     _secretStoredSub = null;
   }
 
+  void retry() {
+    _resetState();
+    startBootstrap();
+  }
+
   void restartWithWipe() {
     _wipeExisting = true;
+    _resetState();
+    startBootstrap();
+  }
+
+  void _resetState() {
     _state = BootstrapState.loading;
     _error = null;
     _newRecoveryKey = null;
     _generatingKey = false;
     _awaitingKeyAck = false;
+    _keyCopied = false;
     _recoveryKeyError = null;
     _notify();
-    startBootstrap();
   }
 
   Future<void> onDone() async {
     if (_saveToDevice && _newRecoveryKey != null) {
       await matrixService.storeRecoveryKey(_newRecoveryKey!);
     }
+
+    // The bootstrap stored secrets in SSSS on the server but the local
+    // cache may not reflect them yet. Explicitly cache and self-sign so
+    // that checkChatBackupStatus sees the correct state.
+    final client = matrixService.client;
+    final encryption = client.encryption;
+    final ssssKey = _bootstrap?.newSsssKey;
+    if (encryption != null && ssssKey != null && ssssKey.isUnlocked) {
+      try {
+        await ssssKey.maybeCacheAll();
+        if (encryption.crossSigning.enabled) {
+          await encryption.crossSigning.selfSign(openSsss: ssssKey);
+        }
+      } catch (e) {
+        debugPrint('[Bootstrap] Post-bootstrap caching/signing failed: $e');
+      }
+      await client.updateUserDeviceKeys();
+    }
+
+    // Re-request keys for previously undecryptable messages.
+    _requestMissingKeys();
+
     await matrixService.checkChatBackupStatus();
     pendingAction = BootstrapAction.done;
     _notify();
   }
 
   // ── Internals ─────────────────────────────────────────────────
+
+  void _requestMissingKeys() {
+    final client = matrixService.client;
+    for (final room in client.rooms) {
+      final event = room.lastEvent;
+      if (event != null &&
+          event.type == EventTypes.Encrypted &&
+          event.messageType == MessageTypes.BadEncrypted &&
+          event.content['can_request_session'] == true) {
+        final sessionId = event.content.tryGet<String>('session_id');
+        final senderKey = event.content.tryGet<String>('sender_key');
+        if (sessionId != null && senderKey != null) {
+          client.encryption?.keyManager.maybeAutoRequest(
+            room.id,
+            sessionId,
+            senderKey,
+          );
+        }
+      }
+    }
+  }
 
   void _notify() {
     if (!_isDisposed) {
