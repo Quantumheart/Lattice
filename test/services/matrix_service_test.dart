@@ -324,10 +324,9 @@ void main() {
         expect(service.chatBackupNeeded, isNull);
       });
 
-      test('sets chatBackupNeeded false when cross-signing and key backup are cached',
+      test('sets chatBackupNeeded false when initialized and connected',
           () async {
         when(mockClient.encryption).thenReturn(mockEncryption);
-        when(mockClient.isUnknownSession).thenReturn(false);
         when(mockCrossSigning.enabled).thenReturn(true);
         when(mockKeyManager.enabled).thenReturn(true);
         when(mockCrossSigning.isCached()).thenAnswer((_) async => true);
@@ -352,7 +351,6 @@ void main() {
       test('sets chatBackupNeeded true when cross-signing not cached',
           () async {
         when(mockClient.encryption).thenReturn(mockEncryption);
-        when(mockClient.isUnknownSession).thenReturn(false);
         when(mockCrossSigning.enabled).thenReturn(true);
         when(mockKeyManager.enabled).thenReturn(true);
         when(mockCrossSigning.isCached()).thenAnswer((_) async => false);
@@ -363,27 +361,11 @@ void main() {
         expect(service.chatBackupNeeded, isTrue);
       });
 
-      test('sets chatBackupNeeded true for unknown session', () async {
-        when(mockClient.encryption).thenReturn(mockEncryption);
-        when(mockClient.isUnknownSession).thenReturn(true);
-        when(mockCrossSigning.enabled).thenReturn(true);
-        when(mockKeyManager.enabled).thenReturn(true);
-        when(mockCrossSigning.isCached()).thenAnswer((_) async => true);
-        when(mockKeyManager.isCached()).thenAnswer((_) async => true);
-
-        await service.checkChatBackupStatus();
-
-        expect(service.chatBackupNeeded, isTrue);
-      });
-
       test('sets chatBackupNeeded true when key backup not enabled',
           () async {
         when(mockClient.encryption).thenReturn(mockEncryption);
-        when(mockClient.isUnknownSession).thenReturn(false);
         when(mockCrossSigning.enabled).thenReturn(true);
         when(mockKeyManager.enabled).thenReturn(false);
-        when(mockCrossSigning.isCached()).thenAnswer((_) async => true);
-        when(mockKeyManager.isCached()).thenAnswer((_) async => false);
 
         await service.checkChatBackupStatus();
 
@@ -392,7 +374,7 @@ void main() {
 
       test('catches exceptions and sets chatBackupNeeded true', () async {
         when(mockClient.encryption).thenReturn(mockEncryption);
-        when(mockCrossSigning.enabled).thenThrow(Exception('network error'));
+        when(mockKeyManager.enabled).thenThrow(Exception('network error'));
 
         await service.checkChatBackupStatus();
 
