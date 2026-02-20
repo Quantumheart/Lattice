@@ -31,6 +31,25 @@ void main() {
     );
   });
 
+  /// Stub the server capability check to return password login support.
+  void stubPasswordServer() {
+    when(mockClient.checkHomeserver(any)).thenAnswer((_) async => (
+          null,
+          GetVersionsResponse.fromJson({'versions': ['v1.1']}),
+          <LoginFlow>[],
+          null,
+        ));
+    when(mockClient.getLoginFlows()).thenAnswer((_) async => [
+          LoginFlow(type: AuthenticationTypes.password),
+        ]);
+    when(mockClient.register()).thenThrow(
+      MatrixException.fromJson({
+        'errcode': 'M_FORBIDDEN',
+        'error': 'Registration is not enabled',
+      }),
+    );
+  }
+
   Widget buildTestWidget() {
     return MultiProvider(
       providers: [
@@ -51,13 +70,81 @@ void main() {
   }
 
   group('LoginScreen', () {
-    testWidgets('shows Sign In button and Create an account button',
+    testWidgets('shows Sign In button when server supports password',
         (tester) async {
+      stubPasswordServer();
+
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
       expect(find.text('Sign In'), findsOneWidget);
       expect(find.text('Create an account'), findsOneWidget);
+    });
+
+    testWidgets('shows SSO button when server supports SSO', (tester) async {
+      when(mockClient.checkHomeserver(any)).thenAnswer((_) async => (
+            null,
+            GetVersionsResponse.fromJson({'versions': ['v1.1']}),
+            <LoginFlow>[],
+            null,
+          ));
+      when(mockClient.getLoginFlows()).thenAnswer((_) async => [
+            LoginFlow(
+              type: AuthenticationTypes.sso,
+              additionalProperties: {
+                'identity_providers': [
+                  {'id': 'google', 'name': 'Google'},
+                ],
+              },
+            ),
+          ]);
+      when(mockClient.register()).thenThrow(
+        MatrixException.fromJson({
+          'errcode': 'M_FORBIDDEN',
+          'error': 'Registration is not enabled',
+        }),
+      );
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sign in with Google'), findsOneWidget);
+      // No password fields when only SSO is supported
+      expect(find.text('Sign In'), findsNothing);
+    });
+
+    testWidgets('shows both SSO and password when server supports both',
+        (tester) async {
+      when(mockClient.checkHomeserver(any)).thenAnswer((_) async => (
+            null,
+            GetVersionsResponse.fromJson({'versions': ['v1.1']}),
+            <LoginFlow>[],
+            null,
+          ));
+      when(mockClient.getLoginFlows()).thenAnswer((_) async => [
+            LoginFlow(type: AuthenticationTypes.password),
+            LoginFlow(
+              type: AuthenticationTypes.sso,
+              additionalProperties: {
+                'identity_providers': [
+                  {'id': 'oidc', 'name': 'OIDC Provider'},
+                ],
+              },
+            ),
+          ]);
+      when(mockClient.register()).thenThrow(
+        MatrixException.fromJson({
+          'errcode': 'M_FORBIDDEN',
+          'error': 'Registration is not enabled',
+        }),
+      );
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Sign in with OIDC Provider'), findsOneWidget);
+      expect(find.text('Sign In'), findsOneWidget);
+      expect(find.text('or'), findsOneWidget);
     });
 
     testWidgets('tapping Create an account navigates to registration screen',
@@ -91,6 +178,5 @@ void main() {
       // Registration screen should be visible
       expect(find.byType(RegistrationScreen), findsOneWidget);
     });
-
   });
 }

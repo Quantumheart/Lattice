@@ -89,8 +89,10 @@ void main() {
       final caps = await service.getServerAuthCapabilities('example.com');
 
       expect(caps.ssoIdentityProviders, hasLength(2));
-      expect(caps.ssoIdentityProviders[0], 'Google');
-      expect(caps.ssoIdentityProviders[1], 'GitHub');
+      expect(caps.ssoIdentityProviders[0].id, 'google');
+      expect(caps.ssoIdentityProviders[0].name, 'Google');
+      expect(caps.ssoIdentityProviders[1].id, 'github');
+      expect(caps.ssoIdentityProviders[1].name, 'GitHub');
     });
 
     test(
@@ -203,7 +205,9 @@ void main() {
       expect(caps.supportsPassword, isTrue);
       expect(caps.supportsSso, isTrue);
       expect(caps.supportsRegistration, isTrue);
-      expect(caps.ssoIdentityProviders, ['OIDC Provider']);
+      expect(caps.ssoIdentityProviders, hasLength(1));
+      expect(caps.ssoIdentityProviders[0].id, 'oidc');
+      expect(caps.ssoIdentityProviders[0].name, 'OIDC Provider');
       expect(caps.registrationStages, hasLength(3));
     });
 
