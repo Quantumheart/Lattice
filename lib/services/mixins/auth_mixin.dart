@@ -4,7 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:matrix/matrix.dart';
 
-import '../matrix_service.dart' show ServerAuthCapabilities, latticeKey;
+import '../matrix_service.dart'
+    show ServerAuthCapabilities, SsoIdentityProvider, latticeKey;
 import '../session_backup.dart';
 
 /// Authentication flows: login, SSO, registration, logout, credential
@@ -78,13 +79,17 @@ mixin AuthMixin on ChangeNotifier {
       final ssoFlow = loginFlows
           ?.where((f) => f.type == AuthenticationTypes.sso)
           .firstOrNull;
-      final idProviders = <String>[];
+      final idProviders = <SsoIdentityProvider>[];
       if (ssoFlow != null) {
         final providers = ssoFlow.additionalProperties['identity_providers'];
         if (providers is List) {
           for (final p in providers) {
-            if (p is Map && p['name'] is String) {
-              idProviders.add(p['name'] as String);
+            if (p is Map && p['id'] is String && p['name'] is String) {
+              idProviders.add(SsoIdentityProvider(
+                id: p['id'] as String,
+                name: p['name'] as String,
+                icon: p['icon'] as String?,
+              ));
             }
           }
         }
@@ -115,12 +120,17 @@ mixin AuthMixin on ChangeNotifier {
         // Registration not supported or server error.
       }
 
+      // Capture the resolved homeserver before restoring so callers
+      // (e.g. SSO flow) can use it without re-resolving.
+      final resolvedHomeserver = client.homeserver;
+
       return ServerAuthCapabilities(
         supportsPassword: supportsPassword,
         supportsSso: supportsSso,
         supportsRegistration: supportsRegistration,
         ssoIdentityProviders: idProviders,
         registrationStages: registrationStages,
+        resolvedHomeserver: resolvedHomeserver,
       );
     } finally {
       client.homeserver = previousHomeserver;
