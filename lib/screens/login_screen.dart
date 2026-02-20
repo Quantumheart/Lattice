@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../services/client_manager.dart';
 import '../services/matrix_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -43,11 +44,15 @@ class _LoginScreenState extends State<LoginScreen>
   Future<void> _login() async {
     setState(() => _loading = true);
     final matrix = context.read<MatrixService>();
-    await matrix.login(
+    final manager = context.read<ClientManager>();
+    final success = await matrix.login(
       homeserver: _homeserverCtrl.text,
       username: _usernameCtrl.text,
       password: _passwordCtrl.text,
     );
+    if (success && !manager.services.contains(matrix)) {
+      await manager.addService(matrix);
+    }
     if (mounted) setState(() => _loading = false);
   }
 

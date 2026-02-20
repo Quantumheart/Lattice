@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../screens/settings_screen.dart';
+import '../services/client_manager.dart';
 import '../services/matrix_service.dart';
 
 /// A vertical icon rail showing the user's Matrix spaces.
@@ -77,21 +78,10 @@ class SpaceRail extends StatelessWidget {
             ),
           ),
 
-          // Settings button
+          // Account avatar + menu
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: IconButton(
-              icon: Icon(Icons.settings_outlined,
-                  color: cs.onSurfaceVariant),
-              tooltip: 'Settings',
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const SettingsScreen(),
-                  ),
-                );
-              },
-            ),
+            child: _AccountButton(cs: cs),
           ),
         ],
       ),
@@ -179,3 +169,103 @@ class _RailIcon extends StatelessWidget {
     );
   }
 }
+
+class _AccountButton extends StatelessWidget {
+  const _AccountButton({required this.cs});
+  final ColorScheme cs;
+
+  @override
+  Widget build(BuildContext context) {
+    final manager = context.watch<ClientManager>();
+    final matrix = context.watch<MatrixService>();
+    final userId = matrix.client.userID;
+    final initial = (userId != null && userId.length > 1)
+        ? userId[1].toUpperCase()
+        : (userId ?? '?')[0].toUpperCase();
+
+    return PopupMenuButton<_AccountAction>(
+      tooltip: 'Account',
+      offset: const Offset(64, 0),
+      onSelected: (action) {
+        switch (action) {
+          case _AccountAction.settings:
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SettingsScreen()),
+            );
+          case _AccountAction.switchAccount:
+            // Handled inline via index-based items.
+            break;
+        }
+      },
+      itemBuilder: (ctx) => [
+        // Account entries (only show if multiple).
+        if (manager.hasMultipleAccounts)
+          for (var i = 0; i < manager.services.length; i++)
+            PopupMenuItem<_AccountAction>(
+              value: _AccountAction.switchAccount,
+              enabled: i != manager.activeIndex,
+              onTap: () => manager.setActiveAccount(i),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 14,
+                    backgroundColor: i == manager.activeIndex
+                        ? cs.primary
+                        : cs.surfaceContainerHigh,
+                    child: Text(
+                      _initial(manager.services[i].client.userID),
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: i == manager.activeIndex
+                            ? cs.onPrimary
+                            : cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      manager.services[i].client.userID ?? 'Unknown',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (i == manager.activeIndex)
+                    Icon(Icons.check, size: 18, color: cs.primary),
+                ],
+              ),
+            ),
+        if (manager.hasMultipleAccounts) const PopupMenuDivider(),
+        const PopupMenuItem(
+          value: _AccountAction.settings,
+          child: Row(
+            children: [
+              Icon(Icons.settings_outlined),
+              SizedBox(width: 10),
+              Text('Settings'),
+            ],
+          ),
+        ),
+      ],
+      child: CircleAvatar(
+        radius: 18,
+        backgroundColor: cs.primaryContainer,
+        child: Text(
+          initial,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: cs.onPrimaryContainer,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _initial(String? userId) {
+    if (userId != null && userId.length > 1) return userId[1].toUpperCase();
+    return (userId ?? '?')[0].toUpperCase();
+  }
+}
+
+enum _AccountAction { settings, switchAccount }
