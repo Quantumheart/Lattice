@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:matrix/matrix.dart' hide RoomFilter;
+import 'package:matrix/matrix.dart';
 
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
@@ -40,13 +40,13 @@ class _RoomListState extends State<RoomList> {
 
     // ── Room category filter ──
     rooms = switch (prefs.roomFilter) {
-      RoomFilter.all => rooms,
-      RoomFilter.directMessages =>
+      RoomCategory.all => rooms,
+      RoomCategory.directMessages =>
         rooms.where((r) => r.isDirectChat).toList(),
-      RoomFilter.groups => rooms.where((r) => !r.isDirectChat).toList(),
-      RoomFilter.unread =>
+      RoomCategory.groups => rooms.where((r) => !r.isDirectChat).toList(),
+      RoomCategory.unread =>
         rooms.where((r) => r.notificationCount > 0).toList(),
-      RoomFilter.favourites => rooms.where((r) => r.isFavourite).toList(),
+      RoomCategory.favourites => rooms.where((r) => r.isFavourite).toList(),
     };
 
     return Scaffold(
@@ -58,7 +58,6 @@ class _RoomListState extends State<RoomList> {
                   'Space')
               : 'Chats',
         ),
-        actions: const [],
       ),
       body: Column(
         children: [
@@ -93,12 +92,12 @@ class _RoomListState extends State<RoomList> {
             child: Wrap(
               spacing: 8,
               runSpacing: 4,
-              children: RoomFilter.values.map((filter) {
+              children: RoomCategory.values.map((filter) {
                 return FilterChip(
                   label: Text(filter.label),
                   avatar: Icon(filter.icon, size: 18),
                   selected: prefs.roomFilter == filter,
-                  onSelected: (_) => prefs.setRoomFilter(filter),
+                  onSelected: (_) => prefs.setRoomCategory(filter),
                   showCheckmark: false,
                 );
               }).toList(),
@@ -112,7 +111,7 @@ class _RoomListState extends State<RoomList> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                prefs.roomFilter == RoomFilter.all
+                prefs.roomFilter == RoomCategory.all
                     ? 'RECENT'
                     : prefs.roomFilter.label.toUpperCase(),
                 style: tt.labelSmall?.copyWith(
@@ -130,7 +129,7 @@ class _RoomListState extends State<RoomList> {
                     child: Text(
                       _query.isNotEmpty
                           ? 'No rooms match "$_query"'
-                          : prefs.roomFilter == RoomFilter.all
+                          : prefs.roomFilter == RoomCategory.all
                               ? 'No rooms yet'
                               : 'No ${prefs.roomFilter.label.toLowerCase()}',
                       style: tt.bodyMedium?.copyWith(
@@ -181,6 +180,7 @@ class _RoomTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
+          mouseCursor: SystemMouseCursors.click,
           onTap: () => matrix.selectRoom(room.id),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

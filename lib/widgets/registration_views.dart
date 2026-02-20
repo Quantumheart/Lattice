@@ -103,6 +103,7 @@ Widget _buildTermsView(
           (p) => Padding(
             padding: const EdgeInsets.only(bottom: 4),
             child: InkWell(
+              mouseCursor: SystemMouseCursors.click,
               onTap: () => launchUrl(
                 Uri.parse(p.url),
                 mode: LaunchMode.externalApplication,
