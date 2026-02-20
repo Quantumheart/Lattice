@@ -100,11 +100,15 @@ mixin AuthMixin on ChangeNotifier {
           supportsRegistration = true;
           final flows = e.raw['flows'];
           if (flows is List && flows.isNotEmpty) {
-            final firstFlow = flows.first;
-            if (firstFlow is Map && firstFlow['stages'] is List) {
-              registrationStages =
-                  (firstFlow['stages'] as List).cast<String>();
+            // Collect unique stages across all flows so callers (e.g.
+            // requiresToken) see the full picture, not just the first flow.
+            final allStages = <String>{};
+            for (final flow in flows) {
+              if (flow is Map && flow['stages'] is List) {
+                allStages.addAll((flow['stages'] as List).cast<String>());
+              }
             }
+            registrationStages = allStages.toList();
           }
         }
       } catch (_) {

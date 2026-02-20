@@ -61,10 +61,6 @@ class RecaptchaServer {
         }
 
         if (request.method == 'POST' && request.uri.path == '/token') {
-          request.response.headers
-            ..set('Access-Control-Allow-Origin', '*')
-            ..set('Access-Control-Allow-Methods', 'POST');
-
           final body = await request
               .fold<List<int>>([], (acc, chunk) => acc..addAll(chunk));
           final params = Uri.splitQueryString(String.fromCharCodes(body));
@@ -131,17 +127,17 @@ class RecaptchaServer {
 <body>
   <div>
     <h2>Verify you are human</h2>
-    <div class="g-recaptcha"
-         data-sitekey="$siteKey"
-         data-callback="onCaptchaComplete"></div>
+    <form id="captchaForm" method="POST" action="/token">
+      <input type="hidden" id="tokenField" name="g-recaptcha-response" value="">
+      <div class="g-recaptcha"
+           data-sitekey="$siteKey"
+           data-callback="onCaptchaComplete"></div>
+    </form>
   </div>
   <script>
     function onCaptchaComplete(token) {
-      fetch('/token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'g-recaptcha-response=' + encodeURIComponent(token),
-      });
+      document.getElementById('tokenField').value = token;
+      document.getElementById('captchaForm').submit();
     }
   </script>
 </body>
