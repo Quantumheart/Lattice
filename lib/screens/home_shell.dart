@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/matrix_service.dart';
+import '../services/preferences_service.dart';
 import '../widgets/space_rail.dart';
 import '../widgets/room_list.dart';
 import 'chat_screen.dart';
@@ -22,6 +23,7 @@ class _HomeShellState extends State<HomeShell> {
 
   static const double _wideBreakpoint = 720;
   static const double _extraWideBreakpoint = 1100;
+  static const double _collapseThreshold = 240;
 
   @override
   Widget build(BuildContext context) {
@@ -38,6 +40,7 @@ class _HomeShellState extends State<HomeShell> {
   Widget _buildWideLayout(double width) {
     final showChat = width >= _extraWideBreakpoint;
     final matrix = context.watch<MatrixService>();
+    final prefs = context.watch<PreferencesService>();
     final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -46,14 +49,56 @@ class _HomeShellState extends State<HomeShell> {
           // Space icon rail
           const SpaceRail(),
 
-          // Room list
-          SizedBox(
-            width: showChat ? 320 : 360,
-            child: const RoomList(),
-          ),
+          // Room list (resizable, collapsible on desktop)
+          if (showChat && prefs.panelWidth < _collapseThreshold) ...[
+            // Collapsed: just show an expand button
+            SizedBox(
+              width: 40,
+              child: Center(
+                child: IconButton(
+                  icon: const Icon(Icons.chevron_right_rounded),
+                  tooltip: 'Expand room list',
+                  onPressed: () => prefs.setPanelWidth(
+                    PreferencesService.defaultPanelWidth,
+                  ),
+                ),
+              ),
+            ),
+            VerticalDivider(width: 1, color: cs.outlineVariant.withValues(alpha: 0.3)),
+          ] else ...[
+            SizedBox(
+              width: showChat
+                  ? prefs.panelWidth.clamp(
+                      _collapseThreshold,
+                      PreferencesService.maxPanelWidth,
+                    )
+                  : 360,
+              child: const RoomList(),
+            ),
 
-          // Divider
-          VerticalDivider(width: 1, color: cs.outlineVariant.withValues(alpha: 0.3)),
+            // Draggable divider (only when chat pane is visible)
+            if (showChat)
+              MouseRegion(
+                cursor: SystemMouseCursors.resizeColumn,
+                child: GestureDetector(
+                  onHorizontalDragUpdate: (details) {
+                    final newWidth = prefs.panelWidth + details.delta.dx;
+                    // Snap to collapsed when dragged below threshold
+                    if (newWidth < _collapseThreshold) {
+                      prefs.setPanelWidth(0);
+                    } else {
+                      prefs.setPanelWidth(newWidth);
+                    }
+                  },
+                  child: Container(
+                    width: 5,
+                    color: cs.outlineVariant.withValues(alpha: 0.3),
+                  ),
+                ),
+              )
+            else
+              VerticalDivider(width: 1, color: cs.outlineVariant.withValues(alpha: 0.3)),
+          ],
 
           // Chat pane (or placeholder)
           Expanded(
