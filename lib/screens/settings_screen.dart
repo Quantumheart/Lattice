@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../services/client_manager.dart';
 import '../services/matrix_service.dart';
+import '../services/preferences_service.dart';
 import '../widgets/bootstrap_dialog.dart';
 import 'devices_screen.dart';
 
@@ -21,6 +22,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final matrix = context.watch<MatrixService>();
     final manager = context.watch<ClientManager>();
+    final prefs = context.watch<PreferencesService>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final client = matrix.client;
@@ -157,10 +159,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _SettingsTile(
                   icon: Icons.dark_mode_outlined,
                   title: 'Theme',
-                  subtitle: 'System default',
-                  onTap: () {
-                    // TODO: theme picker
-                  },
+                  subtitle: prefs.themeModeLabel,
+                  onTap: () => _showThemePicker(context),
                 ),
                 const Divider(height: 1, indent: 56),
                 _SettingsTile(
@@ -175,10 +175,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _SettingsTile(
                   icon: Icons.text_fields_rounded,
                   title: 'Message density',
-                  subtitle: 'Default',
-                  onTap: () {
-                    // TODO: density picker
-                  },
+                  subtitle: prefs.messageDensity.label,
+                  onTap: () => _showDensityPicker(context),
                 ),
               ],
             ),
@@ -269,6 +267,82 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 32),
         ],
       ),
+    );
+  }
+
+  void _showThemePicker(BuildContext context) {
+    final prefs = context.read<PreferencesService>();
+    final options = [
+      (ThemeMode.system, 'System default'),
+      (ThemeMode.light, 'Light'),
+      (ThemeMode.dark, 'Dark'),
+    ];
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Theme'),
+          contentPadding: const EdgeInsets.only(top: 12, bottom: 8),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: options.map((option) {
+              final (mode, label) = option;
+              return RadioListTile<ThemeMode>(
+                title: Text(label),
+                value: mode,
+                groupValue: prefs.themeMode,
+                onChanged: (value) {
+                  if (value != null) {
+                    prefs.setThemeMode(value);
+                    Navigator.pop(ctx);
+                  }
+                },
+              );
+            }).toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDensityPicker(BuildContext context) {
+    final prefs = context.read<PreferencesService>();
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Message density'),
+          contentPadding: const EdgeInsets.only(top: 12, bottom: 8),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: MessageDensity.values.map((density) {
+              return RadioListTile<MessageDensity>(
+                title: Text(density.label),
+                value: density,
+                groupValue: prefs.messageDensity,
+                onChanged: (value) {
+                  if (value != null) {
+                    prefs.setMessageDensity(value);
+                    Navigator.pop(ctx);
+                  }
+                },
+              );
+            }).toList(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
     );
   }
 

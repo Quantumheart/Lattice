@@ -5,6 +5,7 @@ import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 
 import 'services/client_manager.dart';
 import 'services/matrix_service.dart';
+import 'services/preferences_service.dart';
 import 'theme/lattice_theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_shell.dart';
@@ -24,12 +25,15 @@ class LatticeApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<ClientManager>.value(
-      value: clientManager,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<ClientManager>.value(value: clientManager),
+        ChangeNotifierProvider(create: (_) => PreferencesService()..init()),
+      ],
       child: DynamicColorBuilder(
         builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-          return Consumer<ClientManager>(
-            builder: (context, manager, _) {
+          return Consumer2<ClientManager, PreferencesService>(
+            builder: (context, manager, prefs, _) {
               return ChangeNotifierProvider<MatrixService>.value(
                 value: manager.activeService,
                 child: Consumer<MatrixService>(
@@ -42,7 +46,7 @@ class LatticeApp extends StatelessWidget {
                       debugShowCheckedModeBanner: false,
                       theme: theme,
                       darkTheme: darkTheme,
-                      themeMode: ThemeMode.system,
+                      themeMode: prefs.themeMode,
                       home: matrix.isLoggedIn
                           ? const HomeShell()
                           : const LoginScreen(),
