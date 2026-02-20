@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -414,8 +417,170 @@ void main() {
         await controller.submitForm(
             username: 'user', password: 'password123');
 
-        verify(mockMatrixService.completeRegistration(any)).called(1);
+        verify(mockMatrixService.completeRegistration(
+          any,
+          password: anyNamed('password'),
+        )).called(1);
         controller.dispose();
+      });
+
+      test('passes password to completeRegistration', () async {
+        when(mockClient.register(
+          username: anyNamed('username'),
+          password: anyNamed('password'),
+          initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+          auth: anyNamed('auth'),
+        )).thenAnswer((_) async => RegisterResponse(
+              userId: '@user:example.com',
+              accessToken: 'tok',
+              deviceId: 'D1',
+            ));
+        when(mockMatrixService.completeRegistration(any))
+            .thenAnswer((_) async {});
+
+        final controller = createController();
+        await controller.checkServer();
+        await controller.submitForm(
+            username: 'user', password: 'mypassword123');
+
+        final captured = verify(mockMatrixService.completeRegistration(
+          any,
+          password: captureAnyNamed('password'),
+        )).captured;
+        expect(captured.single, 'mypassword123');
+        controller.dispose();
+      });
+
+      test('guards against concurrent submit calls', () async {
+        when(mockClient.register(
+          username: anyNamed('username'),
+          password: anyNamed('password'),
+          initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+          auth: anyNamed('auth'),
+        )).thenAnswer((_) async => RegisterResponse(
+              userId: '@user:example.com',
+              accessToken: 'tok',
+              deviceId: 'D1',
+            ));
+        when(mockMatrixService.completeRegistration(any))
+            .thenAnswer((_) async {});
+
+        final controller = createController();
+        await controller.checkServer();
+
+        // Fire two submits — second should be blocked by guard.
+        final f1 = controller.submitForm(
+            username: 'user', password: 'password123');
+        final f2 = controller.submitForm(
+            username: 'user', password: 'password123');
+        await f1;
+        await f2;
+
+        // register should only be called once.
+        verify(mockClient.register(
+          username: anyNamed('username'),
+          password: anyNamed('password'),
+          initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+          auth: anyNamed('auth'),
+        )).called(1);
+        controller.dispose();
+      });
+
+      test('shows friendly message for SocketException', () async {
+        when(mockClient.register(
+          username: anyNamed('username'),
+          password: anyNamed('password'),
+          initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+          auth: anyNamed('auth'),
+        )).thenThrow(const SocketException('Connection refused'));
+
+        final controller = createController();
+        await controller.checkServer();
+        await controller.submitForm(
+            username: 'user', password: 'password123');
+
+        expect(controller.state, RegistrationState.error);
+        expect(controller.error, 'Could not reach server');
+        controller.dispose();
+      });
+
+      test('shows friendly message for TimeoutException', () async {
+        when(mockClient.register(
+          username: anyNamed('username'),
+          password: anyNamed('password'),
+          initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+          auth: anyNamed('auth'),
+        )).thenThrow(TimeoutException('timed out'));
+
+        final controller = createController();
+        await controller.checkServer();
+        await controller.submitForm(
+            username: 'user', password: 'password123');
+
+        expect(controller.state, RegistrationState.error);
+        expect(controller.error, 'Connection timed out');
+        controller.dispose();
+      });
+    });
+
+    group('cancelRegistration', () {
+      setUp(() {
+        when(mockMatrixService.getServerAuthCapabilities(any))
+            .thenAnswer((_) async => const ServerAuthCapabilities(
+                  supportsRegistration: true,
+                  registrationStages: ['m.login.dummy'],
+                ));
+      });
+
+      test('resets from UIA stage to formReady', () async {
+        when(mockClient.register(
+          username: anyNamed('username'),
+          password: anyNamed('password'),
+          initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+          auth: anyNamed('auth'),
+        )).thenThrow(
+          MatrixException.fromJson({
+            'flows': [
+              {
+                'stages': ['m.login.email.identity'],
+              },
+            ],
+            'session': 'sess1',
+          }),
+        );
+
+        final controller = createController();
+        await controller.checkServer();
+        await controller.submitForm(
+            username: 'user', password: 'password123');
+
+        expect(controller.state, RegistrationState.enterEmail);
+
+        controller.cancelRegistration();
+
+        expect(controller.state, RegistrationState.formReady);
+        expect(controller.error, isNull);
+        controller.dispose();
+      });
+    });
+
+    group('dispose', () {
+      test('does not notify after dispose', () async {
+        when(mockMatrixService.getServerAuthCapabilities(any))
+            .thenAnswer((_) async => const ServerAuthCapabilities(
+                  supportsRegistration: true,
+                ));
+
+        final controller = createController();
+        await controller.checkServer();
+
+        var notifiedAfterDispose = false;
+        controller.addListener(() => notifiedAfterDispose = true);
+        controller.dispose();
+
+        // Calling checkServer after dispose should not throw or notify.
+        await controller.checkServer();
+        expect(notifiedAfterDispose, isFalse);
       });
     });
   });

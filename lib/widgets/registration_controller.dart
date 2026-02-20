@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:matrix/matrix.dart';
 
@@ -116,6 +119,8 @@ class RegistrationController extends ChangeNotifier {
     required String password,
     String token = '',
   }) async {
+    if (_state == RegistrationState.registering) return;
+
     _usernameError = null;
     _passwordError = null;
     _tokenError = null;
@@ -145,6 +150,9 @@ class RegistrationController extends ChangeNotifier {
     _username = username.trim();
     _password = password;
     _token = token.trim();
+
+    _state = RegistrationState.registering;
+    _notify();
 
     // Ensure the client homeserver is set before making API calls.
     var hs = _homeserver.trim();
@@ -176,7 +184,7 @@ class RegistrationController extends ChangeNotifier {
 
       if (_isDisposed) return;
 
-      await matrixService.completeRegistration(response);
+      await matrixService.completeRegistration(response, password: _password);
       _clearCredentials();
       _state = RegistrationState.done;
       _notify();
@@ -210,7 +218,7 @@ class RegistrationController extends ChangeNotifier {
     } catch (e) {
       if (_isDisposed) return;
       _state = RegistrationState.error;
-      _error = e.toString();
+      _error = _friendlyError(e);
       _notify();
     }
   }
@@ -309,6 +317,26 @@ class RegistrationController extends ChangeNotifier {
     }
   }
 
+  /// Converts common non-Matrix exceptions to user-friendly messages.
+  static String _friendlyError(Object e) {
+    if (e is SocketException) return 'Could not reach server';
+    if (e is TimeoutException) return 'Connection timed out';
+    if (e is FormatException) return 'Invalid server response';
+    return e.toString();
+  }
+
+  // ── Cancel ──────────────────────────────────────────────────────
+
+  /// Resets the controller from a UIA dead-end back to [RegistrationState.formReady].
+  void cancelRegistration() {
+    _session = null;
+    _flows = [];
+    _completedStages = [];
+    _error = null;
+    _state = RegistrationState.formReady;
+    _notify();
+  }
+
   // ── Internals ──────────────────────────────────────────────────
 
   void _clearCredentials() {
@@ -326,6 +354,7 @@ class RegistrationController extends ChangeNotifier {
   @override
   void dispose() {
     _isDisposed = true;
+    _clearCredentials();
     super.dispose();
   }
 }
