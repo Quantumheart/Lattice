@@ -11,6 +11,23 @@ import 'package:path_provider/path_provider.dart';
 
 import 'session_backup.dart';
 
+/// Describes what authentication methods a homeserver supports.
+class ServerAuthCapabilities {
+  final bool supportsPassword;
+  final bool supportsSso;
+  final bool supportsRegistration;
+  final List<String> ssoIdentityProviders;
+  final List<String> registrationStages;
+
+  const ServerAuthCapabilities({
+    this.supportsPassword = false,
+    this.supportsSso = false,
+    this.supportsRegistration = false,
+    this.ssoIdentityProviders = const [],
+    this.registrationStages = const [],
+  });
+}
+
 /// Central service that owns the [Client] instance and exposes
 /// reactive state to the widget tree via [ChangeNotifier].
 class MatrixService extends ChangeNotifier {
@@ -289,6 +306,85 @@ class MatrixService extends ChangeNotifier {
     }
   }
 
+  // ── Server Capabilities ──────────────────────────────────────
+
+  /// Query the homeserver for supported login and registration flows.
+  ///
+  /// Temporarily sets [_client.homeserver] for the probe requests and
+  /// restores it afterwards. Returns an empty [ServerAuthCapabilities]
+  /// if called while logged in to avoid racing with sync.
+  Future<ServerAuthCapabilities> getServerAuthCapabilities(
+      String homeserver) async {
+    if (_isLoggedIn) {
+      debugPrint('[Lattice] getServerAuthCapabilities called while logged in, '
+          'skipping to avoid mutating shared client state');
+      return const ServerAuthCapabilities();
+    }
+
+    var hs = homeserver.trim();
+    if (!hs.startsWith('http')) hs = 'https://$hs';
+
+    final previousHomeserver = _client.homeserver;
+    try {
+      await _client.checkHomeserver(Uri.parse(hs));
+
+      // Query login flows.
+      final loginFlows = await _client.getLoginFlows();
+      final supportsPassword =
+          loginFlows?.any((f) => f.type == AuthenticationTypes.password) ??
+              false;
+      final supportsSso =
+          loginFlows?.any((f) => f.type == AuthenticationTypes.sso) ?? false;
+
+      // Extract SSO identity providers.
+      final ssoFlow = loginFlows
+          ?.where((f) => f.type == AuthenticationTypes.sso)
+          .firstOrNull;
+      final idProviders = <String>[];
+      if (ssoFlow != null) {
+        final providers = ssoFlow.additionalProperties['identity_providers'];
+        if (providers is List) {
+          for (final p in providers) {
+            if (p is Map && p['name'] is String) {
+              idProviders.add(p['name'] as String);
+            }
+          }
+        }
+      }
+
+      // Probe registration support.
+      var supportsRegistration = false;
+      var registrationStages = <String>[];
+      try {
+        await _client.register();
+      } on MatrixException catch (e) {
+        if (e.raw.containsKey('flows')) {
+          supportsRegistration = true;
+          final flows = e.raw['flows'];
+          if (flows is List && flows.isNotEmpty) {
+            final firstFlow = flows.first;
+            if (firstFlow is Map && firstFlow['stages'] is List) {
+              registrationStages =
+                  (firstFlow['stages'] as List).cast<String>();
+            }
+          }
+        }
+      } catch (_) {
+        // Registration not supported or server error.
+      }
+
+      return ServerAuthCapabilities(
+        supportsPassword: supportsPassword,
+        supportsSso: supportsSso,
+        supportsRegistration: supportsRegistration,
+        ssoIdentityProviders: idProviders,
+        registrationStages: registrationStages,
+      );
+    } finally {
+      _client.homeserver = previousHomeserver;
+    }
+  }
+
   // ── Login ────────────────────────────────────────────────────
   Future<bool> login({
     required String homeserver,
@@ -320,13 +416,7 @@ class MatrixService extends ChangeNotifier {
           'encryption=${_client.encryption != null ? "available" : "null"}, '
           'encryptionEnabled=${_client.encryptionEnabled}');
 
-      // Persist credentials.
-      await _storage.write(
-          key: _key('access_token'), value: _client.accessToken);
-      await _storage.write(key: _key('user_id'), value: _client.userID);
-      await _storage.write(
-          key: _key('homeserver'), value: _client.homeserver.toString());
-      await _storage.write(key: _key('device_id'), value: _client.deviceID);
+      await _persistCredentials();
 
       _setCachedPassword(password);
       _listenForUia();
@@ -346,6 +436,90 @@ class MatrixService extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  // ── SSO Login ──────────────────────────────────────────────────
+
+  /// Complete an SSO login using a login token received from the browser
+  /// callback. Call this after the user authenticates via SSO.
+  Future<bool> completeSsoLogin({
+    required String homeserver,
+    required String loginToken,
+  }) async {
+    _loginError = null;
+    notifyListeners();
+
+    try {
+      var hs = homeserver.trim();
+      if (!hs.startsWith('http')) hs = 'https://$hs';
+
+      _client.homeserver = Uri.parse(hs);
+      await _client.checkHomeserver(Uri.parse(hs));
+
+      debugPrint('[Lattice] Completing SSO login ...');
+      await _client.login(
+        LoginType.mLoginToken,
+        token: loginToken,
+        initialDeviceDisplayName: 'Lattice Flutter',
+      );
+      debugPrint('[Lattice] SSO login complete – '
+          'deviceId=${_client.deviceID}, '
+          'userId=${_client.userID}');
+
+      await _persistCredentials();
+      _listenForUia();
+      _listenForLoginState();
+      await _startSync();
+      _isLoggedIn = true;
+
+      await _saveSessionBackup();
+
+      notifyListeners();
+      return true;
+    } catch (e, s) {
+      debugPrint('[Lattice] SSO login failed: $e');
+      debugPrint('[Lattice] Stack trace:\n$s');
+      _loginError = e.toString();
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // ── Registration ──────────────────────────────────────────────
+
+  /// Complete a successful registration by persisting credentials and
+  /// starting sync. The SDK's [Client.register] already calls
+  /// [Client.init] internally, so the client is initialized by the time
+  /// we reach here — we just persist and start syncing.
+  Future<void> completeRegistration(RegisterResponse response) async {
+    debugPrint('[Lattice] Registration complete – userId=${response.userId}');
+
+    if (_client.accessToken == null || _client.userID == null) {
+      throw StateError(
+          'Client was not initialized after register(). '
+          'accessToken=${_client.accessToken}, userID=${_client.userID}');
+    }
+
+    await _persistCredentials();
+    _listenForUia();
+    _listenForLoginState();
+    await _startSync();
+    _isLoggedIn = true;
+
+    await _saveSessionBackup();
+
+    notifyListeners();
+  }
+
+  // ── Credential Persistence ──────────────────────────────────
+
+  Future<void> _persistCredentials() async {
+    await _storage.write(
+        key: _key('access_token'), value: _client.accessToken);
+    await _storage.write(key: _key('user_id'), value: _client.userID);
+    await _storage.write(
+        key: _key('homeserver'), value: _client.homeserver.toString());
+    await _storage.write(key: _key('device_id'), value: _client.deviceID);
   }
 
   // ── Logout ───────────────────────────────────────────────────
@@ -385,6 +559,12 @@ class MatrixService extends ChangeNotifier {
       _isLoggedIn = false;
       await _clearSessionKeys();
       await SessionBackup.delete(clientName: clientName, storage: _storage);
+      try {
+        await _client.logout();
+      } catch (_) {
+        // Logout may fail since the token is already invalid; just ensure
+        // the local session is cleared so the SDK stops retrying.
+      }
       notifyListeners();
     }
   }
