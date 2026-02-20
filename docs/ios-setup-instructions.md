@@ -23,7 +23,7 @@ sudo xcodebuild -runFirstLaunch
 
 ### 2. Install Flutter
 
-Follow the official guide for macOS: [docs.flutter.dev/get-started/install/macos](https://docs.flutter.dev/get-started/install/macos)
+Follow the official guide: [docs.flutter.dev/install](https://docs.flutter.dev/install)
 
 Once installed, verify everything is working:
 
