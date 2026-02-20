@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
+import 'package:provider/provider.dart';
+
+import '../services/preferences_service.dart';
 
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
@@ -20,11 +23,13 @@ class MessageBubble extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final maxWidth = MediaQuery.sizeOf(context).width * 0.72;
+    final density = context.watch<PreferencesService>().messageDensity;
+    final metrics = _DensityMetrics.of(density);
 
     return Padding(
       padding: EdgeInsets.only(
-        top: isFirst ? 10 : 2,
-        bottom: 2,
+        top: isFirst ? metrics.firstMessageTopPad : metrics.messageTopPad,
+        bottom: metrics.messageBottomPad,
       ),
       child: Row(
         mainAxisAlignment:
@@ -36,12 +41,12 @@ class MessageBubble extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: CircleAvatar(
-                radius: 14,
+                radius: metrics.avatarRadius,
                 backgroundColor: _senderColor(event.senderId, cs),
                 child: Text(
                   _senderInitial(event),
-                  style: const TextStyle(
-                    fontSize: 11,
+                  style: TextStyle(
+                    fontSize: metrics.avatarFontSize,
                     fontWeight: FontWeight.w600,
                     color: Colors.white,
                   ),
@@ -49,23 +54,27 @@ class MessageBubble extends StatelessWidget {
               ),
             )
           else if (!isMe)
-            const SizedBox(width: 36),
+            SizedBox(width: metrics.avatarRadius * 2 + 8),
 
           // Bubble
           Flexible(
             child: Container(
               constraints: BoxConstraints(maxWidth: maxWidth),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+              padding: EdgeInsets.symmetric(
+                horizontal: metrics.bubbleHorizontalPad,
+                vertical: metrics.bubbleVerticalPad,
+              ),
               decoration: BoxDecoration(
                 color: isMe
                     ? cs.primary
                     : cs.primaryContainer.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(18),
-                  topRight: const Radius.circular(18),
-                  bottomLeft: Radius.circular(isMe ? 18 : (isFirst ? 4 : 18)),
-                  bottomRight:
-                      Radius.circular(isMe ? (isFirst ? 4 : 18) : 18),
+                  topLeft: Radius.circular(metrics.bubbleRadius),
+                  topRight: Radius.circular(metrics.bubbleRadius),
+                  bottomLeft: Radius.circular(
+                      isMe ? metrics.bubbleRadius : (isFirst ? 4 : metrics.bubbleRadius)),
+                  bottomRight: Radius.circular(
+                      isMe ? (isFirst ? 4 : metrics.bubbleRadius) : metrics.bubbleRadius),
                 ),
               ),
               child: Column(
@@ -74,31 +83,31 @@ class MessageBubble extends StatelessWidget {
                   // Sender name (first in group, non-me)
                   if (!isMe && isFirst)
                     Padding(
-                      padding: const EdgeInsets.only(bottom: 3),
+                      padding: EdgeInsets.only(bottom: metrics.senderNameBottomPad),
                       child: Text(
                         event.senderFromMemoryOrFallback.displayName ??
                             event.senderId,
                         style: tt.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          fontSize: 12,
+                          fontSize: metrics.senderNameFontSize,
                           color: _senderColor(event.senderId, cs),
                         ),
                       ),
                     ),
 
                   // Body
-                  _buildBody(context),
+                  _buildBody(context, metrics),
 
                   // Timestamp
                   Padding(
-                    padding: const EdgeInsets.only(top: 4),
+                    padding: EdgeInsets.only(top: metrics.timestampTopPad),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           _formatTime(event.originServerTs),
                           style: tt.bodyMedium?.copyWith(
-                            fontSize: 10,
+                            fontSize: metrics.timestampFontSize,
                             color: isMe
                                 ? cs.onPrimary.withValues(alpha: 0.6)
                                 : cs.onSurfaceVariant.withValues(alpha: 0.5),
@@ -110,7 +119,7 @@ class MessageBubble extends StatelessWidget {
                             event.status.isSent
                                 ? Icons.done_all_rounded
                                 : Icons.done_rounded,
-                            size: 13,
+                            size: metrics.statusIconSize,
                             color: cs.onPrimary.withValues(alpha: 0.6),
                           ),
                         ],
@@ -126,7 +135,7 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildBody(BuildContext context) {
+  Widget _buildBody(BuildContext context, _DensityMetrics metrics) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -162,8 +171,8 @@ class MessageBubble extends StatelessWidget {
       event.body,
       style: tt.bodyLarge?.copyWith(
         color: isMe ? cs.onPrimary : cs.onSurface,
-        fontSize: 14,
-        height: 1.4,
+        fontSize: metrics.bodyFontSize,
+        height: metrics.bodyLineHeight,
       ),
     );
   }
@@ -194,4 +203,102 @@ class MessageBubble extends StatelessWidget {
     final m = ts.minute.toString().padLeft(2, '0');
     return '$h:$m';
   }
+}
+
+// ── Density metrics ──────────────────────────────────────────
+
+class _DensityMetrics {
+  const _DensityMetrics({
+    required this.firstMessageTopPad,
+    required this.messageTopPad,
+    required this.messageBottomPad,
+    required this.avatarRadius,
+    required this.avatarFontSize,
+    required this.bubbleHorizontalPad,
+    required this.bubbleVerticalPad,
+    required this.bubbleRadius,
+    required this.senderNameBottomPad,
+    required this.senderNameFontSize,
+    required this.bodyFontSize,
+    required this.bodyLineHeight,
+    required this.timestampTopPad,
+    required this.timestampFontSize,
+    required this.statusIconSize,
+  });
+
+  final double firstMessageTopPad;
+  final double messageTopPad;
+  final double messageBottomPad;
+  final double avatarRadius;
+  final double avatarFontSize;
+  final double bubbleHorizontalPad;
+  final double bubbleVerticalPad;
+  final double bubbleRadius;
+  final double senderNameBottomPad;
+  final double senderNameFontSize;
+  final double bodyFontSize;
+  final double bodyLineHeight;
+  final double timestampTopPad;
+  final double timestampFontSize;
+  final double statusIconSize;
+
+  static const _compact = _DensityMetrics(
+    firstMessageTopPad: 6,
+    messageTopPad: 1,
+    messageBottomPad: 1,
+    avatarRadius: 12,
+    avatarFontSize: 9,
+    bubbleHorizontalPad: 10,
+    bubbleVerticalPad: 6,
+    bubbleRadius: 16,
+    senderNameBottomPad: 2,
+    senderNameFontSize: 11,
+    bodyFontSize: 13,
+    bodyLineHeight: 1.3,
+    timestampTopPad: 3,
+    timestampFontSize: 9,
+    statusIconSize: 12,
+  );
+
+  static const _default = _DensityMetrics(
+    firstMessageTopPad: 10,
+    messageTopPad: 2,
+    messageBottomPad: 2,
+    avatarRadius: 14,
+    avatarFontSize: 11,
+    bubbleHorizontalPad: 14,
+    bubbleVerticalPad: 9,
+    bubbleRadius: 18,
+    senderNameBottomPad: 3,
+    senderNameFontSize: 12,
+    bodyFontSize: 14,
+    bodyLineHeight: 1.4,
+    timestampTopPad: 4,
+    timestampFontSize: 10,
+    statusIconSize: 13,
+  );
+
+  static const _comfortable = _DensityMetrics(
+    firstMessageTopPad: 14,
+    messageTopPad: 4,
+    messageBottomPad: 4,
+    avatarRadius: 16,
+    avatarFontSize: 12,
+    bubbleHorizontalPad: 16,
+    bubbleVerticalPad: 12,
+    bubbleRadius: 20,
+    senderNameBottomPad: 4,
+    senderNameFontSize: 13,
+    bodyFontSize: 15,
+    bodyLineHeight: 1.5,
+    timestampTopPad: 5,
+    timestampFontSize: 11,
+    statusIconSize: 14,
+  );
+
+  static _DensityMetrics of(MessageDensity density) => switch (density) {
+        MessageDensity.compact => _compact,
+        MessageDensity.defaultDensity => _default,
+        MessageDensity.comfortable => _comfortable,
+      };
 }
