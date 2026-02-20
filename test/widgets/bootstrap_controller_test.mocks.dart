@@ -7749,6 +7749,15 @@ class MockMatrixService extends _i1.Mock implements _i13.MatrixService {
       ) as List<_i2.Room>);
 
   @override
+  set isLoggedInForTest(bool? value) => super.noSuchMethod(
+        Invocation.setter(
+          #isLoggedInForTest,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
   bool get hasListeners => (super.noSuchMethod(
         Invocation.getter(#hasListeners),
         returnValue: false,
