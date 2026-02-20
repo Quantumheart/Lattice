@@ -2,19 +2,56 @@
 
 Generate the iOS project files for our Flutter app so we can ship to the App Store.
 
-## Prerequisites
+## Environment Setup
 
-This must be run on a Mac with:
-- Xcode installed (install from the App Store if missing)
-- Flutter SDK installed and on PATH
-- Both `flutter doctor` checks for "Flutter" and "Xcode" passing
+This must be run on a Mac. Before starting the task, ensure the following tools are installed.
 
-If Xcode was just installed, run these first:
+### 1. Install Xcode
+
+Check if Xcode is installed:
+
+```bash
+xcode-select -p
+```
+
+If that fails, Xcode must be installed from the Mac App Store manually — there is no CLI-only way to install it. Once installed, run:
 
 ```bash
 sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
 sudo xcodebuild -runFirstLaunch
 ```
+
+### 2. Install Homebrew (if missing)
+
+```bash
+which brew || /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
+
+### 3. Install Flutter
+
+```bash
+brew install --cask flutter
+```
+
+On Apple Silicon Macs, also install Rosetta 2:
+
+```bash
+sudo softwareupdate --install-rosetta --agree-to-license
+```
+
+### 4. Install CocoaPods
+
+```bash
+brew install cocoapods
+```
+
+### 5. Verify the environment
+
+```bash
+flutter doctor
+```
+
+Both the "Flutter" and "Xcode" lines must show green checkmarks before continuing. Resolve any issues `flutter doctor` reports before proceeding.
 
 ## Task
 
