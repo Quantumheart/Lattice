@@ -150,7 +150,7 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                     ),
                     textInputAction: TextInputAction.done,
-                    onSubmitted: (_) => _login(),
+                    onSubmitted: _loading ? null : (_) => _login(),
                   ),
                   const SizedBox(height: 8),
 

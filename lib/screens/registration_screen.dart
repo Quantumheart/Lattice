@@ -50,11 +50,13 @@ class _RegistrationScreenState extends State<RegistrationScreen>
     _controller.checkServer();
 
     _homeserverCtrl.addListener(_onHomeserverChanged);
+    _confirmPasswordCtrl.addListener(_onConfirmPasswordChanged);
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
+    _confirmPasswordCtrl.removeListener(_onConfirmPasswordChanged);
     _controller.removeListener(_onControllerChanged);
     _controller.dispose();
     _fadeCtrl.dispose();
@@ -75,6 +77,12 @@ class _RegistrationScreenState extends State<RegistrationScreen>
       return;
     }
     setState(() {});
+  }
+
+  void _onConfirmPasswordChanged() {
+    if (_confirmPasswordError != null) {
+      setState(() => _confirmPasswordError = null);
+    }
   }
 
   void _onHomeserverChanged() {
@@ -268,9 +276,22 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                   if (isUiaStage)
                     Padding(
                       padding: const EdgeInsets.only(top: 16),
-                      child: buildUiaContent(
-                        context: context,
-                        controller: _controller,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          buildUiaContent(
+                            context: context,
+                            controller: _controller,
+                          ),
+                          const SizedBox(height: 12),
+                          TextButton(
+                            onPressed: _controller.cancelRegistration,
+                            child: Text(
+                              'Cancel registration',
+                              style: TextStyle(color: cs.error),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
 

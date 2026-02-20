@@ -144,6 +144,17 @@ void main() {
       );
     });
 
+    test('throws ArgumentError for empty homeserver', () async {
+      expect(
+        () => service.getServerAuthCapabilities(''),
+        throwsA(isA<ArgumentError>()),
+      );
+      expect(
+        () => service.getServerAuthCapabilities('   '),
+        throwsA(isA<ArgumentError>()),
+      );
+    });
+
     test('auto-prefixes https if missing', () async {
       when(mockClient.getLoginFlows()).thenAnswer((_) async => []);
       when(mockClient.register()).thenThrow(

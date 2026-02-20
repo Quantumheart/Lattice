@@ -33,6 +33,8 @@ mixin AuthMixin on ChangeNotifier {
 
   StreamSubscription? _loginStateSub;
 
+  Completer<void>? _capabilitiesLock;
+
   // ── Server Capabilities ──────────────────────────────────────
 
   /// Query the homeserver for supported login and registration flows.
@@ -49,7 +51,15 @@ mixin AuthMixin on ChangeNotifier {
     }
 
     var hs = homeserver.trim();
+    if (hs.isEmpty) throw ArgumentError('Homeserver cannot be empty');
     if (!hs.startsWith('http')) hs = 'https://$hs';
+
+    // Serialize probes to prevent concurrent homeserver mutations.
+    while (_capabilitiesLock != null) {
+      await _capabilitiesLock!.future;
+    }
+    final lock = Completer<void>();
+    _capabilitiesLock = lock;
 
     final previousHomeserver = client.homeserver;
     try {
@@ -109,6 +119,8 @@ mixin AuthMixin on ChangeNotifier {
       );
     } finally {
       client.homeserver = previousHomeserver;
+      _capabilitiesLock = null;
+      lock.complete();
     }
   }
 
@@ -123,6 +135,7 @@ mixin AuthMixin on ChangeNotifier {
 
     try {
       var hs = homeserver.trim();
+      if (hs.isEmpty) throw ArgumentError('Homeserver cannot be empty');
       if (!hs.startsWith('http')) hs = 'https://$hs';
 
       debugPrint('[Lattice] Checking homeserver: $hs');
@@ -178,6 +191,7 @@ mixin AuthMixin on ChangeNotifier {
 
     try {
       var hs = homeserver.trim();
+      if (hs.isEmpty) throw ArgumentError('Homeserver cannot be empty');
       if (!hs.startsWith('http')) hs = 'https://$hs';
 
       client.homeserver = Uri.parse(hs);
@@ -218,7 +232,10 @@ mixin AuthMixin on ChangeNotifier {
   /// starting sync. The SDK's [Client.register] already calls
   /// [Client.init] internally, so the client is initialized by the time
   /// we reach here — we just persist and start syncing.
-  Future<void> completeRegistration(RegisterResponse response) async {
+  Future<void> completeRegistration(
+    RegisterResponse response, {
+    String? password,
+  }) async {
     debugPrint('[Lattice] Registration complete – userId=${response.userId}');
 
     if (client.accessToken == null || client.userID == null) {
@@ -228,6 +245,7 @@ mixin AuthMixin on ChangeNotifier {
     }
 
     await _persistCredentials();
+    if (password != null) setCachedPassword(password);
     listenForUia();
     listenForLoginState();
     await startSync();
@@ -260,7 +278,7 @@ mixin AuthMixin on ChangeNotifier {
         await client.logout();
       }
     } catch (e) {
-      debugPrint('Logout error: $e');
+      debugPrint('[Lattice] Logout error: $e');
     }
     await clearSessionKeys();
     await SessionBackup.delete(clientName: clientName, storage: storage);

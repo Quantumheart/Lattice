@@ -8011,11 +8011,15 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
       ) as _i5.Future<bool>);
 
   @override
-  _i5.Future<void> completeRegistration(_i2.RegisterResponse? response) =>
+  _i5.Future<void> completeRegistration(
+    _i2.RegisterResponse? response, {
+    String? password,
+  }) =>
       (super.noSuchMethod(
         Invocation.method(
           #completeRegistration,
           [response],
+          {#password: password},
         ),
         returnValue: _i5.Future<void>.value(),
         returnValueForMissingStub: _i5.Future<void>.value(),
