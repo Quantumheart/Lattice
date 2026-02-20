@@ -1,6 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Which subset of rooms to show in the room list.
+enum RoomFilter {
+  all,
+  directMessages,
+  groups,
+  unread,
+  favourites;
+
+  String get label => switch (this) {
+        RoomFilter.all => 'All',
+        RoomFilter.directMessages => 'DMs',
+        RoomFilter.groups => 'Groups',
+        RoomFilter.unread => 'Unread',
+        RoomFilter.favourites => 'Favourites',
+      };
+
+  IconData get icon => switch (this) {
+        RoomFilter.all => Icons.chat_bubble_outline_rounded,
+        RoomFilter.directMessages => Icons.person_outline_rounded,
+        RoomFilter.groups => Icons.group_outlined,
+        RoomFilter.unread => Icons.mark_chat_unread_outlined,
+        RoomFilter.favourites => Icons.star_outline_rounded,
+      };
+}
+
 /// Controls how compact or spacious message bubbles appear.
 enum MessageDensity {
   compact,
@@ -67,6 +92,42 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setThemeMode(ThemeMode mode) async {
     await _prefs?.setString(_themeModeKey, mode.name);
     debugPrint('[Lattice] Theme mode set to ${mode.name}');
+    notifyListeners();
+  }
+
+  // ── Room filter ─────────────────────────────────────────────
+
+  static const _roomFilterKey = 'room_filter';
+
+  RoomFilter get roomFilter {
+    final stored = _prefs?.getString(_roomFilterKey);
+    if (stored == null) return RoomFilter.all;
+    return RoomFilter.values.firstWhere(
+      (f) => f.name == stored,
+      orElse: () => RoomFilter.all,
+    );
+  }
+
+  Future<void> setRoomFilter(RoomFilter filter) async {
+    await _prefs?.setString(_roomFilterKey, filter.name);
+    debugPrint('[Lattice] Room filter set to ${filter.label}');
+    notifyListeners();
+  }
+
+  // ── Room list panel width ─────────────────────────────────
+
+  static const _panelWidthKey = 'room_list_panel_width';
+  static const double defaultPanelWidth = 360;
+  static const double minPanelWidth = 0;
+  static const double maxPanelWidth = 500;
+
+  double get panelWidth {
+    return _prefs?.getDouble(_panelWidthKey) ?? defaultPanelWidth;
+  }
+
+  Future<void> setPanelWidth(double width) async {
+    final clamped = width.clamp(minPanelWidth, maxPanelWidth);
+    await _prefs?.setDouble(_panelWidthKey, clamped);
     notifyListeners();
   }
 }

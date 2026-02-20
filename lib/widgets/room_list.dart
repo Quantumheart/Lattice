@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:matrix/matrix.dart';
+import 'package:matrix/matrix.dart' hide RoomFilter;
 
 import '../services/matrix_service.dart';
+import '../services/preferences_service.dart';
 import 'room_avatar.dart';
 
 class RoomList extends StatefulWidget {
@@ -25,6 +26,7 @@ class _RoomListState extends State<RoomList> {
   @override
   Widget build(BuildContext context) {
     final matrix = context.watch<MatrixService>();
+    final prefs = context.watch<PreferencesService>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -36,6 +38,17 @@ class _RoomListState extends State<RoomList> {
           .toList();
     }
 
+    // ── Room category filter ──
+    rooms = switch (prefs.roomFilter) {
+      RoomFilter.all => rooms,
+      RoomFilter.directMessages =>
+        rooms.where((r) => r.isDirectChat).toList(),
+      RoomFilter.groups => rooms.where((r) => !r.isDirectChat).toList(),
+      RoomFilter.unread =>
+        rooms.where((r) => r.notificationCount > 0).toList(),
+      RoomFilter.favourites => rooms.where((r) => r.isFavourite).toList(),
+    };
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -45,14 +58,7 @@ class _RoomListState extends State<RoomList> {
                   'Space')
               : 'Chats',
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list_rounded),
-            onPressed: () {
-              // TODO: filter rooms
-            },
-          ),
-        ],
+        actions: const [],
       ),
       body: Column(
         children: [
@@ -81,6 +87,24 @@ class _RoomListState extends State<RoomList> {
             ),
           ),
 
+          // ── Filter chips ──
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: RoomFilter.values.map((filter) {
+                return FilterChip(
+                  label: Text(filter.label),
+                  avatar: Icon(filter.icon, size: 18),
+                  selected: prefs.roomFilter == filter,
+                  onSelected: (_) => prefs.setRoomFilter(filter),
+                  showCheckmark: false,
+                );
+              }).toList(),
+            ),
+          ),
+
           // ── Section label ──
           Padding(
             padding:
@@ -88,7 +112,9 @@ class _RoomListState extends State<RoomList> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'RECENT',
+                prefs.roomFilter == RoomFilter.all
+                    ? 'RECENT'
+                    : prefs.roomFilter.label.toUpperCase(),
                 style: tt.labelSmall?.copyWith(
                   color: cs.primary,
                   letterSpacing: 1.5,
@@ -104,7 +130,9 @@ class _RoomListState extends State<RoomList> {
                     child: Text(
                       _query.isNotEmpty
                           ? 'No rooms match "$_query"'
-                          : 'No rooms yet',
+                          : prefs.roomFilter == RoomFilter.all
+                              ? 'No rooms yet'
+                              : 'No ${prefs.roomFilter.label.toLowerCase()}',
                       style: tt.bodyMedium?.copyWith(
                         color: cs.onSurfaceVariant.withValues(alpha: 0.6),
                       ),
@@ -194,38 +222,41 @@ class _RoomTile extends StatelessWidget {
                 const SizedBox(width: 8),
 
                 // Timestamp + badge
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      _formatTime(lastEvent?.originServerTs),
-                      style: tt.bodyMedium?.copyWith(
-                        fontSize: 11,
-                        color: unread > 0
-                            ? cs.primary
-                            : cs.onSurfaceVariant.withValues(alpha: 0.5),
-                      ),
-                    ),
-                    if (unread > 0) ...[
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: cs.primary,
-                          borderRadius: BorderRadius.circular(10),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 44),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        _formatTime(lastEvent?.originServerTs),
+                        style: tt.bodyMedium?.copyWith(
+                          fontSize: 11,
+                          color: unread > 0
+                              ? cs.primary
+                              : cs.onSurfaceVariant.withValues(alpha: 0.5),
                         ),
-                        child: Text(
-                          unread > 99 ? '99+' : '$unread',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: cs.onPrimary,
+                      ),
+                      if (unread > 0) ...[
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: cs.primary,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            unread > 99 ? '99+' : '$unread',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: cs.onPrimary,
+                            ),
                           ),
                         ),
-                      ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
               ],
             ),
