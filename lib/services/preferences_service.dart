@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Controls how compact or spacious message bubbles appear.
@@ -21,6 +21,7 @@ class PreferencesService extends ChangeNotifier {
 
   SharedPreferences? _prefs;
   static const _densityKey = 'message_density';
+  static const _themeModeKey = 'theme_mode';
 
   /// Initialise the underlying [SharedPreferences] instance.
   /// Must be called (and awaited) before reading any values.
@@ -43,6 +44,29 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setMessageDensity(MessageDensity density) async {
     await _prefs?.setString(_densityKey, density.name);
     debugPrint('[Lattice] Message density set to ${density.label}');
+    notifyListeners();
+  }
+
+  // ── Theme mode ──────────────────────────────────────────────
+
+  ThemeMode get themeMode {
+    final stored = _prefs?.getString(_themeModeKey);
+    if (stored == null) return ThemeMode.system;
+    return ThemeMode.values.firstWhere(
+      (m) => m.name == stored,
+      orElse: () => ThemeMode.system,
+    );
+  }
+
+  String get themeModeLabel => switch (themeMode) {
+        ThemeMode.system => 'System default',
+        ThemeMode.light => 'Light',
+        ThemeMode.dark => 'Dark',
+      };
+
+  Future<void> setThemeMode(ThemeMode mode) async {
+    await _prefs?.setString(_themeModeKey, mode.name);
+    debugPrint('[Lattice] Theme mode set to ${mode.name}');
     notifyListeners();
   }
 }
