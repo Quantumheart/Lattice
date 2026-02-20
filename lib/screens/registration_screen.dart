@@ -51,11 +51,14 @@ class _RegistrationScreenState extends State<RegistrationScreen>
 
     _homeserverCtrl.addListener(_onHomeserverChanged);
     _confirmPasswordCtrl.addListener(_onConfirmPasswordChanged);
+    _passwordCtrl.addListener(_onConfirmPasswordChanged);
   }
 
   @override
   void dispose() {
     _debounce?.cancel();
+    _homeserverCtrl.removeListener(_onHomeserverChanged);
+    _passwordCtrl.removeListener(_onConfirmPasswordChanged);
     _confirmPasswordCtrl.removeListener(_onConfirmPasswordChanged);
     _controller.removeListener(_onControllerChanged);
     _controller.dispose();

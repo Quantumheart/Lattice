@@ -15,6 +15,7 @@ mixin AuthMixin on ChangeNotifier {
   FlutterSecureStorage get storage;
   String get clientName;
   bool get isLoggedIn;
+  @protected
   set isLoggedIn(bool value);
 
   // ── Cross-mixin dependencies ──────────────────────────────────
@@ -310,10 +311,11 @@ mixin AuthMixin on ChangeNotifier {
       await clearSessionKeys();
       await SessionBackup.delete(clientName: clientName, storage: storage);
       try {
+        // Call logout to clear SDK internal session state and stop sync
+        // retries, even though the token may already be invalid.
         await client.logout();
       } catch (_) {
-        // Logout may fail since the token is already invalid; just ensure
-        // the local session is cleared so the SDK stops retrying.
+        // Expected — the token is likely already revoked.
       }
       notifyListeners();
     }
