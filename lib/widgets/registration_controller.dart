@@ -3,8 +3,10 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:matrix/matrix.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../services/matrix_service.dart';
+import '../services/recaptcha_server.dart';
 
 /// States for the registration flow state machine.
 enum RegistrationState {
@@ -66,6 +68,47 @@ class RegistrationController extends ChangeNotifier {
   String? _session;
   List<List<String>> _flows = [];
   List<String> _completedStages = [];
+  Map<String, dynamic> _uiaParams = {};
+
+  // ── reCAPTCHA ───────────────────────────────────────────────
+  RecaptchaServer? _recaptchaServer;
+  bool _recaptchaWaiting = false;
+
+  /// True while the system browser is open waiting for the user.
+  bool get recaptchaWaiting => _recaptchaWaiting;
+
+  /// Public key for the reCAPTCHA widget, from UIA params.
+  String? get recaptchaPublicKey {
+    final p = _uiaParams['m.login.recaptcha'];
+    return p is Map ? p['public_key'] as String? : null;
+  }
+
+  /// Policy list from UIA params for the Terms of Service stage.
+  List<({String name, String url})> get termsOfServicePolicies {
+    final termsParams = _uiaParams['m.login.terms'];
+    if (termsParams is! Map) return const [];
+    final policies = termsParams['policies'];
+    if (policies is! Map) return const [];
+
+    final result = <({String name, String url})>[];
+    for (final entry in policies.entries) {
+      final policy = entry.value;
+      if (policy is! Map) continue;
+      // Each policy has locale keys (e.g. 'en') mapping to {name, url},
+      // plus a 'version' key (String). Find the first locale entry.
+      for (final localeEntry in policy.entries) {
+        if (localeEntry.value is! Map) continue;
+        final localised = localeEntry.value as Map;
+        final name = localised['name'] as String?;
+        final url = localised['url'] as String?;
+        if (name != null && url != null) {
+          result.add((name: name, url: url));
+          break;
+        }
+      }
+    }
+    return result;
+  }
 
   bool _isDisposed = false;
 
@@ -119,7 +162,7 @@ class RegistrationController extends ChangeNotifier {
     required String password,
     String token = '',
   }) async {
-    if (_state == RegistrationState.registering) return;
+    if (_state != RegistrationState.formReady) return;
 
     _usernameError = null;
     _passwordError = null;
@@ -201,6 +244,9 @@ class RegistrationController extends ChangeNotifier {
                     List<String>.from((f as Map)['stages'] as List? ?? []))
                 .toList() ??
             [];
+        _uiaParams = Map<String, dynamic>.from(
+          e.raw['params'] as Map? ?? {},
+        );
         _advanceToNextStage();
         return;
       }
@@ -287,6 +333,77 @@ class RegistrationController extends ChangeNotifier {
     });
   }
 
+  // ── reCAPTCHA submission ──────────────────────────────────────
+
+  Future<void> submitRecaptcha() async {
+    if (_state != RegistrationState.recaptcha) return;
+
+    final publicKey = recaptchaPublicKey;
+    if (publicKey == null || publicKey.isEmpty) {
+      _state = RegistrationState.error;
+      _error = 'Server did not provide a reCAPTCHA site key';
+      _notify();
+      return;
+    }
+
+    _recaptchaServer?.dispose();
+
+    final server = RecaptchaServer(siteKey: publicKey);
+    _recaptchaServer = server;
+
+    try {
+      final url = await server.start();
+      debugPrint('[Lattice] Opening reCAPTCHA page: $url');
+
+      if (!await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      )) {
+        throw Exception('Could not open browser');
+      }
+
+      _recaptchaWaiting = true;
+      _notify();
+
+      final token = await server.tokenFuture;
+      _recaptchaWaiting = false;
+      _recaptchaServer = null;
+
+      if (_isDisposed) return;
+
+      await _attemptRegister(
+        auth: _RecaptchaAuth(session: _session, response: token),
+      );
+    } on RecaptchaException catch (e) {
+      if (_isDisposed) return;
+      _recaptchaWaiting = false;
+      _recaptchaServer = null;
+      _state = RegistrationState.error;
+      _error = e.message;
+      _notify();
+    } catch (e) {
+      if (_isDisposed) return;
+      _recaptchaWaiting = false;
+      _recaptchaServer = null;
+      _state = RegistrationState.error;
+      _error = _friendlyError(e);
+      _notify();
+    }
+  }
+
+  // ── Terms submission ────────────────────────────────────────
+
+  Future<void> submitTerms() async {
+    if (_state != RegistrationState.acceptTerms) return;
+
+    await _attemptRegister(
+      auth: AuthenticationData(
+        type: 'm.login.terms',
+        session: _session,
+      ),
+    );
+  }
+
   // ── Error mapping ──────────────────────────────────────────────
 
   static const _usernameErrcodes = {
@@ -329,9 +446,13 @@ class RegistrationController extends ChangeNotifier {
 
   /// Resets the controller from a UIA dead-end back to [RegistrationState.formReady].
   void cancelRegistration() {
+    _recaptchaServer?.dispose();
+    _recaptchaServer = null;
+    _recaptchaWaiting = false;
     _session = null;
     _flows = [];
     _completedStages = [];
+    _uiaParams = {};
     _error = null;
     _state = RegistrationState.formReady;
     _notify();
@@ -354,8 +475,26 @@ class RegistrationController extends ChangeNotifier {
   @override
   void dispose() {
     _isDisposed = true;
+    _recaptchaServer?.dispose();
+    _recaptchaServer = null;
     _clearCredentials();
     super.dispose();
+  }
+}
+
+/// [AuthenticationData] subclass for the `m.login.recaptcha` UIA stage.
+class _RecaptchaAuth extends AuthenticationData {
+  final String _response;
+
+  _RecaptchaAuth({super.session, required String response})
+      : _response = response,
+        super(type: AuthenticationTypes.recaptcha);
+
+  @override
+  Map<String, Object?> toJson() {
+    final data = super.toJson();
+    data['response'] = _response;
+    return data;
   }
 }
 
