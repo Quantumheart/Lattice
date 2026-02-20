@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../services/client_manager.dart';
 import '../services/matrix_service.dart';
 import '../widgets/bootstrap_dialog.dart';
 
@@ -18,6 +19,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final matrix = context.watch<MatrixService>();
+    final manager = context.watch<ClientManager>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final client = matrix.client;
@@ -79,6 +81,67 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ],
+              ),
+            ),
+          ),
+
+          // ── Account Switcher ──
+          if (manager.hasMultipleAccounts) ...[
+            const SizedBox(height: 16),
+            const _SectionHeader(label: 'ACCOUNTS'),
+            Card(
+              child: Column(
+                children: [
+                  for (var i = 0; i < manager.services.length; i++) ...[
+                    if (i > 0) const Divider(height: 1, indent: 56),
+                    ListTile(
+                      leading: CircleAvatar(
+                        radius: 18,
+                        backgroundColor: i == manager.activeIndex
+                            ? cs.primary
+                            : cs.surfaceContainerHigh,
+                        child: Text(
+                          _userInitial(manager.services[i].client.userID),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: i == manager.activeIndex
+                                ? cs.onPrimary
+                                : cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      title: Text(
+                        manager.services[i].client.userID ?? 'Unknown',
+                        style: i == manager.activeIndex
+                            ? tt.bodyLarge?.copyWith(fontWeight: FontWeight.w600)
+                            : null,
+                      ),
+                      trailing: i == manager.activeIndex
+                          ? Icon(Icons.check, color: cs.primary)
+                          : null,
+                      onTap: () {
+                        manager.setActiveAccount(i);
+                        Navigator.pop(context);
+                      },
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 16),
+
+          // ── Add Account ──
+          OutlinedButton.icon(
+            onPressed: () => _addAccount(context, manager),
+            icon: const Icon(Icons.person_add_outlined),
+            label: const Text('Add account'),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
               ),
             ),
           ),
@@ -254,8 +317,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  Future<void> _addAccount(BuildContext context, ClientManager manager) async {
+    final service = await manager.createLoginService();
+    await manager.addService(service);
+    if (context.mounted) Navigator.pop(context);
+  }
+
+  String _userInitial(String? userId) {
+    if (userId != null && userId.length > 1) return userId[1].toUpperCase();
+    return (userId ?? '?')[0].toUpperCase();
+  }
+
   void _confirmLogout(BuildContext context) {
     final matrix = context.read<MatrixService>();
+    final manager = context.read<ClientManager>();
     final backupMissing = !matrix.chatBackupEnabled;
 
     showDialog(
@@ -313,6 +388,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               final nav = Navigator.of(context);
               Navigator.pop(ctx);
               await matrix.logout();
+              await manager.removeService(matrix);
               if (nav.canPop()) nav.pop();
             },
             child: const Text('Sign Out'),

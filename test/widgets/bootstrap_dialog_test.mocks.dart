@@ -7674,6 +7674,19 @@ class MockClient extends _i1.Mock implements _i2.Client {
 /// See the documentation for Mockito's code generation for more information.
 class MockMatrixService extends _i1.Mock implements _i13.MatrixService {
   @override
+  String get clientName => (super.noSuchMethod(
+        Invocation.getter(#clientName),
+        returnValue: _i11.dummyValue<String>(
+          this,
+          Invocation.getter(#clientName),
+        ),
+        returnValueForMissingStub: _i11.dummyValue<String>(
+          this,
+          Invocation.getter(#clientName),
+        ),
+      ) as String);
+
+  @override
   _i2.Client get client => (super.noSuchMethod(
         Invocation.getter(#client),
         returnValue: _FakeClient_65(
@@ -7746,6 +7759,16 @@ class MockMatrixService extends _i1.Mock implements _i13.MatrixService {
   _i5.Future<void> init() => (super.noSuchMethod(
         Invocation.method(
           #init,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> initClient() => (super.noSuchMethod(
+        Invocation.method(
+          #initClient,
           [],
         ),
         returnValue: _i5.Future<void>.value(),
