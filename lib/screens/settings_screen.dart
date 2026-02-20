@@ -283,22 +283,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return AlertDialog(
           title: const Text('Theme'),
           contentPadding: const EdgeInsets.only(top: 12, bottom: 8),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: options.map((option) {
-              final (mode, label) = option;
-              return RadioListTile<ThemeMode>(
-                title: Text(label),
-                value: mode,
-                groupValue: prefs.themeMode,
-                onChanged: (value) {
-                  if (value != null) {
-                    prefs.setThemeMode(value);
-                    Navigator.pop(ctx);
-                  }
-                },
-              );
-            }).toList(),
+          content: RadioGroup<ThemeMode>(
+            groupValue: prefs.themeMode,
+            onChanged: (ThemeMode? value) {
+              if (value != null) {
+                prefs.setThemeMode(value);
+                Navigator.pop(ctx);
+              }
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: options.map((option) {
+                final (mode, label) = option;
+                return RadioListTile<ThemeMode>(
+                  title: Text(label),
+                  value: mode,
+                );
+              }).toList(),
+            ),
           ),
           actions: [
             TextButton(
@@ -319,21 +321,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
         return AlertDialog(
           title: const Text('Message density'),
           contentPadding: const EdgeInsets.only(top: 12, bottom: 8),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: MessageDensity.values.map((density) {
-              return RadioListTile<MessageDensity>(
-                title: Text(density.label),
-                value: density,
-                groupValue: prefs.messageDensity,
-                onChanged: (value) {
-                  if (value != null) {
-                    prefs.setMessageDensity(value);
-                    Navigator.pop(ctx);
-                  }
-                },
-              );
-            }).toList(),
+          content: RadioGroup<MessageDensity>(
+            groupValue: prefs.messageDensity,
+            onChanged: (MessageDensity? value) {
+              if (value != null) {
+                prefs.setMessageDensity(value);
+                Navigator.pop(ctx);
+              }
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: MessageDensity.values.map((density) {
+                return RadioListTile<MessageDensity>(
+                  title: Text(density.label),
+                  value: density,
+                );
+              }).toList(),
+            ),
           ),
           actions: [
             TextButton(
