@@ -123,6 +123,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       trailing: i == manager.activeIndex
                           ? Icon(Icons.check, color: cs.primary)
                           : null,
+                      mouseCursor: SystemMouseCursors.click,
                       onTap: () {
                         manager.setActiveAccount(i);
                         Navigator.pop(context);
@@ -586,6 +587,7 @@ class _SettingsTile extends StatelessWidget {
       title: Text(title),
       subtitle: Text(subtitle),
       trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+      mouseCursor: SystemMouseCursors.click,
       onTap: onTap,
     );
   }

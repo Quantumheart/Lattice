@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Which subset of rooms to show in the room list.
-enum RoomFilter {
+enum RoomCategory {
   all,
   directMessages,
   groups,
@@ -10,19 +10,19 @@ enum RoomFilter {
   favourites;
 
   String get label => switch (this) {
-        RoomFilter.all => 'All',
-        RoomFilter.directMessages => 'DMs',
-        RoomFilter.groups => 'Groups',
-        RoomFilter.unread => 'Unread',
-        RoomFilter.favourites => 'Favourites',
+        RoomCategory.all => 'All',
+        RoomCategory.directMessages => 'DMs',
+        RoomCategory.groups => 'Groups',
+        RoomCategory.unread => 'Unread',
+        RoomCategory.favourites => 'Favourites',
       };
 
   IconData get icon => switch (this) {
-        RoomFilter.all => Icons.chat_bubble_outline_rounded,
-        RoomFilter.directMessages => Icons.person_outline_rounded,
-        RoomFilter.groups => Icons.group_outlined,
-        RoomFilter.unread => Icons.mark_chat_unread_outlined,
-        RoomFilter.favourites => Icons.star_outline_rounded,
+        RoomCategory.all => Icons.chat_bubble_outline_rounded,
+        RoomCategory.directMessages => Icons.person_outline_rounded,
+        RoomCategory.groups => Icons.group_outlined,
+        RoomCategory.unread => Icons.mark_chat_unread_outlined,
+        RoomCategory.favourites => Icons.star_outline_rounded,
       };
 }
 
@@ -99,16 +99,16 @@ class PreferencesService extends ChangeNotifier {
 
   static const _roomFilterKey = 'room_filter';
 
-  RoomFilter get roomFilter {
+  RoomCategory get roomFilter {
     final stored = _prefs?.getString(_roomFilterKey);
-    if (stored == null) return RoomFilter.all;
-    return RoomFilter.values.firstWhere(
+    if (stored == null) return RoomCategory.all;
+    return RoomCategory.values.firstWhere(
       (f) => f.name == stored,
-      orElse: () => RoomFilter.all,
+      orElse: () => RoomCategory.all,
     );
   }
 
-  Future<void> setRoomFilter(RoomFilter filter) async {
+  Future<void> setRoomCategory(RoomCategory filter) async {
     await _prefs?.setString(_roomFilterKey, filter.name);
     debugPrint('[Lattice] Room filter set to ${filter.label}');
     notifyListeners();
@@ -118,7 +118,8 @@ class PreferencesService extends ChangeNotifier {
 
   static const _panelWidthKey = 'room_list_panel_width';
   static const double defaultPanelWidth = 360;
-  static const double minPanelWidth = 0;
+  static const double collapsedPanelWidth = 0;
+  static const double collapseThreshold = 240;
   static const double maxPanelWidth = 500;
 
   double get panelWidth {
@@ -126,7 +127,7 @@ class PreferencesService extends ChangeNotifier {
   }
 
   Future<void> setPanelWidth(double width) async {
-    final clamped = width.clamp(minPanelWidth, maxPanelWidth);
+    final clamped = width.clamp(collapsedPanelWidth, maxPanelWidth);
     await _prefs?.setDouble(_panelWidthKey, clamped);
     notifyListeners();
   }

@@ -20,10 +20,11 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _mobileTab = 0; // 0: chats, 1: spaces, 2: settings
+  double? _dragPanelWidth; // local state during divider drag
 
   static const double _wideBreakpoint = 720;
   static const double _extraWideBreakpoint = 1100;
-  static const double _collapseThreshold = 240;
+  static const double _collapseThreshold = PreferencesService.collapseThreshold;
 
   @override
   Widget build(BuildContext context) {
@@ -50,7 +51,7 @@ class _HomeShellState extends State<HomeShell> {
           const SpaceRail(),
 
           // Room list (resizable, collapsible on desktop)
-          if (showChat && prefs.panelWidth < _collapseThreshold) ...[
+          if (showChat && _dragPanelWidth == null && prefs.panelWidth < _collapseThreshold) ...[
             // Collapsed: just show an expand button
             SizedBox(
               width: 40,
@@ -58,9 +59,10 @@ class _HomeShellState extends State<HomeShell> {
                 child: IconButton(
                   icon: const Icon(Icons.chevron_right_rounded),
                   tooltip: 'Expand room list',
-                  onPressed: () => prefs.setPanelWidth(
-                    PreferencesService.defaultPanelWidth,
-                  ),
+                  onPressed: () {
+                    setState(() => _dragPanelWidth = null);
+                    prefs.setPanelWidth(PreferencesService.defaultPanelWidth);
+                  },
                 ),
               ),
             ),
@@ -68,7 +70,7 @@ class _HomeShellState extends State<HomeShell> {
           ] else ...[
             SizedBox(
               width: showChat
-                  ? prefs.panelWidth.clamp(
+                  ? (_dragPanelWidth ?? prefs.panelWidth).clamp(
                       _collapseThreshold,
                       PreferencesService.maxPanelWidth,
                     )
@@ -81,14 +83,19 @@ class _HomeShellState extends State<HomeShell> {
               MouseRegion(
                 cursor: SystemMouseCursors.resizeColumn,
                 child: GestureDetector(
+                  onHorizontalDragStart: (_) {
+                    _dragPanelWidth = prefs.panelWidth;
+                  },
                   onHorizontalDragUpdate: (details) {
-                    final newWidth = prefs.panelWidth + details.delta.dx;
-                    // Snap to collapsed when dragged below threshold
-                    if (newWidth < _collapseThreshold) {
-                      prefs.setPanelWidth(0);
-                    } else {
-                      prefs.setPanelWidth(newWidth);
-                    }
+                    setState(() {
+                      _dragPanelWidth = (_dragPanelWidth! + details.delta.dx)
+                          .clamp(0.0, PreferencesService.maxPanelWidth);
+                    });
+                  },
+                  onHorizontalDragEnd: (_) {
+                    final w = _dragPanelWidth!;
+                    setState(() => _dragPanelWidth = null);
+                    prefs.setPanelWidth(w < _collapseThreshold ? 0 : w);
                   },
                   child: Container(
                     width: 5,
@@ -242,6 +249,7 @@ class _SpaceListMobile extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
+                  mouseCursor: SystemMouseCursors.click,
                   onTap: () {
                     matrix.selectSpace(selected ? null : space.id);
                   },

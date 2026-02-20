@@ -151,6 +151,7 @@ class _RailIcon extends StatelessWidget {
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(isSelected ? 14 : 22),
+              mouseCursor: SystemMouseCursors.click,
               onTap: onTap,
               child: Center(
                 child: Text(
@@ -183,7 +184,9 @@ class _AccountButton extends StatelessWidget {
         ? userId[1].toUpperCase()
         : (userId ?? '?')[0].toUpperCase();
 
-    return PopupMenuButton<_AccountAction>(
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: PopupMenuButton<_AccountAction>(
       tooltip: 'Account',
       offset: const Offset(64, 0),
       onSelected: (action) {
@@ -258,6 +261,7 @@ class _AccountButton extends StatelessWidget {
             color: cs.onPrimaryContainer,
           ),
         ),
+      ),
       ),
     );
   }
