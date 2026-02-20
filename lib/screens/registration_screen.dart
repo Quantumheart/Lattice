@@ -172,8 +172,8 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                   TextField(
                     controller: _homeserverCtrl,
                     decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.dns_outlined,
-                          color: cs.onSurfaceVariant),
+                      prefixIcon:
+                          Icon(Icons.dns_outlined, color: cs.onSurfaceVariant),
                       hintText: 'Homeserver',
                       errorText: homeserverError,
                       suffixIcon: isChecking
@@ -241,8 +241,8 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                               : Icons.visibility_outlined,
                           color: cs.onSurfaceVariant,
                         ),
-                        onPressed: () =>
-                            setState(() => _obscurePassword = !_obscurePassword),
+                        onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword),
                       ),
                     ),
                     textInputAction: TextInputAction.next,
@@ -266,8 +266,8 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                               : Icons.visibility_outlined,
                           color: cs.onSurfaceVariant,
                         ),
-                        onPressed: () => setState(
-                            () => _obscureConfirmPassword = !_obscureConfirmPassword),
+                        onPressed: () => setState(() =>
+                            _obscureConfirmPassword = !_obscureConfirmPassword),
                       ),
                     ),
                     textInputAction: TextInputAction.done,
@@ -305,8 +305,7 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                     width: double.infinity,
                     height: 52,
                     child: FilledButton(
-                      onPressed:
-                          formEnabled ? _submit : null,
+                      onPressed: formEnabled ? _submit : null,
                       style: FilledButton.styleFrom(
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
