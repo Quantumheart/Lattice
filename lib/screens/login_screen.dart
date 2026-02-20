@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/client_manager.dart';
 import '../services/matrix_service.dart';
+import 'registration_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -39,6 +40,13 @@ class _LoginScreenState extends State<LoginScreen>
     _usernameCtrl.dispose();
     _passwordCtrl.dispose();
     super.dispose();
+  }
+
+  void _openRegistration() {
+    if (!mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const RegistrationScreen()),
+    );
   }
 
   Future<void> _login() async {
@@ -185,9 +193,7 @@ class _LoginScreenState extends State<LoginScreen>
                   ),
                   const SizedBox(height: 16),
                   TextButton(
-                    onPressed: () {
-                      // TODO: SSO / registration flow
-                    },
+                    onPressed: _openRegistration,
                     child: Text(
                       'Create an account',
                       style: TextStyle(color: cs.primary),
