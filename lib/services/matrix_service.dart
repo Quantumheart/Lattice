@@ -68,6 +68,7 @@ class MatrixService extends ChangeNotifier
   @override
   bool get isLoggedIn => _isLoggedIn;
 
+  @protected
   @override
   set isLoggedIn(bool value) => _isLoggedIn = value;
 
