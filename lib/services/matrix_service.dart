@@ -178,6 +178,15 @@ class MatrixService extends ChangeNotifier
             clientName: clientName,
             storage: _storage,
           );
+        } else if ('$e'.contains('Upload key failed')) {
+          // The local OLM account was lost (e.g. DB deleted) but the
+          // device ID still references server-side keys we can no longer
+          // match. Clear the device ID so the SDK registers a fresh
+          // device on the next init attempt.
+          debugPrint('[Lattice] Clearing stale device ID and retrying init');
+          await _storage.delete(
+              key: latticeKey(clientName, 'device_id'));
+          await _retryInitWithoutDevice();
         }
       }
     }
@@ -289,6 +298,50 @@ class MatrixService extends ChangeNotifier
         );
       }
       return false;
+    }
+  }
+
+  /// Re-attempt session restore without a device ID so the SDK registers a
+  /// fresh device. Called when the local OLM account was lost and the old
+  /// device's keys can no longer be uploaded.
+  Future<void> _retryInitWithoutDevice() async {
+    try {
+      final token =
+          await _storage.read(key: latticeKey(clientName, 'access_token'));
+      final userId =
+          await _storage.read(key: latticeKey(clientName, 'user_id'));
+      final homeserver =
+          await _storage.read(key: latticeKey(clientName, 'homeserver'));
+
+      if (token == null || userId == null || homeserver == null) return;
+
+      final homeserverUri = Uri.parse(homeserver);
+      _client.homeserver = homeserverUri;
+      await _client.init(
+        newToken: token,
+        newUserID: userId,
+        newHomeserver: homeserverUri,
+        newDeviceName: 'Lattice Flutter',
+      );
+
+      // Persist the new device ID assigned by the server.
+      if (_client.deviceID != null) {
+        await _storage.write(
+            key: latticeKey(clientName, 'device_id'),
+            value: _client.deviceID);
+      }
+
+      listenForUia();
+      listenForLoginState();
+      await startSync();
+      _isLoggedIn = true;
+      await saveSessionBackup();
+      debugPrint('[Lattice] Session restored with new device ID '
+          '${_client.deviceID}');
+    } catch (e, s) {
+      debugPrint('[Lattice] Retry without device ID also failed: $e');
+      debugPrint('[Lattice] Stack trace:\n$s');
+      _isLoggedIn = false;
     }
   }
 
