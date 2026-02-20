@@ -247,7 +247,7 @@ class RegistrationController extends ChangeNotifier {
         _uiaParams = Map<String, dynamic>.from(
           e.raw['params'] as Map? ?? {},
         );
-        _advanceToNextStage();
+        await _advanceToNextStage();
         return;
       }
 
@@ -269,7 +269,7 @@ class RegistrationController extends ChangeNotifier {
     }
   }
 
-  void _advanceToNextStage() {
+  Future<void> _advanceToNextStage() async {
     final bestFlow = _findBestFlow();
     final nextStage = bestFlow.firstWhere(
       (s) => !_completedStages.contains(s),
@@ -279,7 +279,7 @@ class RegistrationController extends ChangeNotifier {
     switch (nextStage) {
       case AuthenticationTypes.dummy:
         // Auto-complete dummy stage.
-        _attemptRegister(
+        await _attemptRegister(
           auth: AuthenticationData(
             type: AuthenticationTypes.dummy,
             session: _session,
@@ -288,7 +288,7 @@ class RegistrationController extends ChangeNotifier {
         return;
       case 'm.login.registration_token':
         // Auto-complete with the token collected from the form.
-        _attemptRegister(
+        await _attemptRegister(
           auth: _RegistrationTokenAuth(
             session: _session,
             token: _token,
