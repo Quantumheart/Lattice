@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/client_manager.dart';
 import '../services/matrix_service.dart';
 import '../widgets/bootstrap_dialog.dart';
+import 'devices_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -209,10 +210,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 const Divider(height: 1, indent: 56),
                 _SettingsTile(
                   icon: Icons.devices_rounded,
-                  title: 'Sessions',
-                  subtitle: 'View active sessions',
+                  title: 'Devices',
+                  subtitle: 'Manage your devices',
                   onTap: () {
-                    // TODO: session management
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const DevicesScreen(),
+                      ),
+                    );
                   },
                 ),
               ],
