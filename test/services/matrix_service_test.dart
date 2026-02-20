@@ -30,7 +30,11 @@ void main() {
     mockClient = MockClient();
     mockStorage = MockFlutterSecureStorage();
     when(mockClient.rooms).thenReturn([]);
-    service = MatrixService(client: mockClient, storage: mockStorage);
+    service = MatrixService(
+      client: mockClient,
+      storage: mockStorage,
+      clientName: 'test',
+    );
   });
 
   group('selectSpace', () {
@@ -153,7 +157,8 @@ void main() {
   });
 
   group('login', () {
-    test('returns true on success and persists credentials', () async {
+    test('returns true on success and persists credentials with namespaced keys',
+        () async {
       when(mockClient.checkHomeserver(any)).thenAnswer((_) async => (
             null,
             GetVersionsResponse.fromJson({'versions': ['v1.1']}),
@@ -174,9 +179,11 @@ void main() {
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
       when(mockClient.deviceID).thenReturn('DEV1');
+      when(mockClient.encryption).thenReturn(null);
       final syncController = CachedStreamController<SyncUpdate>();
       when(mockClient.onSync).thenReturn(syncController);
       when(mockClient.onUiaRequest).thenReturn(CachedStreamController());
+      when(mockClient.onLoginStateChanged).thenReturn(CachedStreamController());
 
       // Emit a sync event so _startSync() completes.
       Future.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
@@ -189,12 +196,24 @@ void main() {
 
       expect(result, isTrue);
       expect(service.isLoggedIn, isTrue);
+      // Verify namespaced storage keys.
       verify(mockStorage.write(
-              key: 'lattice_access_token', value: 'token123'))
+              key: 'lattice_test_access_token', value: 'token123'))
           .called(1);
       verify(mockStorage.write(
-              key: 'lattice_user_id', value: '@user:example.com'))
+              key: 'lattice_test_user_id', value: '@user:example.com'))
           .called(1);
+      verify(mockStorage.write(
+              key: 'lattice_test_homeserver', value: 'https://example.com'))
+          .called(1);
+      verify(mockStorage.write(
+              key: 'lattice_test_device_id', value: 'DEV1'))
+          .called(1);
+      // Verify session backup is saved.
+      verify(mockStorage.write(
+        key: 'lattice_session_backup_test',
+        value: anyNamed('value'),
+      )).called(1);
     });
 
     test('returns false on failure and sets loginError', () async {
@@ -214,7 +233,7 @@ void main() {
   });
 
   group('logout', () {
-    test('deletes only session keys, not recovery key', () async {
+    test('deletes session keys and session backup', () async {
       // First log in
       when(mockClient.checkHomeserver(any)).thenAnswer((_) async => (
             null,
@@ -236,9 +255,11 @@ void main() {
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
       when(mockClient.deviceID).thenReturn('DEV1');
+      when(mockClient.encryption).thenReturn(null);
       final syncController = CachedStreamController<SyncUpdate>();
       when(mockClient.onSync).thenReturn(syncController);
       when(mockClient.onUiaRequest).thenReturn(CachedStreamController());
+      when(mockClient.onLoginStateChanged).thenReturn(CachedStreamController());
 
       Future.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
       await service.login(
@@ -254,13 +275,135 @@ void main() {
       expect(service.isLoggedIn, isFalse);
       expect(service.selectedSpaceId, isNull);
       expect(service.selectedRoomId, isNull);
-      // Should delete individual session keys, NOT deleteAll
-      verify(mockStorage.delete(key: 'lattice_access_token')).called(1);
-      verify(mockStorage.delete(key: 'lattice_user_id')).called(1);
-      verify(mockStorage.delete(key: 'lattice_homeserver')).called(1);
-      verify(mockStorage.delete(key: 'lattice_device_id')).called(1);
-      verify(mockStorage.delete(key: 'lattice_olm_account')).called(1);
+      // Verify namespaced key deletion.
+      verify(mockStorage.delete(key: 'lattice_test_access_token')).called(1);
+      verify(mockStorage.delete(key: 'lattice_test_user_id')).called(1);
+      verify(mockStorage.delete(key: 'lattice_test_homeserver')).called(1);
+      verify(mockStorage.delete(key: 'lattice_test_device_id')).called(1);
+      verify(mockStorage.delete(key: 'lattice_test_olm_account')).called(1);
+      // Verify session backup is deleted.
+      verify(mockStorage.delete(key: 'lattice_session_backup_test')).called(1);
       verifyNever(mockStorage.deleteAll());
+    });
+  });
+
+  group('soft logout', () {
+    late CachedStreamController<SyncUpdate> syncController;
+    late CachedStreamController<LoginState> loginStateController;
+
+    setUp(() {
+      syncController = CachedStreamController<SyncUpdate>();
+      loginStateController = CachedStreamController<LoginState>();
+      when(mockClient.checkHomeserver(any)).thenAnswer((_) async => (
+            null,
+            GetVersionsResponse.fromJson({'versions': ['v1.1']}),
+            <LoginFlow>[],
+            null,
+          ));
+      when(mockClient.login(
+        any,
+        identifier: anyNamed('identifier'),
+        password: anyNamed('password'),
+        initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+      )).thenAnswer((_) async => LoginResponse.fromJson({
+            'access_token': 'token123',
+            'device_id': 'DEV1',
+            'user_id': '@user:example.com',
+          }));
+      when(mockClient.accessToken).thenReturn('token123');
+      when(mockClient.userID).thenReturn('@user:example.com');
+      when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
+      when(mockClient.deviceID).thenReturn('DEV1');
+      when(mockClient.encryption).thenReturn(null);
+      when(mockClient.onSync).thenReturn(syncController);
+      when(mockClient.onUiaRequest).thenReturn(CachedStreamController());
+      when(mockClient.onLoginStateChanged).thenReturn(loginStateController);
+    });
+
+    test('server-side logout clears state and notifies listeners', () async {
+      Future.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
+      await service.login(
+        homeserver: 'example.com',
+        username: 'user',
+        password: 'pass',
+      );
+      expect(service.isLoggedIn, isTrue);
+
+      var notified = false;
+      service.addListener(() => notified = true);
+
+      // Simulate server-side logout.
+      loginStateController.add(LoginState.loggedOut);
+      await Future.delayed(Duration.zero);
+
+      expect(service.isLoggedIn, isFalse);
+      expect(service.selectedSpaceId, isNull);
+      expect(service.selectedRoomId, isNull);
+      expect(notified, isTrue);
+    });
+
+    test('duplicate loggedIn event while logged in is idempotent', () async {
+      Future.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
+      await service.login(
+        homeserver: 'example.com',
+        username: 'user',
+        password: 'pass',
+      );
+
+      var notifyCount = 0;
+      service.addListener(() => notifyCount++);
+
+      // Emit loggedIn — should not change state.
+      loginStateController.add(LoginState.loggedIn);
+      await Future.delayed(Duration.zero);
+
+      expect(service.isLoggedIn, isTrue);
+      expect(notifyCount, 0);
+    });
+  });
+
+  group('login state subscription cleanup', () {
+    test('dispose cancels login state subscription without errors', () async {
+      final syncController = CachedStreamController<SyncUpdate>();
+      final loginStateController = CachedStreamController<LoginState>();
+      when(mockClient.checkHomeserver(any)).thenAnswer((_) async => (
+            null,
+            GetVersionsResponse.fromJson({'versions': ['v1.1']}),
+            <LoginFlow>[],
+            null,
+          ));
+      when(mockClient.login(
+        any,
+        identifier: anyNamed('identifier'),
+        password: anyNamed('password'),
+        initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+      )).thenAnswer((_) async => LoginResponse.fromJson({
+            'access_token': 'token123',
+            'device_id': 'DEV1',
+            'user_id': '@user:example.com',
+          }));
+      when(mockClient.accessToken).thenReturn('token123');
+      when(mockClient.userID).thenReturn('@user:example.com');
+      when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
+      when(mockClient.deviceID).thenReturn('DEV1');
+      when(mockClient.encryption).thenReturn(null);
+      when(mockClient.onSync).thenReturn(syncController);
+      when(mockClient.onUiaRequest).thenReturn(CachedStreamController());
+      when(mockClient.onLoginStateChanged).thenReturn(loginStateController);
+
+      Future.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
+      await service.login(
+        homeserver: 'example.com',
+        username: 'user',
+        password: 'pass',
+      );
+
+      // Should not throw.
+      service.dispose();
+
+      // Emitting after dispose should not cause errors.
+      loginStateController.add(LoginState.loggedOut);
+      await Future.delayed(Duration.zero);
     });
   });
 
@@ -419,6 +562,20 @@ void main() {
     });
   });
 
+  group('clientName', () {
+    test('defaults to "default"', () {
+      final defaultService = MatrixService(
+        client: mockClient,
+        storage: mockStorage,
+      );
+      expect(defaultService.clientName, 'default');
+    });
+
+    test('accepts custom clientName', () {
+      expect(service.clientName, 'test');
+    });
+  });
+
   group('sync subscription', () {
     test('cancels sync subscriptions on dispose', () async {
       when(mockClient.checkHomeserver(any)).thenAnswer((_) async => (
@@ -441,9 +598,11 @@ void main() {
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
       when(mockClient.deviceID).thenReturn('DEV1');
+      when(mockClient.encryption).thenReturn(null);
       final syncController = CachedStreamController<SyncUpdate>();
       when(mockClient.onSync).thenReturn(syncController);
       when(mockClient.onUiaRequest).thenReturn(CachedStreamController());
+      when(mockClient.onLoginStateChanged).thenReturn(CachedStreamController());
 
       Future.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
       await service.login(

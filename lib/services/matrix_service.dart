@@ -9,29 +9,35 @@ import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
+import 'session_backup.dart';
+
 /// Central service that owns the [Client] instance and exposes
 /// reactive state to the widget tree via [ChangeNotifier].
 class MatrixService extends ChangeNotifier {
   MatrixService({
     Client? client,
     FlutterSecureStorage? storage,
+    this.clientName = 'default',
   })  : _injectedClient = client,
         _storage = storage ?? const FlutterSecureStorage() {
     if (client != null) {
       _client = client;
-    } else {
-      init();
     }
   }
 
   final Client? _injectedClient;
   final FlutterSecureStorage _storage;
+  final String clientName;
 
   late Client _client;
   Client get client => _client;
 
   bool _isLoggedIn = false;
   bool get isLoggedIn => _isLoggedIn;
+
+  /// Sets the logged-in state directly. Only for testing.
+  @visibleForTesting
+  set isLoggedInForTest(bool value) => _isLoggedIn = value;
 
   bool _syncing = false;
   bool get syncing => _syncing;
@@ -52,6 +58,7 @@ class MatrixService extends ChangeNotifier {
   // ── Sync subscription ──────────────────────────────────────────
   StreamSubscription? _syncSub;
   StreamSubscription? _uiaSub;
+  StreamSubscription? _loginStateSub;
 
   // ── UIA (User-Interactive Authentication) ──────────────────────
   String? _cachedPassword;
@@ -62,24 +69,36 @@ class MatrixService extends ChangeNotifier {
   final _uiaController = StreamController<UiaRequest>.broadcast();
   Stream<UiaRequest> get onUiaRequest => _uiaController.stream;
 
+  // ── Storage key helpers ────────────────────────────────────────
+  String _key(String suffix) => 'lattice_${clientName}_$suffix';
+
   // ── Initialization ───────────────────────────────────────────
+
+  /// Initializes the client, creating the database and restoring the session.
+  /// Called by [ClientManager]; not called automatically from the constructor.
   Future<void> init() async {
-    if (_injectedClient != null) return;
+    if (_injectedClient != null) {
+      _client = _injectedClient!;
+      return;
+    }
+
+    await _migrateStorageKeys();
 
     sqfliteFfiInit();
     final dbFactory = databaseFactoryFfi;
     final dir = await getApplicationSupportDirectory();
-    final dbPath = p.join(dir.path, 'lattice.db');
+    final dbPath = p.join(dir.path, 'lattice_$clientName.db');
     final sqfliteDb = await dbFactory.openDatabase(dbPath);
     final database = await MatrixSdkDatabase.init(
-      'lattice',
+      'lattice_$clientName',
       database: sqfliteDb,
     );
     _client = Client(
-      'Lattice',
+      'Lattice ($clientName)',
       database: database,
       logLevel: kReleaseMode ? Level.warning : Level.verbose,
       defaultNetworkRequestTimeout: const Duration(minutes: 2),
+      onSoftLogout: (_) => _handleSoftLogout(),
       verificationMethods: {
         KeyVerificationMethod.emoji,
         KeyVerificationMethod.numbers,
@@ -92,14 +111,14 @@ class MatrixService extends ChangeNotifier {
 
     // Attempt to restore session from secure storage.
     try {
-      final token = await _storage.read(key: 'lattice_access_token');
-      final userId = await _storage.read(key: 'lattice_user_id');
-      final homeserver = await _storage.read(key: 'lattice_homeserver');
-      final deviceId = await _storage.read(key: 'lattice_device_id');
+      final token = await _storage.read(key: _key('access_token'));
+      final userId = await _storage.read(key: _key('user_id'));
+      final homeserver = await _storage.read(key: _key('homeserver'));
+      final deviceId = await _storage.read(key: _key('device_id'));
 
       if (token != null && userId != null && homeserver != null) {
         debugPrint('[Lattice] Restoring session for $userId on $homeserver '
-            '(deviceId=$deviceId)');
+            '(deviceId=$deviceId, clientName=$clientName)');
         final homeserverUri = Uri.parse(homeserver);
         _client.homeserver = homeserverUri;
         await _client.init(
@@ -113,21 +132,161 @@ class MatrixService extends ChangeNotifier {
             'encryption=${_client.encryption != null ? "available" : "null"}, '
             'encryptionEnabled=${_client.encryptionEnabled}');
         _listenForUia();
+        _listenForLoginState();
         await _startSync();
         _isLoggedIn = true;
+
+        // Write session backup after successful restore + first sync.
+        await _saveSessionBackup();
       }
     } catch (e, s) {
       debugPrint('[Lattice] Session restore failed: $e');
       debugPrint('[Lattice] Stack trace:\n$s');
-      _isLoggedIn = false;
-      // Only clear stored credentials for permanent auth failures (e.g.
-      // revoked token). Transient errors (network timeout, DNS) should not
-      // destroy the session — the user can retry on next app launch.
-      if (_isPermanentAuthFailure(e)) {
-        await _clearSessionKeys();
+
+      // Try restoring from session backup before giving up.
+      final restored = await _restoreFromBackup();
+      if (!restored) {
+        _isLoggedIn = false;
+        if (_isPermanentAuthFailure(e)) {
+          await _clearSessionKeys();
+          await SessionBackup.delete(
+            clientName: clientName,
+            storage: _storage,
+          );
+        }
       }
     }
     notifyListeners();
+  }
+
+  /// Creates the client instance without restoring a session.
+  /// Used by [ClientManager] for the login flow.
+  Future<void> initClient() async {
+    if (_injectedClient != null) {
+      _client = _injectedClient!;
+      return;
+    }
+
+    sqfliteFfiInit();
+    final dbFactory = databaseFactoryFfi;
+    final dir = await getApplicationSupportDirectory();
+    final dbPath = p.join(dir.path, 'lattice_$clientName.db');
+    final sqfliteDb = await dbFactory.openDatabase(dbPath);
+    final database = await MatrixSdkDatabase.init(
+      'lattice_$clientName',
+      database: sqfliteDb,
+    );
+    _client = Client(
+      'Lattice ($clientName)',
+      database: database,
+      logLevel: kReleaseMode ? Level.warning : Level.verbose,
+      defaultNetworkRequestTimeout: const Duration(minutes: 2),
+      onSoftLogout: (_) => _handleSoftLogout(),
+      verificationMethods: {
+        KeyVerificationMethod.emoji,
+        KeyVerificationMethod.numbers,
+      },
+      nativeImplementations: NativeImplementationsIsolate(
+        compute,
+        vodozemacInit: () => vod.init(),
+      ),
+    );
+  }
+
+  // ── Session Backup ────────────────────────────────────────────
+
+  Future<void> _saveSessionBackup() async {
+    final backup = SessionBackup(
+      accessToken: _client.accessToken!,
+      userId: _client.userID!,
+      homeserver: _client.homeserver.toString(),
+      deviceId: _client.deviceID!,
+      deviceName: 'Lattice Flutter',
+      olmAccount: _client.encryption?.pickledOlmAccount,
+    );
+    await SessionBackup.save(
+      backup,
+      clientName: clientName,
+      storage: _storage,
+    );
+    debugPrint('[Lattice] Session backup saved for $clientName');
+  }
+
+  Future<bool> _restoreFromBackup() async {
+    debugPrint('[Lattice] Attempting restore from session backup...');
+    try {
+      final backup = await SessionBackup.load(
+        clientName: clientName,
+        storage: _storage,
+      );
+      if (backup == null) {
+        debugPrint('[Lattice] No session backup found');
+        return false;
+      }
+
+      final homeserverUri = Uri.parse(backup.homeserver);
+      _client.homeserver = homeserverUri;
+      await _client.init(
+        newToken: backup.accessToken,
+        newUserID: backup.userId,
+        newDeviceID: backup.deviceId,
+        newHomeserver: homeserverUri,
+        newDeviceName: backup.deviceName ?? 'Lattice Flutter',
+        newOlmAccount: backup.olmAccount,
+      );
+
+      // Update stored session keys from backup.
+      await _storage.write(key: _key('access_token'), value: backup.accessToken);
+      await _storage.write(key: _key('user_id'), value: backup.userId);
+      await _storage.write(key: _key('homeserver'), value: backup.homeserver);
+      await _storage.write(key: _key('device_id'), value: backup.deviceId);
+
+      _listenForUia();
+      _listenForLoginState();
+      await _startSync();
+      _isLoggedIn = true;
+      debugPrint('[Lattice] Session restored from backup');
+      return true;
+    } catch (e, s) {
+      debugPrint('[Lattice] Restore from backup also failed: $e');
+      debugPrint('[Lattice] Stack trace:\n$s');
+      if (_isPermanentAuthFailure(e)) {
+        await _clearSessionKeys();
+        await SessionBackup.delete(
+          clientName: clientName,
+          storage: _storage,
+        );
+      }
+      return false;
+    }
+  }
+
+  // ── Storage Key Migration ─────────────────────────────────────
+
+  /// One-time migration from old unnamespaced keys to clientName-namespaced keys.
+  Future<void> _migrateStorageKeys() async {
+    if (clientName != 'default') return;
+
+    final oldToken = await _storage.read(key: 'lattice_access_token');
+    if (oldToken == null) return;
+
+    debugPrint('[Lattice] Migrating old storage keys to namespaced format');
+
+    const migrations = {
+      'lattice_access_token': 'lattice_default_access_token',
+      'lattice_user_id': 'lattice_default_user_id',
+      'lattice_homeserver': 'lattice_default_homeserver',
+      'lattice_device_id': 'lattice_default_device_id',
+      'lattice_olm_account': 'lattice_default_olm_account',
+    };
+
+    for (final entry in migrations.entries) {
+      final value = await _storage.read(key: entry.key);
+      if (value != null) {
+        await _storage.write(key: entry.value, value: value);
+        await _storage.delete(key: entry.key);
+      }
+    }
   }
 
   // ── Login ────────────────────────────────────────────────────
@@ -163,16 +322,21 @@ class MatrixService extends ChangeNotifier {
 
       // Persist credentials.
       await _storage.write(
-          key: 'lattice_access_token', value: _client.accessToken);
-      await _storage.write(key: 'lattice_user_id', value: _client.userID);
+          key: _key('access_token'), value: _client.accessToken);
+      await _storage.write(key: _key('user_id'), value: _client.userID);
       await _storage.write(
-          key: 'lattice_homeserver', value: _client.homeserver.toString());
-      await _storage.write(key: 'lattice_device_id', value: _client.deviceID);
+          key: _key('homeserver'), value: _client.homeserver.toString());
+      await _storage.write(key: _key('device_id'), value: _client.deviceID);
 
       _setCachedPassword(password);
       _listenForUia();
+      _listenForLoginState();
       await _startSync();
       _isLoggedIn = true;
+
+      // Write session backup after successful login + first sync.
+      await _saveSessionBackup();
+
       notifyListeners();
       return true;
     } catch (e, s) {
@@ -194,13 +358,53 @@ class MatrixService extends ChangeNotifier {
       debugPrint('Logout error: $e');
     }
     await _clearSessionKeys();
+    await SessionBackup.delete(clientName: clientName, storage: _storage);
     _isLoggedIn = false;
     clearCachedPassword();
     _uiaSub?.cancel();
+    _loginStateSub?.cancel();
     _selectedSpaceId = null;
     _selectedRoomId = null;
     _chatBackupNeeded = null;
     notifyListeners();
+  }
+
+  // ── Soft Logout ──────────────────────────────────────────────
+
+  Future<void> _handleSoftLogout() async {
+    debugPrint('[Lattice] Soft logout detected, attempting token refresh...');
+    try {
+      await _client.refreshAccessToken();
+      // Update stored token + session backup with new token.
+      await _storage.write(
+          key: _key('access_token'), value: _client.accessToken);
+      await _saveSessionBackup();
+      debugPrint('[Lattice] Token refreshed successfully');
+    } catch (e) {
+      debugPrint('[Lattice] Token refresh failed: $e');
+      _isLoggedIn = false;
+      await _clearSessionKeys();
+      await SessionBackup.delete(clientName: clientName, storage: _storage);
+      notifyListeners();
+    }
+  }
+
+  // ── Login State Stream ────────────────────────────────────────
+
+  void _listenForLoginState() {
+    _loginStateSub?.cancel();
+    _loginStateSub = _client.onLoginStateChanged.stream.listen((state) {
+      if (state == LoginState.loggedOut && _isLoggedIn) {
+        debugPrint('[Lattice] Server-side logout detected');
+        _isLoggedIn = false;
+        _selectedSpaceId = null;
+        _selectedRoomId = null;
+        _chatBackupNeeded = null;
+        _clearSessionKeys();
+        SessionBackup.delete(clientName: clientName, storage: _storage);
+        notifyListeners();
+      }
+    });
   }
 
   // ── UIA Handler ──────────────────────────────────────────────
@@ -310,6 +514,7 @@ class MatrixService extends ChangeNotifier {
   /// return false so credentials are preserved for the next app launch.
   bool _isPermanentAuthFailure(Object error) {
     if (error is MatrixException) {
+      // M_SOFT_LOGOUT is not permanent — handled by _handleSoftLogout.
       return error.errcode == 'M_UNKNOWN_TOKEN' ||
           error.errcode == 'M_FORBIDDEN' ||
           error.errcode == 'M_USER_DEACTIVATED';
@@ -318,11 +523,11 @@ class MatrixService extends ChangeNotifier {
   }
 
   Future<void> _clearSessionKeys() async {
-    await _storage.delete(key: 'lattice_access_token');
-    await _storage.delete(key: 'lattice_user_id');
-    await _storage.delete(key: 'lattice_homeserver');
-    await _storage.delete(key: 'lattice_device_id');
-    await _storage.delete(key: 'lattice_olm_account');
+    await _storage.delete(key: _key('access_token'));
+    await _storage.delete(key: _key('user_id'));
+    await _storage.delete(key: _key('homeserver'));
+    await _storage.delete(key: _key('device_id'));
+    await _storage.delete(key: _key('olm_account'));
   }
 
   // ── Selection ────────────────────────────────────────────────
@@ -472,6 +677,7 @@ class MatrixService extends ChangeNotifier {
   void dispose() {
     _syncSub?.cancel();
     _uiaSub?.cancel();
+    _loginStateSub?.cancel();
     _passwordExpiryTimer?.cancel();
     _uiaController.close();
     _client.dispose();
