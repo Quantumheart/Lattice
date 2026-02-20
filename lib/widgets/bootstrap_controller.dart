@@ -1,8 +1,12 @@
 import 'dart:async';
+import 'dart:convert';
 
+import 'package:canonical_json/canonical_json.dart';
 import 'package:flutter/foundation.dart';
 import 'package:matrix/encryption.dart';
+import 'package:matrix/encryption/utils/base64_unpadded.dart';
 import 'package:matrix/matrix.dart';
+import 'package:vodozemac/vodozemac.dart' as vod;
 
 import '../services/matrix_service.dart';
 
@@ -416,6 +420,12 @@ class BootstrapController extends ChangeNotifier {
         debugPrint('[Bootstrap] Post-bootstrap caching/signing failed: $e');
       }
       await client.updateUserDeviceKeys();
+
+      // The SDK does not sign the key backup auth_data with the master
+      // cross-signing key. Other clients (Element, etc.) require this
+      // signature to trust the backup. Sign it now while we have access
+      // to the SSSS secrets.
+      await _signKeyBackupWithCrossSigning(client, encryption, ssssKey);
     }
 
     // Restore room keys from the online key backup.
@@ -432,6 +442,73 @@ class BootstrapController extends ChangeNotifier {
     matrixService.clearCachedPassword();
     pendingAction = BootstrapAction.done;
     _notify();
+  }
+
+  // ── Key backup signing ───────────────────────────────────────
+
+  /// Signs the key backup's auth_data with both the device key and the
+  /// master cross-signing key so that other clients trust the backup.
+  Future<void> _signKeyBackupWithCrossSigning(
+    Client client,
+    Encryption encryption,
+    OpenSSSS ssssKey,
+  ) async {
+    try {
+      // Bust the cache — the bootstrap may have deleted the old backup and
+      // created a new one, leaving the KeyManager cache stale.
+      final backupInfo =
+          await encryption.keyManager.getRoomKeysBackupInfo(false);
+      final authData = Map<String, Object?>.from(backupInfo.authData);
+
+      // Strip signatures/unsigned for canonical JSON signing.
+      final signable = Map<String, Object?>.from(authData);
+      signable.remove('signatures');
+      signable.remove('unsigned');
+      final canonical =
+          String.fromCharCodes(canonicalJson.encode(signable));
+
+      // Collect existing signatures (if any).
+      final signatures = <String, Map<String, String>>{};
+      final existing = authData['signatures'];
+      if (existing is Map) {
+        for (final entry in existing.entries) {
+          if (entry.key is String && entry.value is Map) {
+            signatures[entry.key as String] =
+                Map<String, String>.from(entry.value as Map);
+          }
+        }
+      }
+
+      final userId = client.userID!;
+      final userSigs = signatures[userId] ??= {};
+
+      // Sign with device key.
+      final deviceSignature = encryption.olmManager.signString(canonical);
+      userSigs['ed25519:${client.deviceID}'] = deviceSignature;
+
+      // Sign with master cross-signing key.
+      final masterKeySecret =
+          await ssssKey.getStored(EventTypes.CrossSigningMasterKey);
+      final masterKeyBytes = base64decodeUnpadded(masterKeySecret);
+      final masterSigning =
+          vod.PkSigning.fromSecretKey(base64Encode(masterKeyBytes));
+      final masterPubKey = masterSigning.publicKey.toBase64();
+      final masterSignature = masterSigning.sign(canonical).toBase64();
+      userSigs['ed25519:$masterPubKey'] = masterSignature;
+
+      authData['signatures'] = signatures;
+
+      await client.putRoomKeysVersion(
+        backupInfo.version,
+        backupInfo.algorithm,
+        authData,
+      );
+      debugPrint('[Bootstrap] Key backup signed with master cross-signing key');
+    } catch (e) {
+      debugPrint('[Bootstrap] Failed to sign key backup: $e');
+      // Non-fatal — backup still works, just won't show as trusted
+      // in other clients until they verify this device.
+    }
   }
 
   // ── Internals ─────────────────────────────────────────────────
