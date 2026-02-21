@@ -37,6 +37,9 @@ void main() {
     when(mockClient.userID).thenReturn('@me:example.com');
     when(mockRoom.getLocalizedDisplayname()).thenReturn('Test Room');
     when(mockRoom.id).thenReturn('!room:example.com');
+    when(mockRoom.summary).thenReturn(
+      RoomSummary.fromJson({'m.joined_member_count': 3}),
+    );
     when(mockTimeline.events).thenReturn([]);
     when(mockTimeline.canRequestHistory).thenReturn(false);
     when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))

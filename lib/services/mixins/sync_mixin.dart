@@ -32,7 +32,13 @@ mixin SyncMixin on ChangeNotifier {
       notifyListeners();
     });
 
-    await firstSync.future;
+    await firstSync.future.timeout(
+      const Duration(seconds: 30),
+      onTimeout: () {
+        debugPrint('[Lattice] First sync timed out after 30s');
+        throw TimeoutException('Initial sync timed out. Check your connection.');
+      },
+    );
 
     await checkChatBackupStatus();
     if (chatBackupNeeded == true) {

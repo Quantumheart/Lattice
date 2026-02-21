@@ -49,8 +49,8 @@ mixin ChatBackupMixin on ChangeNotifier {
 
     try {
       final state = await client.getCryptoIdentityState();
-      if (!state.initialized || state.connected) {
-        debugPrint('[AutoUnlock] Skip: initialized=${state.initialized}, connected=${state.connected}');
+      if (state.connected) {
+        debugPrint('[AutoUnlock] Skip: already connected');
       } else {
         await client.restoreCryptoIdentity(storedKey);
       }

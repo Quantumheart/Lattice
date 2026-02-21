@@ -3,6 +3,14 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 
+/// Escapes a string for safe use inside an HTML attribute value.
+String _escapeHtmlAttr(String value) => value
+    .replaceAll('&', '&amp;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#x27;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+
 // ── RecaptchaServer ─────────────────────────────────────────────────────────
 
 /// Starts a temporary localhost HTTP server that serves a reCAPTCHA page and
@@ -130,7 +138,7 @@ class RecaptchaServer {
     <form id="captchaForm" method="POST" action="/token">
       <input type="hidden" id="tokenField" name="g-recaptcha-response" value="">
       <div class="g-recaptcha"
-           data-sitekey="$siteKey"
+           data-sitekey="${_escapeHtmlAttr(siteKey)}"
            data-callback="onCaptchaComplete"></div>
     </form>
   </div>
