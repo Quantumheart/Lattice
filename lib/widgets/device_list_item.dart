@@ -29,6 +29,7 @@ class DeviceListItem extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     return ListTile(
+      mouseCursor: (isCurrentDevice && onRename != null) ? SystemMouseCursors.click : null,
       leading: Icon(device.deviceIcon, color: cs.onSurfaceVariant),
       title: Text(
         device.displayNameOrId,

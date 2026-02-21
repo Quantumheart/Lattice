@@ -178,6 +178,7 @@ Widget _buildNewSsss(BuildContext context, BootstrapController controller) {
         title: const Text('Save to device'),
         controlAffinity: ListTileControlAffinity.leading,
         contentPadding: EdgeInsets.zero,
+        mouseCursor: SystemMouseCursors.click,
       ),
     ],
   );
@@ -215,6 +216,7 @@ Widget _buildOpenExistingSsss(
         title: const Text('Save to device'),
         controlAffinity: ListTileControlAffinity.leading,
         contentPadding: EdgeInsets.zero,
+        mouseCursor: SystemMouseCursors.click,
       ),
       const SizedBox(height: 4),
       const Divider(),
