@@ -10,6 +10,7 @@ class MessageBubble extends StatelessWidget {
     required this.event,
     required this.isMe,
     required this.isFirst,
+    this.highlighted = false,
   });
 
   final Event event;
@@ -17,6 +18,9 @@ class MessageBubble extends StatelessWidget {
 
   /// Whether this is the first message in a group from the same sender.
   final bool isFirst;
+
+  /// Whether this message should be visually highlighted (e.g. from search).
+  final bool highlighted;
 
   @override
   Widget build(BuildContext context) {
@@ -26,10 +30,17 @@ class MessageBubble extends StatelessWidget {
     final density = context.watch<PreferencesService>().messageDensity;
     final metrics = _DensityMetrics.of(density);
 
-    return Padding(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 500),
       padding: EdgeInsets.only(
         top: isFirst ? metrics.firstMessageTopPad : metrics.messageTopPad,
         bottom: metrics.messageBottomPad,
+      ),
+      decoration: BoxDecoration(
+        color: highlighted
+            ? cs.primaryContainer.withValues(alpha: 0.3)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisAlignment:
