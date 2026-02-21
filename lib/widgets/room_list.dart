@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:matrix/matrix.dart';
 
 import '../services/matrix_service.dart';
+import '../services/mixins/selection_mixin.dart';
 import 'room_avatar.dart';
 
 class RoomList extends StatefulWidget {
@@ -15,6 +16,7 @@ class RoomList extends StatefulWidget {
 class _RoomListState extends State<RoomList> {
   final _searchCtrl = TextEditingController();
   String _query = '';
+  bool _showFilters = false;
 
   @override
   void dispose() {
@@ -22,11 +24,28 @@ class _RoomListState extends State<RoomList> {
     super.dispose();
   }
 
+  static const _filterLabels = {
+    RoomFilter.all: 'All',
+    RoomFilter.directMessages: 'DMs',
+    RoomFilter.groups: 'Groups',
+    RoomFilter.unread: 'Unread',
+    RoomFilter.favourites: 'Favourites',
+  };
+
+  static const _filterIcons = {
+    RoomFilter.all: Icons.chat_bubble_outline_rounded,
+    RoomFilter.directMessages: Icons.person_outline_rounded,
+    RoomFilter.groups: Icons.group_outlined,
+    RoomFilter.unread: Icons.mark_email_unread_outlined,
+    RoomFilter.favourites: Icons.star_outline_rounded,
+  };
+
   @override
   Widget build(BuildContext context) {
     final matrix = context.watch<MatrixService>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final activeFilter = matrix.roomFilter;
 
     var rooms = matrix.rooms;
     if (_query.isNotEmpty) {
@@ -47,15 +66,41 @@ class _RoomListState extends State<RoomList> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list_rounded),
-            onPressed: () {
-              // TODO: filter rooms
-            },
+            icon: Icon(
+              Icons.filter_list_rounded,
+              color: activeFilter != RoomFilter.all ? cs.primary : null,
+            ),
+            onPressed: () => setState(() => _showFilters = !_showFilters),
           ),
         ],
       ),
       body: Column(
         children: [
+          // ── Filter chips ──
+          if (_showFilters)
+            SizedBox(
+              height: 48,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                children: RoomFilter.values.map((filter) {
+                  final isActive = activeFilter == filter;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      selected: isActive,
+                      label: Text(_filterLabels[filter]!),
+                      avatar: Icon(
+                        _filterIcons[filter],
+                        size: 18,
+                      ),
+                      onSelected: (_) => matrix.setRoomFilter(filter),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+
           // ── Search bar ──
           Padding(
             padding:
@@ -88,7 +133,9 @@ class _RoomListState extends State<RoomList> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'RECENT',
+                activeFilter == RoomFilter.all
+                    ? 'RECENT'
+                    : _filterLabels[activeFilter]!.toUpperCase(),
                 style: tt.labelSmall?.copyWith(
                   color: cs.primary,
                   letterSpacing: 1.5,
@@ -104,7 +151,9 @@ class _RoomListState extends State<RoomList> {
                     child: Text(
                       _query.isNotEmpty
                           ? 'No rooms match "$_query"'
-                          : 'No rooms yet',
+                          : activeFilter != RoomFilter.all
+                              ? 'No ${_filterLabels[activeFilter]!.toLowerCase()} rooms'
+                              : 'No rooms yet',
                       style: tt.bodyMedium?.copyWith(
                         color: cs.onSurfaceVariant.withValues(alpha: 0.6),
                       ),

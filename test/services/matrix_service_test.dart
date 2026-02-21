@@ -8,6 +8,7 @@ import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:matrix/src/utils/space_child.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:lattice/services/matrix_service.dart';
+import 'package:lattice/services/mixins/selection_mixin.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -153,6 +154,167 @@ void main() {
       final rooms = service.rooms;
       expect(rooms, hasLength(1));
       expect(rooms[0].id, '!child:example.com');
+    });
+  });
+
+  group('roomFilter', () {
+    test('defaults to RoomFilter.all', () {
+      expect(service.roomFilter, RoomFilter.all);
+    });
+
+    test('setRoomFilter updates filter and notifies listeners', () {
+      var notified = false;
+      service.addListener(() => notified = true);
+
+      service.setRoomFilter(RoomFilter.unread);
+
+      expect(service.roomFilter, RoomFilter.unread);
+      expect(notified, isTrue);
+    });
+
+    test('filters to direct messages only', () {
+      final dm = MockRoom();
+      when(dm.isSpace).thenReturn(false);
+      when(dm.isDirectChat).thenReturn(true);
+      when(dm.id).thenReturn('!dm:example.com');
+      when(dm.lastEvent).thenReturn(null);
+
+      final group = MockRoom();
+      when(group.isSpace).thenReturn(false);
+      when(group.isDirectChat).thenReturn(false);
+      when(group.id).thenReturn('!group:example.com');
+      when(group.lastEvent).thenReturn(null);
+
+      when(mockClient.rooms).thenReturn([dm, group]);
+
+      service.setRoomFilter(RoomFilter.directMessages);
+
+      final rooms = service.rooms;
+      expect(rooms, hasLength(1));
+      expect(rooms[0].id, '!dm:example.com');
+    });
+
+    test('filters to groups only', () {
+      final dm = MockRoom();
+      when(dm.isSpace).thenReturn(false);
+      when(dm.isDirectChat).thenReturn(true);
+      when(dm.id).thenReturn('!dm:example.com');
+      when(dm.lastEvent).thenReturn(null);
+
+      final group = MockRoom();
+      when(group.isSpace).thenReturn(false);
+      when(group.isDirectChat).thenReturn(false);
+      when(group.id).thenReturn('!group:example.com');
+      when(group.lastEvent).thenReturn(null);
+
+      when(mockClient.rooms).thenReturn([dm, group]);
+
+      service.setRoomFilter(RoomFilter.groups);
+
+      final rooms = service.rooms;
+      expect(rooms, hasLength(1));
+      expect(rooms[0].id, '!group:example.com');
+    });
+
+    test('filters to unread only', () {
+      final unreadRoom = MockRoom();
+      when(unreadRoom.isSpace).thenReturn(false);
+      when(unreadRoom.id).thenReturn('!unread:example.com');
+      when(unreadRoom.notificationCount).thenReturn(3);
+      when(unreadRoom.lastEvent).thenReturn(null);
+
+      final readRoom = MockRoom();
+      when(readRoom.isSpace).thenReturn(false);
+      when(readRoom.id).thenReturn('!read:example.com');
+      when(readRoom.notificationCount).thenReturn(0);
+      when(readRoom.lastEvent).thenReturn(null);
+
+      when(mockClient.rooms).thenReturn([unreadRoom, readRoom]);
+
+      service.setRoomFilter(RoomFilter.unread);
+
+      final rooms = service.rooms;
+      expect(rooms, hasLength(1));
+      expect(rooms[0].id, '!unread:example.com');
+    });
+
+    test('filters to favourites only', () {
+      final favRoom = MockRoom();
+      when(favRoom.isSpace).thenReturn(false);
+      when(favRoom.id).thenReturn('!fav:example.com');
+      when(favRoom.isFavourite).thenReturn(true);
+      when(favRoom.lastEvent).thenReturn(null);
+
+      final normalRoom = MockRoom();
+      when(normalRoom.isSpace).thenReturn(false);
+      when(normalRoom.id).thenReturn('!normal:example.com');
+      when(normalRoom.isFavourite).thenReturn(false);
+      when(normalRoom.lastEvent).thenReturn(null);
+
+      when(mockClient.rooms).thenReturn([favRoom, normalRoom]);
+
+      service.setRoomFilter(RoomFilter.favourites);
+
+      final rooms = service.rooms;
+      expect(rooms, hasLength(1));
+      expect(rooms[0].id, '!fav:example.com');
+    });
+
+    test('RoomFilter.all returns all non-space rooms', () {
+      final room1 = MockRoom();
+      when(room1.isSpace).thenReturn(false);
+      when(room1.id).thenReturn('!a:example.com');
+      when(room1.lastEvent).thenReturn(null);
+
+      final room2 = MockRoom();
+      when(room2.isSpace).thenReturn(false);
+      when(room2.id).thenReturn('!b:example.com');
+      when(room2.lastEvent).thenReturn(null);
+
+      when(mockClient.rooms).thenReturn([room1, room2]);
+
+      service.setRoomFilter(RoomFilter.all);
+
+      expect(service.rooms, hasLength(2));
+    });
+
+    test('filter combines with space selection', () {
+      final dmInSpace = MockRoom();
+      when(dmInSpace.isSpace).thenReturn(false);
+      when(dmInSpace.isDirectChat).thenReturn(true);
+      when(dmInSpace.id).thenReturn('!dm-in-space:example.com');
+      when(dmInSpace.lastEvent).thenReturn(null);
+
+      final groupInSpace = MockRoom();
+      when(groupInSpace.isSpace).thenReturn(false);
+      when(groupInSpace.isDirectChat).thenReturn(false);
+      when(groupInSpace.id).thenReturn('!group-in-space:example.com');
+      when(groupInSpace.lastEvent).thenReturn(null);
+
+      final dmOutside = MockRoom();
+      when(dmOutside.isSpace).thenReturn(false);
+      when(dmOutside.isDirectChat).thenReturn(true);
+      when(dmOutside.id).thenReturn('!dm-outside:example.com');
+      when(dmOutside.lastEvent).thenReturn(null);
+
+      final space = MockRoom();
+      when(space.isSpace).thenReturn(true);
+      when(space.id).thenReturn('!space:example.com');
+      when(space.spaceChildren).thenReturn([
+        _fakeSpaceChild('!dm-in-space:example.com'),
+        _fakeSpaceChild('!group-in-space:example.com'),
+      ]);
+
+      when(mockClient.rooms)
+          .thenReturn([space, dmInSpace, groupInSpace, dmOutside]);
+      when(mockClient.getRoomById('!space:example.com')).thenReturn(space);
+
+      service.selectSpace('!space:example.com');
+      service.setRoomFilter(RoomFilter.directMessages);
+
+      final rooms = service.rooms;
+      expect(rooms, hasLength(1));
+      expect(rooms[0].id, '!dm-in-space:example.com');
     });
   });
 

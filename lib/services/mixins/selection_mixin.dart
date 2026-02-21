@@ -1,6 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:matrix/matrix.dart';
 
+/// Filter categories for the room list.
+enum RoomFilter {
+  all,
+  directMessages,
+  groups,
+  unread,
+  favourites,
+}
+
 /// Room/space selection state and filtered-room helpers.
 mixin SelectionMixin on ChangeNotifier {
   Client get client;
@@ -14,6 +23,15 @@ mixin SelectionMixin on ChangeNotifier {
 
   Room? get selectedRoom =>
       _selectedRoomId != null ? client.getRoomById(_selectedRoomId!) : null;
+
+  // ── Room filter ────────────────────────────────────────────────
+  RoomFilter _roomFilter = RoomFilter.all;
+  RoomFilter get roomFilter => _roomFilter;
+
+  void setRoomFilter(RoomFilter filter) {
+    _roomFilter = filter;
+    notifyListeners();
+  }
 
   void selectSpace(String? spaceId) {
     _selectedSpaceId = spaceId;
@@ -30,6 +48,7 @@ mixin SelectionMixin on ChangeNotifier {
   void resetSelection() {
     _selectedSpaceId = null;
     _selectedRoomId = null;
+    _roomFilter = RoomFilter.all;
   }
 
   // ── Helpers ──────────────────────────────────────────────────
@@ -40,7 +59,8 @@ mixin SelectionMixin on ChangeNotifier {
       .toList()
     ..sort((a, b) => a.getLocalizedDisplayname().compareTo(b.getLocalizedDisplayname()));
 
-  /// Returns non-space rooms, optionally filtered by current space.
+  /// Returns non-space rooms, optionally filtered by current space and
+  /// room filter category.
   List<Room> get rooms {
     var list = client.rooms.where((r) => !r.isSpace).toList();
 
@@ -50,6 +70,20 @@ mixin SelectionMixin on ChangeNotifier {
         final childIds = space.spaceChildren.map((c) => c.roomId).toSet();
         list = list.where((r) => childIds.contains(r.id)).toList();
       }
+    }
+
+    // Apply room filter
+    switch (_roomFilter) {
+      case RoomFilter.all:
+        break;
+      case RoomFilter.directMessages:
+        list = list.where((r) => r.isDirectChat).toList();
+      case RoomFilter.groups:
+        list = list.where((r) => !r.isDirectChat).toList();
+      case RoomFilter.unread:
+        list = list.where((r) => r.notificationCount > 0).toList();
+      case RoomFilter.favourites:
+        list = list.where((r) => r.isFavourite).toList();
     }
 
     list.sort((a, b) {
