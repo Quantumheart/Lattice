@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:matrix/matrix.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../services/matrix_service.dart';
 import '../widgets/room_avatar.dart';
@@ -25,7 +26,8 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final _msgCtrl = TextEditingController();
-  final _scrollCtrl = ScrollController();
+  final _itemScrollCtrl = ItemScrollController();
+  final _itemPosListener = ItemPositionsListener.create();
   Timeline? _timeline;
   StreamSubscription? _timelineSub;
   bool _loadingHistory = false;
@@ -40,8 +42,7 @@ class _ChatScreenState extends State<ChatScreen> {
   String? _searchError;
   Timer? _debounceTimer;
   String? _highlightedEventId;
-  final Map<String, GlobalKey> _messageKeys = {};
-  static const _searchBatchLimit = 50;
+  static const _searchBatchLimit = 500;
   static const _minQueryLength = 3;
   static const _debounceDuration = Duration(milliseconds: 500);
 
@@ -49,7 +50,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _initTimeline();
-    _scrollCtrl.addListener(_onScroll);
+    _itemPosListener.itemPositions.addListener(_onScroll);
   }
 
   Future<void> _initTimeline() async {
@@ -66,9 +67,15 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _onScroll() {
-    if (_scrollCtrl.position.pixels >=
-            _scrollCtrl.position.maxScrollExtent - 200 &&
-        !_loadingHistory) {
+    final positions = _itemPosListener.itemPositions.value;
+    if (positions.isEmpty) return;
+    final maxIndex = positions.map((p) => p.index).reduce((a, b) => a > b ? a : b);
+    final events = _timeline?.events
+            .where((e) =>
+                e.type == EventTypes.Message || e.type == EventTypes.Encrypted)
+            .toList() ??
+        [];
+    if (maxIndex >= events.length - 3 && !_loadingHistory) {
       _loadMore();
     }
   }
@@ -213,16 +220,15 @@ class _ChatScreenState extends State<ChatScreen> {
 
     setState(() => _highlightedEventId = event.eventId);
 
-    // Use ensureVisible on the target widget's RenderObject for accurate
-    // scrolling regardless of variable message heights.
+    // Scroll to the target message by index. Post-frame callback is needed
+    // because _closeSearch() triggers a rebuild that remounts the list.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final targetContext = _messageKeys[event.eventId]?.currentContext;
-      if (targetContext != null) {
-        Scrollable.ensureVisible(
-          targetContext,
+      if (_itemScrollCtrl.isAttached) {
+        _itemScrollCtrl.scrollTo(
+          index: index,
           duration: const Duration(milliseconds: 400),
           curve: Curves.easeInOut,
-          alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+          alignment: 0.5,
         );
       }
     });
@@ -238,7 +244,6 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void dispose() {
     _msgCtrl.dispose();
-    _scrollCtrl.dispose();
     _searchCtrl.dispose();
     _searchFocusNode.dispose();
     _debounceTimer?.cancel();
@@ -382,8 +387,9 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                       ),
                     )
-                  : ListView.builder(
-                      controller: _scrollCtrl,
+                  : ScrollablePositionedList.builder(
+                      itemScrollController: _itemScrollCtrl,
+                      itemPositionsListener: _itemPosListener,
                       reverse: true,
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 8),
@@ -398,16 +404,11 @@ class _ChatScreenState extends State<ChatScreen> {
                             : null;
                         final isFirst = event.senderId != prevSender;
 
-                        final key = _messageKeys.putIfAbsent(
-                            event.eventId, () => GlobalKey());
-                        return KeyedSubtree(
-                          key: key,
-                          child: MessageBubble(
-                            event: event,
-                            isMe: isMe,
-                            isFirst: isFirst,
-                            highlighted: event.eventId == _highlightedEventId,
-                          ),
+                        return MessageBubble(
+                          event: event,
+                          isMe: isMe,
+                          isFirst: isFirst,
+                          highlighted: event.eventId == _highlightedEventId,
                         );
                       },
                     ),
