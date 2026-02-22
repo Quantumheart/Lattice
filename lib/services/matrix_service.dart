@@ -210,6 +210,15 @@ class MatrixService extends ChangeNotifier
       final restored = await _restoreFromBackup();
       if (!restored) {
         _isLoggedIn = false;
+        // The SDK client is stuck in an initialized state after the
+        // failed _client.init() call — logout() alone doesn't reset
+        // the internal _init flag. Dispose and recreate the client so
+        // a subsequent login() call gets a clean instance.
+        _client.dispose();
+        _client = await _clientFactory(
+          clientName,
+          onSoftLogout: (_) async => handleSoftLogout(),
+        );
         if (isPermanentAuthFailure(e)) {
           await clearSessionKeys();
           await SessionBackup.delete(
