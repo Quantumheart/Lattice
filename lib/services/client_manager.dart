@@ -9,6 +9,7 @@ import 'matrix_service.dart';
 typedef MatrixServiceFactory = MatrixService Function({
   required String clientName,
   FlutterSecureStorage? storage,
+  ClientFactory? clientFactory,
 });
 
 /// Manages multiple [MatrixService] accounts and tracks the active one.
@@ -83,7 +84,7 @@ class ClientManager extends ChangeNotifier {
   Future<MatrixService> createLoginService() async {
     final name = _generateClientName();
     final service = _createService(clientName: name);
-    await service.initClient();
+    await service.init(restoreSession: false);
     return service;
   }
 
@@ -107,7 +108,7 @@ class ClientManager extends ChangeNotifier {
     if (_services.isEmpty) {
       // Last account removed — create a fresh default for login screen.
       final fresh = _createService(clientName: 'default');
-      await fresh.initClient();
+      await fresh.init(restoreSession: false);
       _services.add(fresh);
       _activeIndex = 0;
     } else if (_activeIndex >= _services.length) {

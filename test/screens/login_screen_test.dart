@@ -27,7 +27,7 @@ void main() {
     );
     clientManager = ClientManager(
       storage: mockStorage,
-      serviceFactory: ({required String clientName, storage}) => matrixService,
+      serviceFactory: ({required String clientName, storage, clientFactory}) => matrixService,
     );
   });
 
