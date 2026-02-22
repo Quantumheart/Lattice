@@ -80,6 +80,29 @@ jobs:
           name: lattice-windows-x64
           path: lattice-windows-x64.zip
 
+  deploy-web:
+    needs: build-web
+    runs-on: ubuntu-latest
+    if: ${{ vars.DEPLOY_HOST != '' }}
+    steps:
+      - name: Download web artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: lattice-web
+      - name: Extract build
+        run: mkdir -p web && tar -xzf lattice-web.tar.gz -C web
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ vars.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+      - name: Deploy via rsync
+        run: |
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            web/ ${{ secrets.DEPLOY_USER }}@${{ vars.DEPLOY_HOST }}:${{ vars.DEPLOY_PATH }}/
+
   release:
     needs: [build-linux, build-web, build-windows]
     runs-on: ubuntu-latest
