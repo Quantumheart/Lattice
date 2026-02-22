@@ -49,7 +49,7 @@ class LatticeApp extends StatelessWidget {
                       themeMode: prefs.themeMode,
                       home: matrix.isLoggedIn
                           ? const HomeShell()
-                          : const LoginScreen(),
+                          : LoginScreen(key: ObjectKey(matrix)),
                     );
                   },
                 ),
