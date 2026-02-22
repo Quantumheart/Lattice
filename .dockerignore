@@ -1,0 +1,11 @@
+build/
+.dart_tool/
+.packages
+.git/
+.github/
+.idea/
+*.iml
+test/
+docs/
+*.md
+!pubspec.yaml
