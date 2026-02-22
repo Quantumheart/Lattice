@@ -24,7 +24,7 @@ mixin AuthMixin on ChangeNotifier {
   void setCachedPassword(String password);
   void clearCachedPassword();
   void cancelUiaSub();
-  Future<void> startSync();
+  Future<void> startSync({Duration? timeout});
   void resetSelection();
   void resetChatBackupState();
   Future<void> saveSessionBackup();
@@ -183,7 +183,7 @@ mixin AuthMixin on ChangeNotifier {
       setCachedPassword(password);
       listenForUia();
       listenForLoginState();
-      await startSync();
+      await startSync(timeout: const Duration(minutes: 5));
       isLoggedIn = true;
 
       // Write session backup after successful login + first sync.
@@ -232,7 +232,7 @@ mixin AuthMixin on ChangeNotifier {
       await _persistCredentials();
       listenForUia();
       listenForLoginState();
-      await startSync();
+      await startSync(timeout: const Duration(minutes: 5));
       isLoggedIn = true;
 
       await saveSessionBackup();
@@ -270,7 +270,7 @@ mixin AuthMixin on ChangeNotifier {
     if (password != null) setCachedPassword(password);
     listenForUia();
     listenForLoginState();
-    await startSync();
+    await startSync(timeout: const Duration(minutes: 5));
     isLoggedIn = true;
 
     await saveSessionBackup();

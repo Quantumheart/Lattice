@@ -19,7 +19,7 @@ mixin SyncMixin on ChangeNotifier {
   StreamSubscription? _syncSub;
 
   @protected
-  Future<void> startSync() async {
+  Future<void> startSync({Duration? timeout = const Duration(seconds: 30)}) async {
     _syncing = true;
     notifyListeners();
 
@@ -32,13 +32,17 @@ mixin SyncMixin on ChangeNotifier {
       notifyListeners();
     });
 
-    await firstSync.future.timeout(
-      const Duration(seconds: 30),
-      onTimeout: () {
-        debugPrint('[Lattice] First sync timed out after 30s');
-        throw TimeoutException('Initial sync timed out. Check your connection.');
-      },
-    );
+    if (timeout != null) {
+      await firstSync.future.timeout(
+        timeout,
+        onTimeout: () {
+          debugPrint('[Lattice] First sync timed out after ${timeout.inSeconds}s');
+          throw TimeoutException('Initial sync timed out. Check your connection.');
+        },
+      );
+    } else {
+      await firstSync.future;
+    }
 
     await checkChatBackupStatus();
     if (chatBackupNeeded == true) {

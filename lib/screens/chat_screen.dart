@@ -40,7 +40,8 @@ class _ChatScreenState extends State<ChatScreen> {
   String? _searchError;
   Timer? _debounceTimer;
   String? _highlightedEventId;
-  static const _searchBatchLimit = 500;
+  final Map<String, GlobalKey> _messageKeys = {};
+  static const _searchBatchLimit = 50;
   static const _minQueryLength = 3;
   static const _debounceDuration = Duration(milliseconds: 500);
 
@@ -192,29 +193,39 @@ class _ChatScreenState extends State<ChatScreen> {
     // Find the event in the current timeline.
     final events = _timeline?.events
             .where((e) =>
-                e.type == EventTypes.Message ||
-                e.type == EventTypes.Encrypted)
+                e.type == EventTypes.Message || e.type == EventTypes.Encrypted)
             .toList() ??
         [];
 
     final index = events.indexWhere((e) => e.eventId == event.eventId);
     if (index == -1) {
-      // Event not loaded in timeline yet — highlight briefly won't work,
-      // but we still clear search mode.
       debugPrint('[Lattice] Event not in loaded timeline: ${event.eventId}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Message not in loaded history'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
       return;
     }
 
     setState(() => _highlightedEventId = event.eventId);
 
-    // Scroll to the event. Since ListView is reversed, index 0 is at bottom.
-    // Estimate position: each message is roughly 70px tall.
-    final estimatedOffset = index * 70.0;
-    _scrollCtrl.animateTo(
-      estimatedOffset.clamp(0.0, _scrollCtrl.position.maxScrollExtent),
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeInOut,
-    );
+    // Use ensureVisible on the target widget's RenderObject for accurate
+    // scrolling regardless of variable message heights.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final targetContext = _messageKeys[event.eventId]?.currentContext;
+      if (targetContext != null) {
+        Scrollable.ensureVisible(
+          targetContext,
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOut,
+          alignmentPolicy: ScrollPositionAlignmentPolicy.keepVisibleAtEnd,
+        );
+      }
+    });
 
     // Clear highlight after a delay.
     Timer(const Duration(seconds: 2), () {
@@ -251,8 +262,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final events = _timeline?.events
             .where((e) =>
-                e.type == EventTypes.Message ||
-                e.type == EventTypes.Encrypted)
+                e.type == EventTypes.Message || e.type == EventTypes.Encrypted)
             .toList() ??
         [];
 
@@ -380,8 +390,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       itemCount: events.length,
                       itemBuilder: (context, i) {
                         final event = events[i];
-                        final isMe =
-                            event.senderId == matrix.client.userID;
+                        final isMe = event.senderId == matrix.client.userID;
 
                         // Group consecutive messages from same sender.
                         final prevSender = i + 1 < events.length
@@ -389,11 +398,16 @@ class _ChatScreenState extends State<ChatScreen> {
                             : null;
                         final isFirst = event.senderId != prevSender;
 
-                        return MessageBubble(
-                          event: event,
-                          isMe: isMe,
-                          isFirst: isFirst,
-                          highlighted: event.eventId == _highlightedEventId,
+                        final key = _messageKeys.putIfAbsent(
+                            event.eventId, () => GlobalKey());
+                        return KeyedSubtree(
+                          key: key,
+                          child: MessageBubble(
+                            event: event,
+                            isMe: isMe,
+                            isFirst: isFirst,
+                            highlighted: event.eventId == _highlightedEventId,
+                          ),
                         );
                       },
                     ),
@@ -465,8 +479,7 @@ class _ChatScreenState extends State<ChatScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.search_off_rounded,
-                  size: 48,
-                  color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
+                  size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
               const SizedBox(height: 12),
               Text(
                 'No messages found for "$query"',
@@ -686,8 +699,8 @@ List<_HighlightSpan> _highlightSpans(String text, String query) {
     if (index > start) {
       spans.add(_HighlightSpan(text.substring(start, index), false));
     }
-    spans.add(_HighlightSpan(
-        text.substring(index, index + query.length), true));
+    spans
+        .add(_HighlightSpan(text.substring(index, index + query.length), true));
     start = index + query.length;
   }
 
@@ -740,8 +753,8 @@ class _ComposeBar extends StatelessWidget {
               decoration: InputDecoration(
                 hintText: 'Type a message…',
                 isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 10),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,

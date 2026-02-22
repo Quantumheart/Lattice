@@ -1098,10 +1098,11 @@ class MockMatrixService extends _i1.Mock implements _i4.MatrixService {
       );
 
   @override
-  _i7.Future<void> startSync() => (super.noSuchMethod(
+  _i7.Future<void> startSync({Duration? timeout}) => (super.noSuchMethod(
         Invocation.method(
           #startSync,
           [],
+          {#timeout: timeout},
         ),
         returnValue: _i7.Future<void>.value(),
         returnValueForMissingStub: _i7.Future<void>.value(),
