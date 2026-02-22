@@ -20,7 +20,7 @@ MatrixServiceFactory _testFactory(
   List<MatrixService>? trackServices,
   bool loggedIn = true,
 }) {
-  return ({required clientName, storage}) {
+  return ({required clientName, storage, clientFactory}) {
     trackNames?.add(clientName);
     final mockClient = MockClient();
     when(mockClient.rooms).thenReturn([]);
@@ -91,7 +91,7 @@ void main() {
       final manager = ClientManager(
         storage: mockStorage,
         prefs: mockPrefs,
-        serviceFactory: ({required clientName, storage}) {
+        serviceFactory: ({required clientName, storage, clientFactory}) {
           final mockClient = MockClient();
           when(mockClient.rooms).thenReturn([]);
           when(mockClient.userID).thenReturn('@$clientName:example.com');
@@ -220,7 +220,7 @@ void main() {
       final manager = ClientManager(
         storage: mockStorage,
         prefs: mockPrefs,
-        serviceFactory: ({required clientName, storage}) {
+        serviceFactory: ({required clientName, storage, clientFactory}) {
           callCount++;
           final mockClient = MockClient();
           when(mockClient.rooms).thenReturn([]);

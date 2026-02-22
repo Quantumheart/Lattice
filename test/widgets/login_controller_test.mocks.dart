@@ -884,20 +884,11 @@ class MockMatrixService extends _i1.Mock implements _i4.MatrixService {
       ) as bool);
 
   @override
-  _i7.Future<void> init() => (super.noSuchMethod(
+  _i7.Future<void> init({bool? restoreSession = true}) => (super.noSuchMethod(
         Invocation.method(
           #init,
           [],
-        ),
-        returnValue: _i7.Future<void>.value(),
-        returnValueForMissingStub: _i7.Future<void>.value(),
-      ) as _i7.Future<void>);
-
-  @override
-  _i7.Future<void> initClient() => (super.noSuchMethod(
-        Invocation.method(
-          #initClient,
-          [],
+          {#restoreSession: restoreSession},
         ),
         returnValue: _i7.Future<void>.value(),
         returnValueForMissingStub: _i7.Future<void>.value(),

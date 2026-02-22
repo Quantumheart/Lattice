@@ -20,6 +20,43 @@ import 'mixins/auth_mixin.dart';
 String latticeKey(String clientName, String suffix) =>
     'lattice_${clientName}_$suffix';
 
+/// Factory function that creates a configured [Client] instance.
+typedef ClientFactory = Future<Client> Function(
+  String clientName, {
+  Future<void> Function(Client)? onSoftLogout,
+});
+
+/// Default production factory: sets up sqflite DB and constructs [Client].
+Future<Client> createDefaultClient(
+  String clientName, {
+  Future<void> Function(Client)? onSoftLogout,
+}) async {
+  sqfliteFfiInit();
+  final dbFactory = databaseFactoryFfi;
+  final dir = await getApplicationSupportDirectory();
+  final dbPath = p.join(dir.path, 'lattice_$clientName.db');
+  final sqfliteDb = await dbFactory.openDatabase(dbPath);
+  final database = await MatrixSdkDatabase.init(
+    'lattice_$clientName',
+    database: sqfliteDb,
+  );
+  return Client(
+    'Lattice ($clientName)',
+    database: database,
+    logLevel: kReleaseMode ? Level.warning : Level.verbose,
+    defaultNetworkRequestTimeout: const Duration(minutes: 2),
+    onSoftLogout: onSoftLogout,
+    verificationMethods: {
+      KeyVerificationMethod.emoji,
+      KeyVerificationMethod.numbers,
+    },
+    nativeImplementations: NativeImplementationsIsolate(
+      compute,
+      vodozemacInit: () => vod.init(),
+    ),
+  );
+}
+
 /// An SSO identity provider advertised by the homeserver.
 class SsoIdentityProvider {
   final String id;
@@ -62,7 +99,9 @@ class MatrixService extends ChangeNotifier
     Client? client,
     FlutterSecureStorage? storage,
     this.clientName = 'default',
+    ClientFactory? clientFactory,
   })  : _injectedClient = client,
+        _clientFactory = clientFactory ?? createDefaultClient,
         _storage = storage ?? const FlutterSecureStorage() {
     if (client != null) {
       _client = client;
@@ -70,6 +109,7 @@ class MatrixService extends ChangeNotifier
   }
 
   final Client? _injectedClient;
+  final ClientFactory _clientFactory;
   final FlutterSecureStorage _storage;
   @override
   final String clientName;
@@ -95,42 +135,43 @@ class MatrixService extends ChangeNotifier
 
   // ── Initialization ───────────────────────────────────────────
 
-  /// Initializes the client, creating the database and restoring the session.
-  /// Called by [ClientManager]; not called automatically from the constructor.
-  Future<void> init() async {
+  /// Initializes the client, optionally restoring a saved session.
+  ///
+  /// When [restoreSession] is true (default), migrates storage keys and
+  /// attempts to restore a session from secure storage. When false, only
+  /// creates the client instance (used by [ClientManager] for login flows).
+  Future<void> init({bool restoreSession = true}) async {
     if (_injectedClient != null) {
       _client = _injectedClient!;
       return;
     }
 
-    await migrateStorageKeys();
-
-    sqfliteFfiInit();
-    final dbFactory = databaseFactoryFfi;
-    final dir = await getApplicationSupportDirectory();
-    final dbPath = p.join(dir.path, 'lattice_$clientName.db');
-    final sqfliteDb = await dbFactory.openDatabase(dbPath);
-    final database = await MatrixSdkDatabase.init(
-      'lattice_$clientName',
-      database: sqfliteDb,
+    if (restoreSession) await migrateStorageKeys();
+    _client = await _clientFactory(
+      clientName,
+      onSoftLogout: (_) async => handleSoftLogout(),
     );
-    _client = Client(
-      'Lattice ($clientName)',
-      database: database,
-      logLevel: kReleaseMode ? Level.warning : Level.verbose,
-      defaultNetworkRequestTimeout: const Duration(minutes: 2),
-      onSoftLogout: (_) => handleSoftLogout(),
-      verificationMethods: {
-        KeyVerificationMethod.emoji,
-        KeyVerificationMethod.numbers,
-      },
-      nativeImplementations: NativeImplementationsIsolate(
-        compute,
-        vodozemacInit: () => vod.init(),
-      ),
-    );
+    if (restoreSession) {
+      await _restoreSession();
+      notifyListeners();
+    }
+  }
 
-    // Attempt to restore session from secure storage.
+  // ── Session Activation ─────────────────────────────────────────
+
+  /// Wires up listeners and starts syncing after a successful session restore.
+  Future<void> _activateSession() async {
+    listenForUia();
+    listenForLoginState();
+    await startSync();
+    _isLoggedIn = true;
+  }
+
+  // ── Session Restore ────────────────────────────────────────────
+
+  /// Attempts to restore a session from secure storage, falling back to
+  /// backup restore or device re-registration on failure.
+  Future<void> _restoreSession() async {
     try {
       final token =
           await _storage.read(key: latticeKey(clientName, 'access_token'));
@@ -156,10 +197,7 @@ class MatrixService extends ChangeNotifier
         debugPrint('[Lattice] Session restored – '
             'encryption=${_client.encryption != null ? "available" : "null"}, '
             'encryptionEnabled=${_client.encryptionEnabled}');
-        listenForUia();
-        listenForLoginState();
-        await startSync();
-        _isLoggedIn = true;
+        await _activateSession();
 
         // Write session backup after successful restore + first sync.
         await saveSessionBackup();
@@ -184,47 +222,11 @@ class MatrixService extends ChangeNotifier
           // match. Clear the device ID so the SDK registers a fresh
           // device on the next init attempt.
           debugPrint('[Lattice] Clearing stale device ID and retrying init');
-          await _storage.delete(
-              key: latticeKey(clientName, 'device_id'));
+          await _storage.delete(key: latticeKey(clientName, 'device_id'));
           await _retryInitWithoutDevice();
         }
       }
     }
-    notifyListeners();
-  }
-
-  /// Creates the client instance without restoring a session.
-  /// Used by [ClientManager] for the login flow.
-  Future<void> initClient() async {
-    if (_injectedClient != null) {
-      _client = _injectedClient!;
-      return;
-    }
-
-    sqfliteFfiInit();
-    final dbFactory = databaseFactoryFfi;
-    final dir = await getApplicationSupportDirectory();
-    final dbPath = p.join(dir.path, 'lattice_$clientName.db');
-    final sqfliteDb = await dbFactory.openDatabase(dbPath);
-    final database = await MatrixSdkDatabase.init(
-      'lattice_$clientName',
-      database: sqfliteDb,
-    );
-    _client = Client(
-      'Lattice ($clientName)',
-      database: database,
-      logLevel: kReleaseMode ? Level.warning : Level.verbose,
-      defaultNetworkRequestTimeout: const Duration(minutes: 2),
-      onSoftLogout: (_) => handleSoftLogout(),
-      verificationMethods: {
-        KeyVerificationMethod.emoji,
-        KeyVerificationMethod.numbers,
-      },
-      nativeImplementations: NativeImplementationsIsolate(
-        compute,
-        vodozemacInit: () => vod.init(),
-      ),
-    );
   }
 
   // ── Session Backup ────────────────────────────────────────────
@@ -281,10 +283,7 @@ class MatrixService extends ChangeNotifier
       await _storage.write(
           key: latticeKey(clientName, 'device_id'), value: backup.deviceId);
 
-      listenForUia();
-      listenForLoginState();
-      await startSync();
-      _isLoggedIn = true;
+      await _activateSession();
       debugPrint('[Lattice] Session restored from backup');
       return true;
     } catch (e, s) {
@@ -327,14 +326,10 @@ class MatrixService extends ChangeNotifier
       // Persist the new device ID assigned by the server.
       if (_client.deviceID != null) {
         await _storage.write(
-            key: latticeKey(clientName, 'device_id'),
-            value: _client.deviceID);
+            key: latticeKey(clientName, 'device_id'), value: _client.deviceID);
       }
 
-      listenForUia();
-      listenForLoginState();
-      await startSync();
-      _isLoggedIn = true;
+      await _activateSession();
       await saveSessionBackup();
       debugPrint('[Lattice] Session restored with new device ID '
           '${_client.deviceID}');
