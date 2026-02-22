@@ -95,11 +95,18 @@ mixin AuthMixin on ChangeNotifier {
         }
       }
 
-      // Probe registration support.
+      // Probe registration support by sending an empty register request.
+      // Spec-compliant servers respond with 401 + flows; open-registration
+      // servers may return 200 which causes the SDK to call init()
+      // internally, so we must avoid using client.register() directly.
       var supportsRegistration = false;
       var registrationStages = <String>[];
       try {
-        await client.register();
+        await client.request(
+          RequestType.POST,
+          '/client/v3/register',
+          data: {},
+        );
       } on MatrixException catch (e) {
         if (e.raw.containsKey('flows')) {
           supportsRegistration = true;

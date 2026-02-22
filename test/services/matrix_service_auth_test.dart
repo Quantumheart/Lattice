@@ -38,7 +38,9 @@ void main() {
             LoginFlow(type: AuthenticationTypes.password),
           ]);
       // Registration probe returns 403 (disabled)
-      when(mockClient.register()).thenThrow(
+      when(mockClient.request(RequestType.POST, '/client/v3/register',
+              data: anyNamed('data')))
+          .thenThrow(
         MatrixException.fromJson({
           'errcode': 'M_FORBIDDEN',
           'error': 'Registration is not enabled',
@@ -55,7 +57,9 @@ void main() {
       when(mockClient.getLoginFlows()).thenAnswer((_) async => [
             LoginFlow(type: AuthenticationTypes.sso),
           ]);
-      when(mockClient.register()).thenThrow(
+      when(mockClient.request(RequestType.POST, '/client/v3/register',
+              data: anyNamed('data')))
+          .thenThrow(
         MatrixException.fromJson({
           'errcode': 'M_FORBIDDEN',
           'error': 'Registration is not enabled',
@@ -79,7 +83,9 @@ void main() {
               },
             ),
           ]);
-      when(mockClient.register()).thenThrow(
+      when(mockClient.request(RequestType.POST, '/client/v3/register',
+              data: anyNamed('data')))
+          .thenThrow(
         MatrixException.fromJson({
           'errcode': 'M_FORBIDDEN',
           'error': 'Registration is not enabled',
@@ -101,7 +107,9 @@ void main() {
       when(mockClient.getLoginFlows()).thenAnswer((_) async => [
             LoginFlow(type: AuthenticationTypes.password),
           ]);
-      when(mockClient.register()).thenThrow(
+      when(mockClient.request(RequestType.POST, '/client/v3/register',
+              data: anyNamed('data')))
+          .thenThrow(
         MatrixException.fromJson({
           'flows': [
             {
@@ -124,7 +132,9 @@ void main() {
       when(mockClient.getLoginFlows()).thenAnswer((_) async => [
             LoginFlow(type: AuthenticationTypes.password),
           ]);
-      when(mockClient.register()).thenThrow(
+      when(mockClient.request(RequestType.POST, '/client/v3/register',
+              data: anyNamed('data')))
+          .thenThrow(
         MatrixException.fromJson({
           'errcode': 'M_FORBIDDEN',
           'error': 'Registration is not enabled on this homeserver',
@@ -159,7 +169,9 @@ void main() {
 
     test('auto-prefixes https if missing', () async {
       when(mockClient.getLoginFlows()).thenAnswer((_) async => []);
-      when(mockClient.register()).thenThrow(
+      when(mockClient.request(RequestType.POST, '/client/v3/register',
+              data: anyNamed('data')))
+          .thenThrow(
         MatrixException.fromJson({
           'errcode': 'M_FORBIDDEN',
           'error': 'Registration is not enabled',
@@ -185,7 +197,9 @@ void main() {
               },
             ),
           ]);
-      when(mockClient.register()).thenThrow(
+      when(mockClient.request(RequestType.POST, '/client/v3/register',
+              data: anyNamed('data')))
+          .thenThrow(
         MatrixException.fromJson({
           'flows': [
             {
@@ -224,7 +238,9 @@ void main() {
 
     test('handles null getLoginFlows response', () async {
       when(mockClient.getLoginFlows()).thenAnswer((_) async => null);
-      when(mockClient.register()).thenThrow(
+      when(mockClient.request(RequestType.POST, '/client/v3/register',
+              data: anyNamed('data')))
+          .thenThrow(
         MatrixException.fromJson({
           'errcode': 'M_FORBIDDEN',
           'error': 'Registration is not enabled',
