@@ -39,6 +39,26 @@ jobs:
           name: lattice-linux-x64
           path: lattice-linux-x64.tar.gz
 
+  build-web:
+    needs: analyze-and-test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter build web --release
+      - name: Archive build
+        run: tar -czf lattice-web.tar.gz -C build/web .
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lattice-web
+          path: lattice-web.tar.gz
+
   build-windows:
     needs: analyze-and-test
     runs-on: windows-latest
@@ -61,7 +81,7 @@ jobs:
           path: lattice-windows-x64.zip
 
   release:
-    needs: [build-linux, build-windows]
+    needs: [build-linux, build-web, build-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -75,5 +95,6 @@ jobs:
         with:
           files: |
             lattice-linux-x64.tar.gz
+            lattice-web.tar.gz
             lattice-windows-x64.zip
           generate_release_notes: true
