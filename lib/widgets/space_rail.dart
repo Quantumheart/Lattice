@@ -126,25 +126,27 @@ class _SpaceRailState extends State<SpaceRail> {
           // Add space button
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
-            child: _RailIcon(
-              label: '+',
-              tooltip: 'Join or create a space',
-              isSelected: false,
-              color: cs.outlineVariant,
-              outlined: true,
-              onTap: () {
-                final box = context.findRenderObject() as RenderBox;
-                final position = box.localToGlobal(Offset.zero);
-                showSpaceActionMenu(
-                  context,
-                  RelativeRect.fromLTRB(
-                    position.dx + box.size.width,
-                    position.dy,
-                    position.dx + box.size.width,
-                    position.dy + box.size.height,
-                  ),
-                );
-              },
+            child: Builder(
+              builder: (btnContext) => _RailIcon(
+                label: '+',
+                tooltip: 'Join or create a space',
+                isSelected: false,
+                color: cs.outlineVariant,
+                outlined: true,
+                onTap: () {
+                  final box = btnContext.findRenderObject() as RenderBox;
+                  final position = box.localToGlobal(Offset.zero);
+                  showSpaceActionMenu(
+                    btnContext,
+                    RelativeRect.fromLTRB(
+                      position.dx + box.size.width,
+                      position.dy,
+                      position.dx + box.size.width,
+                      position.dy + box.size.height,
+                    ),
+                  );
+                },
+              ),
             ),
           ),
 

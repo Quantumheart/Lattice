@@ -5,6 +5,8 @@ import 'package:matrix/matrix.dart';
 import '../models/space_node.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
+import 'new_dm_dialog.dart';
+import 'new_room_dialog.dart';
 import 'room_avatar.dart';
 
 // ── List item types for the flat interleaved list ──────────
@@ -40,14 +42,48 @@ class RoomList extends StatefulWidget {
   State<RoomList> createState() => _RoomListState();
 }
 
-class _RoomListState extends State<RoomList> {
+class _RoomListState extends State<RoomList>
+    with SingleTickerProviderStateMixin {
   final _searchCtrl = TextEditingController();
   String _query = '';
+  late final AnimationController _fabAnimCtrl;
+  late final Animation<double> _fabAnimation;
+  bool _fabOpen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fabAnimCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _fabAnimation = CurvedAnimation(
+      parent: _fabAnimCtrl,
+      curve: Curves.easeOut,
+    );
+  }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _fabAnimCtrl.dispose();
     super.dispose();
+  }
+
+  void _toggleFab() {
+    setState(() => _fabOpen = !_fabOpen);
+    if (_fabOpen) {
+      _fabAnimCtrl.forward();
+    } else {
+      _fabAnimCtrl.reverse();
+    }
+  }
+
+  void _closeFab() {
+    if (_fabOpen) {
+      setState(() => _fabOpen = false);
+      _fabAnimCtrl.reverse();
+    }
   }
 
   List<Room> _applyFilters(List<Room> rooms, RoomCategory filter) {
@@ -182,104 +218,205 @@ class _RoomListState extends State<RoomList> {
       appBar: AppBar(
         title: Text(_appBarTitle(matrix)),
       ),
-      body: Column(
+      body: Stack(
         children: [
-          // ── Search bar ──
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: TextField(
-              controller: _searchCtrl,
-              onChanged: (v) => setState(() => _query = v),
-              decoration: InputDecoration(
-                hintText: 'Search everything\u2026',
-                prefixIcon:
-                    Icon(Icons.search, color: cs.onSurfaceVariant),
-                suffixIcon: _query.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () {
-                          _searchCtrl.clear();
-                          setState(() => _query = '');
-                        },
+          Column(
+            children: [
+              // ── Search bar ──
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                child: TextField(
+                  controller: _searchCtrl,
+                  onChanged: (v) => setState(() => _query = v),
+                  decoration: InputDecoration(
+                    hintText: 'Search everything\u2026',
+                    prefixIcon:
+                        Icon(Icons.search, color: cs.onSurfaceVariant),
+                    suffixIcon: _query.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.close),
+                            onPressed: () {
+                              _searchCtrl.clear();
+                              setState(() => _query = '');
+                            },
+                          )
+                        : null,
+                    isDense: true,
+                  ),
+                ),
+              ),
+
+              // ── Filter chips ──
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  children: RoomCategory.values.map((filter) {
+                    return FilterChip(
+                      label: Text(filter.label),
+                      avatar: Icon(filter.icon, size: 18),
+                      selected: prefs.roomFilter == filter,
+                      onSelected: (_) => prefs.setRoomCategory(filter),
+                      showCheckmark: false,
+                      mouseCursor: SystemMouseCursors.click,
+                    );
+                  }).toList(),
+                ),
+              ),
+
+              const SizedBox(height: 4),
+
+              // ── Sectioned room list ──
+              Expanded(
+                child: items.isEmpty
+                    ? Center(
+                        child: Text(
+                          _query.isNotEmpty
+                              ? 'No rooms match "$_query"'
+                              : prefs.roomFilter == RoomCategory.all
+                                  ? 'No rooms yet'
+                                  : 'No ${prefs.roomFilter.label.toLowerCase()}',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(
+                                color: cs.onSurfaceVariant
+                                    .withValues(alpha: 0.6),
+                              ),
+                        ),
                       )
-                    : null,
-                isDense: true,
+                    : ListView.builder(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        itemCount: items.length,
+                        itemBuilder: (context, i) {
+                          final item = items[i];
+                          return switch (item) {
+                            _FilterBarItem() =>
+                              _SpaceFilterBar(matrix: matrix),
+                            _HeaderItem() => _SectionHeader(
+                                item: item,
+                                prefs: prefs,
+                              ),
+                            _RoomItem() => Padding(
+                                padding: EdgeInsets.only(
+                                    left: item.depth * 16.0),
+                                child: _RoomTile(room: item.room),
+                              ),
+                          };
+                        },
+                      ),
+              ),
+            ],
+          ),
+
+          // ── Scrim overlay to dismiss speed dial ──
+          if (_fabOpen)
+            Positioned.fill(
+              child: GestureDetector(
+                onTap: _closeFab,
+                child: const ColoredBox(
+                  color: Colors.black26,
+                ),
               ),
             ),
-          ),
 
-          // ── Filter chips ──
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: RoomCategory.values.map((filter) {
-                return FilterChip(
-                  label: Text(filter.label),
-                  avatar: Icon(filter.icon, size: 18),
-                  selected: prefs.roomFilter == filter,
-                  onSelected: (_) => prefs.setRoomCategory(filter),
-                  showCheckmark: false,
-                  mouseCursor: SystemMouseCursors.click,
-                );
-              }).toList(),
-            ),
-          ),
-
-          const SizedBox(height: 4),
-
-          // ── Sectioned room list ──
-          Expanded(
-            child: items.isEmpty
-                ? Center(
-                    child: Text(
-                      _query.isNotEmpty
-                          ? 'No rooms match "$_query"'
-                          : prefs.roomFilter == RoomCategory.all
-                              ? 'No rooms yet'
-                              : 'No ${prefs.roomFilter.label.toLowerCase()}',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyMedium
-                          ?.copyWith(
-                            color: cs.onSurfaceVariant
-                                .withValues(alpha: 0.6),
-                          ),
+          // ── FAB + speed dial ──
+          Positioned(
+            right: 16,
+            bottom: 16,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // ── Mini-FABs (speed dial) ──
+                SizeTransition(
+                  sizeFactor: _fabAnimation,
+                  axisAlignment: -1,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _SpeedDialItem(
+                          label: 'New Room',
+                          icon: Icons.group_add_rounded,
+                          onTap: () {
+                            _closeFab();
+                            NewRoomDialog.show(context, matrixService: matrix);
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        _SpeedDialItem(
+                          label: 'New Direct Message',
+                          icon: Icons.chat_bubble_outline_rounded,
+                          onTap: () {
+                            _closeFab();
+                            NewDirectMessageDialog.show(context,
+                                matrixService: matrix);
+                          },
+                        ),
+                      ],
                     ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
-                    itemCount: items.length,
-                    itemBuilder: (context, i) {
-                      final item = items[i];
-                      return switch (item) {
-                        _FilterBarItem() =>
-                          _SpaceFilterBar(matrix: matrix),
-                        _HeaderItem() => _SectionHeader(
-                            item: item,
-                            prefs: prefs,
-                          ),
-                        _RoomItem() => Padding(
-                            padding: EdgeInsets.only(
-                                left: item.depth * 16.0),
-                            child: _RoomTile(room: item.room),
-                          ),
-                      };
-                    },
                   ),
+                ),
+                // ── Main FAB ──
+                FloatingActionButton(
+                  heroTag: 'compose',
+                  onPressed: _toggleFab,
+                  child: AnimatedRotation(
+                    turns: _fabOpen ? 0.125 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: const Icon(Icons.edit_rounded),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        heroTag: 'compose',
-        onPressed: () {
-          // TODO: create new DM / room
-        },
-        child: const Icon(Icons.edit_rounded),
-      ),
+    );
+  }
+}
+
+// ── Speed dial mini-FAB ─────────────────────────────────────
+class _SpeedDialItem extends StatelessWidget {
+  const _SpeedDialItem({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Material(
+          elevation: 2,
+          borderRadius: BorderRadius.circular(8),
+          color: cs.surfaceContainerHigh,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Text(label,
+                style: TextStyle(fontSize: 13, color: cs.onSurface)),
+          ),
+        ),
+        const SizedBox(width: 12),
+        FloatingActionButton.small(
+          heroTag: label,
+          onPressed: onTap,
+          child: Icon(icon),
+        ),
+      ],
     );
   }
 }
