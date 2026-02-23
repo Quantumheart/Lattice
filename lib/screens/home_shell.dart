@@ -7,6 +7,7 @@ import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
 import '../widgets/space_rail.dart';
 import '../widgets/room_list.dart';
+import '../widgets/room_details_panel.dart';
 import 'chat_screen.dart';
 import 'settings_screen.dart';
 
@@ -23,6 +24,8 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _mobileTab = 0; // 0: chats, 1: spaces, 2: settings
   double? _dragPanelWidth; // local state during divider drag
+  bool _showRoomDetails = false;
+  String? _detailsPanelRoomId;
 
   static const double _wideBreakpoint = 720;
   static const double _extraWideBreakpoint = 1100;
@@ -147,17 +150,50 @@ class _HomeShellState extends State<HomeShell> {
               VerticalDivider(width: 1, color: cs.outlineVariant.withValues(alpha: 0.3)),
           ],
 
-          // Chat pane (or placeholder)
+          // Chat pane (or placeholder) + optional details panel
           Expanded(
-            child: matrix.selectedRoomId != null
-                ? ChatScreen(
-                    roomId: matrix.selectedRoomId!,
-                    key: ValueKey(matrix.selectedRoomId),
-                  )
-                : _buildEmptyChat(),
+            child: _buildChatAndDetails(matrix, cs),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildChatAndDetails(MatrixService matrix, ColorScheme cs) {
+    // Reset details panel when selected room changes.
+    if (_detailsPanelRoomId != matrix.selectedRoomId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _detailsPanelRoomId != matrix.selectedRoomId) {
+          setState(() {
+            _showRoomDetails = false;
+            _detailsPanelRoomId = matrix.selectedRoomId;
+          });
+        }
+      });
+    }
+
+    if (matrix.selectedRoomId == null) return _buildEmptyChat();
+
+    return Row(
+      children: [
+        Expanded(
+          child: ChatScreen(
+            roomId: matrix.selectedRoomId!,
+            key: ValueKey(matrix.selectedRoomId),
+            onShowDetails: () => setState(() => _showRoomDetails = !_showRoomDetails),
+          ),
+        ),
+        if (_showRoomDetails) ...[
+          VerticalDivider(width: 1, color: cs.outlineVariant.withValues(alpha: 0.3)),
+          SizedBox(
+            width: 320,
+            child: RoomDetailsPanel(
+              roomId: matrix.selectedRoomId!,
+              key: ValueKey('details-${matrix.selectedRoomId}'),
+            ),
+          ),
+        ],
+      ],
     );
   }
 

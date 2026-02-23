@@ -6,6 +6,7 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../services/matrix_service.dart';
 import '../widgets/room_avatar.dart';
+import '../widgets/room_details_panel.dart';
 import '../widgets/message_bubble.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -13,12 +14,16 @@ class ChatScreen extends StatefulWidget {
     super.key,
     required this.roomId,
     this.onBack,
+    this.onShowDetails,
   });
 
   final String roomId;
 
   /// On narrow layouts, called to pop back to room list.
   final VoidCallback? onBack;
+
+  /// On desktop, called to toggle the room details side panel.
+  final VoidCallback? onShowDetails;
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -324,7 +329,18 @@ class _ChatScreenState extends State<ChatScreen> {
         IconButton(
           icon: const Icon(Icons.more_vert_rounded),
           onPressed: () {
-            // TODO: room details sheet
+            if (widget.onShowDetails != null) {
+              widget.onShowDetails!();
+            } else {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => RoomDetailsPanel(
+                    roomId: widget.roomId,
+                    isFullPage: true,
+                  ),
+                ),
+              );
+            }
           },
         ),
       ],
