@@ -114,6 +114,28 @@ class PreferencesService extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ── Collapsed space sections ─────────────────────────────
+  static const _collapsedSectionsKey = 'collapsed_space_sections';
+
+  /// Sentinel key used for the "Unsorted" section (rooms not in any space).
+  static const unsortedSectionKey = '__unsorted__';
+
+  Set<String> get collapsedSpaceSections {
+    final list = _prefs?.getStringList(_collapsedSectionsKey);
+    return list != null ? Set<String>.from(list) : {};
+  }
+
+  Future<void> toggleSectionCollapsed(String spaceId) async {
+    final current = collapsedSpaceSections;
+    if (current.contains(spaceId)) {
+      current.remove(spaceId);
+    } else {
+      current.add(spaceId);
+    }
+    await _prefs?.setStringList(_collapsedSectionsKey, current.toList());
+    notifyListeners();
+  }
+
   // ── Room list panel width ─────────────────────────────────
 
   static const _panelWidthKey = 'room_list_panel_width';
