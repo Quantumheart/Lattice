@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../models/space_node.dart';
@@ -32,10 +33,48 @@ class _HomeShellState extends State<HomeShell> {
     final width = MediaQuery.sizeOf(context).width;
     final isWide = width >= _wideBreakpoint;
 
-    if (isWide) {
-      return _buildWideLayout(width);
+    final child = isWide ? _buildWideLayout(width) : _buildNarrowLayout();
+
+    return CallbackShortcuts(
+      bindings: _buildKeyBindings(context),
+      child: Focus(
+        autofocus: true,
+        child: child,
+      ),
+    );
+  }
+
+  Map<ShortcutActivator, VoidCallback> _buildKeyBindings(BuildContext context) {
+    final matrix = context.read<MatrixService>();
+    final spaces = matrix.spaces;
+    final bindings = <ShortcutActivator, VoidCallback>{};
+
+    // Ctrl+0 → clear space selection
+    bindings[const SingleActivator(LogicalKeyboardKey.digit0,
+        control: true)] = () => matrix.clearSpaceSelection();
+
+    // Ctrl+1..9 → select Nth space
+    final digitKeys = [
+      LogicalKeyboardKey.digit1,
+      LogicalKeyboardKey.digit2,
+      LogicalKeyboardKey.digit3,
+      LogicalKeyboardKey.digit4,
+      LogicalKeyboardKey.digit5,
+      LogicalKeyboardKey.digit6,
+      LogicalKeyboardKey.digit7,
+      LogicalKeyboardKey.digit8,
+      LogicalKeyboardKey.digit9,
+    ];
+    for (var i = 0; i < digitKeys.length && i < spaces.length; i++) {
+      final spaceId = spaces[i].id;
+      bindings[SingleActivator(digitKeys[i], control: true)] =
+          () => matrix.selectSpace(spaceId);
+      // Ctrl+Shift+1..9 → toggle Nth space in multi-select
+      bindings[SingleActivator(digitKeys[i], control: true, shift: true)] =
+          () => matrix.toggleSpaceSelection(spaceId);
     }
-    return _buildNarrowLayout();
+
+    return bindings;
   }
 
   // ── Wide: rail + room list + chat ────────────────────────────
