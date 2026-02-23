@@ -33,6 +33,7 @@ class _NewDirectMessageDialogState extends State<NewDirectMessageDialog> {
   String? _networkError;
   List<Profile> _searchResults = [];
   Timer? _debounce;
+  List<_Contact>? _cachedContacts;
 
   static final _mxidRegex = RegExp(r'^@[^:]+:.+$');
 
@@ -46,6 +47,7 @@ class _NewDirectMessageDialogState extends State<NewDirectMessageDialog> {
   // ── Known contacts ──────────────────────────────────────────
 
   List<_Contact> _knownContacts() {
+    if (_cachedContacts != null) return _cachedContacts!;
     final rooms = widget.matrixService.client.rooms
         .where((r) => r.isDirectChat)
         .toList();
@@ -59,6 +61,7 @@ class _NewDirectMessageDialogState extends State<NewDirectMessageDialog> {
         avatarUrl: room.avatar,
       ));
     }
+    _cachedContacts = contacts;
     return contacts;
   }
 
@@ -119,7 +122,9 @@ class _NewDirectMessageDialogState extends State<NewDirectMessageDialog> {
       // Only wait if the room isn't already synced (existing DMs return
       // immediately and would hang waitForRoomInSync forever).
       if (client.getRoomById(roomId) == null) {
-        await client.waitForRoomInSync(roomId, join: true);
+        await client
+            .waitForRoomInSync(roomId, join: true)
+            .timeout(const Duration(seconds: 30));
       }
 
       if (!mounted) return;
@@ -285,7 +290,7 @@ class _UserTile extends StatelessWidget {
         radius: 18,
         backgroundColor: cs.primaryContainer,
         child: Text(
-          (displayName ?? userId).characters.first.toUpperCase(),
+          ((displayName ?? userId).isNotEmpty ? (displayName ?? userId).characters.first.toUpperCase() : '?'),
           style: TextStyle(color: cs.onPrimaryContainer, fontSize: 14),
         ),
       ),

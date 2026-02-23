@@ -39,6 +39,7 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
   final List<String> _invitedUsers = [];
   List<Profile> _inviteSearchResults = [];
   Timer? _debounce;
+  List<Profile>? _cachedContacts;
 
   @override
   void initState() {
@@ -61,6 +62,7 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
   // ── Known contacts ──────────────────────────────────────────
 
   List<Profile> _knownContacts() {
+    if (_cachedContacts != null) return _cachedContacts!;
     final rooms = widget.matrixService.client.rooms
         .where((r) => r.isDirectChat)
         .toList();
@@ -74,6 +76,7 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
         avatarUrl: room.avatar,
       ));
     }
+    _cachedContacts = contacts;
     return contacts;
   }
 
@@ -181,7 +184,7 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
           radius: 16,
           backgroundColor: cs.primaryContainer,
           child: Text(
-            (p.displayName ?? p.userId).characters.first.toUpperCase(),
+            ((p.displayName ?? p.userId).isNotEmpty ? (p.displayName ?? p.userId).characters.first.toUpperCase() : '?'),
             style: TextStyle(color: cs.onPrimaryContainer, fontSize: 13),
           ),
         ),
@@ -199,6 +202,7 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
   }
 
   Future<void> _submit() async {
+    _debounce?.cancel();
     final name = _nameController.text.trim();
     if (name.isEmpty) {
       setState(() {
@@ -235,7 +239,9 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
         invite: _invitedUsers.isNotEmpty ? _invitedUsers : null,
       );
 
-      await client.waitForRoomInSync(roomId, join: true);
+      await client
+          .waitForRoomInSync(roomId, join: true)
+          .timeout(const Duration(seconds: 30));
 
       if (!mounted) return;
       widget.matrixService.selectRoom(roomId);
@@ -303,15 +309,20 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
                 padding: EdgeInsets.only(top: 4),
                 child: LinearProgressIndicator(),
               ),
-            if (_inviteFocusNode.hasFocus && _inviteSuggestions(cs).isNotEmpty)
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxHeight: 150),
-                child: ListView(
-                  shrinkWrap: true,
-                  padding: EdgeInsets.zero,
-                  children: _inviteSuggestions(cs),
-                ),
-              ),
+            if (_inviteFocusNode.hasFocus) ...[
+              Builder(builder: (_) {
+                final suggestions = _inviteSuggestions(cs);
+                if (suggestions.isEmpty) return const SizedBox.shrink();
+                return ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 150),
+                  child: ListView(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.zero,
+                    children: suggestions,
+                  ),
+                );
+              }),
+            ],
             if (_invitedUsers.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
@@ -335,14 +346,24 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
             SwitchListTile(
               title: const Text('Public room'),
               value: _isPublic,
-              onChanged:
-                  _loading ? null : (v) => setState(() => _isPublic = v),
+              onChanged: _loading
+                  ? null
+                  : (v) => setState(() {
+                        _isPublic = v;
+                        if (v) _enableEncryption = false;
+                      }),
               contentPadding: EdgeInsets.zero,
             ),
             SwitchListTile(
               title: const Text('Enable encryption'),
+              subtitle: Text(
+                _isPublic
+                    ? 'Not available for public rooms'
+                    : 'Cannot be disabled later',
+                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+              ),
               value: _enableEncryption,
-              onChanged: _loading
+              onChanged: _loading || _isPublic
                   ? null
                   : (v) => setState(() => _enableEncryption = v),
               contentPadding: EdgeInsets.zero,
