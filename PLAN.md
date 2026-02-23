@@ -31,7 +31,7 @@ Replace the current "spaces replace room list" model with a "spaces as filters o
    - Add private `List<SpaceNode>? _cachedSpaceTree`, `Set<String>? _cachedAllSpaceRoomIds`, and `Map<String, Set<String>>? _cachedRoomToSpaces`.
    - Add `bool _spaceTreeDirty = true` flag.
    - `_rebuildSpaceTree()` — private method that builds the tree, the `_allSpaceRoomIds` set, and the `_roomToSpaces` map in a single pass. Called lazily from getters when `_spaceTreeDirty` is true.
-   - Set `_spaceTreeDirty = true` in `selectSpace()`, `toggleSpaceSelection()`, and after sync events (override the sync handler in `MatrixService` to dirty the cache on each sync cycle).
+   - Set `_spaceTreeDirty = true` in `selectSpace()` and `toggleSpaceSelection()`. For sync events: `SyncMixin` already calls `notifyListeners()` on every sync. Override `notifyListeners()` in `SelectionMixin` to set `_spaceTreeDirty = true` before calling `super.notifyListeners()`. This piggybacks on the existing sync→notify path without needing to modify `SyncMixin` or add a separate stream subscription. (Selection changes also trigger `notifyListeners`, which redundantly re-dirties — harmless since the cache is already dirty from the explicit set above.)
    - `List<SpaceNode> get spaceTree` → returns `_cachedSpaceTree` (rebuilds if dirty).
    - Tree building logic:
      - Walk `client.rooms.where((r) => r.isSpace)`
@@ -56,6 +56,7 @@ Replace the current "spaces replace room list" model with a "spaces as filters o
 
 8. **Add aggregate unread counts**:
    - `int unreadCountForSpace(String spaceId)` — sum of `notificationCount` for all rooms in that space (including subspace children recursively)
+   - Not cached separately — walks the already-cached `SpaceNode` tree and reads `Room.notificationCount` (a simple int property, no I/O). For N spaces with M total rooms this is O(M) total across all calls per rebuild, which is fine for typical usage. If profiling shows otherwise, add a `Map<String, int>` cache dirtied alongside `_spaceTreeDirty`.
 
 **Tests:** Add new test groups to `test/services/matrix_service_test.dart` (following the existing pattern of testing the mixin through `MatrixService`) in a `group('space tree', ...)` block:
 - `spaceTree` builds correctly with nested subspaces
@@ -81,8 +82,8 @@ Replace the current "spaces replace room list" model with a "spaces as filters o
 2. **Selection behavior** (single-tap = replace, modifier = toggle):
    - Change `isSelected` check from `== space.id` to `selectedSpaceIds.contains(space.id)`
    - **Single tap:** calls `matrix.selectSpace(space.id)` — replaces selection with that one space (or clears if already the only selected space)
-   - **Ctrl/Cmd+click (desktop):** calls `matrix.toggleSpaceSelection(space.id)` — adds/removes from multi-select set
-   - **Long-press (mobile):** same as Ctrl+click — calls `matrix.toggleSpaceSelection(space.id)`
+   - **Ctrl/Cmd+click (desktop):** Inside the existing `onTap` callback, check `HardwareKeyboard.instance.logicalKeysPressed` for `LogicalKeyboardKey.controlLeft/Right` or `metaLeft/Right`. If a modifier is held, call `matrix.toggleSpaceSelection(space.id)` instead of `selectSpace`. No widget restructuring needed — `InkWell.onTap` works fine since we query the global keyboard state, not event details.
+   - **Long-press (mobile):** Add `onLongPress` to the `InkWell` (or wrap in `GestureDetector`). Calls `matrix.toggleSpaceSelection(space.id)`.
    - Home button: calls `matrix.clearSpaceSelection()`
    - Visual: selected spaces get the filled/accent treatment; multiple can be active
 
@@ -105,8 +106,9 @@ Replace the current "spaces replace room list" model with a "spaces as filters o
 This is the largest change. The flat `ListView.builder` becomes a single `ListView.builder` with a flat interleaved list of `_SectionHeader` and `_RoomTile` items. No slivers needed — the room counts for most users (tens to low hundreds) don't warrant sliver complexity, and sticky pinned headers are not a requirement.
 
 **Prerequisite:** Add collapsed-sections persistence to `PreferencesService` first (pulled forward from Phase 5), so collapse state is persisted from day one and has a single source of truth:
-- `Set<String> get collapsedSpaceSections` — reads from `SharedPreferences` as a JSON-encoded list of space IDs
+- `Set<String> get collapsedSpaceSections` — reads from `SharedPreferences` via `getStringList()` / `setStringList()` (matching the existing `ClientManager` pattern — no JSON encoding needed)
 - `Future<void> toggleSectionCollapsed(String spaceId)` — adds/removes and persists
+- Define `static const unsortedSectionKey = '__unsorted__'` in `PreferencesService` as the key for the "Unsorted" section's collapse state (since Unsorted has no real space ID)
 
 1. **Build section data**:
    - In `build()`, compute a flat `List<_ListItem>` (sealed class with `_HeaderItem` and `_RoomItem` variants) from `matrix.spaceTree`:
@@ -119,7 +121,7 @@ This is the largest change. The flat `ListView.builder` becomes a single `ListVi
            add _HeaderItem(subspace name, subspaceId, depth: 1)
            if not collapsed:
              add _RoomItem for each room in matrix.roomsForSpace(subspace.id), filtered
-     final section: add _HeaderItem("Unsorted", null, depth: 0)
+     final section: add _HeaderItem("Unsorted", PreferencesService.unsortedSectionKey, depth: 0)
      if not collapsed: add _RoomItem for each room in matrix.orphanRooms, filtered
      ```
    - Skip sections with 0 rooms after filtering (don't show empty headers)
@@ -170,11 +172,12 @@ This is the largest change. The flat `ListView.builder` becomes a single `ListVi
 Keep the 3-tab layout (Chats, Spaces, Settings) — removing the Spaces tab would regress discoverability and doesn't scale for users with many spaces.
 
 1. **Redesign `_SpaceListMobile`** (keep the Spaces tab):
+   - Add an `VoidCallback onSpaceSelected` callback parameter to `_SpaceListMobile`. `_HomeShellState` passes `() => setState(() => _mobileTab = 0)` so the child can trigger tab switching without accessing parent state directly.
    - Add a search field at the top for filtering spaces by name
    - Show unread badge counts per space (same as rail)
    - Show subspace nesting with indentation
-   - Tapping a space calls `matrix.selectSpace(space.id)` and switches to the Chats tab (`setState(() => _mobileTab = 0)`)
-   - Long-press a space calls `matrix.toggleSpaceSelection(space.id)` (multi-select) and switches to Chats tab
+   - Tapping a space calls `matrix.selectSpace(space.id)` then `onSpaceSelected()` to switch to Chats tab
+   - Long-press a space calls `matrix.toggleSpaceSelection(space.id)` then `onSpaceSelected()` to switch to Chats tab
 
 2. **Add space filter chips to mobile Chats tab**:
    - When `selectedSpaceIds` is not empty, show a horizontal scrollable row of `FilterChip`s at the top of the room list (below search, above category filters) showing selected space names with `✕` to deselect
