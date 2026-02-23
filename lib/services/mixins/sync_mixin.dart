@@ -12,6 +12,9 @@ mixin SyncMixin on ChangeNotifier {
   bool? get chatBackupNeeded;
   Future<void> tryAutoUnlockBackup();
 
+  // Cross-mixin dependency (satisfied by SelectionMixin).
+  void invalidateSpaceTree();
+
   // ── Sync ─────────────────────────────────────────────────────
   bool _syncing = false;
   bool get syncing => _syncing;
@@ -29,6 +32,7 @@ mixin SyncMixin on ChangeNotifier {
     _syncSub?.cancel();
     _syncSub = client.onSync.stream.listen((_) {
       if (!firstSync.isCompleted) firstSync.complete();
+      invalidateSpaceTree();
       notifyListeners();
     });
 
