@@ -222,6 +222,11 @@ class _MemberTile extends StatelessWidget {
                       matrix.selectRoom(dmRoomId);
                     } catch (e) {
                       debugPrint('[Lattice] Start DM failed: $e');
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Failed to start chat: ${MatrixService.friendlyAuthError(e)}')),
+                        );
+                      }
                     }
                   },
                   icon: const Icon(Icons.chat_outlined),
@@ -258,6 +263,11 @@ class _MemberTile extends StatelessWidget {
                           await room.kick(user.id);
                         } catch (e) {
                           debugPrint('[Lattice] Kick failed: $e');
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Kick failed: ${MatrixService.friendlyAuthError(e)}')),
+                            );
+                          }
                         }
                       }
                     },
@@ -294,6 +304,11 @@ class _MemberTile extends StatelessWidget {
                           await room.ban(user.id);
                         } catch (e) {
                           debugPrint('[Lattice] Ban failed: $e');
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Ban failed: ${MatrixService.friendlyAuthError(e)}')),
+                            );
+                          }
                         }
                       }
                     },
