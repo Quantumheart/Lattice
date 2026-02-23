@@ -339,6 +339,7 @@ class _SpaceListMobileState extends State<_SpaceListMobile> {
                         },
                       )
                     : ReorderableListView.builder(
+                        buildDefaultDragHandles: false,
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         itemCount: filteredTree.length,
                         onReorder: (oldIndex, newIndex) {
@@ -363,9 +364,13 @@ class _SpaceListMobileState extends State<_SpaceListMobile> {
                           );
                         },
                         itemBuilder: (context, i) {
-                          return _buildTopLevelItem(
-                            context, matrix, filteredTree[i],
+                          return ReorderableDragStartListener(
                             key: ValueKey(filteredTree[i].room.id),
+                            index: i,
+                            child: _buildTopLevelItem(
+                              context, matrix, filteredTree[i],
+                              key: ValueKey('inner-${filteredTree[i].room.id}'),
+                            ),
                           );
                         },
                       ),
