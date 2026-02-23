@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:matrix/encryption.dart';
@@ -89,6 +90,14 @@ class ServerAuthCapabilities {
     this.registrationStages = const [],
     this.resolvedHomeserver,
   });
+}
+
+/// Maps common network exceptions to user-friendly error messages.
+String friendlyAuthError(Object e) {
+  if (e is SocketException) return 'Could not reach server';
+  if (e is TimeoutException) return 'Connection timed out';
+  if (e is FormatException) return 'Invalid server response';
+  return e.toString();
 }
 
 /// Central service that owns the [Client] instance and exposes

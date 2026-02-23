@@ -7,7 +7,7 @@ import 'services/client_manager.dart';
 import 'services/matrix_service.dart';
 import 'services/preferences_service.dart';
 import 'theme/lattice_theme.dart';
-import 'screens/login_screen.dart';
+import 'screens/homeserver_screen.dart';
 import 'screens/home_shell.dart';
 
 void main() async {
@@ -49,7 +49,7 @@ class LatticeApp extends StatelessWidget {
                       themeMode: prefs.themeMode,
                       home: matrix.isLoggedIn
                           ? const HomeShell()
-                          : LoginScreen(key: ObjectKey(matrix)),
+                          : HomeserverScreen(key: ObjectKey(matrix)),
                     );
                   },
                 ),

@@ -8,7 +8,9 @@ import '../widgets/registration_controller.dart';
 import '../widgets/registration_views.dart';
 
 class RegistrationScreen extends StatefulWidget {
-  const RegistrationScreen({super.key});
+  const RegistrationScreen({super.key, this.initialHomeserver = 'matrix.org'});
+
+  final String initialHomeserver;
 
   @override
   State<RegistrationScreen> createState() => _RegistrationScreenState();
@@ -16,7 +18,7 @@ class RegistrationScreen extends StatefulWidget {
 
 class _RegistrationScreenState extends State<RegistrationScreen>
     with SingleTickerProviderStateMixin {
-  final _homeserverCtrl = TextEditingController(text: 'matrix.org');
+  late final TextEditingController _homeserverCtrl;
   final _usernameCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _confirmPasswordCtrl = TextEditingController();
@@ -35,6 +37,7 @@ class _RegistrationScreenState extends State<RegistrationScreen>
   @override
   void initState() {
     super.initState();
+    _homeserverCtrl = TextEditingController(text: widget.initialHomeserver);
     _fadeCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),

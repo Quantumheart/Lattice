@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -12,8 +11,6 @@ import '../services/sso_callback_server.dart';
 
 /// States for the login screen state machine.
 enum LoginState {
-  checkingServer,
-  serverError,
   formReady,
   loggingIn,
   ssoInProgress,
@@ -32,76 +29,33 @@ class LoginController extends ChangeNotifier {
     required this.matrixService,
     required this.clientManager,
     required String homeserver,
-  }) : _homeserver = homeserver;
+    required ServerAuthCapabilities capabilities,
+  })  : _homeserver = homeserver,
+        _capabilities = capabilities;
 
   final MatrixService matrixService;
   final ClientManager clientManager;
 
-  String _homeserver;
+  final String _homeserver;
 
   // ── State fields ──────────────────────────────────────────────
 
-  LoginState _state = LoginState.checkingServer;
+  LoginState _state = LoginState.formReady;
   LoginState get state => _state;
 
   String? _error;
   String? get error => _error;
 
-  ServerAuthCapabilities? _capabilities;
+  final ServerAuthCapabilities _capabilities;
 
-  bool get supportsPassword => _capabilities?.supportsPassword ?? false;
-  bool get supportsSso => _capabilities?.supportsSso ?? false;
+  bool get supportsPassword => _capabilities.supportsPassword;
+  bool get supportsSso => _capabilities.supportsSso;
   List<SsoIdentityProvider> get ssoProviders =>
-      _capabilities?.ssoIdentityProviders ?? [];
+      _capabilities.ssoIdentityProviders;
 
   bool _isDisposed = false;
-  int _checkGeneration = 0;
 
   SsoCallbackServer? _ssoServer;
-
-  // ── Server check ──────────────────────────────────────────────
-
-  Future<void> updateHomeserver(String newHomeserver) async {
-    _homeserver = newHomeserver;
-    _error = null;
-    await checkServer();
-  }
-
-  Future<void> checkServer() async {
-    // Don't probe while SSO or password login is in progress — the
-    // shared client would race with the login flow.
-    if (_state == LoginState.ssoInProgress ||
-        _state == LoginState.loggingIn) {
-      return;
-    }
-
-    _state = LoginState.checkingServer;
-    _capabilities = null;
-    _notify();
-
-    final generation = ++_checkGeneration;
-
-    try {
-      final caps =
-          await matrixService.getServerAuthCapabilities(_homeserver);
-      if (_isDisposed || generation != _checkGeneration) return;
-
-      _capabilities = caps;
-
-      if (!caps.supportsPassword && !caps.supportsSso) {
-        _state = LoginState.serverError;
-        _error = 'This server does not support password or SSO login';
-      } else {
-        _state = LoginState.formReady;
-      }
-      _notify();
-    } catch (e) {
-      if (_isDisposed || generation != _checkGeneration) return;
-      _state = LoginState.serverError;
-      _error = _friendlyError(e);
-      _notify();
-    }
-  }
 
   // ── Password login ────────────────────────────────────────────
 
@@ -155,7 +109,7 @@ class LoginController extends ChangeNotifier {
 
       // Use the resolved homeserver from the server check to avoid
       // calling checkHomeserver on the shared client concurrently.
-      final resolvedHs = _capabilities?.resolvedHomeserver
+      final resolvedHs = _capabilities.resolvedHomeserver
               ?.toString()
               .replaceAll(RegExp(r'/$'), '') ??
           (_homeserver.trim().startsWith('http')
@@ -210,7 +164,7 @@ class LoginController extends ChangeNotifier {
     } catch (e) {
       if (_isDisposed) return;
       _ssoServer = null;
-      _error = _friendlyError(e);
+      _error = friendlyAuthError(e);
       _state = LoginState.formReady;
       _notify();
     }
@@ -224,13 +178,6 @@ class LoginController extends ChangeNotifier {
   }
 
   // ── Helpers ───────────────────────────────────────────────────
-
-  static String _friendlyError(Object e) {
-    if (e is SocketException) return 'Could not reach server';
-    if (e is TimeoutException) return 'Connection timed out';
-    if (e is FormatException) return 'Invalid server response';
-    return e.toString();
-  }
 
   void _notify() {
     if (!_isDisposed) notifyListeners();

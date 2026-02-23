@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
@@ -29,148 +28,49 @@ void main() {
     when(mockClientManager.services).thenReturn([]);
   });
 
-  LoginController createController({String homeserver = 'example.com'}) {
+  LoginController createController({
+    String homeserver = 'example.com',
+    ServerAuthCapabilities capabilities = const ServerAuthCapabilities(
+      supportsPassword: true,
+    ),
+  }) {
     return LoginController(
       matrixService: mockMatrixService,
       clientManager: mockClientManager,
       homeserver: homeserver,
+      capabilities: capabilities,
     );
   }
 
   group('LoginController', () {
-    group('checkServer', () {
-      test('starts in checkingServer state', () {
+    group('initial state', () {
+      test('starts in formReady state', () {
         final controller = createController();
-        expect(controller.state, LoginState.checkingServer);
+        expect(controller.state, LoginState.formReady);
         controller.dispose();
       });
 
-      test('transitions to formReady when password login is supported',
-          () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
-            .thenAnswer((_) async => const ServerAuthCapabilities(
-                  supportsPassword: true,
-                ));
+      test('exposes capabilities from constructor', () {
+        final controller = createController(
+          capabilities: const ServerAuthCapabilities(
+            supportsPassword: true,
+            supportsSso: true,
+            ssoIdentityProviders: [
+              SsoIdentityProvider(id: 'google', name: 'Google'),
+            ],
+          ),
+        );
 
-        final controller = createController();
-        await controller.checkServer();
-
-        expect(controller.state, LoginState.formReady);
         expect(controller.supportsPassword, isTrue);
-        expect(controller.supportsSso, isFalse);
-        controller.dispose();
-      });
-
-      test('transitions to formReady when SSO is supported', () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
-            .thenAnswer((_) async => const ServerAuthCapabilities(
-                  supportsSso: true,
-                  ssoIdentityProviders: [
-                    SsoIdentityProvider(id: 'google', name: 'Google'),
-                  ],
-                ));
-
-        final controller = createController();
-        await controller.checkServer();
-
-        expect(controller.state, LoginState.formReady);
         expect(controller.supportsSso, isTrue);
-        expect(controller.supportsPassword, isFalse);
         expect(controller.ssoProviders, hasLength(1));
         expect(controller.ssoProviders[0].name, 'Google');
-        controller.dispose();
-      });
-
-      test('transitions to formReady when both password and SSO are supported',
-          () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
-            .thenAnswer((_) async => const ServerAuthCapabilities(
-                  supportsPassword: true,
-                  supportsSso: true,
-                  ssoIdentityProviders: [
-                    SsoIdentityProvider(id: 'oidc', name: 'OIDC'),
-                  ],
-                ));
-
-        final controller = createController();
-        await controller.checkServer();
-
-        expect(controller.state, LoginState.formReady);
-        expect(controller.supportsPassword, isTrue);
-        expect(controller.supportsSso, isTrue);
-        controller.dispose();
-      });
-
-      test(
-          'transitions to serverError when neither password nor SSO is supported',
-          () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
-            .thenAnswer((_) async => const ServerAuthCapabilities());
-
-        final controller = createController();
-        await controller.checkServer();
-
-        expect(controller.state, LoginState.serverError);
-        expect(controller.error, isNotNull);
-        controller.dispose();
-      });
-
-      test('transitions to serverError on network failure', () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
-            .thenThrow(const SocketException('Connection refused'));
-
-        final controller = createController();
-        await controller.checkServer();
-
-        expect(controller.state, LoginState.serverError);
-        expect(controller.error, 'Could not reach server');
-        controller.dispose();
-      });
-
-      test('discards stale server check results', () async {
-        final firstCompleter = Completer<ServerAuthCapabilities>();
-        var callCount = 0;
-
-        when(mockMatrixService.getServerAuthCapabilities(any))
-            .thenAnswer((_) {
-          callCount++;
-          if (callCount == 1) return firstCompleter.future;
-          return Future.value(const ServerAuthCapabilities(
-            supportsPassword: true,
-          ));
-        });
-
-        final controller = createController();
-
-        // Start first check (slow).
-        final first = controller.checkServer();
-
-        // Start second check (fast) — should supersede the first.
-        final second = controller.checkServer();
-        await second;
-
-        expect(controller.state, LoginState.formReady);
-        expect(controller.supportsPassword, isTrue);
-
-        // Complete the first check — it should be discarded.
-        firstCompleter.complete(const ServerAuthCapabilities(
-          supportsSso: true,
-        ));
-        await first;
-
-        // State should still reflect the second check.
-        expect(controller.supportsPassword, isTrue);
-        expect(controller.supportsSso, isFalse);
         controller.dispose();
       });
     });
 
     group('login', () {
       test('transitions to done on successful login', () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
-            .thenAnswer((_) async => const ServerAuthCapabilities(
-                  supportsPassword: true,
-                ));
         when(mockMatrixService.login(
           homeserver: anyNamed('homeserver'),
           username: anyNamed('username'),
@@ -178,7 +78,6 @@ void main() {
         )).thenAnswer((_) async => true);
 
         final controller = createController();
-        await controller.checkServer();
 
         final success = await controller.login(
           username: 'alice',
@@ -192,10 +91,6 @@ void main() {
       });
 
       test('transitions back to formReady on failed login', () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
-            .thenAnswer((_) async => const ServerAuthCapabilities(
-                  supportsPassword: true,
-                ));
         when(mockMatrixService.login(
           homeserver: anyNamed('homeserver'),
           username: anyNamed('username'),
@@ -204,7 +99,6 @@ void main() {
         when(mockMatrixService.loginError).thenReturn('Invalid password');
 
         final controller = createController();
-        await controller.checkServer();
 
         final success = await controller.login(
           username: 'alice',
@@ -220,10 +114,6 @@ void main() {
       test('transitions through loggingIn state', () async {
         final loginCompleter = Completer<bool>();
 
-        when(mockMatrixService.getServerAuthCapabilities(any))
-            .thenAnswer((_) async => const ServerAuthCapabilities(
-                  supportsPassword: true,
-                ));
         when(mockMatrixService.login(
           homeserver: anyNamed('homeserver'),
           username: anyNamed('username'),
@@ -231,7 +121,6 @@ void main() {
         )).thenAnswer((_) => loginCompleter.future);
 
         final controller = createController();
-        await controller.checkServer();
 
         final loginFuture = controller.login(
           username: 'alice',
@@ -248,41 +137,12 @@ void main() {
       });
     });
 
-    group('updateHomeserver', () {
-      test('rechecks server on homeserver change', () async {
-        when(mockMatrixService.getServerAuthCapabilities('example.com'))
-            .thenAnswer((_) async => const ServerAuthCapabilities(
-                  supportsPassword: true,
-                ));
-        when(mockMatrixService.getServerAuthCapabilities('other.org'))
-            .thenAnswer((_) async => const ServerAuthCapabilities(
-                  supportsSso: true,
-                ));
-
-        final controller = createController();
-        await controller.checkServer();
-        expect(controller.supportsPassword, isTrue);
-
-        await controller.updateHomeserver('other.org');
-        expect(controller.supportsSso, isTrue);
-        expect(controller.supportsPassword, isFalse);
-        controller.dispose();
-      });
-    });
-
     group('cancelSso', () {
-      test('returns to formReady from ssoInProgress', () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
-            .thenAnswer((_) async => const ServerAuthCapabilities(
-                  supportsSso: true,
-                ));
+      test('returns to formReady', () {
+        final controller = createController(
+          capabilities: const ServerAuthCapabilities(supportsSso: true),
+        );
 
-        final controller = createController();
-        await controller.checkServer();
-
-        // We cannot easily test the full SSO flow without mocking
-        // url_launcher and SsoCallbackServer, but we can verify cancelSso
-        // resets state when called.
         controller.cancelSso();
         expect(controller.state, LoginState.formReady);
         controller.dispose();
@@ -291,16 +151,11 @@ void main() {
 
     group('dispose', () {
       test('does not notify after dispose', () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
-            .thenAnswer((_) async => const ServerAuthCapabilities(
-                  supportsPassword: true,
-                ));
-
         final controller = createController();
         controller.dispose();
 
-        // Should not throw when the async check completes after dispose.
-        await controller.checkServer();
+        // Should not throw after dispose.
+        expect(() => controller.cancelSso(), returnsNormally);
       });
     });
   });
