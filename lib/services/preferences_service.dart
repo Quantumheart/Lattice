@@ -137,10 +137,15 @@ class PreferencesService extends ChangeNotifier {
   }
 
   // ── Space ordering ─────────────────────────────────────────
-  // TODO: Custom space ordering via drag-to-reorder in the rail.
-  // static const _spaceOrderKey = 'space_order';
-  // List<String> get spaceOrder => _prefs?.getStringList(_spaceOrderKey) ?? [];
-  // Future<void> setSpaceOrder(List<String> order) async { ... }
+  static const _spaceOrderKey = 'space_order';
+
+  List<String> get spaceOrder =>
+      _prefs?.getStringList(_spaceOrderKey) ?? [];
+
+  Future<void> setSpaceOrder(List<String> order) async {
+    await _prefs?.setStringList(_spaceOrderKey, order);
+    notifyListeners();
+  }
 
   // ── Room list panel width ─────────────────────────────────
 

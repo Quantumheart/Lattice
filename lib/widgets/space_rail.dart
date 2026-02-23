@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../screens/settings_screen.dart';
 import '../services/client_manager.dart';
 import '../services/matrix_service.dart';
+import '../services/preferences_service.dart';
 
 /// A vertical icon rail showing the user's Matrix spaces.
 /// Modelled after Discord / Slack's sidebar.
@@ -14,7 +15,12 @@ class SpaceRail extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final matrix = context.watch<MatrixService>();
+    final prefs = context.watch<PreferencesService>();
     final cs = Theme.of(context).colorScheme;
+
+    // Keep space ordering in sync with persisted preference.
+    matrix.updateSpaceOrder(prefs.spaceOrder);
+
     final spaces = matrix.spaces;
 
     return Container(
@@ -38,48 +44,70 @@ class SpaceRail extends StatelessWidget {
             child: Divider(height: 1, color: cs.outlineVariant),
           ),
 
-          // Spaces
+          // Spaces (drag-to-reorder)
           Expanded(
-            child: ListView.separated(
+            child: ReorderableListView.builder(
               padding: const EdgeInsets.symmetric(vertical: 4),
               itemCount: spaces.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 6),
+              onReorder: (oldIndex, newIndex) {
+                if (newIndex > oldIndex) newIndex--;
+                final ids = spaces.map((s) => s.id).toList();
+                final id = ids.removeAt(oldIndex);
+                ids.insert(newIndex, id);
+                prefs.setSpaceOrder(ids);
+                matrix.updateSpaceOrder(ids);
+              },
+              proxyDecorator: (child, index, animation) {
+                return AnimatedBuilder(
+                  animation: animation,
+                  builder: (context, child) => Material(
+                    color: Colors.transparent,
+                    elevation: 4,
+                    child: child,
+                  ),
+                  child: child,
+                );
+              },
               itemBuilder: (context, i) {
                 final space = spaces[i];
-                final childCount =
-                    space.spaceChildren.length;
+                final childCount = space.spaceChildren.length;
                 final unread = matrix.unreadCountForSpace(space.id);
-                return GestureDetector(
-                  onSecondaryTapUp: (details) {
-                    _showContextMenu(context, details.globalPosition, space.id);
-                  },
-                  child: _RailIcon(
-                    label: space.getLocalizedDisplayname().isNotEmpty
-                        ? space.getLocalizedDisplayname()[0].toUpperCase()
-                        : '?',
-                    tooltip:
-                        '${space.getLocalizedDisplayname()} \u00b7 $childCount rooms',
-                    isSelected:
-                        matrix.selectedSpaceIds.contains(space.id),
-                    avatarUrl: space.avatar?.toString(),
-                    color: _spaceColor(i, cs),
-                    unreadCount: unread,
-                    onTap: () {
-                      final keys =
-                          HardwareKeyboard.instance.logicalKeysPressed;
-                      final isModifier = keys.contains(
-                              LogicalKeyboardKey.controlLeft) ||
-                          keys.contains(LogicalKeyboardKey.controlRight) ||
-                          keys.contains(LogicalKeyboardKey.metaLeft) ||
-                          keys.contains(LogicalKeyboardKey.metaRight);
-                      if (isModifier) {
-                        matrix.toggleSpaceSelection(space.id);
-                      } else {
-                        matrix.selectSpace(space.id);
-                      }
+                return Padding(
+                  key: ValueKey(space.id),
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: GestureDetector(
+                    onSecondaryTapUp: (details) {
+                      _showContextMenu(
+                          context, details.globalPosition, space.id);
                     },
-                    onLongPress: () =>
-                        matrix.toggleSpaceSelection(space.id),
+                    child: _RailIcon(
+                      label: space.getLocalizedDisplayname().isNotEmpty
+                          ? space.getLocalizedDisplayname()[0].toUpperCase()
+                          : '?',
+                      tooltip:
+                          '${space.getLocalizedDisplayname()} \u00b7 $childCount rooms',
+                      isSelected:
+                          matrix.selectedSpaceIds.contains(space.id),
+                      avatarUrl: space.avatar?.toString(),
+                      color: _spaceColor(i, cs),
+                      unreadCount: unread,
+                      onTap: () {
+                        final keys =
+                            HardwareKeyboard.instance.logicalKeysPressed;
+                        final isModifier = keys.contains(
+                                LogicalKeyboardKey.controlLeft) ||
+                            keys.contains(LogicalKeyboardKey.controlRight) ||
+                            keys.contains(LogicalKeyboardKey.metaLeft) ||
+                            keys.contains(LogicalKeyboardKey.metaRight);
+                        if (isModifier) {
+                          matrix.toggleSpaceSelection(space.id);
+                        } else {
+                          matrix.selectSpace(space.id);
+                        }
+                      },
+                      onLongPress: () =>
+                          matrix.toggleSpaceSelection(space.id),
+                    ),
                   ),
                 );
               },

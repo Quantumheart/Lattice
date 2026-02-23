@@ -266,13 +266,18 @@ class _SpaceListMobileState extends State<_SpaceListMobile> {
   @override
   Widget build(BuildContext context) {
     final matrix = context.watch<MatrixService>();
+    final prefs = context.watch<PreferencesService>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final tree = matrix.spaceTree;
 
+    // Keep space ordering in sync with persisted preference.
+    matrix.updateSpaceOrder(prefs.spaceOrder);
+
     // Filter by search query
+    final isSearching = _query.isNotEmpty;
     List<SpaceNode> filteredTree = tree;
-    if (_query.isNotEmpty) {
+    if (isSearching) {
       final q = _query.toLowerCase();
       filteredTree = _filterTree(tree, q);
     }
@@ -311,7 +316,7 @@ class _SpaceListMobileState extends State<_SpaceListMobile> {
             child: filteredTree.isEmpty
                 ? Center(
                     child: Text(
-                      _query.isNotEmpty
+                      isSearching
                           ? 'No spaces match "$_query"'
                           : 'No spaces yet',
                       style: tt.bodyMedium?.copyWith(
@@ -320,17 +325,68 @@ class _SpaceListMobileState extends State<_SpaceListMobile> {
                       ),
                     ),
                   )
-                : ListView(
-                    padding: const EdgeInsets.symmetric(vertical: 4),
-                    children: [
-                      for (final node in filteredTree)
-                        ..._buildSpaceItems(
-                            context, matrix, node, 0),
-                    ],
-                  ),
+                : isSearching
+                    // Plain list when searching (reordering a filtered
+                    // subset doesn't make sense).
+                    ? ListView.builder(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        itemCount: filteredTree.length,
+                        itemBuilder: (context, i) {
+                          return _buildTopLevelItem(
+                            context, matrix, filteredTree[i],
+                            key: ValueKey(filteredTree[i].room.id),
+                          );
+                        },
+                      )
+                    : ReorderableListView.builder(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        itemCount: filteredTree.length,
+                        onReorder: (oldIndex, newIndex) {
+                          if (newIndex > oldIndex) newIndex--;
+                          final ids = filteredTree
+                              .map((n) => n.room.id)
+                              .toList();
+                          final id = ids.removeAt(oldIndex);
+                          ids.insert(newIndex, id);
+                          prefs.setSpaceOrder(ids);
+                          matrix.updateSpaceOrder(ids);
+                        },
+                        proxyDecorator: (child, index, animation) {
+                          return AnimatedBuilder(
+                            animation: animation,
+                            builder: (context, child) => Material(
+                              color: Colors.transparent,
+                              elevation: 4,
+                              child: child,
+                            ),
+                            child: child,
+                          );
+                        },
+                        itemBuilder: (context, i) {
+                          return _buildTopLevelItem(
+                            context, matrix, filteredTree[i],
+                            key: ValueKey(filteredTree[i].room.id),
+                          );
+                        },
+                      ),
           ),
         ],
       ),
+    );
+  }
+
+  /// Builds a single top-level space item (with its subspaces) for
+  /// both the reorderable and plain list views.
+  Widget _buildTopLevelItem(
+    BuildContext context,
+    MatrixService matrix,
+    SpaceNode node, {
+    required Key key,
+  }) {
+    return Column(
+      key: key,
+      mainAxisSize: MainAxisSize.min,
+      children: _buildSpaceItems(context, matrix, node, 0),
     );
   }
 

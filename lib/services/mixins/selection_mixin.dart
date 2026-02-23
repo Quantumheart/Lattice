@@ -63,6 +63,55 @@ mixin SelectionMixin on ChangeNotifier {
     _selectedRoomId = null;
   }
 
+  // ── Custom space ordering ──────────────────────────────────
+  List<String> _customSpaceOrder = [];
+
+  /// Update the custom ordering for top-level spaces.
+  /// No-op if the list is identical to the current order.
+  void updateSpaceOrder(List<String> order) {
+    if (_listEquals(_customSpaceOrder, order)) return;
+    _customSpaceOrder = order;
+    _spaceTreeDirty = true;
+    notifyListeners();
+  }
+
+  static bool _listEquals(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  /// Sort [items] by `_customSpaceOrder`: items whose ID appears in the
+  /// custom order come first (in that order); remaining items are appended
+  /// alphabetically by display name.
+  List<T> _sortByCustomOrder<T>(
+    List<T> items,
+    String Function(T) getId,
+    String Function(T) getName,
+  ) {
+    if (_customSpaceOrder.isEmpty) {
+      return items..sort((a, b) => getName(a).compareTo(getName(b)));
+    }
+    final orderIndex = <String, int>{};
+    for (var i = 0; i < _customSpaceOrder.length; i++) {
+      orderIndex[_customSpaceOrder[i]] = i;
+    }
+    final ordered = <T>[];
+    final unordered = <T>[];
+    for (final item in items) {
+      if (orderIndex.containsKey(getId(item))) {
+        ordered.add(item);
+      } else {
+        unordered.add(item);
+      }
+    }
+    ordered.sort((a, b) => orderIndex[getId(a)]!.compareTo(orderIndex[getId(b)]!));
+    unordered.sort((a, b) => getName(a).compareTo(getName(b)));
+    return [...ordered, ...unordered];
+  }
+
   // ── Space tree with lazy caching ────────────────────────────
   List<SpaceNode>? _cachedSpaceTree;
   Set<String>? _cachedAllSpaceRoomIds;
@@ -124,13 +173,14 @@ mixin SelectionMixin on ChangeNotifier {
     }
 
     // Top-level = spaces not a child of any other joined space.
-    final topLevel = nodeMap.keys
-        .where((id) => !childSpaceIds.contains(id))
-        .map((id) => buildNode(id))
-        .toList()
-      ..sort((a, b) => a.room
-          .getLocalizedDisplayname()
-          .compareTo(b.room.getLocalizedDisplayname()));
+    final topLevel = _sortByCustomOrder(
+      nodeMap.keys
+          .where((id) => !childSpaceIds.contains(id))
+          .map((id) => buildNode(id))
+          .toList(),
+      (n) => n.room.id,
+      (n) => n.room.getLocalizedDisplayname(),
+    );
 
     // Build allSpaceRoomIds and roomToSpaces in a single tree walk.
     final allRoomIds = <String>{};
@@ -168,12 +218,12 @@ mixin SelectionMixin on ChangeNotifier {
 
   // ── Helpers ──────────────────────────────────────────────────
 
-  /// Returns spaces (rooms with type m.space).
-  List<Room> get spaces => client.rooms
-      .where((r) => r.isSpace)
-      .toList()
-    ..sort((a, b) =>
-        a.getLocalizedDisplayname().compareTo(b.getLocalizedDisplayname()));
+  /// Returns spaces (rooms with type m.space), sorted by custom order.
+  List<Room> get spaces => _sortByCustomOrder(
+        client.rooms.where((r) => r.isSpace).toList(),
+        (r) => r.id,
+        (r) => r.getLocalizedDisplayname(),
+      );
 
   /// Returns all non-space rooms sorted by recency.
   List<Room> get rooms {

@@ -785,6 +785,128 @@ void main() {
       final allRooms = service.rooms;
       expect(allRooms, hasLength(4)); // room1, room2, room3, orphanRoom
     });
+
+    test('updateSpaceOrder changes ordering of spaces getter', () {
+      // Default: alphabetical → A Space, B Space
+      expect(service.spaces[0].id, '!spaceA:example.com');
+      expect(service.spaces[1].id, '!spaceB:example.com');
+
+      // Custom: B before A
+      service.updateSpaceOrder([
+        '!spaceB:example.com',
+        '!spaceA:example.com',
+      ]);
+
+      expect(service.spaces[0].id, '!spaceB:example.com');
+      expect(service.spaces[1].id, '!spaceA:example.com');
+    });
+
+    test('updateSpaceOrder changes ordering of top-level spaceTree', () {
+      service.updateSpaceOrder([
+        '!spaceB:example.com',
+        '!spaceA:example.com',
+      ]);
+
+      final tree = service.spaceTree;
+      expect(tree[0].room.id, '!spaceB:example.com');
+      expect(tree[1].room.id, '!spaceA:example.com');
+    });
+
+    test('subspace ordering remains alphabetical regardless of custom order',
+        () {
+      // Add a second subspace to Space A
+      final subspace2 = MockRoom();
+      when(subspace2.isSpace).thenReturn(true);
+      when(subspace2.id).thenReturn('!subspace2:example.com');
+      when(subspace2.getLocalizedDisplayname()).thenReturn('A Sub');
+      when(subspace2.spaceChildren).thenReturn([]);
+      when(mockClient.getRoomById('!subspace2:example.com'))
+          .thenReturn(subspace2);
+
+      when(spaceA.spaceChildren).thenReturn([
+        _fakeSpaceChild('!room1:example.com'),
+        _fakeSpaceChild('!subspace:example.com'),
+        _fakeSpaceChild('!subspace2:example.com'),
+      ]);
+      when(mockClient.rooms).thenReturn([
+        spaceA, spaceB, subspace, subspace2, room1, room2, room3, orphanRoom,
+      ]);
+
+      // Custom order only affects top-level; subspaces stay alphabetical
+      service.updateSpaceOrder([
+        '!subspace:example.com', // stale — subspace is not top-level
+        '!spaceB:example.com',
+        '!spaceA:example.com',
+      ]);
+
+      final tree = service.spaceTree;
+      final aSubs = tree.firstWhere(
+          (n) => n.room.id == '!spaceA:example.com').subspaces;
+      expect(aSubs[0].room.getLocalizedDisplayname(), 'A Sub');
+      expect(aSubs[1].room.getLocalizedDisplayname(), 'Sub Space');
+    });
+
+    test('new spaces not in custom order appear at the end alphabetically',
+        () {
+      // Order only mentions B — A should appear after B alphabetically
+      service.updateSpaceOrder(['!spaceB:example.com']);
+
+      expect(service.spaces[0].id, '!spaceB:example.com');
+      expect(service.spaces[1].id, '!spaceA:example.com');
+
+      // Also in the subspace list — subspace is not top-level so it's
+      // irrelevant, but if we add a new top-level space C:
+      final spaceC = MockRoom();
+      when(spaceC.isSpace).thenReturn(true);
+      when(spaceC.id).thenReturn('!spaceC:example.com');
+      when(spaceC.getLocalizedDisplayname()).thenReturn('C Space');
+      when(spaceC.spaceChildren).thenReturn([]);
+      when(mockClient.getRoomById('!spaceC:example.com')).thenReturn(spaceC);
+      when(mockClient.rooms).thenReturn([
+        spaceA, spaceB, spaceC, subspace, room1, room2, room3, orphanRoom,
+      ]);
+
+      // Force tree rebuild
+      service.updateSpaceOrder(['!spaceB:example.com', '!spaceA:example.com']);
+
+      final spaces = service.spaces;
+      // B first, A second (both in order), C last (not in order)
+      expect(spaces[0].id, '!spaceB:example.com');
+      expect(spaces[1].id, '!spaceA:example.com');
+      expect(spaces[2].id, '!spaceC:example.com');
+    });
+
+    test('stale IDs in custom order are silently ignored', () {
+      service.updateSpaceOrder([
+        '!nonexistent:example.com', // stale — doesn't exist
+        '!spaceB:example.com',
+        '!spaceA:example.com',
+      ]);
+
+      // Should work fine, ignoring the stale ID
+      final spaces = service.spaces;
+      expect(spaces, hasLength(3)); // A, B, subspace
+      expect(spaces[0].id, '!spaceB:example.com');
+      expect(spaces[1].id, '!spaceA:example.com');
+    });
+
+    test('updateSpaceOrder with identical list is a no-op', () {
+      service.updateSpaceOrder([
+        '!spaceB:example.com',
+        '!spaceA:example.com',
+      ]);
+
+      var notifyCount = 0;
+      service.addListener(() => notifyCount++);
+
+      // Same order again — should not notify
+      service.updateSpaceOrder([
+        '!spaceB:example.com',
+        '!spaceA:example.com',
+      ]);
+
+      expect(notifyCount, 0);
+    });
   });
 
   group('sync subscription', () {
