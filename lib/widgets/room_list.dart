@@ -126,12 +126,16 @@ class _RoomListState extends State<RoomList> {
     final rooms = _applyFilters(
         matrix.roomsForSpace(node.room.id), filter);
 
-    // Count total rooms including subspaces for the header
+    // Count total rooms including all nested subspaces for the header
     var totalRooms = rooms.length;
-    for (final sub in node.subspaces) {
-      totalRooms += _applyFilters(
-          matrix.roomsForSpace(sub.room.id), filter).length;
+    void countSubspaces(List<SpaceNode> subs) {
+      for (final sub in subs) {
+        totalRooms += _applyFilters(
+            matrix.roomsForSpace(sub.room.id), filter).length;
+        countSubspaces(sub.subspaces);
+      }
     }
+    countSubspaces(node.subspaces);
 
     // Skip entirely empty sections
     if (totalRooms == 0) return;
@@ -261,10 +265,7 @@ class _RoomListState extends State<RoomList> {
                         _RoomItem() => Padding(
                             padding: EdgeInsets.only(
                                 left: item.depth * 16.0),
-                            child: _RoomTile(
-                              room: item.room,
-                              matrix: matrix,
-                            ),
+                            child: _RoomTile(room: item.room),
                           ),
                       };
                     },
@@ -381,13 +382,13 @@ class _SectionHeader extends StatelessWidget {
 
 // ── Room tile ───────────────────────────────────────────────
 class _RoomTile extends StatelessWidget {
-  const _RoomTile({required this.room, required this.matrix});
+  const _RoomTile({required this.room});
 
   final Room room;
-  final MatrixService matrix;
 
   @override
   Widget build(BuildContext context) {
+    final matrix = context.watch<MatrixService>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final isSelected = matrix.selectedRoomId == room.id;
@@ -527,10 +528,10 @@ class _RoomTile extends StatelessWidget {
     if (event.messageType == MessageTypes.Text) {
       return event.body;
     }
-    if (event.messageType == MessageTypes.Image) return '\ud83d\udcf7 Image';
-    if (event.messageType == MessageTypes.Video) return '\ud83c\udfac Video';
-    if (event.messageType == MessageTypes.File) return '\ud83d\udcce File';
-    if (event.messageType == MessageTypes.Audio) return '\ud83c\udfb5 Audio';
+    if (event.messageType == MessageTypes.Image) return '📷 Image';
+    if (event.messageType == MessageTypes.Video) return '🎬 Video';
+    if (event.messageType == MessageTypes.File) return '📎 File';
+    if (event.messageType == MessageTypes.Audio) return '🎵 Audio';
     return event.body;
   }
 
