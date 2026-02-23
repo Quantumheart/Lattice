@@ -26,6 +26,17 @@ class _SharedMediaSectionState extends State<SharedMediaSection> {
     _loadMedia();
   }
 
+  @override
+  void didUpdateWidget(SharedMediaSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.room.id != widget.room.id) {
+      _mediaEvents.clear();
+      _nextBatch = null;
+      _hasMore = true;
+      _loadMedia();
+    }
+  }
+
   Future<void> _loadMedia() async {
     if (_loading) return;
     setState(() => _loading = true);
@@ -40,7 +51,7 @@ class _SharedMediaSectionState extends State<SharedMediaSection> {
               mt == MessageTypes.Audio;
         },
         nextBatch: _nextBatch,
-        limit: 50,
+        limit: 20,
       );
 
       if (!mounted) return;
@@ -169,6 +180,19 @@ class _SharedMediaSectionState extends State<SharedMediaSection> {
   }
 }
 
+/// Returns auth headers only if [url] points to the same host as the
+/// homeserver, preventing token leakage to federated media servers.
+Map<String, String>? _authHeaders(Client client, String url) {
+  try {
+    final uri = Uri.parse(url);
+    final homeserver = client.homeserver;
+    if (homeserver != null && uri.host == homeserver.host) {
+      return {'authorization': 'Bearer ${client.accessToken}'};
+    }
+  } catch (_) {}
+  return null;
+}
+
 // ── Media thumbnail ────────────────────────────────────────────
 
 class _MediaThumbnail extends StatefulWidget {
@@ -184,11 +208,18 @@ class _MediaThumbnailState extends State<_MediaThumbnail> {
   Uint8List? _thumbnailBytes;
   String? _thumbnailUrl;
   bool _loading = true;
+  bool _loadStarted = false;
 
   @override
   void initState() {
     super.initState();
-    _loadThumbnail();
+    // Defer loading to avoid firing all thumbnails simultaneously.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_loadStarted) {
+        _loadStarted = true;
+        _loadThumbnail();
+      }
+    });
   }
 
   Future<void> _loadThumbnail() async {
@@ -243,10 +274,10 @@ class _MediaThumbnailState extends State<_MediaThumbnail> {
                       ? Image.network(
                           _thumbnailUrl!,
                           fit: BoxFit.cover,
-                          headers: {
-                            'authorization':
-                                'Bearer ${widget.event.room.client.accessToken}',
-                          },
+                          headers: _authHeaders(
+                            widget.event.room.client,
+                            _thumbnailUrl!,
+                          ),
                           errorBuilder: (_, __, ___) => Icon(
                             Icons.broken_image_rounded,
                             color: cs.onSurfaceVariant,
@@ -334,10 +365,10 @@ class _FullImageViewState extends State<_FullImageView> {
             ? Image.network(
                 _imageUrl!,
                 fit: BoxFit.contain,
-                headers: {
-                  'authorization':
-                      'Bearer ${widget.event.room.client.accessToken}',
-                },
+                headers: _authHeaders(
+                  widget.event.room.client,
+                  _imageUrl!,
+                ),
               )
             : const Center(child: Text('Failed to load image'));
 
