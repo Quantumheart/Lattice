@@ -99,6 +99,7 @@ class _RoomListState extends State<RoomList> {
                   selected: prefs.roomFilter == filter,
                   onSelected: (_) => prefs.setRoomCategory(filter),
                   showCheckmark: false,
+                  mouseCursor: SystemMouseCursors.click,
                 );
               }).toList(),
             ),

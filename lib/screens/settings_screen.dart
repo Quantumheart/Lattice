@@ -299,6 +299,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 return RadioListTile<ThemeMode>(
                   title: Text(label),
                   value: mode,
+                  mouseCursor: SystemMouseCursors.click,
                 );
               }).toList(),
             ),
@@ -336,6 +337,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 return RadioListTile<MessageDensity>(
                   title: Text(density.label),
                   value: density,
+                  mouseCursor: SystemMouseCursors.click,
                 );
               }).toList(),
             ),
