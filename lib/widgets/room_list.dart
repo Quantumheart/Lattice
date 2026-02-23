@@ -2,9 +2,36 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:matrix/matrix.dart';
 
+import '../models/space_node.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
 import 'room_avatar.dart';
+
+// ── List item types for the flat interleaved list ──────────
+sealed class _ListItem {}
+
+class _HeaderItem extends _ListItem {
+  final String name;
+  final String sectionKey;
+  final int depth;
+  final int roomCount;
+
+  _HeaderItem({
+    required this.name,
+    required this.sectionKey,
+    required this.depth,
+    required this.roomCount,
+  });
+}
+
+class _RoomItem extends _ListItem {
+  final Room room;
+  final int depth;
+
+  _RoomItem({required this.room, this.depth = 0});
+}
+
+class _FilterBarItem extends _ListItem {}
 
 class RoomList extends StatefulWidget {
   const RoomList({super.key});
@@ -23,41 +50,133 @@ class _RoomListState extends State<RoomList> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final matrix = context.watch<MatrixService>();
-    final prefs = context.watch<PreferencesService>();
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    var rooms = matrix.rooms;
+  List<Room> _applyFilters(List<Room> rooms, RoomCategory filter) {
     if (_query.isNotEmpty) {
       final q = _query.toLowerCase();
       rooms = rooms
-          .where((r) => r.getLocalizedDisplayname().toLowerCase().contains(q))
+          .where(
+              (r) => r.getLocalizedDisplayname().toLowerCase().contains(q))
           .toList();
     }
-
-    // ── Room category filter ──
-    rooms = switch (prefs.roomFilter) {
+    return switch (filter) {
       RoomCategory.all => rooms,
       RoomCategory.directMessages =>
         rooms.where((r) => r.isDirectChat).toList(),
       RoomCategory.groups => rooms.where((r) => !r.isDirectChat).toList(),
       RoomCategory.unread =>
         rooms.where((r) => r.notificationCount > 0).toList(),
-      RoomCategory.favourites => rooms.where((r) => r.isFavourite).toList(),
+      RoomCategory.favourites =>
+        rooms.where((r) => r.isFavourite).toList(),
     };
+  }
+
+  List<_ListItem> _buildSectionItems(MatrixService matrix,
+      PreferencesService prefs) {
+    final collapsed = prefs.collapsedSpaceSections;
+    final filter = prefs.roomFilter;
+    final selectedIds = matrix.selectedSpaceIds;
+    final tree = matrix.spaceTree;
+    final items = <_ListItem>[];
+
+    // Space filter bar
+    if (selectedIds.isNotEmpty) {
+      items.add(_FilterBarItem());
+    }
+
+    // Determine which top-level spaces to show
+    final visibleNodes = selectedIds.isEmpty
+        ? tree
+        : tree
+            .where((n) => selectedIds.contains(n.room.id))
+            .toList();
+
+    for (final node in visibleNodes) {
+      _addSpaceSection(items, node, 0, matrix, collapsed, filter);
+    }
+
+    // Unsorted section (only when no space filter active)
+    if (selectedIds.isEmpty) {
+      final orphanRooms = _applyFilters(matrix.orphanRooms, filter);
+      if (orphanRooms.isNotEmpty) {
+        items.add(_HeaderItem(
+          name: 'Unsorted',
+          sectionKey: PreferencesService.unsortedSectionKey,
+          depth: 0,
+          roomCount: orphanRooms.length,
+        ));
+        if (!collapsed.contains(PreferencesService.unsortedSectionKey)) {
+          for (final room in orphanRooms) {
+            items.add(_RoomItem(room: room, depth: 0));
+          }
+        }
+      }
+    }
+
+    return items;
+  }
+
+  void _addSpaceSection(
+    List<_ListItem> items,
+    SpaceNode node,
+    int depth,
+    MatrixService matrix,
+    Set<String> collapsed,
+    RoomCategory filter,
+  ) {
+    final rooms = _applyFilters(
+        matrix.roomsForSpace(node.room.id), filter);
+
+    // Count total rooms including subspaces for the header
+    var totalRooms = rooms.length;
+    for (final sub in node.subspaces) {
+      totalRooms += _applyFilters(
+          matrix.roomsForSpace(sub.room.id), filter).length;
+    }
+
+    // Skip entirely empty sections
+    if (totalRooms == 0) return;
+
+    items.add(_HeaderItem(
+      name: node.room.getLocalizedDisplayname(),
+      sectionKey: node.room.id,
+      depth: depth,
+      roomCount: totalRooms,
+    ));
+
+    if (!collapsed.contains(node.room.id)) {
+      for (final room in rooms) {
+        items.add(_RoomItem(room: room, depth: depth));
+      }
+      for (final sub in node.subspaces) {
+        _addSpaceSection(
+            items, sub, depth + 1, matrix, collapsed, filter);
+      }
+    }
+  }
+
+  String _appBarTitle(MatrixService matrix) {
+    final ids = matrix.selectedSpaceIds;
+    if (ids.isEmpty) return 'Chats';
+    if (ids.length == 1) {
+      return matrix.client
+              .getRoomById(ids.first)
+              ?.getLocalizedDisplayname() ??
+          'Space';
+    }
+    return '${ids.length} spaces';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final matrix = context.watch<MatrixService>();
+    final prefs = context.watch<PreferencesService>();
+    final cs = Theme.of(context).colorScheme;
+
+    final items = _buildSectionItems(matrix, prefs);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          matrix.selectedSpaceId != null
-              ? (matrix.client.getRoomById(matrix.selectedSpaceId!)
-                      ?.getLocalizedDisplayname() ??
-                  'Space')
-              : 'Chats',
-        ),
+        title: Text(_appBarTitle(matrix)),
       ),
       body: Column(
         children: [
@@ -69,7 +188,7 @@ class _RoomListState extends State<RoomList> {
               controller: _searchCtrl,
               onChanged: (v) => setState(() => _query = v),
               decoration: InputDecoration(
-                hintText: 'Search everything…',
+                hintText: 'Search everything\u2026',
                 prefixIcon:
                     Icon(Icons.search, color: cs.onSurfaceVariant),
                 suffixIcon: _query.isNotEmpty
@@ -105,27 +224,11 @@ class _RoomListState extends State<RoomList> {
             ),
           ),
 
-          // ── Section label ──
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                prefs.roomFilter == RoomCategory.all
-                    ? 'RECENT'
-                    : prefs.roomFilter.label.toUpperCase(),
-                style: tt.labelSmall?.copyWith(
-                  color: cs.primary,
-                  letterSpacing: 1.5,
-                ),
-              ),
-            ),
-          ),
+          const SizedBox(height: 4),
 
-          // ── Room list ──
+          // ── Sectioned room list ──
           Expanded(
-            child: rooms.isEmpty
+            child: items.isEmpty
                 ? Center(
                     child: Text(
                       _query.isNotEmpty
@@ -133,16 +236,38 @@ class _RoomListState extends State<RoomList> {
                           : prefs.roomFilter == RoomCategory.all
                               ? 'No rooms yet'
                               : 'No ${prefs.roomFilter.label.toLowerCase()}',
-                      style: tt.bodyMedium?.copyWith(
-                        color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                      ),
+                      style: Theme.of(context)
+                          .textTheme
+                          .bodyMedium
+                          ?.copyWith(
+                            color: cs.onSurfaceVariant
+                                .withValues(alpha: 0.6),
+                          ),
                     ),
                   )
                 : ListView.builder(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    itemCount: rooms.length,
-                    itemBuilder: (context, i) => _RoomTile(room: rooms[i]),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4),
+                    itemCount: items.length,
+                    itemBuilder: (context, i) {
+                      final item = items[i];
+                      return switch (item) {
+                        _FilterBarItem() =>
+                          _SpaceFilterBar(matrix: matrix),
+                        _HeaderItem() => _SectionHeader(
+                            item: item,
+                            prefs: prefs,
+                          ),
+                        _RoomItem() => Padding(
+                            padding: EdgeInsets.only(
+                                left: item.depth * 16.0),
+                            child: _RoomTile(
+                              room: item.room,
+                              matrix: matrix,
+                            ),
+                          ),
+                      };
+                    },
                   ),
           ),
         ],
@@ -158,19 +283,117 @@ class _RoomListState extends State<RoomList> {
   }
 }
 
-class _RoomTile extends StatelessWidget {
-  const _RoomTile({required this.room});
-
-  final Room room;
+// ── Space filter bar ────────────────────────────────────────
+class _SpaceFilterBar extends StatelessWidget {
+  const _SpaceFilterBar({required this.matrix});
+  final MatrixService matrix;
 
   @override
   Widget build(BuildContext context) {
-    final matrix = context.watch<MatrixService>();
+    final cs = Theme.of(context).colorScheme;
+    final names = matrix.selectedSpaceIds.map((id) {
+      return matrix.client.getRoomById(id)?.getLocalizedDisplayname() ??
+          id;
+    });
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Showing: ${names.join(' + ')}',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: cs.primary,
+                  ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.close, size: 18),
+            onPressed: () => matrix.clearSpaceSelection(),
+            tooltip: 'Clear space filter',
+            visualDensity: VisualDensity.compact,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Section header ──────────────────────────────────────────
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.item, required this.prefs});
+  final _HeaderItem item;
+  final PreferencesService prefs;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final isCollapsed =
+        prefs.collapsedSpaceSections.contains(item.sectionKey);
+
+    return Padding(
+      padding: EdgeInsets.only(
+        left: 10.0 + item.depth * 16.0,
+        right: 10,
+        top: 8,
+        bottom: 2,
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => prefs.toggleSectionCollapsed(item.sectionKey),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
+          child: Row(
+            children: [
+              Icon(
+                isCollapsed
+                    ? Icons.chevron_right
+                    : Icons.expand_more,
+                size: 18,
+                color: cs.onSurfaceVariant,
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  item.name.toUpperCase(),
+                  style: tt.labelSmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Text(
+                '${item.roomCount}',
+                style: tt.labelSmall?.copyWith(
+                  color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Room tile ───────────────────────────────────────────────
+class _RoomTile extends StatelessWidget {
+  const _RoomTile({required this.room, required this.matrix});
+
+  final Room room;
+  final MatrixService matrix;
+
+  @override
+  Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final isSelected = matrix.selectedRoomId == room.id;
     final unread = room.notificationCount;
     final lastEvent = room.lastEvent;
+    final memberships = matrix.spaceMemberships(room.id);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
@@ -184,7 +407,8 @@ class _RoomTile extends StatelessWidget {
           mouseCursor: SystemMouseCursors.click,
           onTap: () => matrix.selectRoom(room.id),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
               children: [
                 // Avatar
@@ -197,15 +421,39 @@ class _RoomTile extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        room.getLocalizedDisplayname(),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tt.titleMedium?.copyWith(
-                          fontWeight: unread > 0
-                              ? FontWeight.w700
-                              : FontWeight.w500,
-                        ),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              room.getLocalizedDisplayname(),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: tt.titleMedium?.copyWith(
+                                fontWeight: unread > 0
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          // Multi-space membership dots
+                          if (memberships.length >= 2) ...[
+                            const SizedBox(width: 6),
+                            for (var j = 0;
+                                j < memberships.length && j < 4;
+                                j++)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 2),
+                                child: Container(
+                                  width: 6,
+                                  height: 6,
+                                  decoration: BoxDecoration(
+                                    color: _dotColor(j, cs),
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 2),
                       Text(
@@ -213,7 +461,8 @@ class _RoomTile extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: tt.bodyMedium?.copyWith(
-                          color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+                          color:
+                              cs.onSurfaceVariant.withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -234,7 +483,8 @@ class _RoomTile extends StatelessWidget {
                           fontSize: 11,
                           color: unread > 0
                               ? cs.primary
-                              : cs.onSurfaceVariant.withValues(alpha: 0.5),
+                              : cs.onSurfaceVariant
+                                  .withValues(alpha: 0.5),
                         ),
                       ),
                       if (unread > 0) ...[
@@ -267,15 +517,20 @@ class _RoomTile extends StatelessWidget {
     );
   }
 
+  Color _dotColor(int index, ColorScheme cs) {
+    final palette = [cs.primary, cs.tertiary, cs.secondary, cs.error];
+    return palette[index % palette.length];
+  }
+
   String _lastMessagePreview(Event? event) {
     if (event == null) return 'No messages yet';
     if (event.messageType == MessageTypes.Text) {
       return event.body;
     }
-    if (event.messageType == MessageTypes.Image) return '📷 Image';
-    if (event.messageType == MessageTypes.Video) return '🎬 Video';
-    if (event.messageType == MessageTypes.File) return '📎 File';
-    if (event.messageType == MessageTypes.Audio) return '🎵 Audio';
+    if (event.messageType == MessageTypes.Image) return '\ud83d\udcf7 Image';
+    if (event.messageType == MessageTypes.Video) return '\ud83c\udfac Video';
+    if (event.messageType == MessageTypes.File) return '\ud83d\udcce File';
+    if (event.messageType == MessageTypes.Audio) return '\ud83c\udfb5 Audio';
     return event.body;
   }
 
