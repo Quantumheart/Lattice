@@ -164,7 +164,7 @@ class LoginController extends ChangeNotifier {
     } catch (e) {
       if (_isDisposed) return;
       _ssoServer = null;
-      _error = friendlyAuthError(e);
+      _error = MatrixService.friendlyAuthError(e);
       _state = LoginState.formReady;
       _notify();
     }

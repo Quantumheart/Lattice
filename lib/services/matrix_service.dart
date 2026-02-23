@@ -92,18 +92,18 @@ class ServerAuthCapabilities {
   });
 }
 
-/// Maps common network exceptions to user-friendly error messages.
-String friendlyAuthError(Object e) {
-  if (e is SocketException) return 'Could not reach server';
-  if (e is TimeoutException) return 'Connection timed out';
-  if (e is FormatException) return 'Invalid server response';
-  return e.toString();
-}
-
 /// Central service that owns the [Client] instance and exposes
 /// reactive state to the widget tree via [ChangeNotifier].
 class MatrixService extends ChangeNotifier
     with SelectionMixin, ChatBackupMixin, UiaMixin, SyncMixin, AuthMixin {
+  /// Maps common network exceptions to user-friendly error messages.
+  static String friendlyAuthError(Object e) {
+    if (e is SocketException) return 'Could not reach server';
+    if (e is TimeoutException) return 'Connection timed out';
+    if (e is FormatException) return 'Invalid server response';
+    return e.toString();
+  }
+
   MatrixService({
     Client? client,
     FlutterSecureStorage? storage,
