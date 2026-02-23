@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../screens/settings_screen.dart';
@@ -27,9 +28,9 @@ class SpaceRail extends StatelessWidget {
           _RailIcon(
             label: 'H',
             tooltip: 'Home',
-            isSelected: matrix.selectedSpaceId == null,
+            isSelected: matrix.selectedSpaceIds.isEmpty,
             color: cs.primary,
-            onTap: () => matrix.selectSpace(null),
+            onTap: () => matrix.clearSpaceSelection(),
           ),
 
           Padding(
@@ -45,19 +46,41 @@ class SpaceRail extends StatelessWidget {
               separatorBuilder: (_, __) => const SizedBox(height: 6),
               itemBuilder: (context, i) {
                 final space = spaces[i];
-                return _RailIcon(
-                  label: space.getLocalizedDisplayname().isNotEmpty
-                      ? space.getLocalizedDisplayname()[0].toUpperCase()
-                      : '?',
-                  tooltip: space.getLocalizedDisplayname(),
-                  isSelected: matrix.selectedSpaceId == space.id,
-                  avatarUrl: space.avatar?.toString(),
-                  color: _spaceColor(i, cs),
-                  onTap: () {
-                    matrix.selectSpace(
-                      matrix.selectedSpaceId == space.id ? null : space.id,
-                    );
+                final childCount =
+                    space.spaceChildren.length;
+                final unread = matrix.unreadCountForSpace(space.id);
+                return GestureDetector(
+                  onSecondaryTapUp: (details) {
+                    _showContextMenu(context, details.globalPosition, space.id);
                   },
+                  child: _RailIcon(
+                    label: space.getLocalizedDisplayname().isNotEmpty
+                        ? space.getLocalizedDisplayname()[0].toUpperCase()
+                        : '?',
+                    tooltip:
+                        '${space.getLocalizedDisplayname()} \u00b7 $childCount rooms',
+                    isSelected:
+                        matrix.selectedSpaceIds.contains(space.id),
+                    avatarUrl: space.avatar?.toString(),
+                    color: _spaceColor(i, cs),
+                    unreadCount: unread,
+                    onTap: () {
+                      final keys =
+                          HardwareKeyboard.instance.logicalKeysPressed;
+                      final isModifier = keys.contains(
+                              LogicalKeyboardKey.controlLeft) ||
+                          keys.contains(LogicalKeyboardKey.controlRight) ||
+                          keys.contains(LogicalKeyboardKey.metaLeft) ||
+                          keys.contains(LogicalKeyboardKey.metaRight);
+                      if (isModifier) {
+                        matrix.toggleSpaceSelection(space.id);
+                      } else {
+                        matrix.selectSpace(space.id);
+                      }
+                    },
+                    onLongPress: () =>
+                        matrix.toggleSpaceSelection(space.id),
+                  ),
                 );
               },
             ),
@@ -88,6 +111,25 @@ class SpaceRail extends StatelessWidget {
     );
   }
 
+  void _showContextMenu(
+      BuildContext context, Offset position, String spaceId) {
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+          position.dx, position.dy, position.dx, position.dy),
+      items: const [
+        PopupMenuItem(value: 'mute', child: Text('Mute space')),
+        PopupMenuItem(value: 'leave', child: Text('Leave space')),
+        PopupMenuItem(value: 'settings', child: Text('Space settings')),
+      ],
+    ).then((value) {
+      // TODO: implement context menu actions
+      if (value != null) {
+        debugPrint('[Lattice] Space context menu: $value for $spaceId');
+      }
+    });
+  }
+
   Color _spaceColor(int index, ColorScheme cs) {
     final palette = [
       cs.primary,
@@ -108,6 +150,8 @@ class _RailIcon extends StatelessWidget {
     required this.onTap,
     this.avatarUrl,
     this.outlined = false,
+    this.unreadCount,
+    this.onLongPress,
   });
 
   final String label;
@@ -117,12 +161,14 @@ class _RailIcon extends StatelessWidget {
   final VoidCallback onTap;
   final String? avatarUrl;
   final bool outlined;
+  final int? unreadCount;
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return Tooltip(
+    Widget icon = Tooltip(
       message: tooltip,
       preferBelow: false,
       child: Center(
@@ -153,6 +199,7 @@ class _RailIcon extends StatelessWidget {
               borderRadius: BorderRadius.circular(isSelected ? 14 : 22),
               mouseCursor: SystemMouseCursors.click,
               onTap: onTap,
+              onLongPress: onLongPress,
               child: Center(
                 child: Text(
                   label,
@@ -168,6 +215,40 @@ class _RailIcon extends StatelessWidget {
         ),
       ),
     );
+
+    // Overlay unread badge
+    if (unreadCount != null && unreadCount! > 0) {
+      icon = Stack(
+        clipBehavior: Clip.none,
+        children: [
+          icon,
+          Positioned(
+            top: -2,
+            right: 2,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+              decoration: BoxDecoration(
+                color: cs.error,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Center(
+                child: Text(
+                  unreadCount! > 99 ? '99+' : '$unreadCount',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: cs.onError,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return icon;
   }
 }
 
