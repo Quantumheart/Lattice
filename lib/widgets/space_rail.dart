@@ -6,6 +6,7 @@ import '../screens/settings_screen.dart';
 import '../services/client_manager.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
+import 'space_action_dialog.dart';
 
 /// A vertical icon rail showing the user's Matrix spaces.
 /// Modelled after Discord / Slack's sidebar.
@@ -132,7 +133,17 @@ class _SpaceRailState extends State<SpaceRail> {
               color: cs.outlineVariant,
               outlined: true,
               onTap: () {
-                // TODO: join/create space dialog
+                final box = context.findRenderObject() as RenderBox;
+                final position = box.localToGlobal(Offset.zero);
+                showSpaceActionMenu(
+                  context,
+                  RelativeRect.fromLTRB(
+                    position.dx + box.size.width,
+                    position.dy,
+                    position.dx + box.size.width,
+                    position.dy + box.size.height,
+                  ),
+                );
               },
             ),
           ),

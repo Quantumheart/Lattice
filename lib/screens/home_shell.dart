@@ -32,6 +32,16 @@ class _HomeShellState extends State<HomeShell> {
   static const double _collapseThreshold = PreferencesService.collapseThreshold;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final matrix = context.read<MatrixService>();
+    if (_detailsPanelRoomId != matrix.selectedRoomId) {
+      _showRoomDetails = false;
+      _detailsPanelRoomId = matrix.selectedRoomId;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final isWide = width >= _wideBreakpoint;
@@ -160,18 +170,6 @@ class _HomeShellState extends State<HomeShell> {
   }
 
   Widget _buildChatAndDetails(MatrixService matrix, ColorScheme cs) {
-    // Reset details panel when selected room changes.
-    if (_detailsPanelRoomId != matrix.selectedRoomId) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _detailsPanelRoomId != matrix.selectedRoomId) {
-          setState(() {
-            _showRoomDetails = false;
-            _detailsPanelRoomId = matrix.selectedRoomId;
-          });
-        }
-      });
-    }
-
     if (matrix.selectedRoomId == null) return _buildEmptyChat();
 
     return Row(

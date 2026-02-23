@@ -29,6 +29,23 @@ class _AdminSettingsSectionState extends State<AdminSettingsSection> {
   }
 
   @override
+  void didUpdateWidget(AdminSettingsSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Update controllers when room state changes via sync, but only if the
+    // user hasn't edited the field (controller still matches old value).
+    final newName = widget.room.getLocalizedDisplayname();
+    final oldName = oldWidget.room.getLocalizedDisplayname();
+    if (newName != oldName && _nameController.text == oldName) {
+      _nameController.text = newName;
+    }
+    final newTopic = widget.room.topic;
+    final oldTopic = oldWidget.room.topic;
+    if (newTopic != oldTopic && _topicController.text == oldTopic) {
+      _topicController.text = newTopic;
+    }
+  }
+
+  @override
   void dispose() {
     _nameController.dispose();
     _topicController.dispose();

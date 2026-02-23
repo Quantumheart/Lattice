@@ -40,7 +40,7 @@ class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
       final current = room.pushRuleState;
       await room.setPushRuleState(
         current == PushRuleState.notify
-            ? PushRuleState.mentionsOnly
+            ? PushRuleState.dontNotify
             : PushRuleState.notify,
       );
     } catch (e) {
