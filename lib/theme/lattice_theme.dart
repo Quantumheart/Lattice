@@ -105,6 +105,11 @@ class LatticeTheme {
         mouseCursor: WidgetStateMouseCursor.clickable,
       ),
 
+      // Popup menus — explicit click cursor for desktop platforms
+      popupMenuTheme: const PopupMenuThemeData(
+        mouseCursor: WidgetStateMouseCursor.clickable,
+      ),
+
       // Buttons — explicit click cursor for desktop platforms
       filledButtonTheme: const FilledButtonThemeData(
         style: ButtonStyle(

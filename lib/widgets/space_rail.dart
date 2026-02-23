@@ -184,9 +184,7 @@ class _AccountButton extends StatelessWidget {
         ? userId[1].toUpperCase()
         : (userId ?? '?')[0].toUpperCase();
 
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: PopupMenuButton<_AccountAction>(
+    return PopupMenuButton<_AccountAction>(
       tooltip: 'Account',
       offset: const Offset(64, 0),
       onSelected: (action) {
@@ -250,18 +248,20 @@ class _AccountButton extends StatelessWidget {
           ),
         ),
       ],
-      child: CircleAvatar(
-        radius: 18,
-        backgroundColor: cs.primaryContainer,
-        child: Text(
-          initial,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: cs.onPrimaryContainer,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: CircleAvatar(
+          radius: 18,
+          backgroundColor: cs.primaryContainer,
+          child: Text(
+            initial,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: cs.onPrimaryContainer,
+            ),
           ),
         ),
-      ),
       ),
     );
   }
