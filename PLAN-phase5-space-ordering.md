@@ -45,11 +45,22 @@ Only top-level spaces are reorderable. Subspaces stay sorted alphabetically (mat
    List<String> _customSpaceOrder = [];
 
    void updateSpaceOrder(List<String> order) {
+     if (_listEquals(_customSpaceOrder, order)) return;
      _customSpaceOrder = order;
      _spaceTreeDirty = true;
      notifyListeners();
    }
+
+   static bool _listEquals(List<String> a, List<String> b) {
+     if (a.length != b.length) return false;
+     for (var i = 0; i < a.length; i++) {
+       if (a[i] != b[i]) return false;
+     }
+     return true;
+   }
    ```
+
+   The equality check is **required** — without it, calling `matrix.updateSpaceOrder(prefs.spaceOrder)` inside `build()` (Step 4.4) would unconditionally call `notifyListeners()`, triggering an infinite rebuild loop via Provider.
 
 3. Add a private helper `List<T> _sortByCustomOrder<T>(List<T> items, String Function(T) getId)`:
    - Items whose ID appears in `_customSpaceOrder` are placed first, in that order.
@@ -74,7 +85,7 @@ No structural change needed — `SelectionMixin.updateSpaceOrder()` is already a
 
 **File:** `lib/widgets/space_rail.dart`
 
-1. Replace `ListView.separated` (lines 42–63) with `ReorderableListView.builder`:
+1. Replace the `Expanded` > `ListView.separated` block (lines 43–87) with `ReorderableListView.builder`:
    ```dart
    ReorderableListView.builder(
      padding: const EdgeInsets.symmetric(vertical: 4),
@@ -137,40 +148,9 @@ Only top-level spaces are reorderable on mobile. Subspaces remain nested under t
 
 ---
 
-## Step 6 — Pruning stale entries
+## Note on stale entries
 
-**File:** `lib/services/mixins/selection_mixin.dart`
-
-In `_sortByCustomOrder`, IDs in `_customSpaceOrder` that don't match any current space are silently skipped (they're filtered out during the sort). No explicit pruning step needed — stale entries are harmless and naturally resolve when the user next reorders.
-
-Optionally, add a lazy prune in `_rebuildSpaceTree()`: if the custom order contains IDs not in the current space set, emit a pruned list back to `PreferencesService`. **Defer this — it's a nice-to-have, not required for correctness.**
-
----
-
-## Step 7 — Optimize updateSpaceOrder
-
-**File:** `lib/services/mixins/selection_mixin.dart`
-
-Add a cheap equality check to avoid unnecessary rebuilds:
-
-```dart
-void updateSpaceOrder(List<String> order) {
-  if (_listEquals(_customSpaceOrder, order)) return;
-  _customSpaceOrder = order;
-  _spaceTreeDirty = true;
-  notifyListeners();
-}
-
-static bool _listEquals(List<String> a, List<String> b) {
-  if (a.length != b.length) return false;
-  for (var i = 0; i < a.length; i++) {
-    if (a[i] != b[i]) return false;
-  }
-  return true;
-}
-```
-
-This prevents the `prefs.spaceOrder` read on every widget rebuild from triggering a tree rebuild + listener notification cycle.
+In `_sortByCustomOrder`, IDs in `_customSpaceOrder` that don't match any current space are silently skipped (they're filtered out during the sort). No explicit pruning step is needed — stale entries are harmless and naturally resolve when the user next reorders.
 
 ---
 
@@ -186,7 +166,7 @@ This prevents the `prefs.spaceOrder` read on every widget rebuild from triggerin
 
 ## Implementation order
 
-Steps 1 → 2 → 3 → 4 → 5 → 6 → 7, sequential. Steps 6 and 7 are optional refinements.
+Steps 1 → 2 → 3 → 4 → 5, sequential.
 
 ## Tests
 
