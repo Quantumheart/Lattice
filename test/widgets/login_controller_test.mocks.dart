@@ -4,14 +4,15 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i7;
-import 'dart:typed_data' as _i13;
-import 'dart:ui' as _i10;
+import 'dart:typed_data' as _i14;
+import 'dart:ui' as _i11;
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart' as _i3;
 import 'package:http/http.dart' as _i6;
-import 'package:lattice/services/client_manager.dart' as _i11;
+import 'package:lattice/models/space_node.dart' as _i10;
+import 'package:lattice/services/client_manager.dart' as _i12;
 import 'package:lattice/services/matrix_service.dart' as _i4;
-import 'package:matrix/encryption.dart' as _i12;
+import 'package:matrix/encryption.dart' as _i13;
 import 'package:matrix/matrix.dart' as _i2;
 import 'package:matrix/matrix_api_lite/generated/fixed_model.dart' as _i8;
 import 'package:matrix/src/utils/cached_stream_controller.dart' as _i5;
@@ -842,6 +843,20 @@ class MockMatrixService extends _i1.Mock implements _i4.MatrixService {
       ) as bool);
 
   @override
+  Set<String> get selectedSpaceIds => (super.noSuchMethod(
+        Invocation.getter(#selectedSpaceIds),
+        returnValue: <String>{},
+        returnValueForMissingStub: <String>{},
+      ) as Set<String>);
+
+  @override
+  List<_i10.SpaceNode> get spaceTree => (super.noSuchMethod(
+        Invocation.getter(#spaceTree),
+        returnValue: <_i10.SpaceNode>[],
+        returnValueForMissingStub: <_i10.SpaceNode>[],
+      ) as List<_i10.SpaceNode>);
+
+  @override
   List<_i2.Room> get spaces => (super.noSuchMethod(
         Invocation.getter(#spaces),
         returnValue: <_i2.Room>[],
@@ -851,6 +866,13 @@ class MockMatrixService extends _i1.Mock implements _i4.MatrixService {
   @override
   List<_i2.Room> get rooms => (super.noSuchMethod(
         Invocation.getter(#rooms),
+        returnValue: <_i2.Room>[],
+        returnValueForMissingStub: <_i2.Room>[],
+      ) as List<_i2.Room>);
+
+  @override
+  List<_i2.Room> get orphanRooms => (super.noSuchMethod(
+        Invocation.getter(#orphanRooms),
         returnValue: <_i2.Room>[],
         returnValueForMissingStub: <_i2.Room>[],
       ) as List<_i2.Room>);
@@ -923,7 +945,7 @@ class MockMatrixService extends _i1.Mock implements _i4.MatrixService {
       );
 
   @override
-  void addListener(_i10.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i11.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #addListener,
           [listener],
@@ -932,7 +954,7 @@ class MockMatrixService extends _i1.Mock implements _i4.MatrixService {
       );
 
   @override
-  void removeListener(_i10.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i11.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #removeListener,
           [listener],
@@ -959,6 +981,24 @@ class MockMatrixService extends _i1.Mock implements _i4.MatrixService {
       );
 
   @override
+  void toggleSpaceSelection(String? spaceId) => super.noSuchMethod(
+        Invocation.method(
+          #toggleSpaceSelection,
+          [spaceId],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void clearSpaceSelection() => super.noSuchMethod(
+        Invocation.method(
+          #clearSpaceSelection,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
   void selectRoom(String? roomId) => super.noSuchMethod(
         Invocation.method(
           #selectRoom,
@@ -975,6 +1015,36 @@ class MockMatrixService extends _i1.Mock implements _i4.MatrixService {
         ),
         returnValueForMissingStub: null,
       );
+
+  @override
+  List<_i2.Room> roomsForSpace(String? spaceId) => (super.noSuchMethod(
+        Invocation.method(
+          #roomsForSpace,
+          [spaceId],
+        ),
+        returnValue: <_i2.Room>[],
+        returnValueForMissingStub: <_i2.Room>[],
+      ) as List<_i2.Room>);
+
+  @override
+  Set<String> spaceMemberships(String? roomId) => (super.noSuchMethod(
+        Invocation.method(
+          #spaceMemberships,
+          [roomId],
+        ),
+        returnValue: <String>{},
+        returnValueForMissingStub: <String>{},
+      ) as Set<String>);
+
+  @override
+  int unreadCountForSpace(String? spaceId) => (super.noSuchMethod(
+        Invocation.method(
+          #unreadCountForSpace,
+          [spaceId],
+        ),
+        returnValue: 0,
+        returnValueForMissingStub: 0,
+      ) as int);
 
   @override
   _i7.Future<void> checkChatBackupStatus() => (super.noSuchMethod(
@@ -1276,7 +1346,7 @@ class MockMatrixService extends _i1.Mock implements _i4.MatrixService {
 /// A class which mocks [ClientManager].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockClientManager extends _i1.Mock implements _i11.ClientManager {
+class MockClientManager extends _i1.Mock implements _i12.ClientManager {
   @override
   List<_i4.MatrixService> get services => (super.noSuchMethod(
         Invocation.getter(#services),
@@ -1392,7 +1462,7 @@ class MockClientManager extends _i1.Mock implements _i11.ClientManager {
       );
 
   @override
-  void addListener(_i10.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i11.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #addListener,
           [listener],
@@ -1401,7 +1471,7 @@ class MockClientManager extends _i1.Mock implements _i11.ClientManager {
       );
 
   @override
-  void removeListener(_i10.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i11.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #removeListener,
           [listener],
@@ -1437,12 +1507,12 @@ class MockClient extends _i1.Mock implements _i2.Client {
       ) as _i2.DatabaseApi);
 
   @override
-  Set<_i12.KeyVerificationMethod> get verificationMethods =>
+  Set<_i13.KeyVerificationMethod> get verificationMethods =>
       (super.noSuchMethod(
         Invocation.getter(#verificationMethods),
-        returnValue: <_i12.KeyVerificationMethod>{},
-        returnValueForMissingStub: <_i12.KeyVerificationMethod>{},
-      ) as Set<_i12.KeyVerificationMethod>);
+        returnValue: <_i13.KeyVerificationMethod>{},
+        returnValueForMissingStub: <_i13.KeyVerificationMethod>{},
+      ) as Set<_i13.KeyVerificationMethod>);
 
   @override
   Set<String> get importantStateEvents => (super.noSuchMethod(
@@ -1940,34 +2010,34 @@ class MockClient extends _i1.Mock implements _i2.Client {
       ) as _i5.CachedStreamController<_i2.BasicEvent>);
 
   @override
-  _i5.CachedStreamController<_i12.RoomKeyRequest> get onRoomKeyRequest =>
+  _i5.CachedStreamController<_i13.RoomKeyRequest> get onRoomKeyRequest =>
       (super.noSuchMethod(
         Invocation.getter(#onRoomKeyRequest),
-        returnValue: _FakeCachedStreamController_10<_i12.RoomKeyRequest>(
+        returnValue: _FakeCachedStreamController_10<_i13.RoomKeyRequest>(
           this,
           Invocation.getter(#onRoomKeyRequest),
         ),
         returnValueForMissingStub:
-            _FakeCachedStreamController_10<_i12.RoomKeyRequest>(
+            _FakeCachedStreamController_10<_i13.RoomKeyRequest>(
           this,
           Invocation.getter(#onRoomKeyRequest),
         ),
-      ) as _i5.CachedStreamController<_i12.RoomKeyRequest>);
+      ) as _i5.CachedStreamController<_i13.RoomKeyRequest>);
 
   @override
-  _i5.CachedStreamController<_i12.KeyVerification>
+  _i5.CachedStreamController<_i13.KeyVerification>
       get onKeyVerificationRequest => (super.noSuchMethod(
             Invocation.getter(#onKeyVerificationRequest),
-            returnValue: _FakeCachedStreamController_10<_i12.KeyVerification>(
+            returnValue: _FakeCachedStreamController_10<_i13.KeyVerification>(
               this,
               Invocation.getter(#onKeyVerificationRequest),
             ),
             returnValueForMissingStub:
-                _FakeCachedStreamController_10<_i12.KeyVerification>(
+                _FakeCachedStreamController_10<_i13.KeyVerification>(
               this,
               Invocation.getter(#onKeyVerificationRequest),
             ),
-          ) as _i5.CachedStreamController<_i12.KeyVerification>);
+          ) as _i5.CachedStreamController<_i13.KeyVerification>);
 
   @override
   _i5.CachedStreamController<_i2.UiaRequest<dynamic>> get onUiaRequest =>
@@ -2123,7 +2193,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
       );
 
   @override
-  set verificationMethods(Set<_i12.KeyVerificationMethod>? value) =>
+  set verificationMethods(Set<_i13.KeyVerificationMethod>? value) =>
       super.noSuchMethod(
         Invocation.setter(
           #verificationMethods,
@@ -3592,7 +3662,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
 
   @override
   _i7.Future<Uri> uploadContent(
-    _i13.Uint8List? file, {
+    _i14.Uint8List? file, {
     String? filename,
     String? contentType,
   }) =>
@@ -4109,7 +4179,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
   @override
   Never unexpectedResponse(
     _i6.BaseResponse? response,
-    _i13.Uint8List? body,
+    _i14.Uint8List? body,
   ) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -8228,7 +8298,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
   _i7.Future<Map<String, Object?>> uploadContentToMXC(
     String? serverName,
     String? mediaId,
-    _i13.Uint8List? body, {
+    _i14.Uint8List? body, {
     String? filename,
     String? contentType,
   }) =>

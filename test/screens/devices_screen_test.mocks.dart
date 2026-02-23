@@ -5,10 +5,11 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i5;
 import 'dart:typed_data' as _i11;
-import 'dart:ui' as _i12;
+import 'dart:ui' as _i13;
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart' as _i7;
 import 'package:http/http.dart' as _i4;
+import 'package:lattice/models/space_node.dart' as _i12;
 import 'package:lattice/services/matrix_service.dart' as _i8;
 import 'package:matrix/encryption.dart' as _i9;
 import 'package:matrix/matrix.dart' as _i2;
@@ -7663,6 +7664,20 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
       ) as bool);
 
   @override
+  Set<String> get selectedSpaceIds => (super.noSuchMethod(
+        Invocation.getter(#selectedSpaceIds),
+        returnValue: <String>{},
+        returnValueForMissingStub: <String>{},
+      ) as Set<String>);
+
+  @override
+  List<_i12.SpaceNode> get spaceTree => (super.noSuchMethod(
+        Invocation.getter(#spaceTree),
+        returnValue: <_i12.SpaceNode>[],
+        returnValueForMissingStub: <_i12.SpaceNode>[],
+      ) as List<_i12.SpaceNode>);
+
+  @override
   List<_i2.Room> get spaces => (super.noSuchMethod(
         Invocation.getter(#spaces),
         returnValue: <_i2.Room>[],
@@ -7672,6 +7687,13 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
   @override
   List<_i2.Room> get rooms => (super.noSuchMethod(
         Invocation.getter(#rooms),
+        returnValue: <_i2.Room>[],
+        returnValueForMissingStub: <_i2.Room>[],
+      ) as List<_i2.Room>);
+
+  @override
+  List<_i2.Room> get orphanRooms => (super.noSuchMethod(
+        Invocation.getter(#orphanRooms),
         returnValue: <_i2.Room>[],
         returnValueForMissingStub: <_i2.Room>[],
       ) as List<_i2.Room>);
@@ -7744,7 +7766,7 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
       );
 
   @override
-  void addListener(_i12.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i13.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #addListener,
           [listener],
@@ -7753,7 +7775,7 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
       );
 
   @override
-  void removeListener(_i12.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i13.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #removeListener,
           [listener],
@@ -7780,6 +7802,24 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
       );
 
   @override
+  void toggleSpaceSelection(String? spaceId) => super.noSuchMethod(
+        Invocation.method(
+          #toggleSpaceSelection,
+          [spaceId],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void clearSpaceSelection() => super.noSuchMethod(
+        Invocation.method(
+          #clearSpaceSelection,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
   void selectRoom(String? roomId) => super.noSuchMethod(
         Invocation.method(
           #selectRoom,
@@ -7796,6 +7836,36 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
         ),
         returnValueForMissingStub: null,
       );
+
+  @override
+  List<_i2.Room> roomsForSpace(String? spaceId) => (super.noSuchMethod(
+        Invocation.method(
+          #roomsForSpace,
+          [spaceId],
+        ),
+        returnValue: <_i2.Room>[],
+        returnValueForMissingStub: <_i2.Room>[],
+      ) as List<_i2.Room>);
+
+  @override
+  Set<String> spaceMemberships(String? roomId) => (super.noSuchMethod(
+        Invocation.method(
+          #spaceMemberships,
+          [roomId],
+        ),
+        returnValue: <String>{},
+        returnValueForMissingStub: <String>{},
+      ) as Set<String>);
+
+  @override
+  int unreadCountForSpace(String? spaceId) => (super.noSuchMethod(
+        Invocation.method(
+          #unreadCountForSpace,
+          [spaceId],
+        ),
+        returnValue: 0,
+        returnValueForMissingStub: 0,
+      ) as int);
 
   @override
   _i5.Future<void> checkChatBackupStatus() => (super.noSuchMethod(
