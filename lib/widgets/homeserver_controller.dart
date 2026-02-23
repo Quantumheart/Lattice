@@ -67,7 +67,7 @@ class HomeserverController extends ChangeNotifier {
     } catch (e) {
       if (_isDisposed || generation != _checkGeneration) return null;
       _state = HomeserverState.error;
-      _error = friendlyAuthError(e);
+      _error = MatrixService.friendlyAuthError(e);
       _notify();
       return null;
     }
