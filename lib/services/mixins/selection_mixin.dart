@@ -69,19 +69,12 @@ mixin SelectionMixin on ChangeNotifier {
   /// Update the custom ordering for top-level spaces.
   /// No-op if the list is identical to the current order.
   void updateSpaceOrder(List<String> order) {
-    if (_listEquals(_customSpaceOrder, order)) return;
+    if (listEquals(_customSpaceOrder, order)) return;
     _customSpaceOrder = order;
     _spaceTreeDirty = true;
     notifyListeners();
   }
 
-  static bool _listEquals(List<String> a, List<String> b) {
-    if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
 
   /// Sort [items] by `_customSpaceOrder`: items whose ID appears in the
   /// custom order come first (in that order); remaining items are appended
@@ -118,10 +111,11 @@ mixin SelectionMixin on ChangeNotifier {
   Map<String, Set<String>>? _cachedRoomToSpaces;
   bool _spaceTreeDirty = true;
 
-  @override
-  void notifyListeners() {
+  /// Mark the space tree cache as stale. Call this when the underlying
+  /// room list may have changed (e.g. after a sync).
+  @protected
+  void invalidateSpaceTree() {
     _spaceTreeDirty = true;
-    super.notifyListeners();
   }
 
   void _rebuildSpaceTree() {
