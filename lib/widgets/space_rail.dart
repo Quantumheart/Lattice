@@ -47,6 +47,7 @@ class SpaceRail extends StatelessWidget {
           // Spaces (drag-to-reorder)
           Expanded(
             child: ReorderableListView.builder(
+              buildDefaultDragHandles: false,
               padding: const EdgeInsets.symmetric(vertical: 4),
               itemCount: spaces.length,
               onReorder: (oldIndex, newIndex) {
@@ -72,8 +73,10 @@ class SpaceRail extends StatelessWidget {
                 final space = spaces[i];
                 final childCount = space.spaceChildren.length;
                 final unread = matrix.unreadCountForSpace(space.id);
-                return Padding(
+                return ReorderableDragStartListener(
                   key: ValueKey(space.id),
+                  index: i,
+                  child: Padding(
                   padding: const EdgeInsets.only(bottom: 6),
                   child: GestureDetector(
                     onSecondaryTapUp: (details) {
@@ -108,6 +111,7 @@ class SpaceRail extends StatelessWidget {
                       onLongPress: () =>
                           matrix.toggleSpaceSelection(space.id),
                     ),
+                  ),
                   ),
                 );
               },
