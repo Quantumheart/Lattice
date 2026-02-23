@@ -33,10 +33,11 @@ class _HomeShellState extends State<HomeShell> {
     final width = MediaQuery.sizeOf(context).width;
     final isWide = width >= _wideBreakpoint;
 
+    final matrix = context.watch<MatrixService>();
     final child = isWide ? _buildWideLayout(width) : _buildNarrowLayout();
 
     return CallbackShortcuts(
-      bindings: _buildKeyBindings(context),
+      bindings: _buildKeyBindings(matrix),
       child: Focus(
         autofocus: true,
         child: child,
@@ -44,8 +45,7 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
-  Map<ShortcutActivator, VoidCallback> _buildKeyBindings(BuildContext context) {
-    final matrix = context.read<MatrixService>();
+  Map<ShortcutActivator, VoidCallback> _buildKeyBindings(MatrixService matrix) {
     final spaces = matrix.spaces;
     final bindings = <ShortcutActivator, VoidCallback>{};
 
@@ -258,6 +258,16 @@ class _SpaceListMobileState extends State<_SpaceListMobile> {
   String _query = '';
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final matrix = context.read<MatrixService>();
+    final prefs = context.read<PreferencesService>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) matrix.updateSpaceOrder(prefs.spaceOrder);
+    });
+  }
+
+  @override
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
@@ -266,13 +276,9 @@ class _SpaceListMobileState extends State<_SpaceListMobile> {
   @override
   Widget build(BuildContext context) {
     final matrix = context.watch<MatrixService>();
-    final prefs = context.watch<PreferencesService>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final tree = matrix.spaceTree;
-
-    // Keep space ordering in sync with persisted preference.
-    matrix.updateSpaceOrder(prefs.spaceOrder);
 
     // Filter by search query
     final isSearching = _query.isNotEmpty;
@@ -349,7 +355,7 @@ class _SpaceListMobileState extends State<_SpaceListMobile> {
                               .toList();
                           final id = ids.removeAt(oldIndex);
                           ids.insert(newIndex, id);
-                          prefs.setSpaceOrder(ids);
+                          context.read<PreferencesService>().setSpaceOrder(ids);
                           matrix.updateSpaceOrder(ids);
                         },
                         proxyDecorator: (child, index, animation) {
