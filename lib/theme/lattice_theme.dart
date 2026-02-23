@@ -100,6 +100,28 @@ class LatticeTheme {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
 
+      // List tiles — explicit click cursor for desktop platforms
+      listTileTheme: const ListTileThemeData(
+        mouseCursor: WidgetStateMouseCursor.clickable,
+      ),
+
+      // Buttons — explicit click cursor for desktop platforms
+      filledButtonTheme: const FilledButtonThemeData(
+        style: ButtonStyle(
+          mouseCursor: WidgetStateMouseCursor.clickable,
+        ),
+      ),
+      textButtonTheme: const TextButtonThemeData(
+        style: ButtonStyle(
+          mouseCursor: WidgetStateMouseCursor.clickable,
+        ),
+      ),
+      outlinedButtonTheme: const OutlinedButtonThemeData(
+        style: ButtonStyle(
+          mouseCursor: WidgetStateMouseCursor.clickable,
+        ),
+      ),
+
       // Divider
       dividerTheme: DividerThemeData(
         color: cs.outlineVariant.withValues(alpha: 0.4),
