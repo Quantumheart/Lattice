@@ -9,18 +9,28 @@ import '../services/preferences_service.dart';
 
 /// A vertical icon rail showing the user's Matrix spaces.
 /// Modelled after Discord / Slack's sidebar.
-class SpaceRail extends StatelessWidget {
+class SpaceRail extends StatefulWidget {
   const SpaceRail({super.key});
+
+  @override
+  State<SpaceRail> createState() => _SpaceRailState();
+}
+
+class _SpaceRailState extends State<SpaceRail> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final matrix = context.read<MatrixService>();
+    final prefs = context.read<PreferencesService>();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) matrix.updateSpaceOrder(prefs.spaceOrder);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final matrix = context.watch<MatrixService>();
-    final prefs = context.watch<PreferencesService>();
     final cs = Theme.of(context).colorScheme;
-
-    // Keep space ordering in sync with persisted preference.
-    matrix.updateSpaceOrder(prefs.spaceOrder);
-
     final spaces = matrix.spaces;
 
     return Container(
@@ -55,7 +65,7 @@ class SpaceRail extends StatelessWidget {
                 final ids = spaces.map((s) => s.id).toList();
                 final id = ids.removeAt(oldIndex);
                 ids.insert(newIndex, id);
-                prefs.setSpaceOrder(ids);
+                context.read<PreferencesService>().setSpaceOrder(ids);
                 matrix.updateSpaceOrder(ids);
               },
               proxyDecorator: (child, index, animation) {
@@ -77,12 +87,7 @@ class SpaceRail extends StatelessWidget {
                   key: ValueKey(space.id),
                   index: i,
                   child: Padding(
-                  padding: const EdgeInsets.only(bottom: 6),
-                  child: GestureDetector(
-                    onSecondaryTapUp: (details) {
-                      _showContextMenu(
-                          context, details.globalPosition, space.id);
-                    },
+                    padding: const EdgeInsets.only(bottom: 6),
                     child: _RailIcon(
                       label: space.getLocalizedDisplayname().isNotEmpty
                           ? space.getLocalizedDisplayname()[0].toUpperCase()
@@ -112,7 +117,6 @@ class SpaceRail extends StatelessWidget {
                           matrix.toggleSpaceSelection(space.id),
                     ),
                   ),
-                  ),
                 );
               },
             ),
@@ -141,25 +145,6 @@ class SpaceRail extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  void _showContextMenu(
-      BuildContext context, Offset position, String spaceId) {
-    showMenu<String>(
-      context: context,
-      position: RelativeRect.fromLTRB(
-          position.dx, position.dy, position.dx, position.dy),
-      items: const [
-        PopupMenuItem(value: 'mute', child: Text('Mute space')),
-        PopupMenuItem(value: 'leave', child: Text('Leave space')),
-        PopupMenuItem(value: 'settings', child: Text('Space settings')),
-      ],
-    ).then((value) {
-      // TODO: implement context menu actions
-      if (value != null) {
-        debugPrint('[Lattice] Space context menu: $value for $spaceId');
-      }
-    });
   }
 
   Color _spaceColor(int index, ColorScheme cs) {
