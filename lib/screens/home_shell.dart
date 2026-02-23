@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../models/space_node.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
 import '../widgets/space_rail.dart';
@@ -162,7 +163,9 @@ class _HomeShellState extends State<HomeShell> {
         body = const RoomList();
         break;
       case 1:
-        body = const _SpaceListMobile();
+        body = _SpaceListMobile(
+          onSpaceSelected: () => setState(() => _mobileTab = 0),
+        );
         break;
       case 2:
         body = const SettingsScreen();
@@ -201,61 +204,187 @@ class _HomeShellState extends State<HomeShell> {
   }
 }
 
-/// Simple space list for mobile (the rail is desktop-only).
-class _SpaceListMobile extends StatelessWidget {
-  const _SpaceListMobile();
+/// Mobile space list with search, unread badges, subspace nesting.
+class _SpaceListMobile extends StatefulWidget {
+  const _SpaceListMobile({required this.onSpaceSelected});
+
+  final VoidCallback onSpaceSelected;
+
+  @override
+  State<_SpaceListMobile> createState() => _SpaceListMobileState();
+}
+
+class _SpaceListMobileState extends State<_SpaceListMobile> {
+  final _searchCtrl = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final matrix = context.watch<MatrixService>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final spaces = matrix.spaces;
+    final tree = matrix.spaceTree;
+
+    // Filter by search query
+    List<SpaceNode> filteredTree = tree;
+    if (_query.isNotEmpty) {
+      final q = _query.toLowerCase();
+      filteredTree = _filterTree(tree, q);
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Spaces')),
-      body: spaces.isEmpty
-          ? Center(
-              child: Text(
-                'No spaces yet',
-                style: tt.bodyMedium?.copyWith(
-                  color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                ),
+      body: Column(
+        children: [
+          // Search field
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            child: TextField(
+              controller: _searchCtrl,
+              onChanged: (v) => setState(() => _query = v),
+              decoration: InputDecoration(
+                hintText: 'Search spaces\u2026',
+                prefixIcon:
+                    Icon(Icons.search, color: cs.onSurfaceVariant),
+                suffixIcon: _query.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () {
+                          _searchCtrl.clear();
+                          setState(() => _query = '');
+                        },
+                      )
+                    : null,
+                isDense: true,
               ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: spaces.length,
-              itemBuilder: (context, i) {
-                final space = spaces[i];
-                final selected = matrix.selectedSpaceId == space.id;
-                return ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: cs.primaryContainer,
+            ),
+          ),
+
+          // Space list
+          Expanded(
+            child: filteredTree.isEmpty
+                ? Center(
                     child: Text(
-                      space.getLocalizedDisplayname().isNotEmpty
-                          ? space.getLocalizedDisplayname()[0].toUpperCase()
-                          : '?',
-                      style: TextStyle(color: cs.onPrimaryContainer),
+                      _query.isNotEmpty
+                          ? 'No spaces match "$_query"'
+                          : 'No spaces yet',
+                      style: tt.bodyMedium?.copyWith(
+                        color: cs.onSurfaceVariant
+                            .withValues(alpha: 0.6),
+                      ),
+                    ),
+                  )
+                : ListView(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    children: [
+                      for (final node in filteredTree)
+                        ..._buildSpaceItems(
+                            context, matrix, node, 0),
+                    ],
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildSpaceItems(
+    BuildContext context,
+    MatrixService matrix,
+    SpaceNode node,
+    int depth,
+  ) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final selected = matrix.selectedSpaceIds.contains(node.room.id);
+    final unread = matrix.unreadCountForSpace(node.room.id);
+    final widgets = <Widget>[];
+
+    widgets.add(
+      Padding(
+        padding: EdgeInsets.only(left: depth * 16.0),
+        child: ListTile(
+          leading: CircleAvatar(
+            backgroundColor: cs.primaryContainer,
+            child: Text(
+              node.room.getLocalizedDisplayname().isNotEmpty
+                  ? node.room.getLocalizedDisplayname()[0].toUpperCase()
+                  : '?',
+              style: TextStyle(color: cs.onPrimaryContainer),
+            ),
+          ),
+          title: Text(node.room.getLocalizedDisplayname()),
+          subtitle: Text(
+            '${node.directChildRoomIds.length} rooms',
+            style: tt.bodyMedium,
+          ),
+          trailing: unread > 0
+              ? Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: cs.error,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    unread > 99 ? '99+' : '$unread',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: cs.onError,
                     ),
                   ),
-                  title: Text(space.getLocalizedDisplayname()),
-                  subtitle: Text(
-                    '${space.spaceChildren.length} rooms',
-                    style: tt.bodyMedium,
-                  ),
-                  selected: selected,
-                  selectedTileColor: cs.primaryContainer.withValues(alpha: 0.3),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  mouseCursor: SystemMouseCursors.click,
-                  onTap: () {
-                    matrix.selectSpace(selected ? null : space.id);
-                  },
-                );
-              },
-            ),
+                )
+              : null,
+          selected: selected,
+          selectedTileColor:
+              cs.primaryContainer.withValues(alpha: 0.3),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          mouseCursor: SystemMouseCursors.click,
+          onTap: () {
+            matrix.selectSpace(node.room.id);
+            widget.onSpaceSelected();
+          },
+          onLongPress: () {
+            matrix.toggleSpaceSelection(node.room.id);
+            widget.onSpaceSelected();
+          },
+        ),
+      ),
     );
+
+    for (final sub in node.subspaces) {
+      widgets.addAll(
+          _buildSpaceItems(context, matrix, sub, depth + 1));
+    }
+
+    return widgets;
+  }
+
+  /// Filter tree to nodes matching the query (or having matching children).
+  List<SpaceNode> _filterTree(List<SpaceNode> nodes, String q) {
+    final result = <SpaceNode>[];
+    for (final node in nodes) {
+      final nameMatches =
+          node.room.getLocalizedDisplayname().toLowerCase().contains(q);
+      final filteredSubs = _filterTree(node.subspaces, q);
+      if (nameMatches || filteredSubs.isNotEmpty) {
+        result.add(SpaceNode(
+          room: node.room,
+          subspaces: nameMatches ? node.subspaces : filteredSubs,
+          directChildRoomIds: node.directChildRoomIds,
+        ));
+      }
+    }
+    return result;
   }
 }
