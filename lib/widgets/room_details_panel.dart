@@ -286,23 +286,25 @@ class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
             ),
           ),
         ),
-        RadioListTile<PushRuleState>(
-          title: const Text('All messages'),
-          value: PushRuleState.notify,
+        RadioGroup<PushRuleState>(
           groupValue: room.pushRuleState,
-          onChanged: _busy('pushRule') ? null : (v) => _setPushRule(room, v!),
-        ),
-        RadioListTile<PushRuleState>(
-          title: const Text('Mentions only'),
-          value: PushRuleState.mentionsOnly,
-          groupValue: room.pushRuleState,
-          onChanged: _busy('pushRule') ? null : (v) => _setPushRule(room, v!),
-        ),
-        RadioListTile<PushRuleState>(
-          title: const Text('Muted'),
-          value: PushRuleState.dontNotify,
-          groupValue: room.pushRuleState,
-          onChanged: _busy('pushRule') ? null : (v) => _setPushRule(room, v!),
+          onChanged: _busy('pushRule') ? (_) {} : (v) => _setPushRule(room, v!),
+          child: const Column(
+            children: [
+              RadioListTile<PushRuleState>(
+                title: Text('All messages'),
+                value: PushRuleState.notify,
+              ),
+              RadioListTile<PushRuleState>(
+                title: Text('Mentions only'),
+                value: PushRuleState.mentionsOnly,
+              ),
+              RadioListTile<PushRuleState>(
+                title: Text('Muted'),
+                value: PushRuleState.dontNotify,
+              ),
+            ],
+          ),
         ),
       ],
     );
