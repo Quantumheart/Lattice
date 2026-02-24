@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 import '../services/matrix_service.dart';
+import '../utils/known_contacts.dart';
 
 // ── New Direct Message dialog ─────────────────────────────────
 
@@ -33,7 +34,7 @@ class _NewDirectMessageDialogState extends State<NewDirectMessageDialog> {
   String? _networkError;
   List<Profile> _searchResults = [];
   Timer? _debounce;
-  List<_Contact>? _cachedContacts;
+  List<Profile>? _cachedContacts;
 
   static final _mxidRegex = RegExp(r'^@[^:]+:.+$');
 
@@ -46,23 +47,8 @@ class _NewDirectMessageDialogState extends State<NewDirectMessageDialog> {
 
   // ── Known contacts ──────────────────────────────────────────
 
-  List<_Contact> _knownContacts() {
-    if (_cachedContacts != null) return _cachedContacts!;
-    final rooms = widget.matrixService.client.rooms
-        .where((r) => r.isDirectChat)
-        .toList();
-    final contacts = <_Contact>[];
-    for (final room in rooms) {
-      final mxid = room.directChatMatrixID;
-      if (mxid == null) continue;
-      contacts.add(_Contact(
-        userId: mxid,
-        displayName: room.getLocalizedDisplayname(),
-        avatarUrl: room.avatar,
-      ));
-    }
-    _cachedContacts = contacts;
-    return contacts;
+  List<Profile> _knownContacts() {
+    return _cachedContacts ??= knownContacts(widget.matrixService.client);
   }
 
   // ── Search ──────────────────────────────────────────────────
@@ -132,10 +118,9 @@ class _NewDirectMessageDialogState extends State<NewDirectMessageDialog> {
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _networkError = MatrixService.friendlyAuthError(e);
-      });
+      setState(() => _networkError = MatrixService.friendlyAuthError(e));
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -204,7 +189,6 @@ class _NewDirectMessageDialogState extends State<NewDirectMessageDialog> {
                     return _UserTile(
                       displayName: c.displayName,
                       userId: c.userId,
-                      avatarUrl: c.avatarUrl,
                       loading: _loading,
                       onTap: () => _startChat(c.userId),
                     );
@@ -224,7 +208,6 @@ class _NewDirectMessageDialogState extends State<NewDirectMessageDialog> {
                     return _UserTile(
                       displayName: p.displayName,
                       userId: p.userId,
-                      avatarUrl: p.avatarUrl,
                       loading: _loading,
                       onTap: () => _startChat(p.userId),
                     );
@@ -269,14 +252,12 @@ class _UserTile extends StatelessWidget {
   const _UserTile({
     required this.displayName,
     required this.userId,
-    this.avatarUrl,
     required this.loading,
     required this.onTap,
   });
 
   final String? displayName;
   final String userId;
-  final Uri? avatarUrl;
   final bool loading;
   final VoidCallback onTap;
 
@@ -303,18 +284,4 @@ class _UserTile extends StatelessWidget {
       onTap: onTap,
     );
   }
-}
-
-// ── Contact model ─────────────────────────────────────────────
-
-class _Contact {
-  const _Contact({
-    required this.userId,
-    required this.displayName,
-    this.avatarUrl,
-  });
-
-  final String userId;
-  final String displayName;
-  final Uri? avatarUrl;
 }
