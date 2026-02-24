@@ -21,6 +21,7 @@ class _RoomMembersSectionState extends State<RoomMembersSection> {
   bool _loading = true;
   bool _expanded = false;
   int? _lastMemberCount;
+  int _loadGeneration = 0;
 
   @override
   void initState() {
@@ -38,10 +39,11 @@ class _RoomMembersSectionState extends State<RoomMembersSection> {
   }
 
   Future<void> _loadMembers() async {
-    if (_loading && _members.isNotEmpty) return; // guard against concurrent calls
+    final gen = ++_loadGeneration;
+    setState(() => _loading = true);
     try {
       final members = await widget.room.requestParticipants([Membership.join]);
-      if (!mounted) return;
+      if (!mounted || gen != _loadGeneration) return;
       // Sort: admins first, then mods, then alphabetical.
       members.sort((a, b) {
         final pa = widget.room.getPowerLevelByUserId(a.id);
