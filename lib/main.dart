@@ -146,6 +146,7 @@ class _NotificationServiceHolderState
       old.matrixService.removeListener(_onMatrixChanged);
       widget.matrixService.addListener(_onMatrixChanged);
       _notificationService?.dispose();
+      _notificationService = null;
       _initNotifications();
       return;
     }

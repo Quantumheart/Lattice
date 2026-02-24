@@ -37,6 +37,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Timeline? _timeline;
   StreamSubscription? _timelineSub;
   bool _loadingHistory = false;
+  Timer? _readMarkerTimer;
 
   // ── Search state ──────────────────────────────────────────
   bool _isSearching = false;
@@ -75,10 +76,16 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _markAsRead(Room room) {
-    final lastEvent = room.lastEvent;
-    if (lastEvent != null && room.notificationCount > 0) {
-      room.setReadMarker(lastEvent.eventId, mRead: lastEvent.eventId);
-    }
+    _readMarkerTimer?.cancel();
+    _readMarkerTimer = Timer(const Duration(seconds: 1), () {
+      final lastEvent = room.lastEvent;
+      if (lastEvent != null && room.notificationCount > 0) {
+        room.setReadMarker(lastEvent.eventId, mRead: lastEvent.eventId)
+            .catchError((e) {
+          debugPrint('[Lattice] Failed to mark as read: $e');
+        });
+      }
+    });
   }
 
   void _onScroll() {
@@ -270,6 +277,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _msgCtrl.dispose();
     _searchCtrl.dispose();
     _searchFocusNode.dispose();
+    _readMarkerTimer?.cancel();
     _debounceTimer?.cancel();
     _timelineSub?.cancel();
     _timeline?.cancelSubscriptions();

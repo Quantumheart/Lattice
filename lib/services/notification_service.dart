@@ -12,6 +12,18 @@ import 'preferences_service.dart';
 
 bool get _isLinux => !kIsWeb && Platform.isLinux;
 
+/// Stable 31-bit positive integer hash for notification IDs.
+/// Unlike [String.hashCode], this is deterministic across isolates and runs.
+int _stableNotificationId(String roomId) {
+  // FNV-1a 32-bit
+  var hash = 0x811c9dc5;
+  for (var i = 0; i < roomId.length; i++) {
+    hash ^= roomId.codeUnitAt(i);
+    hash = (hash * 0x01000193) & 0xFFFFFFFF;
+  }
+  return hash & 0x7FFFFFFF;
+}
+
 /// Background service that listens to sync events and shows OS notifications.
 ///
 /// This is a plain Dart class (not a ChangeNotifier) — it has no UI state.
@@ -35,6 +47,7 @@ class NotificationService {
 
   StreamSubscription<SyncUpdate>? _syncSub;
   bool _firstSyncDone = false;
+  bool _disposed = false;
   final Set<String> _processingRooms = {};
 
   /// Whether the app is currently in the foreground. Updated by the holder.
@@ -119,7 +132,9 @@ class NotificationService {
       // Skip rooms already being processed to avoid duplicate notifications.
       final roomId = entry.key;
       if (_processingRooms.contains(roomId)) continue;
-      _processRoomEvents(roomId, events);
+      _processRoomEvents(roomId, events).catchError((e) {
+        debugPrint('[Lattice] Error processing room $roomId: $e');
+      });
     }
   }
 
@@ -234,7 +249,7 @@ class NotificationService {
       return;
     }
 
-    final notificationId = roomId.hashCode & 0x7FFFFFFF;
+    final notificationId = _stableNotificationId(roomId);
 
     final androidDetails = AndroidNotificationDetails(
       'lattice_messages',
@@ -267,19 +282,25 @@ class NotificationService {
     required String senderName,
     required String body,
   }) async {
-    final notification = await _linuxClient!.notify(
-      title,
-      body: '$senderName: $body',
-      replacesId: _linuxNotifications[roomId]?.id ?? 0,
-      appName: 'Lattice',
-      hints: [dn.NotificationHint.soundName('message-new-instant')],
-    );
-    notification.action.then((_) {
-      debugPrint('[Lattice] Linux notification tapped for room $roomId');
-      matrixService.selectRoom(roomId);
-    });
-    _linuxNotifications[roomId] = notification;
-    debugPrint('[Lattice] Linux notification shown for room $roomId (id=${notification.id})');
+    try {
+      final notification = await _linuxClient!.notify(
+        title,
+        body: '$senderName: $body',
+        replacesId: _linuxNotifications[roomId]?.id ?? 0,
+        appName: 'Lattice',
+        hints: [dn.NotificationHint.soundName('message-new-instant')],
+      );
+      notification.action.then((_) {
+        if (_disposed) return;
+        debugPrint('[Lattice] Linux notification tapped for room $roomId');
+        matrixService.selectRoom(roomId);
+      });
+      _linuxNotifications[roomId] = notification;
+      debugPrint(
+          '[Lattice] Linux notification shown for room $roomId (id=${notification.id})');
+    } catch (e) {
+      debugPrint('[Lattice] Failed to show Linux notification: $e');
+    }
   }
 
   // ── Notification tap ─────────────────────────────────────────
@@ -299,11 +320,15 @@ class NotificationService {
     if (_useLinux) {
       final notification = _linuxNotifications.remove(roomId);
       if (notification != null) {
-        await notification.close();
+        try {
+          await notification.close();
+        } catch (e) {
+          debugPrint('[Lattice] Failed to close Linux notification: $e');
+        }
       }
       return;
     }
-    final notificationId = roomId.hashCode & 0x7FFFFFFF;
+    final notificationId = _stableNotificationId(roomId);
     await _plugin.cancel(notificationId);
   }
 
@@ -311,7 +336,11 @@ class NotificationService {
   Future<void> cancelAll() async {
     if (_useLinux) {
       for (final notification in _linuxNotifications.values) {
-        await notification.close();
+        try {
+          await notification.close();
+        } catch (e) {
+          debugPrint('[Lattice] Failed to close Linux notification: $e');
+        }
       }
       _linuxNotifications.clear();
       debugPrint('[Lattice] All Linux notifications cancelled');
@@ -322,7 +351,9 @@ class NotificationService {
   }
 
   void dispose() {
+    _disposed = true;
     stopListening();
+    cancelAll();
     _linuxClient?.close();
   }
 }
