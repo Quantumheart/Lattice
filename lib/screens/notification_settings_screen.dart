@@ -14,10 +14,12 @@ class NotificationSettingsScreen extends StatefulWidget {
 class _NotificationSettingsScreenState
     extends State<NotificationSettingsScreen> {
   final _keywordController = TextEditingController();
+  final _keywordFocus = FocusNode();
 
   @override
   void dispose() {
     _keywordController.dispose();
+    _keywordFocus.dispose();
     super.dispose();
   }
 
@@ -28,6 +30,7 @@ class _NotificationSettingsScreenState
     if (text.trim().isEmpty) return;
     context.read<PreferencesService>().addNotificationKeyword(text);
     _keywordController.clear();
+    _keywordFocus.requestFocus();
   }
 
   // ── Build ───────────────────────────────────────────────────
@@ -95,10 +98,12 @@ class _NotificationSettingsScreenState
                       Expanded(
                         child: TextField(
                           controller: _keywordController,
+                          focusNode: _keywordFocus,
                           decoration: const InputDecoration(
                             labelText: 'Add keyword',
                             border: OutlineInputBorder(),
                           ),
+                          textInputAction: TextInputAction.done,
                           onSubmitted: (_) => _addKeyword(),
                         ),
                       ),

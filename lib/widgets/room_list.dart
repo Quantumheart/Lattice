@@ -23,7 +23,7 @@ int _effectiveUnreadCount(Room room, PreferencesService prefs) {
       final body = room.lastEvent?.body.toLowerCase();
       if (body == null) return 0;
       for (final kw in prefs.notificationKeywords) {
-        if (kw.isNotEmpty && body.contains(kw.toLowerCase())) return 1;
+        if (kw.isNotEmpty && body.contains(kw)) return 1;
       }
       return 0;
   }

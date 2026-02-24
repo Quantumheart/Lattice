@@ -213,7 +213,7 @@ class PreferencesService extends ChangeNotifier {
   }
 
   Future<void> addNotificationKeyword(String keyword) async {
-    final trimmed = keyword.trim();
+    final trimmed = keyword.trim().toLowerCase();
     if (trimmed.isEmpty) return;
     final current = notificationKeywords;
     if (current.contains(trimmed)) return;
