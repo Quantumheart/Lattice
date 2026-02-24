@@ -10,6 +10,7 @@ import '../services/preferences_service.dart';
 import '../widgets/bootstrap_dialog.dart';
 import '../widgets/user_avatar.dart';
 import 'devices_screen.dart';
+import 'notification_settings_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -336,9 +337,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 _SettingsTile(
                   icon: Icons.notifications_outlined,
                   title: 'Notifications',
-                  subtitle: 'Enabled',
+                  subtitle: prefs.notificationLevelLabel,
                   onTap: () {
-                    // TODO: notification settings
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const NotificationSettingsScreen(),
+                      ),
+                    );
                   },
                 ),
                 const Divider(height: 1, indent: 56),
