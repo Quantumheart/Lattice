@@ -35,6 +35,7 @@ class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
   final Set<String> _inFlight = {};
   String? _error;
   StreamSubscription? _syncSub;
+  Timer? _syncDebounce;
   bool _deviceKeysExpanded = false;
 
   bool get _loading => _inFlight.isNotEmpty;
@@ -50,6 +51,7 @@ class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
 
   @override
   void dispose() {
+    _syncDebounce?.cancel();
     _syncSub?.cancel();
     super.dispose();
   }
@@ -61,7 +63,10 @@ class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
     });
     _syncSub?.cancel();
     _syncSub = client.onSync.stream.listen((_) {
-      if (mounted) setState(() {});
+      _syncDebounce?.cancel();
+      _syncDebounce = Timer(const Duration(seconds: 2), () {
+        if (mounted) setState(() {});
+      });
     });
   }
 

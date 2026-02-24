@@ -216,7 +216,7 @@ void main() {
   });
 
   group('notification content', () {
-    test('notification ID is derived from roomId hashCode', () async {
+    test('notification ID is derived from stable FNV-1a hash of roomId', () async {
       service.startListening();
       mockClient.onSync.add(SyncUpdate(nextBatch: 'batch_0'));
       await Future.delayed(Duration.zero);
@@ -228,7 +228,13 @@ void main() {
       mockClient.onSync.add(update);
       await Future.delayed(const Duration(milliseconds: 50));
 
-      final expectedId = roomId.hashCode & 0x7FFFFFFF;
+      // FNV-1a 32-bit, matching _stableNotificationId in the service.
+      var hash = 0x811c9dc5;
+      for (var i = 0; i < roomId.length; i++) {
+        hash ^= roomId.codeUnitAt(i);
+        hash = (hash * 0x01000193) & 0xFFFFFFFF;
+      }
+      final expectedId = hash & 0x7FFFFFFF;
       verify(mockPlugin.show(expectedId, any, any, any, payload: roomId)).called(1);
     });
 
