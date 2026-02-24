@@ -40,6 +40,7 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
   final List<String> _invitedUsers = [];
   List<Profile> _inviteSearchResults = [];
   Timer? _debounce;
+  int _searchGeneration = 0;
   List<Profile>? _cachedContacts;
 
   @override
@@ -88,6 +89,8 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
   }
 
   Future<void> _searchInviteDirectory(String query) async {
+    _searchGeneration++;
+    final gen = _searchGeneration;
     setState(() {
       _inviteSearching = true;
       _networkError = null;
@@ -96,13 +99,13 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
     try {
       final response = await widget.matrixService.client
           .searchUserDirectory(query, limit: 20);
-      if (!mounted) return;
+      if (!mounted || gen != _searchGeneration) return;
       setState(() {
         _inviteSearchResults = response.results;
         _inviteSearching = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || gen != _searchGeneration) return;
       setState(() {
         _inviteSearching = false;
         _networkError = MatrixService.friendlyAuthError(e);
