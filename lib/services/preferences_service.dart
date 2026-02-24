@@ -226,4 +226,52 @@ class PreferencesService extends ChangeNotifier {
     current.remove(keyword);
     await setNotificationKeywords(current);
   }
+
+  // ── OS notification toggles ──────────────────────────────────
+
+  static const _osNotificationsEnabledKey = 'os_notifications_enabled';
+  static const _notificationSoundEnabledKey = 'notification_sound_enabled';
+  static const _notificationVibrationEnabledKey =
+      'notification_vibration_enabled';
+  static const _foregroundNotificationsEnabledKey =
+      'foreground_notifications_enabled';
+
+  bool get osNotificationsEnabled =>
+      _prefs?.getBool(_osNotificationsEnabledKey) ?? true;
+
+  Future<void> setOsNotificationsEnabled(bool value) async {
+    await _prefs?.setBool(_osNotificationsEnabledKey, value);
+    debugPrint('[Lattice] OS notifications ${value ? "enabled" : "disabled"}');
+    notifyListeners();
+  }
+
+  bool get notificationSoundEnabled =>
+      _prefs?.getBool(_notificationSoundEnabledKey) ?? true;
+
+  Future<void> setNotificationSoundEnabled(bool value) async {
+    await _prefs?.setBool(_notificationSoundEnabledKey, value);
+    debugPrint(
+        '[Lattice] Notification sound ${value ? "enabled" : "disabled"}');
+    notifyListeners();
+  }
+
+  bool get notificationVibrationEnabled =>
+      _prefs?.getBool(_notificationVibrationEnabledKey) ?? true;
+
+  Future<void> setNotificationVibrationEnabled(bool value) async {
+    await _prefs?.setBool(_notificationVibrationEnabledKey, value);
+    debugPrint(
+        '[Lattice] Notification vibration ${value ? "enabled" : "disabled"}');
+    notifyListeners();
+  }
+
+  bool get foregroundNotificationsEnabled =>
+      _prefs?.getBool(_foregroundNotificationsEnabledKey) ?? false;
+
+  Future<void> setForegroundNotificationsEnabled(bool value) async {
+    await _prefs?.setBool(_foregroundNotificationsEnabledKey, value);
+    debugPrint(
+        '[Lattice] Foreground notifications ${value ? "enabled" : "disabled"}');
+    notifyListeners();
+  }
 }

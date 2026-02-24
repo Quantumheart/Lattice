@@ -91,4 +91,56 @@ void main() {
       expect(notified, isTrue);
     });
   });
+
+  group('OS notification toggles', () {
+    test('osNotificationsEnabled defaults to true', () {
+      expect(prefs.osNotificationsEnabled, isTrue);
+    });
+
+    test('osNotificationsEnabled round-trips false', () async {
+      await prefs.setOsNotificationsEnabled(false);
+      expect(prefs.osNotificationsEnabled, isFalse);
+    });
+
+    test('osNotificationsEnabled notifies listeners', () async {
+      var notified = false;
+      prefs.addListener(() => notified = true);
+      await prefs.setOsNotificationsEnabled(false);
+      expect(notified, isTrue);
+    });
+
+    test('notificationSoundEnabled defaults to true', () {
+      expect(prefs.notificationSoundEnabled, isTrue);
+    });
+
+    test('notificationSoundEnabled round-trips false', () async {
+      await prefs.setNotificationSoundEnabled(false);
+      expect(prefs.notificationSoundEnabled, isFalse);
+    });
+
+    test('notificationVibrationEnabled defaults to true', () {
+      expect(prefs.notificationVibrationEnabled, isTrue);
+    });
+
+    test('notificationVibrationEnabled round-trips false', () async {
+      await prefs.setNotificationVibrationEnabled(false);
+      expect(prefs.notificationVibrationEnabled, isFalse);
+    });
+
+    test('foregroundNotificationsEnabled defaults to false', () {
+      expect(prefs.foregroundNotificationsEnabled, isFalse);
+    });
+
+    test('foregroundNotificationsEnabled round-trips true', () async {
+      await prefs.setForegroundNotificationsEnabled(true);
+      expect(prefs.foregroundNotificationsEnabled, isTrue);
+    });
+
+    test('foregroundNotificationsEnabled notifies listeners', () async {
+      var notified = false;
+      prefs.addListener(() => notified = true);
+      await prefs.setForegroundNotificationsEnabled(true);
+      expect(notified, isTrue);
+    });
+  });
 }

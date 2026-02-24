@@ -139,6 +139,48 @@ class _NotificationSettingsScreenState
               ),
             ),
           ),
+          const SizedBox(height: 24),
+
+          // ── OS notifications ─────────────────────────────────
+          const _SectionHeader(label: 'OS NOTIFICATIONS'),
+          Card(
+            child: Column(
+              children: [
+                SwitchListTile(
+                  title: const Text('Enable OS notifications'),
+                  subtitle:
+                      const Text('Show system notifications for new messages'),
+                  value: prefs.osNotificationsEnabled,
+                  onChanged: (v) => prefs.setOsNotificationsEnabled(v),
+                ),
+                SwitchListTile(
+                  title: const Text('Notification sound'),
+                  value: prefs.notificationSoundEnabled,
+                  onChanged: prefs.osNotificationsEnabled
+                      ? (v) => prefs.setNotificationSoundEnabled(v)
+                      : null,
+                ),
+                SwitchListTile(
+                  title: const Text('Vibration'),
+                  subtitle: const Text('No effect on desktop'),
+                  value: prefs.notificationVibrationEnabled,
+                  onChanged: prefs.osNotificationsEnabled
+                      ? (v) => prefs.setNotificationVibrationEnabled(v)
+                      : null,
+                ),
+                SwitchListTile(
+                  title: const Text('Foreground notifications'),
+                  subtitle: const Text(
+                    'Show notifications for unfocused rooms while app is open',
+                  ),
+                  value: prefs.foregroundNotificationsEnabled,
+                  onChanged: prefs.osNotificationsEnabled
+                      ? (v) => prefs.setForegroundNotificationsEnabled(v)
+                      : null,
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

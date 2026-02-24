@@ -5,6 +5,7 @@ import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 
 import 'services/client_manager.dart';
 import 'services/matrix_service.dart';
+import 'services/notification_service.dart';
 import 'services/preferences_service.dart';
 import 'theme/lattice_theme.dart';
 import 'screens/homeserver_screen.dart';
@@ -34,24 +35,28 @@ class LatticeApp extends StatelessWidget {
         builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
           return Consumer2<ClientManager, PreferencesService>(
             builder: (context, manager, prefs, _) {
-              return ChangeNotifierProvider<MatrixService>.value(
-                value: manager.activeService,
-                child: Consumer<MatrixService>(
-                  builder: (context, matrix, _) {
-                    final theme = LatticeTheme.light(lightDynamic);
-                    final darkTheme = LatticeTheme.dark(darkDynamic);
+              return _NotificationServiceHolder(
+                matrixService: manager.activeService,
+                preferencesService: prefs,
+                child: ChangeNotifierProvider<MatrixService>.value(
+                  value: manager.activeService,
+                  child: Consumer<MatrixService>(
+                    builder: (context, matrix, _) {
+                      final theme = LatticeTheme.light(lightDynamic);
+                      final darkTheme = LatticeTheme.dark(darkDynamic);
 
-                    return MaterialApp(
-                      title: 'Lattice',
-                      debugShowCheckedModeBanner: false,
-                      theme: theme,
-                      darkTheme: darkTheme,
-                      themeMode: prefs.themeMode,
-                      home: matrix.isLoggedIn
-                          ? const HomeShell()
-                          : HomeserverScreen(key: ObjectKey(matrix)),
-                    );
-                  },
+                      return MaterialApp(
+                        title: 'Lattice',
+                        debugShowCheckedModeBanner: false,
+                        theme: theme,
+                        darkTheme: darkTheme,
+                        themeMode: prefs.themeMode,
+                        home: matrix.isLoggedIn
+                            ? const HomeShell()
+                            : HomeserverScreen(key: ObjectKey(matrix)),
+                      );
+                    },
+                  ),
                 ),
               );
             },
@@ -60,4 +65,69 @@ class LatticeApp extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── Notification service lifecycle ──────────────────────────────
+
+class _NotificationServiceHolder extends StatefulWidget {
+  const _NotificationServiceHolder({
+    required this.matrixService,
+    required this.preferencesService,
+    required this.child,
+  });
+
+  final MatrixService matrixService;
+  final PreferencesService preferencesService;
+  final Widget child;
+
+  @override
+  State<_NotificationServiceHolder> createState() =>
+      _NotificationServiceHolderState();
+}
+
+class _NotificationServiceHolderState
+    extends State<_NotificationServiceHolder> {
+  NotificationService? _notificationService;
+
+  @override
+  void initState() {
+    super.initState();
+    _initNotifications();
+  }
+
+  Future<void> _initNotifications() async {
+    final service = NotificationService(
+      matrixService: widget.matrixService,
+      preferencesService: widget.preferencesService,
+    );
+    await service.init();
+    if (widget.matrixService.isLoggedIn) {
+      service.startListening();
+    }
+    if (mounted) setState(() => _notificationService = service);
+  }
+
+  @override
+  void didUpdateWidget(covariant _NotificationServiceHolder old) {
+    super.didUpdateWidget(old);
+    if (old.matrixService != widget.matrixService) {
+      _notificationService?.dispose();
+      _initNotifications();
+      return;
+    }
+    if (widget.matrixService.isLoggedIn) {
+      _notificationService?.startListening();
+    } else {
+      _notificationService?.stopListening();
+    }
+  }
+
+  @override
+  void dispose() {
+    _notificationService?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
