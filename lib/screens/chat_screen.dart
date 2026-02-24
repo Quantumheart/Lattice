@@ -7,8 +7,8 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../services/matrix_service.dart';
 import '../widgets/room_avatar.dart';
 import '../widgets/room_details_panel.dart';
-import '../utils/sender_color.dart';
 import '../widgets/message_bubble.dart';
+import '../widgets/user_avatar.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({
@@ -591,17 +591,11 @@ class _SearchResultTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Sender avatar
-            CircleAvatar(
-              radius: 18,
-              backgroundColor: senderColor(event.senderId, cs),
-              child: Text(
-                senderName.isNotEmpty ? senderName[0].toUpperCase() : '?',
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
-              ),
+            UserAvatar(
+              client: event.room.client,
+              avatarUrl: event.senderFromMemoryOrFallback.avatarUrl,
+              userId: event.senderId,
+              size: 36,
             ),
             const SizedBox(width: 12),
 
