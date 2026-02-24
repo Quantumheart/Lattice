@@ -103,11 +103,19 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.isEmpty) return;
     _msgCtrl.clear();
 
+    final scaffold = ScaffoldMessenger.of(context);
     final matrix = context.read<MatrixService>();
     final room = matrix.client.getRoomById(widget.roomId);
     if (room == null) return;
 
-    await room.sendTextEvent(text);
+    try {
+      await room.sendTextEvent(text);
+    } catch (e) {
+      _msgCtrl.text = text;
+      scaffold.showSnackBar(
+        SnackBar(content: Text('Failed to send: ${MatrixService.friendlyAuthError(e)}')),
+      );
+    }
   }
 
   // ── Search methods ────────────────────────────────────────
@@ -249,6 +257,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    _itemPosListener.itemPositions.removeListener(_onScroll);
     _msgCtrl.dispose();
     _searchCtrl.dispose();
     _searchFocusNode.dispose();
