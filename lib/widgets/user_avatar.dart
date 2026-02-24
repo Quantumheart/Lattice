@@ -4,27 +4,30 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../utils/media_auth.dart';
 
-/// Displays a room's avatar with a colored-initial fallback.
+/// Displays a user's Matrix avatar with a colored-initial fallback.
 ///
-/// Resolves the mxc:// avatar URL asynchronously via [getThumbnailUri]
+/// Resolves the mxc:// [avatarUrl] asynchronously via [getThumbnailUri]
 /// and passes auth headers for authenticated media endpoints.
-class RoomAvatarWidget extends StatefulWidget {
-  const RoomAvatarWidget({
+class UserAvatar extends StatefulWidget {
+  const UserAvatar({
     super.key,
-    required this.room,
+    required this.client,
+    this.avatarUrl,
+    this.userId,
     this.size = 44,
   });
 
-  final Room room;
+  final Client client;
+  final Uri? avatarUrl;
+  final String? userId;
   final double size;
 
   @override
-  State<RoomAvatarWidget> createState() => _RoomAvatarWidgetState();
+  State<UserAvatar> createState() => _UserAvatarState();
 }
 
-class _RoomAvatarWidgetState extends State<RoomAvatarWidget> {
+class _UserAvatarState extends State<UserAvatar> {
   String? _resolvedUrl;
-  Uri? _lastAvatarUri;
 
   @override
   void initState() {
@@ -33,72 +36,70 @@ class _RoomAvatarWidgetState extends State<RoomAvatarWidget> {
   }
 
   @override
-  void didUpdateWidget(RoomAvatarWidget oldWidget) {
+  void didUpdateWidget(UserAvatar oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.room.avatar != _lastAvatarUri) {
+    if (oldWidget.avatarUrl != widget.avatarUrl) {
       _resolvedUrl = null;
       _resolveThumbnail();
     }
   }
 
   Future<void> _resolveThumbnail() async {
-    final avatarUri = widget.room.avatar;
-    _lastAvatarUri = avatarUri;
-    if (avatarUri == null) return;
+    final avatarUrl = widget.avatarUrl;
+    if (avatarUrl == null) return;
     try {
-      final uri = await avatarUri.getThumbnailUri(
-        widget.room.client,
+      final uri = await avatarUrl.getThumbnailUri(
+        widget.client,
         width: (widget.size * 2).toInt(),
         height: (widget.size * 2).toInt(),
       );
       if (mounted) setState(() => _resolvedUrl = uri.toString());
     } catch (e) {
-      debugPrint('[Lattice] Failed to resolve room avatar thumbnail: $e');
+      debugPrint('[Lattice] Failed to resolve avatar thumbnail: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final name = widget.room.getLocalizedDisplayname();
-    final initial = name.isNotEmpty ? name[0].toUpperCase() : '#';
-    final bgColor = _colorFromString(name, cs);
+    final initial = _userInitial(widget.userId);
+    final bgColor = _colorFromString(widget.userId ?? '', cs);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(widget.size * 0.28),
+    return ClipOval(
       child: SizedBox(
         width: widget.size,
         height: widget.size,
         child: _resolvedUrl != null
             ? CachedNetworkImage(
                 imageUrl: _resolvedUrl!,
-                httpHeaders:
-                    mediaAuthHeaders(widget.room.client, _resolvedUrl!),
+                httpHeaders: mediaAuthHeaders(widget.client, _resolvedUrl!),
                 fit: BoxFit.cover,
                 placeholder: (_, __) => _Fallback(
                   initial: initial,
                   bgColor: bgColor,
-                  textColor: Colors.white,
                   size: widget.size,
                 ),
                 errorWidget: (_, __, ___) => _Fallback(
                   initial: initial,
                   bgColor: bgColor,
-                  textColor: Colors.white,
                   size: widget.size,
                 ),
               )
             : _Fallback(
                 initial: initial,
                 bgColor: bgColor,
-                textColor: Colors.white,
                 size: widget.size,
               ),
       ),
     );
   }
 
-  Color _colorFromString(String str, ColorScheme cs) {
+  static String _userInitial(String? userId) {
+    if (userId != null && userId.length > 1) return userId[1].toUpperCase();
+    return (userId ?? '?')[0].toUpperCase();
+  }
+
+  static Color _colorFromString(String str, ColorScheme cs) {
     if (str.isEmpty) return cs.primaryContainer;
     final hash = str.codeUnits.fold<int>(0, (h, c) => h + c);
     final palette = [
@@ -119,13 +120,11 @@ class _Fallback extends StatelessWidget {
   const _Fallback({
     required this.initial,
     required this.bgColor,
-    required this.textColor,
     required this.size,
   });
 
   final String initial;
   final Color bgColor;
-  final Color textColor;
   final double size;
 
   @override
@@ -140,7 +139,7 @@ class _Fallback extends StatelessWidget {
         style: TextStyle(
           fontSize: size * 0.4,
           fontWeight: FontWeight.w600,
-          color: textColor,
+          color: Colors.white,
         ),
       ),
     );
