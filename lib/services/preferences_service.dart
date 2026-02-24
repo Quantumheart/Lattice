@@ -26,6 +26,17 @@ enum RoomCategory {
       };
 }
 
+/// Visual theme variant — modern (Material You) or classic (IRC/terminal).
+enum ThemeVariant {
+  modern,
+  classic;
+
+  String get label => switch (this) {
+        ThemeVariant.modern => 'Modern',
+        ThemeVariant.classic => 'Classic',
+      };
+}
+
 /// Controls how compact or spacious message bubbles appear.
 enum MessageDensity {
   compact,
@@ -47,6 +58,7 @@ class PreferencesService extends ChangeNotifier {
   SharedPreferences? _prefs;
   static const _densityKey = 'message_density';
   static const _themeModeKey = 'theme_mode';
+  static const _themeVariantKey = 'theme_variant';
 
   /// Initialise the underlying [SharedPreferences] instance.
   /// Must be called (and awaited) before reading any values.
@@ -92,6 +104,23 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setThemeMode(ThemeMode mode) async {
     await _prefs?.setString(_themeModeKey, mode.name);
     debugPrint('[Lattice] Theme mode set to ${mode.name}');
+    notifyListeners();
+  }
+
+  // ── Theme variant ──────────────────────────────────────────
+
+  ThemeVariant get themeVariant {
+    final stored = _prefs?.getString(_themeVariantKey);
+    if (stored == null) return ThemeVariant.modern;
+    return ThemeVariant.values.firstWhere(
+      (v) => v.name == stored,
+      orElse: () => ThemeVariant.modern,
+    );
+  }
+
+  Future<void> setThemeVariant(ThemeVariant variant) async {
+    await _prefs?.setString(_themeVariantKey, variant.name);
+    debugPrint('[Lattice] Theme variant set to ${variant.label}');
     notifyListeners();
   }
 

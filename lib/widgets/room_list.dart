@@ -5,6 +5,7 @@ import 'package:matrix/matrix.dart';
 import '../models/space_node.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
+import '../theme/lattice_theme.dart';
 import 'room_avatar.dart';
 
 // ── List item types for the flat interleaved list ──────────
@@ -331,6 +332,8 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final ext = Theme.of(context).extension<LatticeThemeExtension>();
+    final r = ext?.borderRadius.clamp(0.0, 8.0) ?? 8.0;
     final isCollapsed =
         prefs.collapsedSpaceSections.contains(item.sectionKey);
 
@@ -342,7 +345,7 @@ class _SectionHeader extends StatelessWidget {
         bottom: 2,
       ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(r),
         onTap: () => prefs.toggleSectionCollapsed(item.sectionKey),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
@@ -391,6 +394,8 @@ class _RoomTile extends StatelessWidget {
     final matrix = context.watch<MatrixService>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final ext = Theme.of(context).extension<LatticeThemeExtension>();
+    final r = ext?.borderRadius ?? 14.0;
     final isSelected = matrix.selectedRoomId == room.id;
     final unread = room.notificationCount;
     final lastEvent = room.lastEvent;
@@ -402,9 +407,9 @@ class _RoomTile extends StatelessWidget {
         color: isSelected
             ? cs.primaryContainer.withValues(alpha: 0.5)
             : Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(r),
         child: InkWell(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(r),
           mouseCursor: SystemMouseCursors.click,
           onTap: () => matrix.selectRoom(room.id),
           child: Padding(
@@ -495,7 +500,8 @@ class _RoomTile extends StatelessWidget {
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
                             color: cs.primary,
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(
+                                r.clamp(0.0, 10.0)),
                           ),
                           child: Text(
                             unread > 99 ? '99+' : '$unread',

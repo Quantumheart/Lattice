@@ -6,6 +6,7 @@ import '../screens/settings_screen.dart';
 import '../services/client_manager.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
+import '../theme/lattice_theme.dart';
 
 /// A vertical icon rail showing the user's Matrix spaces.
 /// Modelled after Discord / Slack's sidebar.
@@ -184,6 +185,10 @@ class _RailIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final ext = Theme.of(context).extension<LatticeThemeExtension>();
+    final selectedR = ext?.borderRadius ?? 14.0;
+    final unselectedR = ext != null ? ext.borderRadius.clamp(0.0, 22.0) : 22.0;
+    final iconR = isSelected ? selectedR : unselectedR;
 
     Widget icon = Tooltip(
       message: tooltip,
@@ -201,7 +206,7 @@ class _RailIcon extends StatelessWidget {
                     ? color
                     : cs.surfaceContainerHigh,
             borderRadius:
-                BorderRadius.circular(isSelected ? 14 : 22),
+                BorderRadius.circular(iconR),
             border: outlined
                 ? Border.all(
                     color: cs.outlineVariant,
@@ -213,7 +218,7 @@ class _RailIcon extends StatelessWidget {
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(isSelected ? 14 : 22),
+              borderRadius: BorderRadius.circular(iconR),
               mouseCursor: SystemMouseCursors.click,
               onTap: onTap,
               onLongPress: onLongPress,
@@ -247,7 +252,8 @@ class _RailIcon extends StatelessWidget {
               constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
               decoration: BoxDecoration(
                 color: cs.error,
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(
+                    ext?.borderRadius.clamp(0.0, 8.0) ?? 8.0),
               ),
               child: Center(
                 child: Text(

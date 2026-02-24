@@ -5,6 +5,7 @@ import 'package:matrix/matrix.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../services/matrix_service.dart';
+import '../theme/lattice_theme.dart';
 import '../widgets/room_avatar.dart';
 import '../widgets/message_bubble.dart';
 
@@ -722,6 +723,8 @@ class _ComposeBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final ext = Theme.of(context).extension<LatticeThemeExtension>();
+    final composeR = ext?.borderRadius.clamp(0.0, 24.0) ?? 24.0;
 
     return Container(
       padding: EdgeInsets.only(
@@ -757,7 +760,7 @@ class _ComposeBar extends StatelessWidget {
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(composeR),
                   borderSide: BorderSide.none,
                 ),
                 filled: true,

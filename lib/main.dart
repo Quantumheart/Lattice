@@ -5,7 +5,7 @@ import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 
 import 'services/client_manager.dart';
 import 'services/matrix_service.dart';
-import 'services/preferences_service.dart';
+import 'services/preferences_service.dart' show PreferencesService, ThemeVariant;
 import 'theme/lattice_theme.dart';
 import 'screens/homeserver_screen.dart';
 import 'screens/home_shell.dart';
@@ -38,8 +38,14 @@ class LatticeApp extends StatelessWidget {
                 value: manager.activeService,
                 child: Consumer<MatrixService>(
                   builder: (context, matrix, _) {
-                    final theme = LatticeTheme.light(lightDynamic);
-                    final darkTheme = LatticeTheme.dark(darkDynamic);
+                    final isClassic =
+                        prefs.themeVariant == ThemeVariant.classic;
+                    final theme = isClassic
+                        ? LatticeTheme.classicLight()
+                        : LatticeTheme.light(lightDynamic);
+                    final darkTheme = isClassic
+                        ? LatticeTheme.classicDark()
+                        : LatticeTheme.dark(darkDynamic);
 
                     return MaterialApp(
                       title: 'Lattice',

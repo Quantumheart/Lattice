@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/client_manager.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
+import '../theme/lattice_theme.dart';
 import '../widgets/bootstrap_dialog.dart';
 import 'devices_screen.dart';
 
@@ -138,17 +139,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 16),
 
           // ── Add Account ──
-          OutlinedButton.icon(
-            onPressed: () => _addAccount(context, manager),
-            icon: const Icon(Icons.person_add_outlined),
-            label: const Text('Add account'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+          Builder(builder: (context) {
+            final ext = Theme.of(context).extension<LatticeThemeExtension>();
+            final r = ext?.borderRadius ?? 14.0;
+            return OutlinedButton.icon(
+              onPressed: () => _addAccount(context, manager),
+              icon: const Icon(Icons.person_add_outlined),
+              label: const Text('Add account'),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(r),
+                ),
               ),
-            ),
-          ),
+            );
+          }),
 
           const SizedBox(height: 16),
 
@@ -162,6 +167,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: 'Theme',
                   subtitle: prefs.themeModeLabel,
                   onTap: () => _showThemePicker(context),
+                ),
+                const Divider(height: 1, indent: 56),
+                _SettingsTile(
+                  icon: Icons.palette_outlined,
+                  title: 'Theme variant',
+                  subtitle: prefs.themeVariant.label,
+                  onTap: () => _showVariantPicker(context),
                 ),
                 const Divider(height: 1, indent: 56),
                 _SettingsTile(
@@ -252,18 +264,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 24),
 
           // ── Logout ──
-          FilledButton.tonal(
-            onPressed: () => _confirmLogout(context),
-            style: FilledButton.styleFrom(
-              backgroundColor: cs.errorContainer,
-              foregroundColor: cs.onErrorContainer,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+          Builder(builder: (context) {
+            final ext = Theme.of(context).extension<LatticeThemeExtension>();
+            final r = ext?.borderRadius ?? 14.0;
+            return FilledButton.tonal(
+              onPressed: () => _confirmLogout(context),
+              style: FilledButton.styleFrom(
+                backgroundColor: cs.errorContainer,
+                foregroundColor: cs.onErrorContainer,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(r),
+                ),
               ),
-            ),
-            child: const Text('Sign Out'),
-          ),
+              child: const Text('Sign Out'),
+            );
+          }),
 
           const SizedBox(height: 32),
         ],
@@ -299,6 +315,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 return RadioListTile<ThemeMode>(
                   title: Text(label),
                   value: mode,
+                  mouseCursor: SystemMouseCursors.click,
+                );
+              }).toList(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showVariantPicker(BuildContext context) {
+    final prefs = context.read<PreferencesService>();
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Theme variant'),
+          contentPadding: const EdgeInsets.only(top: 12, bottom: 8),
+          content: RadioGroup<ThemeVariant>(
+            groupValue: prefs.themeVariant,
+            onChanged: (ThemeVariant? value) {
+              if (value != null) {
+                prefs.setThemeVariant(value);
+                Navigator.pop(ctx);
+              }
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: ThemeVariant.values.map((variant) {
+                return RadioListTile<ThemeVariant>(
+                  title: Text(variant.label),
+                  value: variant,
                   mouseCursor: SystemMouseCursors.click,
                 );
               }).toList(),

@@ -3,6 +3,7 @@ import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
 import '../services/preferences_service.dart';
+import '../theme/lattice_theme.dart';
 
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
@@ -26,9 +27,17 @@ class MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final ext = Theme.of(context).extension<LatticeThemeExtension>();
+    final showAvatars = ext?.showAvatars ?? true;
     final maxWidth = MediaQuery.sizeOf(context).width * 0.72;
     final density = context.watch<PreferencesService>().messageDensity;
     final metrics = _DensityMetrics.of(density);
+    final bubbleR = ext != null
+        ? ext.borderRadius.clamp(0.0, metrics.bubbleRadius)
+        : metrics.bubbleRadius;
+    final bubbleTail = ext != null
+        ? ext.borderRadius.clamp(0.0, 4.0)
+        : 4.0;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 500),
@@ -48,7 +57,7 @@ class MessageBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           // Sender avatar (only for first in group, non-me)
-          if (!isMe && isFirst)
+          if (!isMe && isFirst && showAvatars)
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: CircleAvatar(
@@ -64,7 +73,7 @@ class MessageBubble extends StatelessWidget {
                 ),
               ),
             )
-          else if (!isMe)
+          else if (!isMe && showAvatars)
             SizedBox(width: metrics.avatarRadius * 2 + 8),
 
           // Bubble
@@ -80,12 +89,12 @@ class MessageBubble extends StatelessWidget {
                     ? cs.primary
                     : cs.primaryContainer.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(metrics.bubbleRadius),
-                  topRight: Radius.circular(metrics.bubbleRadius),
+                  topLeft: Radius.circular(bubbleR),
+                  topRight: Radius.circular(bubbleR),
                   bottomLeft: Radius.circular(
-                      isMe ? metrics.bubbleRadius : (isFirst ? 4 : metrics.bubbleRadius)),
+                      isMe ? bubbleR : (isFirst ? bubbleTail : bubbleR)),
                   bottomRight: Radius.circular(
-                      isMe ? (isFirst ? 4 : metrics.bubbleRadius) : metrics.bubbleRadius),
+                      isMe ? (isFirst ? bubbleTail : bubbleR) : bubbleR),
                 ),
               ),
               child: Column(
