@@ -7,21 +7,29 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:lattice/services/preferences_service.dart';
 import 'package:lattice/utils/notification_filter.dart';
 
-@GenerateNiceMocks([MockSpec<Room>()])
+@GenerateNiceMocks([MockSpec<Room>(), MockSpec<Client>()])
 import 'notification_filter_test.mocks.dart';
 
 void main() {
   late PreferencesService prefs;
   late MockRoom mockRoom;
+  late MockClient mockClient;
+
+  const ownUserId = '@me:example.com';
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     final sp = await SharedPreferences.getInstance();
     prefs = PreferencesService(prefs: sp);
+    mockClient = MockClient();
     mockRoom = MockRoom();
     when(mockRoom.notificationCount).thenReturn(5);
     when(mockRoom.highlightCount).thenReturn(0);
     when(mockRoom.lastEvent).thenReturn(null);
+    when(mockRoom.client).thenReturn(mockClient);
+    when(mockClient.userID).thenReturn(ownUserId);
+    when(mockRoom.unsafeGetUserFromMemoryOrFallback(ownUserId))
+        .thenReturn(User(ownUserId, room: mockRoom, displayName: 'Me'));
   });
 
   // ── effectiveUnreadCount ─────────────────────────────────────
@@ -106,14 +114,28 @@ void main() {
       );
     });
 
-    test('mentionsOnly returns true on highlight', () async {
+    test('mentionsOnly returns true when body contains user ID', () async {
       await prefs.setNotificationLevel(NotificationLevel.mentionsOnly);
-      when(mockRoom.highlightCount).thenReturn(1);
       expect(
         shouldNotifyForEvent(
-          eventBody: 'generic message',
+          eventBody: 'hey @me:example.com check this',
           senderId: '@other:example.com',
-          ownUserId: '@me:example.com',
+          ownUserId: ownUserId,
+          room: mockRoom,
+          prefs: prefs,
+        ),
+        isTrue,
+      );
+    });
+
+    test('mentionsOnly returns true when body contains display name',
+        () async {
+      await prefs.setNotificationLevel(NotificationLevel.mentionsOnly);
+      expect(
+        shouldNotifyForEvent(
+          eventBody: 'hey Me, are you there?',
+          senderId: '@other:example.com',
+          ownUserId: ownUserId,
           room: mockRoom,
           prefs: prefs,
         ),
