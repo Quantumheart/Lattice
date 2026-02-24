@@ -61,6 +61,17 @@ void main() {
       expect(prefs.notificationKeywords, ['hello']);
     });
 
+    test('add keyword deduplicates case-insensitively', () async {
+      await prefs.addNotificationKeyword('Hello');
+      await prefs.addNotificationKeyword('HELLO');
+      expect(prefs.notificationKeywords, ['hello']);
+    });
+
+    test('add keyword normalizes to lowercase', () async {
+      await prefs.addNotificationKeyword('FooBar');
+      expect(prefs.notificationKeywords, ['foobar']);
+    });
+
     test('add empty keyword is ignored', () async {
       await prefs.addNotificationKeyword('  ');
       expect(prefs.notificationKeywords, isEmpty);
