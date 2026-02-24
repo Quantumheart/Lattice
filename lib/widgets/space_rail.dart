@@ -7,6 +7,7 @@ import '../services/client_manager.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
 import 'space_action_dialog.dart';
+import 'user_avatar.dart';
 
 /// A vertical icon rail showing the user's Matrix spaces.
 /// Modelled after Discord / Slack's sidebar.
@@ -282,18 +283,45 @@ class _RailIcon extends StatelessWidget {
   }
 }
 
-class _AccountButton extends StatelessWidget {
+class _AccountButton extends StatefulWidget {
   const _AccountButton({required this.cs});
   final ColorScheme cs;
 
   @override
+  State<_AccountButton> createState() => _AccountButtonState();
+}
+
+class _AccountButtonState extends State<_AccountButton> {
+  Uri? _avatarUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProfile();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _fetchProfile();
+  }
+
+  Future<void> _fetchProfile() async {
+    try {
+      final client = context.read<MatrixService>().client;
+      final profile = await client.fetchOwnProfile();
+      if (mounted) setState(() => _avatarUrl = profile.avatarUrl);
+    } catch (e) {
+      debugPrint('[Lattice] Failed to fetch profile: $e');
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final cs = widget.cs;
     final manager = context.watch<ClientManager>();
     final matrix = context.watch<MatrixService>();
     final userId = matrix.client.userID;
-    final initial = (userId != null && userId.length > 1)
-        ? userId[1].toUpperCase()
-        : (userId ?? '?')[0].toUpperCase();
 
     return PopupMenuButton<_AccountAction>(
       tooltip: 'Account',
@@ -319,21 +347,10 @@ class _AccountButton extends StatelessWidget {
               onTap: () => manager.setActiveAccount(i),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 14,
-                    backgroundColor: i == manager.activeIndex
-                        ? cs.primary
-                        : cs.surfaceContainerHigh,
-                    child: Text(
-                      _initial(manager.services[i].client.userID),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: i == manager.activeIndex
-                            ? cs.onPrimary
-                            : cs.onSurfaceVariant,
-                      ),
-                    ),
+                  UserAvatar(
+                    client: manager.services[i].client,
+                    userId: manager.services[i].client.userID,
+                    size: 28,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -361,25 +378,14 @@ class _AccountButton extends StatelessWidget {
       ],
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
-        child: CircleAvatar(
-          radius: 18,
-          backgroundColor: cs.primaryContainer,
-          child: Text(
-            initial,
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: cs.onPrimaryContainer,
-            ),
-          ),
+        child: UserAvatar(
+          client: matrix.client,
+          avatarUrl: _avatarUrl,
+          userId: userId,
+          size: 36,
         ),
       ),
     );
-  }
-
-  String _initial(String? userId) {
-    if (userId != null && userId.length > 1) return userId[1].toUpperCase();
-    return (userId ?? '?')[0].toUpperCase();
   }
 }
 

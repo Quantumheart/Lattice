@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -6,6 +8,7 @@ import '../services/client_manager.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
 import '../widgets/bootstrap_dialog.dart';
+import '../widgets/user_avatar.dart';
 import 'devices_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -17,6 +20,72 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   String? _lastShownError;
+  bool _avatarUploading = false;
+  Uri? _avatarUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProfile();
+  }
+
+  Future<void> _fetchProfile() async {
+    try {
+      final client = context.read<MatrixService>().client;
+      final profile = await client.fetchOwnProfile();
+      if (mounted) setState(() => _avatarUrl = profile.avatarUrl);
+    } catch (e) {
+      debugPrint('[Lattice] Failed to fetch profile: $e');
+    }
+  }
+
+  Future<void> _uploadAvatar() async {
+    final client = context.read<MatrixService>().client;
+    final picker = ImagePicker();
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 512,
+      maxHeight: 512,
+      imageQuality: 85,
+    );
+    if (picked == null) return;
+
+    setState(() => _avatarUploading = true);
+    try {
+      final bytes = await picked.readAsBytes();
+      await client.setAvatar(MatrixFile(bytes: bytes, name: picked.name));
+      debugPrint('[Lattice] Avatar uploaded: ${picked.name} (${bytes.length} bytes)');
+      await _fetchProfile();
+    } catch (e) {
+      debugPrint('[Lattice] Avatar upload failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to upload avatar: ${MatrixService.friendlyAuthError(e)}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _avatarUploading = false);
+    }
+  }
+
+  Future<void> _removeAvatar() async {
+    final client = context.read<MatrixService>().client;
+    setState(() => _avatarUploading = true);
+    try {
+      await client.setAvatar(null);
+      debugPrint('[Lattice] Avatar removed');
+      await _fetchProfile();
+    } catch (e) {
+      debugPrint('[Lattice] Avatar removal failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to remove avatar: ${MatrixService.friendlyAuthError(e)}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _avatarUploading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,38 +119,73 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Card(
             child: Padding(
               padding: const EdgeInsets.all(20),
-              child: Row(
+              child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 28,
-                    backgroundColor: cs.primaryContainer,
-                    child: Text(
-                      (client.userID != null && client.userID!.length > 1)
-                          ? client.userID![1].toUpperCase()
-                          : (client.userID ?? '?')[0].toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                        color: cs.onPrimaryContainer,
+                  Row(
+                    children: [
+                      Stack(
+                        children: [
+                          UserAvatar(
+                            client: client,
+                            avatarUrl: _avatarUrl,
+                            userId: client.userID,
+                            size: 56,
+                          ),
+                          if (_avatarUploading)
+                            const Positioned.fill(
+                              child: Center(
+                                child: SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          client.userID ?? 'Unknown',
-                          style: tt.titleMedium,
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              client.userID ?? 'Unknown',
+                              style: tt.titleMedium,
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              client.homeserver.toString(),
+                              style: tt.bodyMedium,
+                            ),
+                          ],
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          client.homeserver.toString(),
-                          style: tt.bodyMedium,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      OutlinedButton.icon(
+                        onPressed: _avatarUploading ? null : _uploadAvatar,
+                        icon: const Icon(Icons.photo_library_outlined,
+                            size: 18),
+                        label: const Text('Upload avatar'),
+                      ),
+                      if (_avatarUrl != null) ...[
+                        const SizedBox(width: 12),
+                        OutlinedButton.icon(
+                          onPressed: _avatarUploading ? null : _removeAvatar,
+                          icon: Icon(Icons.delete_outline,
+                              size: 18, color: cs.error),
+                          label: Text('Remove',
+                              style: TextStyle(color: cs.error)),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: cs.error.withValues(alpha: 0.5)),
+                          ),
                         ),
                       ],
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -98,21 +202,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   for (var i = 0; i < manager.services.length; i++) ...[
                     if (i > 0) const Divider(height: 1, indent: 56),
                     ListTile(
-                      leading: CircleAvatar(
-                        radius: 18,
-                        backgroundColor: i == manager.activeIndex
-                            ? cs.primary
-                            : cs.surfaceContainerHigh,
-                        child: Text(
-                          _userInitial(manager.services[i].client.userID),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: i == manager.activeIndex
-                                ? cs.onPrimary
-                                : cs.onSurfaceVariant,
-                          ),
-                        ),
+                      leading: UserAvatar(
+                        client: manager.services[i].client,
+                        userId: manager.services[i].client.userID,
+                        size: 36,
                       ),
                       title: Text(
                         manager.services[i].client.userID ?? 'Unknown',
@@ -407,11 +500,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final service = await manager.createLoginService();
     await manager.addService(service);
     if (context.mounted) Navigator.pop(context);
-  }
-
-  String _userInitial(String? userId) {
-    if (userId != null && userId.length > 1) return userId[1].toUpperCase();
-    return (userId ?? '?')[0].toUpperCase();
   }
 
   void _confirmLogout(BuildContext context) {

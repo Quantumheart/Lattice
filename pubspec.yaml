@@ -20,6 +20,7 @@ dependencies:
   path: ^1.9.1
   flutter_vodozemac: ^0.5.0
   url_launcher: ^6.3.2
+  image_picker: ^1.1.2
   shared_preferences: ^2.3.4
   canonical_json: ^1.1.2
   vodozemac: ^0.5.0
