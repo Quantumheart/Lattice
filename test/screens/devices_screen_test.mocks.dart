@@ -7829,6 +7829,24 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
       );
 
   @override
+  void updateSpaceOrder(List<String>? order) => super.noSuchMethod(
+        Invocation.method(
+          #updateSpaceOrder,
+          [order],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void invalidateSpaceTree() => super.noSuchMethod(
+        Invocation.method(
+          #invalidateSpaceTree,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
   List<_i2.Room> roomsForSpace(String? spaceId) => (super.noSuchMethod(
         Invocation.method(
           #roomsForSpace,

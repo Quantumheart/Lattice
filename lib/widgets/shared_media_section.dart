@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
+import '../utils/media_auth.dart';
+
 /// Displays a grid of images/videos and a list of files shared in a room.
 /// Loads media lazily using room search with pagination.
 class SharedMediaSection extends StatefulWidget {
@@ -183,18 +185,6 @@ class _SharedMediaSectionState extends State<SharedMediaSection> {
   }
 }
 
-/// Returns auth headers only if [url] points to the same host as the
-/// homeserver, preventing token leakage to federated media servers.
-Map<String, String>? _authHeaders(Client client, String url) {
-  try {
-    final uri = Uri.parse(url);
-    final homeserver = client.homeserver;
-    if (homeserver != null && uri.host == homeserver.host) {
-      return {'authorization': 'Bearer ${client.accessToken}'};
-    }
-  } catch (_) {}
-  return null;
-}
 
 // ── Media thumbnail ────────────────────────────────────────────
 
@@ -277,7 +267,7 @@ class _MediaThumbnailState extends State<_MediaThumbnail> {
                       ? Image.network(
                           _thumbnailUrl!,
                           fit: BoxFit.cover,
-                          headers: _authHeaders(
+                          headers: mediaAuthHeaders(
                             widget.event.room.client,
                             _thumbnailUrl!,
                           ),
@@ -369,7 +359,7 @@ class _FullImageViewState extends State<_FullImageView> {
             ? Image.network(
                 _imageUrl!,
                 fit: BoxFit.contain,
-                headers: _authHeaders(
+                headers: mediaAuthHeaders(
                   widget.event.room.client,
                   _imageUrl!,
                 ),

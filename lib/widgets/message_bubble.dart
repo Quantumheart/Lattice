@@ -3,6 +3,7 @@ import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
 import '../services/preferences_service.dart';
+import '../utils/media_auth.dart';
 import '../utils/sender_color.dart';
 
 class MessageBubble extends StatelessWidget {
@@ -176,6 +177,7 @@ class MessageBubble extends StatelessWidget {
           child: Image.network(
             httpUrl.toString(),
             fit: BoxFit.cover,
+            headers: mediaAuthHeaders(event.room.client, httpUrl.toString()),
             errorBuilder: (_, __, ___) => Container(
               height: 80,
               color: cs.surfaceContainerHighest,
