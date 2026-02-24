@@ -86,13 +86,16 @@ class _NotificationServiceHolder extends StatefulWidget {
 }
 
 class _NotificationServiceHolderState
-    extends State<_NotificationServiceHolder> {
+    extends State<_NotificationServiceHolder> with WidgetsBindingObserver {
   NotificationService? _notificationService;
   bool _wasLoggedIn = false;
+  String? _lastSelectedRoomId;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    widget.matrixService.addListener(_onMatrixChanged);
     _initNotifications();
   }
 
@@ -114,10 +117,34 @@ class _NotificationServiceHolderState
     }
   }
 
+  void _onMatrixChanged() {
+    // Only cancel when the selected room actually changes — canceling on
+    // every sync races with _showLinuxNotification (the notification hasn't
+    // been stored yet when the sync triggers notifyListeners).
+    final roomId = widget.matrixService.selectedRoomId;
+    if (roomId != null && roomId != _lastSelectedRoomId) {
+      _notificationService?.cancelForRoom(roomId);
+    }
+    _lastSelectedRoomId = roomId;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    _notificationService?.isAppResumed = state == AppLifecycleState.resumed;
+    if (state == AppLifecycleState.resumed) {
+      final roomId = widget.matrixService.selectedRoomId;
+      if (roomId != null) {
+        _notificationService?.cancelForRoom(roomId);
+      }
+    }
+  }
+
   @override
   void didUpdateWidget(covariant _NotificationServiceHolder old) {
     super.didUpdateWidget(old);
     if (old.matrixService != widget.matrixService) {
+      old.matrixService.removeListener(_onMatrixChanged);
+      widget.matrixService.addListener(_onMatrixChanged);
       _notificationService?.dispose();
       _initNotifications();
       return;
@@ -137,6 +164,8 @@ class _NotificationServiceHolderState
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    widget.matrixService.removeListener(_onMatrixChanged);
     _notificationService?.dispose();
     super.dispose();
   }

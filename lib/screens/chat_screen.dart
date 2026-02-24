@@ -67,9 +67,18 @@ class _ChatScreenState extends State<ChatScreen> {
     _timeline = await room.getTimeline(
       onUpdate: () {
         if (mounted) setState(() {});
+        _markAsRead(room);
       },
     );
     if (mounted) setState(() {});
+    _markAsRead(room);
+  }
+
+  void _markAsRead(Room room) {
+    final lastEvent = room.lastEvent;
+    if (lastEvent != null && room.notificationCount > 0) {
+      room.setReadMarker(lastEvent.eventId, mRead: lastEvent.eventId);
+    }
   }
 
   void _onScroll() {

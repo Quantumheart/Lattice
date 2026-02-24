@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:desktop_notifications/desktop_notifications.dart' as dn;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:matrix/matrix.dart';
@@ -8,33 +10,52 @@ import '../utils/notification_filter.dart';
 import 'matrix_service.dart';
 import 'preferences_service.dart';
 
+bool get _isLinux => !kIsWeb && Platform.isLinux;
+
 /// Background service that listens to sync events and shows OS notifications.
 ///
 /// This is a plain Dart class (not a ChangeNotifier) — it has no UI state.
 /// Constructed in the widget tree and managed via start/stop lifecycle.
+///
+/// On Linux, uses `desktop_notifications` (D-Bus) directly for reliable
+/// notification display and dismissal. On other platforms, uses
+/// `flutter_local_notifications`.
 class NotificationService {
   NotificationService({
     required this.matrixService,
     required this.preferencesService,
     @visibleForTesting FlutterLocalNotificationsPlugin? plugin,
-  }) : _plugin = plugin ?? FlutterLocalNotificationsPlugin();
+  })  : _plugin = plugin ?? FlutterLocalNotificationsPlugin(),
+        _useLinux = plugin == null && _isLinux;
 
   final MatrixService matrixService;
   final PreferencesService preferencesService;
   final FlutterLocalNotificationsPlugin _plugin;
+  final bool _useLinux;
 
   StreamSubscription<SyncUpdate>? _syncSub;
   bool _firstSyncDone = false;
   final Set<String> _processingRooms = {};
 
+  /// Whether the app is currently in the foreground. Updated by the holder.
+  bool isAppResumed = true;
+
+  // ── Linux D-Bus notifications ─────────────────────────────────
+
+  dn.NotificationsClient? _linuxClient;
+  final Map<String, dn.Notification> _linuxNotifications = {};
+
   // ── Initialization ───────────────────────────────────────────
 
   Future<void> init() async {
+    if (_useLinux) {
+      _linuxClient = dn.NotificationsClient();
+      debugPrint('[Lattice] NotificationService initialized (Linux D-Bus)');
+      return;
+    }
+
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
-    const linuxSettings = LinuxInitializationSettings(
-      defaultActionName: 'Open',
-    );
     const darwinSettings = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
@@ -43,7 +64,6 @@ class NotificationService {
 
     const settings = InitializationSettings(
       android: androidSettings,
-      linux: linuxSettings,
       iOS: darwinSettings,
       macOS: darwinSettings,
     );
@@ -123,11 +143,23 @@ class NotificationService {
     final room = client.getRoomById(roomId);
     if (room == null) return;
 
+    // If any event is from the current user, they're active in this room —
+    // clear any existing notification and stop processing.
+    final hasOwnMessage = events.any((e) =>
+        (e.type == EventTypes.Message || e.type == EventTypes.Encrypted) &&
+        e.senderId == client.userID);
+    if (hasOwnMessage) {
+      cancelForRoom(roomId);
+      return;
+    }
+
     // Respect per-room push rules.
     if (room.pushRuleState == PushRuleState.dontNotify) return;
 
-    // Suppress for the currently viewed room unless foreground enabled.
+    // Suppress for the currently viewed room only when the app is visible,
+    // unless the user has opted in to foreground notifications.
     if (matrixService.selectedRoomId == roomId &&
+        isAppResumed &&
         !preferencesService.foregroundNotificationsEnabled) {
       return;
     }
@@ -137,7 +169,6 @@ class NotificationService {
           matrixEvent.type != EventTypes.Encrypted) {
         continue;
       }
-      if (matrixEvent.senderId == client.userID) continue;
 
       final event = Event.fromMatrixEvent(matrixEvent, room);
       String body;
@@ -193,6 +224,16 @@ class NotificationService {
     required String senderName,
     required String body,
   }) async {
+    if (_useLinux) {
+      await _showLinuxNotification(
+        roomId: roomId,
+        title: title,
+        senderName: senderName,
+        body: body,
+      );
+      return;
+    }
+
     final notificationId = roomId.hashCode & 0x7FFFFFFF;
 
     final androidDetails = AndroidNotificationDetails(
@@ -205,11 +246,8 @@ class NotificationService {
       enableVibration: preferencesService.notificationVibrationEnabled,
     );
 
-    const linuxDetails = LinuxNotificationDetails();
-
     final details = NotificationDetails(
       android: androidDetails,
-      linux: linuxDetails,
     );
 
     await _plugin.show(
@@ -221,6 +259,27 @@ class NotificationService {
     );
 
     debugPrint('[Lattice] Notification shown for room $roomId');
+  }
+
+  Future<void> _showLinuxNotification({
+    required String roomId,
+    required String title,
+    required String senderName,
+    required String body,
+  }) async {
+    final notification = await _linuxClient!.notify(
+      title,
+      body: '$senderName: $body',
+      replacesId: _linuxNotifications[roomId]?.id ?? 0,
+      appName: 'Lattice',
+      hints: [dn.NotificationHint.soundName('message-new-instant')],
+    );
+    notification.action.then((_) {
+      debugPrint('[Lattice] Linux notification tapped for room $roomId');
+      matrixService.selectRoom(roomId);
+    });
+    _linuxNotifications[roomId] = notification;
+    debugPrint('[Lattice] Linux notification shown for room $roomId (id=${notification.id})');
   }
 
   // ── Notification tap ─────────────────────────────────────────
@@ -235,13 +294,35 @@ class NotificationService {
 
   // ── Cleanup ──────────────────────────────────────────────────
 
+  /// Dismiss the notification for a specific room.
+  Future<void> cancelForRoom(String roomId) async {
+    if (_useLinux) {
+      final notification = _linuxNotifications.remove(roomId);
+      if (notification != null) {
+        await notification.close();
+      }
+      return;
+    }
+    final notificationId = roomId.hashCode & 0x7FFFFFFF;
+    await _plugin.cancel(notificationId);
+  }
+
   /// Dismiss all active notifications from the system tray.
   Future<void> cancelAll() async {
+    if (_useLinux) {
+      for (final notification in _linuxNotifications.values) {
+        await notification.close();
+      }
+      _linuxNotifications.clear();
+      debugPrint('[Lattice] All Linux notifications cancelled');
+      return;
+    }
     await _plugin.cancelAll();
     debugPrint('[Lattice] All notifications cancelled');
   }
 
   void dispose() {
     stopListening();
+    _linuxClient?.close();
   }
 }
