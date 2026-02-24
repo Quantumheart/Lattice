@@ -299,7 +299,10 @@ class _JoinSpaceDialogState extends State<JoinSpaceDialog> {
           .timeout(const Duration(seconds: 30));
 
       if (!mounted) return;
-      widget.matrixService.selectSpace(roomId);
+      final room = client.getRoomById(roomId);
+      if (room != null && room.isSpace) {
+        widget.matrixService.selectSpace(roomId);
+      }
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;

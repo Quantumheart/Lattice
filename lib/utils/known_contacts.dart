@@ -4,11 +4,12 @@ import 'package:matrix/matrix.dart';
 /// direct-message rooms with. Useful for populating "recent contacts" in
 /// DM and invite dialogs.
 List<Profile> knownContacts(Client client) {
+  final seen = <String>{};
   final contacts = <Profile>[];
   for (final room in client.rooms) {
     if (!room.isDirectChat) continue;
     final mxid = room.directChatMatrixID;
-    if (mxid == null) continue;
+    if (mxid == null || !seen.add(mxid)) continue;
     contacts.add(Profile(
       userId: mxid,
       displayName: room.getLocalizedDisplayname(),

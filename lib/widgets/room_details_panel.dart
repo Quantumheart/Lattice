@@ -71,13 +71,12 @@ class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
     controller.dispose();
     if (result == null || !mounted) return;
 
+    final scaffold = ScaffoldMessenger.of(context);
     await _run('invite', () async {
       await room.invite(result);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Invited $result')),
-        );
-      }
+      scaffold.showSnackBar(
+        SnackBar(content: Text('Invited $result')),
+      );
     });
   }
 
@@ -107,11 +106,12 @@ class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
 
     if (confirmed != true || !mounted) return;
 
+    final matrix = context.read<MatrixService>();
+    final navigator = Navigator.of(context);
     await _run('leave', () async {
-      final matrix = context.read<MatrixService>();
       await room.leave();
       matrix.selectRoom(null);
-      if (mounted && widget.isFullPage) Navigator.pop(context);
+      if (mounted && widget.isFullPage) navigator.pop();
     });
   }
 

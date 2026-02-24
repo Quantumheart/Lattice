@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 /// Returns a deterministic colour for a Matrix sender ID, using a mix
 /// of the current theme's semantic colours and fixed accent tones.
 Color senderColor(String senderId, ColorScheme cs) {
-  final hash = senderId.codeUnits.fold<int>(0, (h, c) => h + c);
+  final hash = senderId.hashCode.abs();
   final palette = [
     cs.primary,
     cs.tertiary,

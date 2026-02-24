@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
@@ -17,9 +19,13 @@ class AdminSettingsSection extends StatefulWidget {
 class _AdminSettingsSectionState extends State<AdminSettingsSection> {
   final _nameController = TextEditingController();
   final _topicController = TextEditingController();
-  bool _loading = false;
+  final Set<String> _inFlight = {};
   String? _error;
   String? _success;
+  Timer? _successTimer;
+
+  bool get _loading => _inFlight.isNotEmpty;
+  bool _busy(String action) => _inFlight.contains(action);
 
   @override
   void initState() {
@@ -47,40 +53,40 @@ class _AdminSettingsSectionState extends State<AdminSettingsSection> {
 
   @override
   void dispose() {
+    _successTimer?.cancel();
     _nameController.dispose();
     _topicController.dispose();
     super.dispose();
   }
 
+  Future<void> _run(String action, Future<void> Function() task, {String? successMessage}) async {
+    setState(() { _inFlight.add(action); _error = null; _success = null; });
+    _successTimer?.cancel();
+    try {
+      await task();
+      if (mounted && successMessage != null) {
+        setState(() => _success = successMessage);
+        _successTimer = Timer(const Duration(seconds: 3), () {
+          if (mounted) setState(() => _success = null);
+        });
+      }
+    } catch (e) {
+      debugPrint('[Lattice] $action failed: $e');
+      if (mounted) setState(() => _error = MatrixService.friendlyAuthError(e));
+    } finally {
+      if (mounted) setState(() => _inFlight.remove(action));
+    }
+  }
+
   Future<void> _saveName() async {
     final newName = _nameController.text.trim();
     if (newName.isEmpty) return;
-
-    setState(() { _loading = true; _error = null; _success = null; });
-    try {
-      await widget.room.setName(newName);
-      if (mounted) setState(() => _success = 'Room name updated');
-    } catch (e) {
-      debugPrint('[Lattice] Set room name failed: $e');
-      if (mounted) setState(() => _error = MatrixService.friendlyAuthError(e));
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
+    await _run('name', () => widget.room.setName(newName), successMessage: 'Room name updated');
   }
 
   Future<void> _saveTopic() async {
     final newTopic = _topicController.text.trim();
-
-    setState(() { _loading = true; _error = null; _success = null; });
-    try {
-      await widget.room.setDescription(newTopic);
-      if (mounted) setState(() => _success = 'Topic updated');
-    } catch (e) {
-      debugPrint('[Lattice] Set topic failed: $e');
-      if (mounted) setState(() => _error = MatrixService.friendlyAuthError(e));
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
+    await _run('topic', () => widget.room.setDescription(newTopic), successMessage: 'Topic updated');
   }
 
   Future<void> _enableEncryption() async {
@@ -111,17 +117,7 @@ class _AdminSettingsSectionState extends State<AdminSettingsSection> {
     );
 
     if (confirmed != true || !mounted) return;
-
-    setState(() { _loading = true; _error = null; _success = null; });
-    try {
-      await widget.room.enableEncryption();
-      if (mounted) setState(() => _success = 'Encryption enabled');
-    } catch (e) {
-      debugPrint('[Lattice] Enable encryption failed: $e');
-      if (mounted) setState(() => _error = MatrixService.friendlyAuthError(e));
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
+    await _run('encryption', () => widget.room.enableEncryption(), successMessage: 'Encryption enabled');
   }
 
   @override
@@ -154,7 +150,7 @@ class _AdminSettingsSectionState extends State<AdminSettingsSection> {
                 Expanded(
                   child: TextField(
                     controller: _nameController,
-                    enabled: !_loading,
+                    enabled: !_busy('name'),
                     decoration: const InputDecoration(
                       labelText: 'Room name',
                       border: OutlineInputBorder(),
@@ -164,7 +160,7 @@ class _AdminSettingsSectionState extends State<AdminSettingsSection> {
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  onPressed: _loading ? null : _saveName,
+                  onPressed: _busy('name') ? null : _saveName,
                   icon: const Icon(Icons.check_rounded),
                   tooltip: 'Save name',
                 ),
@@ -181,7 +177,7 @@ class _AdminSettingsSectionState extends State<AdminSettingsSection> {
                 Expanded(
                   child: TextField(
                     controller: _topicController,
-                    enabled: !_loading,
+                    enabled: !_busy('topic'),
                     maxLines: 3,
                     minLines: 1,
                     decoration: const InputDecoration(
@@ -193,7 +189,7 @@ class _AdminSettingsSectionState extends State<AdminSettingsSection> {
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  onPressed: _loading ? null : _saveTopic,
+                  onPressed: _busy('topic') ? null : _saveTopic,
                   icon: const Icon(Icons.check_rounded),
                   tooltip: 'Save topic',
                 ),
@@ -209,7 +205,7 @@ class _AdminSettingsSectionState extends State<AdminSettingsSection> {
             title: const Text('Enable encryption'),
             subtitle: const Text('Irreversible'),
             trailing: FilledButton.tonal(
-              onPressed: _loading ? null : _enableEncryption,
+              onPressed: _busy('encryption') ? null : _enableEncryption,
               child: const Text('Enable'),
             ),
           ),
@@ -224,7 +220,7 @@ class _AdminSettingsSectionState extends State<AdminSettingsSection> {
               style: tt.bodySmall,
             ),
             trailing: const Icon(Icons.chevron_right_rounded),
-            onTap: _loading ? null : () => _showPowerLevelDialog(room),
+            onTap: _loading ? null : () => _showPowerLevelDialog(room),  // power levels uses global _loading since it's read-only
           ),
 
         if (_error != null)

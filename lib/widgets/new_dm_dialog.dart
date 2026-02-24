@@ -94,6 +94,7 @@ class _NewDirectMessageDialogState extends State<NewDirectMessageDialog> {
   // ── Start DM ────────────────────────────────────────────────
 
   Future<void> _startChat(String userId) async {
+    if (_loading) return;
     setState(() {
       _loading = true;
       _networkError = null;
