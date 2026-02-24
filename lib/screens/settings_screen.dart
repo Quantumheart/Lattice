@@ -22,6 +22,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _lastShownError;
   bool _avatarUploading = false;
   Uri? _avatarUrl;
+  String? _displayName;
+  final _displayNameController = TextEditingController();
+  bool _displayNameSaving = false;
 
   @override
   void initState() {
@@ -29,13 +32,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _fetchProfile();
   }
 
+  @override
+  void dispose() {
+    _displayNameController.dispose();
+    super.dispose();
+  }
+
   Future<void> _fetchProfile() async {
     try {
       final client = context.read<MatrixService>().client;
       final profile = await client.fetchOwnProfile();
-      if (mounted) setState(() => _avatarUrl = profile.avatarUrl);
+      if (mounted) {
+        setState(() {
+          _avatarUrl = profile.avatarUrl;
+          _displayName = profile.displayName;
+          _displayNameController.text = profile.displayName ?? '';
+        });
+      }
     } catch (e) {
       debugPrint('[Lattice] Failed to fetch profile: $e');
+    }
+  }
+
+  Future<void> _saveDisplayName() async {
+    final newName = _displayNameController.text.trim();
+    if (newName == (_displayName ?? '')) return;
+
+    final client = context.read<MatrixService>().client;
+    setState(() => _displayNameSaving = true);
+    try {
+      await client.setProfileField(
+        client.userID!, 'displayname', {'displayname': newName},
+      );
+      debugPrint('[Lattice] Display name updated to: $newName');
+      await _fetchProfile();
+    } catch (e) {
+      debugPrint('[Lattice] Display name update failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to update display name: ${MatrixService.friendlyAuthError(e)}')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _displayNameSaving = false);
     }
   }
 
@@ -149,9 +188,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
+                            if (_displayName != null && _displayName!.isNotEmpty)
+                              Text(
+                                _displayName!,
+                                style: tt.titleMedium,
+                              ),
+                            const SizedBox(height: 2),
                             Text(
                               client.userID ?? 'Unknown',
-                              style: tt.titleMedium,
+                              style: _displayName != null && _displayName!.isNotEmpty
+                                  ? tt.bodyMedium
+                                  : tt.titleMedium,
                             ),
                             const SizedBox(height: 2),
                             Text(
@@ -160,6 +207,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ],
                         ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _displayNameController,
+                          enabled: !_displayNameSaving,
+                          decoration: const InputDecoration(
+                            labelText: 'Display name',
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                          ),
+                          onSubmitted: (_) => _saveDisplayName(),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton(
+                        onPressed: _displayNameSaving ? null : _saveDisplayName,
+                        icon: _displayNameSaving
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.check_rounded),
+                        tooltip: 'Save display name',
                       ),
                     ],
                   ),
