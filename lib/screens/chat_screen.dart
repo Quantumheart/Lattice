@@ -7,6 +7,7 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../services/matrix_service.dart';
 import '../widgets/room_avatar.dart';
 import '../widgets/room_details_panel.dart';
+import '../utils/sender_color.dart';
 import '../widgets/message_bubble.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -583,7 +584,7 @@ class _SearchResultTile extends StatelessWidget {
             // Sender avatar
             CircleAvatar(
               radius: 18,
-              backgroundColor: _senderColor(event.senderId, cs),
+              backgroundColor: senderColor(event.senderId, cs),
               child: Text(
                 senderName.isNotEmpty ? senderName[0].toUpperCase() : '?',
                 style: const TextStyle(
@@ -660,21 +661,6 @@ class _SearchResultTile extends StatelessWidget {
         }).toList(),
       ),
     );
-  }
-
-  Color _senderColor(String senderId, ColorScheme cs) {
-    final hash = senderId.codeUnits.fold<int>(0, (h, c) => h + c);
-    final palette = [
-      cs.primary,
-      cs.tertiary,
-      cs.secondary,
-      cs.error,
-      const Color(0xFF6750A4),
-      const Color(0xFFB4846C),
-      const Color(0xFF7C9A6E),
-      const Color(0xFFC17B5F),
-    ];
-    return palette[hash % palette.length];
   }
 
   String _formatTimestamp(DateTime ts) {

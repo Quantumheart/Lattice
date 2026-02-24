@@ -139,10 +139,9 @@ class _CreateSpaceDialogState extends State<CreateSpaceDialog> {
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _networkError = MatrixService.friendlyAuthError(e);
-      });
+      setState(() => _networkError = MatrixService.friendlyAuthError(e));
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -181,13 +180,24 @@ class _CreateSpaceDialogState extends State<CreateSpaceDialog> {
             SwitchListTile(
               title: const Text('Public space'),
               value: _isPublic,
-              onChanged: _loading ? null : (v) => setState(() => _isPublic = v),
+              onChanged: _loading
+                  ? null
+                  : (v) => setState(() {
+                        _isPublic = v;
+                        if (v) _enableEncryption = false;
+                      }),
               contentPadding: EdgeInsets.zero,
             ),
             SwitchListTile(
               title: const Text('Enable encryption'),
+              subtitle: Text(
+                _isPublic
+                    ? 'Not available for public spaces'
+                    : 'Cannot be disabled later',
+                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+              ),
               value: _enableEncryption,
-              onChanged: _loading
+              onChanged: _loading || _isPublic
                   ? null
                   : (v) => setState(() => _enableEncryption = v),
               contentPadding: EdgeInsets.zero,
@@ -293,10 +303,9 @@ class _JoinSpaceDialogState extends State<JoinSpaceDialog> {
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _networkError = MatrixService.friendlyAuthError(e);
-      });
+      setState(() => _networkError = MatrixService.friendlyAuthError(e));
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
