@@ -25,6 +25,7 @@ dependencies:
   canonical_json: ^1.1.2
   vodozemac: ^0.5.0
   scrollable_positioned_list: ^0.3.8
+  flutter_local_notifications: ^18.0.1
 
 dev_dependencies:
   flutter_test:

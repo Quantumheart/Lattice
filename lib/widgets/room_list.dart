@@ -5,29 +5,10 @@ import 'package:matrix/matrix.dart';
 import '../models/space_node.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
+import '../utils/notification_filter.dart';
 import 'new_dm_dialog.dart';
 import 'new_room_dialog.dart';
 import 'room_avatar.dart';
-
-// ── Notification-level-aware unread count ───────────────────
-
-/// Effective unread count filtered by the global notification level.
-int _effectiveUnreadCount(Room room, PreferencesService prefs) {
-  switch (prefs.notificationLevel) {
-    case NotificationLevel.all:
-      return room.notificationCount;
-    case NotificationLevel.off:
-      return 0;
-    case NotificationLevel.mentionsOnly:
-      if (room.highlightCount > 0) return room.highlightCount;
-      final body = room.lastEvent?.body.toLowerCase();
-      if (body == null) return 0;
-      for (final kw in prefs.notificationKeywords) {
-        if (kw.isNotEmpty && body.contains(kw)) return 1;
-      }
-      return 0;
-  }
-}
 
 // ── List item types for the flat interleaved list ──────────
 sealed class _ListItem {}
@@ -121,7 +102,7 @@ class _RoomListState extends State<RoomList>
         rooms.where((r) => r.isDirectChat).toList(),
       RoomCategory.groups => rooms.where((r) => !r.isDirectChat).toList(),
       RoomCategory.unread =>
-        rooms.where((r) => _effectiveUnreadCount(r, prefs) > 0).toList(),
+        rooms.where((r) => effectiveUnreadCount(r, prefs) > 0).toList(),
       RoomCategory.favourites =>
         rooms.where((r) => r.isFavourite).toList(),
     };
@@ -552,7 +533,7 @@ class _RoomTile extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final isSelected = matrix.selectedRoomId == room.id;
-    final unread = _effectiveUnreadCount(room, prefs);
+    final unread = effectiveUnreadCount(room, prefs);
     final lastEvent = room.lastEvent;
     final memberships = matrix.spaceMemberships(room.id);
 
