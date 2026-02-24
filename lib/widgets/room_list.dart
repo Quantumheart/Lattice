@@ -9,6 +9,26 @@ import 'new_dm_dialog.dart';
 import 'new_room_dialog.dart';
 import 'room_avatar.dart';
 
+// ── Notification-level-aware unread count ───────────────────
+
+/// Effective unread count filtered by the global notification level.
+int _effectiveUnreadCount(Room room, PreferencesService prefs) {
+  switch (prefs.notificationLevel) {
+    case NotificationLevel.all:
+      return room.notificationCount;
+    case NotificationLevel.off:
+      return 0;
+    case NotificationLevel.mentionsOnly:
+      if (room.highlightCount > 0) return room.highlightCount;
+      final body = room.lastEvent?.body.toLowerCase();
+      if (body == null) return 0;
+      for (final kw in prefs.notificationKeywords) {
+        if (kw.isNotEmpty && body.contains(kw.toLowerCase())) return 1;
+      }
+      return 0;
+  }
+}
+
 // ── List item types for the flat interleaved list ──────────
 sealed class _ListItem {}
 
@@ -86,7 +106,8 @@ class _RoomListState extends State<RoomList>
     }
   }
 
-  List<Room> _applyFilters(List<Room> rooms, RoomCategory filter) {
+  List<Room> _applyFilters(
+      List<Room> rooms, RoomCategory filter, PreferencesService prefs) {
     if (_query.isNotEmpty) {
       final q = _query.toLowerCase();
       rooms = rooms
@@ -100,7 +121,7 @@ class _RoomListState extends State<RoomList>
         rooms.where((r) => r.isDirectChat).toList(),
       RoomCategory.groups => rooms.where((r) => !r.isDirectChat).toList(),
       RoomCategory.unread =>
-        rooms.where((r) => r.notificationCount > 0).toList(),
+        rooms.where((r) => _effectiveUnreadCount(r, prefs) > 0).toList(),
       RoomCategory.favourites =>
         rooms.where((r) => r.isFavourite).toList(),
     };
@@ -127,12 +148,12 @@ class _RoomListState extends State<RoomList>
             .toList();
 
     for (final node in visibleNodes) {
-      _addSpaceSection(items, node, 0, matrix, collapsed, filter);
+      _addSpaceSection(items, node, 0, matrix, collapsed, filter, prefs);
     }
 
     // Unsorted section (only when no space filter active)
     if (selectedIds.isEmpty) {
-      final orphanRooms = _applyFilters(matrix.orphanRooms, filter);
+      final orphanRooms = _applyFilters(matrix.orphanRooms, filter, prefs);
       if (orphanRooms.isNotEmpty) {
         items.add(_HeaderItem(
           name: 'Unsorted',
@@ -158,16 +179,17 @@ class _RoomListState extends State<RoomList>
     MatrixService matrix,
     Set<String> collapsed,
     RoomCategory filter,
+    PreferencesService prefs,
   ) {
     final rooms = _applyFilters(
-        matrix.roomsForSpace(node.room.id), filter);
+        matrix.roomsForSpace(node.room.id), filter, prefs);
 
     // Count total rooms including all nested subspaces for the header
     var totalRooms = rooms.length;
     void countSubspaces(List<SpaceNode> subs) {
       for (final sub in subs) {
         totalRooms += _applyFilters(
-            matrix.roomsForSpace(sub.room.id), filter).length;
+            matrix.roomsForSpace(sub.room.id), filter, prefs).length;
         countSubspaces(sub.subspaces);
       }
     }
@@ -189,7 +211,7 @@ class _RoomListState extends State<RoomList>
       }
       for (final sub in node.subspaces) {
         _addSpaceSection(
-            items, sub, depth + 1, matrix, collapsed, filter);
+            items, sub, depth + 1, matrix, collapsed, filter, prefs);
       }
     }
   }
@@ -526,10 +548,11 @@ class _RoomTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final matrix = context.watch<MatrixService>();
+    final prefs = context.watch<PreferencesService>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final isSelected = matrix.selectedRoomId == room.id;
-    final unread = room.notificationCount;
+    final unread = _effectiveUnreadCount(room, prefs);
     final lastEvent = room.lastEvent;
     final memberships = matrix.spaceMemberships(room.id);
 

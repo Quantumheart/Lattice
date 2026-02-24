@@ -40,6 +40,19 @@ enum MessageDensity {
       };
 }
 
+/// Global notification level (local-only, does not affect server push rules).
+enum NotificationLevel {
+  all,
+  mentionsOnly,
+  off;
+
+  String get label => switch (this) {
+        NotificationLevel.all => 'All messages',
+        NotificationLevel.mentionsOnly => 'Mentions & keywords only',
+        NotificationLevel.off => 'Off',
+      };
+}
+
 /// Manages user preferences that persist across app restarts.
 class PreferencesService extends ChangeNotifier {
   PreferencesService({SharedPreferences? prefs}) : _prefs = prefs;
@@ -163,5 +176,54 @@ class PreferencesService extends ChangeNotifier {
     final clamped = width.clamp(collapsedPanelWidth, maxPanelWidth);
     await _prefs?.setDouble(_panelWidthKey, clamped);
     notifyListeners();
+  }
+
+  // ── Notification level ──────────────────────────────────────
+
+  static const _notificationLevelKey = 'notification_level';
+
+  NotificationLevel get notificationLevel {
+    final stored = _prefs?.getString(_notificationLevelKey);
+    if (stored == null) return NotificationLevel.all;
+    return NotificationLevel.values.firstWhere(
+      (l) => l.name == stored,
+      orElse: () => NotificationLevel.all,
+    );
+  }
+
+  String get notificationLevelLabel => notificationLevel.label;
+
+  Future<void> setNotificationLevel(NotificationLevel level) async {
+    await _prefs?.setString(_notificationLevelKey, level.name);
+    debugPrint('[Lattice] Notification level set to ${level.label}');
+    notifyListeners();
+  }
+
+  // ── Notification keywords ───────────────────────────────────
+
+  static const _notificationKeywordsKey = 'notification_keywords';
+
+  List<String> get notificationKeywords =>
+      _prefs?.getStringList(_notificationKeywordsKey) ?? [];
+
+  Future<void> setNotificationKeywords(List<String> keywords) async {
+    await _prefs?.setStringList(_notificationKeywordsKey, keywords);
+    debugPrint('[Lattice] Notification keywords updated: $keywords');
+    notifyListeners();
+  }
+
+  Future<void> addNotificationKeyword(String keyword) async {
+    final trimmed = keyword.trim();
+    if (trimmed.isEmpty) return;
+    final current = notificationKeywords;
+    if (current.contains(trimmed)) return;
+    current.add(trimmed);
+    await setNotificationKeywords(current);
+  }
+
+  Future<void> removeNotificationKeyword(String keyword) async {
+    final current = notificationKeywords;
+    current.remove(keyword);
+    await setNotificationKeywords(current);
   }
 }
