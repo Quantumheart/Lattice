@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:provider/provider.dart';
 import 'package:lattice/services/matrix_service.dart';
 import 'package:lattice/widgets/room_details_panel.dart';
@@ -18,19 +19,25 @@ void main() {
   late MockClient mockClient;
   late MockMatrixService mockMatrixService;
   late MockRoom mockRoom;
+  late CachedStreamController<SyncUpdate> syncController;
 
   setUp(() {
     mockClient = MockClient();
     mockMatrixService = MockMatrixService();
     mockRoom = MockRoom();
+    syncController = CachedStreamController<SyncUpdate>();
 
     when(mockMatrixService.client).thenReturn(mockClient);
     when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
     when(mockClient.userID).thenReturn('@me:example.com');
+    when(mockClient.updateUserDeviceKeys()).thenAnswer((_) async {});
+    when(mockClient.onSync).thenReturn(syncController);
+    when(mockClient.userDeviceKeys).thenReturn({});
     when(mockRoom.id).thenReturn('!room:example.com');
     when(mockRoom.getLocalizedDisplayname()).thenReturn('Test Room');
     when(mockRoom.topic).thenReturn('A test topic');
     when(mockRoom.encrypted).thenReturn(false);
+    when(mockRoom.isDirectChat).thenReturn(false);
     when(mockRoom.isFavourite).thenReturn(false);
     when(mockRoom.pushRuleState).thenReturn(PushRuleState.notify);
     when(mockRoom.summary).thenReturn(RoomSummary.fromJson({
@@ -186,6 +193,87 @@ void main() {
 
       // AppBar should show the room name
       expect(find.widgetWithText(AppBar, 'Test Room'), findsOneWidget);
+    });
+
+    testWidgets('encrypted DM shows device verification summary', (tester) async {
+      when(mockRoom.encrypted).thenReturn(true);
+      when(mockRoom.isDirectChat).thenReturn(true);
+      when(mockRoom.directChatMatrixID).thenReturn('@bob:example.com');
+
+      final bobKeys = DeviceKeysList('@bob:example.com', mockClient);
+      bobKeys.deviceKeys['DEVICE1'] = DeviceKeys.fromJson({
+        'user_id': '@bob:example.com',
+        'device_id': 'DEVICE1',
+        'algorithms': ['m.olm.v1.curve25519-aes-sha2', 'm.megolm.v1.aes-sha2'],
+        'keys': {
+          'curve25519:DEVICE1': 'fakekey1',
+          'ed25519:DEVICE1': 'fakekey2',
+        },
+      }, mockClient);
+      bobKeys.deviceKeys['DEVICE2'] = DeviceKeys.fromJson({
+        'user_id': '@bob:example.com',
+        'device_id': 'DEVICE2',
+        'algorithms': ['m.olm.v1.curve25519-aes-sha2', 'm.megolm.v1.aes-sha2'],
+        'keys': {
+          'curve25519:DEVICE2': 'fakekey3',
+          'ed25519:DEVICE2': 'fakekey4',
+        },
+      }, mockClient);
+
+      when(mockClient.userDeviceKeys).thenReturn({
+        '@bob:example.com': bobKeys,
+      });
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Encrypted'), findsOneWidget);
+      expect(find.textContaining('of 2 devices verified'), findsOneWidget);
+    });
+
+    testWidgets('encrypted non-DM room does not show device verification', (tester) async {
+      when(mockRoom.encrypted).thenReturn(true);
+      when(mockRoom.isDirectChat).thenReturn(false);
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Encrypted'), findsOneWidget);
+      expect(find.textContaining('devices verified'), findsNothing);
+    });
+
+    testWidgets('DM device list expands on tap', (tester) async {
+      when(mockRoom.encrypted).thenReturn(true);
+      when(mockRoom.isDirectChat).thenReturn(true);
+      when(mockRoom.directChatMatrixID).thenReturn('@bob:example.com');
+
+      final bobKeys = DeviceKeysList('@bob:example.com', mockClient);
+      bobKeys.deviceKeys['DEVICE1'] = DeviceKeys.fromJson({
+        'user_id': '@bob:example.com',
+        'device_id': 'DEVICE1',
+        'algorithms': ['m.olm.v1.curve25519-aes-sha2', 'm.megolm.v1.aes-sha2'],
+        'keys': {
+          'curve25519:DEVICE1': 'fakekey1',
+          'ed25519:DEVICE1': 'fakekey2',
+        },
+      }, mockClient);
+
+      when(mockClient.userDeviceKeys).thenReturn({
+        '@bob:example.com': bobKeys,
+      });
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      // Device list should not be visible initially
+      expect(find.text('DEVICE1'), findsNothing);
+
+      // Tap the verification summary to expand
+      await tester.tap(find.textContaining('of 1 device verified'));
+      await tester.pumpAndSettle();
+
+      // Device should now be visible
+      expect(find.text('DEVICE1'), findsOneWidget);
     });
   });
 }

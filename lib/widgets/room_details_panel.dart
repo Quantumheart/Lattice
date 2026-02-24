@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
 import '../services/matrix_service.dart';
+import 'key_verification_dialog.dart';
 import 'room_avatar.dart';
 import 'room_members_section.dart';
 import 'shared_media_section.dart';
@@ -31,9 +34,36 @@ class RoomDetailsPanel extends StatefulWidget {
 class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
   final Set<String> _inFlight = {};
   String? _error;
+  StreamSubscription? _syncSub;
+  bool _deviceKeysExpanded = false;
 
   bool get _loading => _inFlight.isNotEmpty;
   bool _busy(String action) => _inFlight.contains(action);
+
+  // ── Lifecycle ───────────────────────────────────────────────
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshDeviceKeys();
+  }
+
+  @override
+  void dispose() {
+    _syncSub?.cancel();
+    super.dispose();
+  }
+
+  void _refreshDeviceKeys() {
+    final client = context.read<MatrixService>().client;
+    client.updateUserDeviceKeys().then((_) {
+      if (mounted) setState(() {});
+    });
+    _syncSub?.cancel();
+    _syncSub = client.onSync.stream.listen((_) {
+      if (mounted) setState(() {});
+    });
+  }
 
   // ── Actions ────────────────────────────────────────────────
 
@@ -255,19 +285,126 @@ class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
 
   Widget _buildEncryptionSection(Room room, ColorScheme cs, TextTheme tt) {
     final encrypted = room.encrypted;
-    return ListTile(
-      leading: Icon(
-        encrypted ? Icons.lock_rounded : Icons.lock_open_rounded,
-        color: encrypted ? cs.primary : cs.onSurfaceVariant,
-      ),
-      title: Text(encrypted ? 'Encrypted' : 'Not encrypted'),
-      subtitle: Text(
-        encrypted
-            ? 'Messages are end-to-end encrypted'
-            : 'Messages are not encrypted',
-        style: tt.bodySmall,
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ListTile(
+          leading: Icon(
+            encrypted ? Icons.lock_rounded : Icons.lock_open_rounded,
+            color: encrypted ? cs.primary : cs.onSurfaceVariant,
+          ),
+          title: Text(encrypted ? 'Encrypted' : 'Not encrypted'),
+          subtitle: Text(
+            encrypted
+                ? 'Messages are end-to-end encrypted'
+                : 'Messages are not encrypted',
+            style: tt.bodySmall,
+          ),
+        ),
+        if (encrypted && room.isDirectChat)
+          _buildDeviceVerificationSection(room, cs, tt),
+      ],
     );
+  }
+
+  Widget _buildDeviceVerificationSection(Room room, ColorScheme cs, TextTheme tt) {
+    final client = context.read<MatrixService>().client;
+    final partnerId = room.directChatMatrixID;
+    if (partnerId == null) return const SizedBox.shrink();
+
+    final deviceKeysList = client.userDeviceKeys[partnerId];
+    final devices = deviceKeysList?.deviceKeys.values.toList() ?? [];
+
+    if (devices.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Text(
+          'No device keys available',
+          style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+        ),
+      );
+    }
+
+    final verified = devices.where((d) => d.verified).length;
+    final total = devices.length;
+    final allVerified = verified == total;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ListTile(
+          dense: true,
+          leading: Icon(
+            allVerified ? Icons.verified : Icons.shield_outlined,
+            color: allVerified ? cs.primary : cs.onSurfaceVariant,
+            size: 20,
+          ),
+          title: Text(
+            '$verified of $total device${total == 1 ? '' : 's'} verified',
+            style: tt.bodyMedium,
+          ),
+          trailing: Icon(
+            _deviceKeysExpanded
+                ? Icons.expand_less
+                : Icons.expand_more,
+          ),
+          onTap: () => setState(() => _deviceKeysExpanded = !_deviceKeysExpanded),
+        ),
+        if (_deviceKeysExpanded)
+          ...devices.map((dk) => _buildDeviceKeyTile(dk, cs, tt)),
+      ],
+    );
+  }
+
+  Widget _buildDeviceKeyTile(DeviceKeys dk, ColorScheme cs, TextTheme tt) {
+    final (IconData icon, String label, Color color) = dk.blocked
+        ? (Icons.block, 'Blocked', cs.error)
+        : dk.verified
+            ? (Icons.verified, 'Verified', cs.primary)
+            : (Icons.shield_outlined, 'Unverified', cs.onSurfaceVariant);
+
+    return ListTile(
+      dense: true,
+      contentPadding: const EdgeInsets.only(left: 56, right: 16),
+      leading: Icon(Icons.devices, size: 18, color: cs.onSurfaceVariant),
+      title: Text(
+        dk.deviceDisplayName ?? dk.deviceId ?? 'Unknown device',
+        style: tt.bodySmall,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(label, style: tt.labelSmall?.copyWith(color: color)),
+        ],
+      ),
+      trailing: !dk.verified && !dk.blocked
+          ? TextButton(
+              onPressed: () => _verifyPartnerDevice(dk),
+              child: const Text('Verify'),
+            )
+          : null,
+    );
+  }
+
+  Future<void> _verifyPartnerDevice(DeviceKeys dk) async {
+    final client = context.read<MatrixService>().client;
+    final scaffold = ScaffoldMessenger.of(context);
+    try {
+      final verification = await dk.startVerification();
+      if (!mounted) return;
+      await KeyVerificationDialog.show(context, verification: verification);
+      // Refresh device keys after verification completes
+      await client.updateUserDeviceKeys();
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint('[Lattice] Failed to start verification: $e');
+      scaffold.showSnackBar(
+        const SnackBar(content: Text('Failed to start verification')),
+      );
+    }
   }
 
   // ── Notification settings ──────────────────────────────────

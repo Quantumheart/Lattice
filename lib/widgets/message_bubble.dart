@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../services/preferences_service.dart';
 import '../utils/media_auth.dart';
 import '../utils/sender_color.dart';
+import 'user_avatar.dart';
 
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
@@ -55,19 +56,11 @@ class MessageBubble extends StatelessWidget {
           if (!isMe && isFirst)
             Padding(
               padding: const EdgeInsets.only(right: 8),
-              child: CircleAvatar(
-                radius: metrics.avatarRadius,
-                backgroundColor: senderColor(event.senderId, cs),
-                child: Text(
-                  _senderInitial(event),
-                  style: TextStyle(
-                    fontSize: metrics.avatarFontSize,
-                    fontWeight: FontWeight.w600,
-                    color: ThemeData.estimateBrightnessForColor(senderColor(event.senderId, cs)) == Brightness.dark
-                        ? Colors.white
-                        : Colors.black,
-                  ),
-                ),
+              child: UserAvatar(
+                client: event.room.client,
+                avatarUrl: event.senderFromMemoryOrFallback.avatarUrl,
+                userId: event.senderId,
+                size: metrics.avatarRadius * 2,
               ),
             )
           else if (!isMe)
@@ -169,12 +162,6 @@ class MessageBubble extends StatelessWidget {
         height: metrics.bodyLineHeight,
       ),
     );
-  }
-
-  String _senderInitial(Event event) {
-    final name =
-        event.senderFromMemoryOrFallback.displayName ?? event.senderId;
-    return name.isNotEmpty ? name[0].toUpperCase() : '?';
   }
 
   String _formatTime(DateTime ts) {
