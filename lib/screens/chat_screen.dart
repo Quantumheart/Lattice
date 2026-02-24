@@ -78,6 +78,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void _markAsRead(Room room) {
     _readMarkerTimer?.cancel();
     _readMarkerTimer = Timer(const Duration(seconds: 1), () {
+      if (!mounted) return;
       final lastEvent = room.lastEvent;
       if (lastEvent != null && room.notificationCount > 0) {
         room.setReadMarker(lastEvent.eventId, mRead: lastEvent.eventId)

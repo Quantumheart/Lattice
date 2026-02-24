@@ -353,7 +353,11 @@ class NotificationService {
   void dispose() {
     _disposed = true;
     stopListening();
-    cancelAll();
+    // Fire-and-forget but log failures — cancelAll() is async but dispose()
+    // must be synchronous to match the widget lifecycle.
+    cancelAll().catchError((e) {
+      debugPrint('[Lattice] Error cancelling notifications during dispose: $e');
+    });
     _linuxClient?.close();
   }
 }
