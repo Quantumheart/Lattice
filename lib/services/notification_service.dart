@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -26,6 +25,7 @@ class NotificationService {
 
   StreamSubscription<SyncUpdate>? _syncSub;
   bool _firstSyncDone = false;
+  final Set<String> _processingRooms = {};
 
   // ── Initialization ───────────────────────────────────────────
 
@@ -53,7 +53,7 @@ class NotificationService {
       onDidReceiveNotificationResponse: _onNotificationTap,
     );
 
-    if (Platform.isAndroid) {
+    if (defaultTargetPlatform == TargetPlatform.android) {
       await _plugin
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>()
@@ -96,11 +96,26 @@ class NotificationService {
     for (final entry in joinedRooms.entries) {
       final events = entry.value.timeline?.events;
       if (events == null || events.isEmpty) continue;
-      _processRoomEvents(entry.key, events);
+      // Skip rooms already being processed to avoid duplicate notifications.
+      final roomId = entry.key;
+      if (_processingRooms.contains(roomId)) continue;
+      _processRoomEvents(roomId, events);
     }
   }
 
   Future<void> _processRoomEvents(
+    String roomId,
+    List<MatrixEvent> events,
+  ) async {
+    _processingRooms.add(roomId);
+    try {
+      await _processRoomEventsInner(roomId, events);
+    } finally {
+      _processingRooms.remove(roomId);
+    }
+  }
+
+  Future<void> _processRoomEventsInner(
     String roomId,
     List<MatrixEvent> events,
   ) async {
@@ -219,6 +234,12 @@ class NotificationService {
   }
 
   // ── Cleanup ──────────────────────────────────────────────────
+
+  /// Dismiss all active notifications from the system tray.
+  Future<void> cancelAll() async {
+    await _plugin.cancelAll();
+    debugPrint('[Lattice] All notifications cancelled');
+  }
 
   void dispose() {
     stopListening();

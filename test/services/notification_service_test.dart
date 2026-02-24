@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -27,7 +25,6 @@ void main() {
   late MockFlutterLocalNotificationsPlugin mockPlugin;
   late PreferencesService prefs;
   late NotificationService service;
-  late StreamController<SyncUpdate> syncController;
 
   const roomId = '!room:example.com';
   const ownUserId = '@me:example.com';
@@ -43,7 +40,6 @@ void main() {
     mockRoom = MockRoom();
     mockPlugin = MockFlutterLocalNotificationsPlugin();
 
-    syncController = StreamController<SyncUpdate>.broadcast();
     final cachedController = CachedStreamController<SyncUpdate>();
 
     when(mockMatrix.client).thenReturn(mockClient);
@@ -58,6 +54,8 @@ void main() {
     when(mockRoom.highlightCount).thenReturn(0);
     when(mockRoom.unsafeGetUserFromMemoryOrFallback(otherUserId))
         .thenReturn(User(otherUserId, room: mockRoom, displayName: 'Alice'));
+    when(mockRoom.unsafeGetUserFromMemoryOrFallback(ownUserId))
+        .thenReturn(User(ownUserId, room: mockRoom, displayName: 'Me'));
 
     service = NotificationService(
       matrixService: mockMatrix,
@@ -68,7 +66,6 @@ void main() {
 
   tearDown(() {
     service.dispose();
-    syncController.close();
   });
 
   SyncUpdate makeSyncUpdate({
@@ -205,10 +202,15 @@ void main() {
       verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
     });
 
-    test('mentionsOnly with highlight fires notification', () async {
+    test('mentionsOnly with user mention fires notification', () async {
       await prefs.setNotificationLevel(NotificationLevel.mentionsOnly);
-      when(mockRoom.highlightCount).thenReturn(1);
-      await emitMessage();
+      await emitMessage(body: 'hey @me:example.com check this');
+      verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
+    });
+
+    test('mentionsOnly with display name mention fires notification', () async {
+      await prefs.setNotificationLevel(NotificationLevel.mentionsOnly);
+      await emitMessage(body: 'hey Me, are you there?');
       verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
     });
   });

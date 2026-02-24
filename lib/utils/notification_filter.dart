@@ -24,7 +24,11 @@ int effectiveUnreadCount(Room room, PreferencesService prefs) {
 }
 
 /// Whether a specific message event should trigger an OS notification
-/// under the current notification level, highlights, and custom keywords.
+/// under the current notification level and custom keywords.
+///
+/// For mention detection this checks whether the event body contains the
+/// user's Matrix ID or display name, rather than relying on the room-level
+/// [Room.highlightCount] which is stale across multiple events.
 bool shouldNotifyForEvent({
   required String eventBody,
   required String? senderId,
@@ -41,8 +45,23 @@ bool shouldNotifyForEvent({
     case NotificationLevel.all:
       return true;
     case NotificationLevel.mentionsOnly:
-      if (room.highlightCount > 0) return true;
       final lower = eventBody.toLowerCase();
+      // Check if the event mentions the current user by Matrix ID or display name.
+      if (ownUserId != null && lower.contains(ownUserId.toLowerCase())) {
+        return true;
+      }
+      final displayName = room.client.userID != null
+          ? room
+              .unsafeGetUserFromMemoryOrFallback(room.client.userID!)
+              .calcDisplayname()
+              .toLowerCase()
+          : null;
+      if (displayName != null &&
+          displayName.isNotEmpty &&
+          RegExp('\\b${RegExp.escape(displayName)}\\b').hasMatch(lower)) {
+        return true;
+      }
+      // Check custom keywords.
       for (final kw in prefs.notificationKeywords) {
         if (kw.isNotEmpty && lower.contains(kw)) return true;
       }

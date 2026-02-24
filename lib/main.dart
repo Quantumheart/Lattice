@@ -88,6 +88,7 @@ class _NotificationServiceHolder extends StatefulWidget {
 class _NotificationServiceHolderState
     extends State<_NotificationServiceHolder> {
   NotificationService? _notificationService;
+  bool _wasLoggedIn = false;
 
   @override
   void initState() {
@@ -101,10 +102,16 @@ class _NotificationServiceHolderState
       preferencesService: widget.preferencesService,
     );
     await service.init();
-    if (widget.matrixService.isLoggedIn) {
+    final loggedIn = widget.matrixService.isLoggedIn;
+    if (loggedIn) {
       service.startListening();
     }
-    if (mounted) setState(() => _notificationService = service);
+    if (mounted) {
+      setState(() {
+        _notificationService = service;
+        _wasLoggedIn = loggedIn;
+      });
+    }
   }
 
   @override
@@ -115,10 +122,16 @@ class _NotificationServiceHolderState
       _initNotifications();
       return;
     }
-    if (widget.matrixService.isLoggedIn) {
-      _notificationService?.startListening();
-    } else {
-      _notificationService?.stopListening();
+    // Only start/stop on actual login state transitions.
+    final loggedIn = widget.matrixService.isLoggedIn;
+    if (loggedIn != _wasLoggedIn) {
+      _wasLoggedIn = loggedIn;
+      if (loggedIn) {
+        _notificationService?.startListening();
+      } else {
+        _notificationService?.stopListening();
+        _notificationService?.cancelAll();
+      }
     }
   }
 
