@@ -60,7 +60,9 @@ class MessageBubble extends StatelessWidget {
                   style: TextStyle(
                     fontSize: metrics.avatarFontSize,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: ThemeData.estimateBrightnessForColor(senderColor(event.senderId, cs)) == Brightness.dark
+                        ? Colors.white
+                        : Colors.black,
                   ),
                 ),
               ),
@@ -152,21 +154,27 @@ class MessageBubble extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
 
     if (event.messageType == MessageTypes.Image) {
-      final imageUrl = event.attachmentMxcUrl?.toString();
-      if (imageUrl == null || imageUrl.isEmpty) {
+      final mxcUrl = event.attachmentMxcUrl;
+      if (mxcUrl == null) {
         return Container(
           height: 80,
           color: cs.surfaceContainerHighest,
           child: const Center(child: Icon(Icons.broken_image_outlined)),
         );
       }
+      final httpUrl = mxcUrl.getThumbnailUri(
+        event.room.client,
+        width: 280,
+        height: 260,
+        method: ThumbnailMethod.scale,
+      );
       return ClipRRect(
         borderRadius: BorderRadius.circular(10),
         child: ConstrainedBox(
           constraints:
               const BoxConstraints(maxHeight: 260, maxWidth: 280),
           child: Image.network(
-            imageUrl,
+            httpUrl.toString(),
             fit: BoxFit.cover,
             errorBuilder: (_, __, ___) => Container(
               height: 80,

@@ -362,6 +362,7 @@ class _FullImageViewState extends State<_FullImageView> {
       );
     }
 
+    final cs = Theme.of(context).colorScheme;
     final image = _imageBytes != null
         ? Image.memory(_imageBytes!, fit: BoxFit.contain)
         : _imageUrl != null
@@ -372,8 +373,23 @@ class _FullImageViewState extends State<_FullImageView> {
                   widget.event.room.client,
                   _imageUrl!,
                 ),
+                errorBuilder: (_, __, ___) => SizedBox(
+                  width: 300,
+                  height: 300,
+                  child: Center(
+                    child: Icon(
+                      Icons.broken_image_rounded,
+                      color: cs.onSurfaceVariant,
+                      size: 48,
+                    ),
+                  ),
+                ),
               )
-            : const Center(child: Text('Failed to load image'));
+            : const SizedBox(
+                width: 300,
+                height: 300,
+                child: Center(child: Text('Failed to load image')),
+              );
 
     return InteractiveViewer(child: image);
   }

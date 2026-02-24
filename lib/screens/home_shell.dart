@@ -32,20 +32,25 @@ class _HomeShellState extends State<HomeShell> {
   static const double _collapseThreshold = PreferencesService.collapseThreshold;
 
   @override
-  Widget build(BuildContext context) {
-    final width = MediaQuery.sizeOf(context).width;
-    final isWide = width >= _wideBreakpoint;
-
-    final matrix = context.watch<MatrixService>();
-
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final matrix = context.read<MatrixService>();
     // Close details panel when the selected room changes.
     if (_detailsPanelRoomId != null &&
         _detailsPanelRoomId != matrix.selectedRoomId) {
       _showRoomDetails = false;
     }
     _detailsPanelRoomId = matrix.selectedRoomId;
+  }
 
-    final child = isWide ? _buildWideLayout(width) : _buildNarrowLayout();
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final isWide = width >= _wideBreakpoint;
+
+    final matrix = context.watch<MatrixService>();
+
+    final child = isWide ? _buildWideLayout(width, matrix) : _buildNarrowLayout(matrix);
 
     return CallbackShortcuts(
       bindings: _buildKeyBindings(matrix),
@@ -89,9 +94,8 @@ class _HomeShellState extends State<HomeShell> {
   }
 
   // ── Wide: rail + room list + chat ────────────────────────────
-  Widget _buildWideLayout(double width) {
+  Widget _buildWideLayout(double width, MatrixService matrix) {
     final showChat = width >= _extraWideBreakpoint;
-    final matrix = context.watch<MatrixService>();
     final prefs = context.watch<PreferencesService>();
     final cs = Theme.of(context).colorScheme;
 
@@ -216,8 +220,7 @@ class _HomeShellState extends State<HomeShell> {
   }
 
   // ── Narrow: bottom nav ───────────────────────────────────────
-  Widget _buildNarrowLayout() {
-    final matrix = context.watch<MatrixService>();
+  Widget _buildNarrowLayout(MatrixService matrix) {
 
     // If a room is selected on mobile, push the chat screen.
     if (matrix.selectedRoomId != null && _mobileTab == 0) {
@@ -290,8 +293,8 @@ class _SpaceListMobileState extends State<_SpaceListMobile> {
   String _query = '';
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void initState() {
+    super.initState();
     final matrix = context.read<MatrixService>();
     final prefs = context.read<PreferencesService>();
     WidgetsBinding.instance.addPostFrameCallback((_) {

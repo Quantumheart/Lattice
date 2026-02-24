@@ -32,12 +32,13 @@ class _RoomMembersSectionState extends State<RoomMembersSection> {
   void didUpdateWidget(RoomMembersSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     final currentCount = widget.room.summary.mJoinedMemberCount;
-    if (_lastMemberCount != null && currentCount != _lastMemberCount) {
+    if (currentCount != _lastMemberCount) {
       _loadMembers();
     }
   }
 
   Future<void> _loadMembers() async {
+    if (_loading && _members.isNotEmpty) return; // guard against concurrent calls
     try {
       final members = await widget.room.requestParticipants([Membership.join]);
       if (!mounted) return;
@@ -57,7 +58,12 @@ class _RoomMembersSectionState extends State<RoomMembersSection> {
       });
     } catch (e) {
       debugPrint('[Lattice] Failed to load members: $e');
-      if (mounted) setState(() => _loading = false);
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _lastMemberCount = widget.room.summary.mJoinedMemberCount;
+        });
+      }
     }
   }
 
@@ -126,10 +132,12 @@ class _MemberTile extends StatelessWidget {
         backgroundColor: senderColor(user.id, cs),
         child: Text(
           displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: Colors.white,
+            color: ThemeData.estimateBrightnessForColor(senderColor(user.id, cs)) == Brightness.dark
+                ? Colors.white
+                : Colors.black,
           ),
         ),
       ),
@@ -200,10 +208,12 @@ class _MemberTile extends StatelessWidget {
                 backgroundColor: senderColor(user.id, cs),
                 child: Text(
                   displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: ThemeData.estimateBrightnessForColor(senderColor(user.id, cs)) == Brightness.dark
+                        ? Colors.white
+                        : Colors.black,
                   ),
                 ),
               ),
