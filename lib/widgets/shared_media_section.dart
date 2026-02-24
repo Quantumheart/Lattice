@@ -37,6 +37,7 @@ class _SharedMediaSectionState extends State<SharedMediaSection> {
       _mediaEvents.clear();
       _nextBatch = null;
       _hasMore = true;
+      _loading = false;
       _loadMedia();
     }
   }

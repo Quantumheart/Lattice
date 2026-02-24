@@ -300,12 +300,6 @@ class _AccountButtonState extends State<_AccountButton> {
     _fetchProfile();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _fetchProfile();
-  }
-
   Future<void> _fetchProfile() async {
     try {
       final client = context.read<MatrixService>().client;

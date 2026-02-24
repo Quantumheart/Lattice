@@ -6,7 +6,9 @@ Map<String, String>? mediaAuthHeaders(Client client, String url) {
   try {
     final uri = Uri.parse(url);
     final homeserver = client.homeserver;
-    if (homeserver != null && uri.host == homeserver.host) {
+    if (homeserver != null &&
+        uri.host == homeserver.host &&
+        uri.port == homeserver.port) {
       return {'authorization': 'Bearer ${client.accessToken}'};
     }
   } catch (_) {}
