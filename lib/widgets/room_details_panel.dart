@@ -29,39 +29,38 @@ class RoomDetailsPanel extends StatefulWidget {
 }
 
 class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
-  bool _loading = false;
+  final Set<String> _inFlight = {};
   String? _error;
+
+  bool get _loading => _inFlight.isNotEmpty;
+  bool _busy(String action) => _inFlight.contains(action);
 
   // ── Actions ────────────────────────────────────────────────
 
-  Future<void> _toggleMute(Room room) async {
-    setState(() { _loading = true; _error = null; });
+  Future<void> _run(String action, Future<void> Function() task) async {
+    setState(() { _inFlight.add(action); _error = null; });
     try {
-      final current = room.pushRuleState;
-      await room.setPushRuleState(
-        current == PushRuleState.notify
-            ? PushRuleState.dontNotify
-            : PushRuleState.notify,
-      );
+      await task();
     } catch (e) {
-      debugPrint('[Lattice] Toggle mute failed: $e');
+      debugPrint('[Lattice] $action failed: $e');
       if (mounted) setState(() => _error = MatrixService.friendlyAuthError(e));
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted) setState(() => _inFlight.remove(action));
     }
   }
 
-  Future<void> _toggleFavourite(Room room) async {
-    setState(() { _loading = true; _error = null; });
-    try {
-      await room.setFavourite(!room.isFavourite);
-    } catch (e) {
-      debugPrint('[Lattice] Set favourite failed: $e');
-      if (mounted) setState(() => _error = MatrixService.friendlyAuthError(e));
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
+  Future<void> _toggleMute(Room room) => _run('mute', () async {
+    final current = room.pushRuleState;
+    await room.setPushRuleState(
+      current == PushRuleState.notify
+          ? PushRuleState.dontNotify
+          : PushRuleState.notify,
+    );
+  });
+
+  Future<void> _toggleFavourite(Room room) => _run('favourite', () async {
+    await room.setFavourite(!room.isFavourite);
+  });
 
   Future<void> _showInviteDialog(Room room) async {
     final controller = TextEditingController();
@@ -72,20 +71,14 @@ class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
     controller.dispose();
     if (result == null || !mounted) return;
 
-    setState(() { _loading = true; _error = null; });
-    try {
+    await _run('invite', () async {
       await room.invite(result);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Invited $result')),
         );
       }
-    } catch (e) {
-      debugPrint('[Lattice] Invite failed: $e');
-      if (mounted) setState(() => _error = MatrixService.friendlyAuthError(e));
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
+    });
   }
 
   Future<void> _confirmLeave(Room room) async {
@@ -114,29 +107,16 @@ class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
 
     if (confirmed != true || !mounted) return;
 
-    setState(() { _loading = true; _error = null; });
-    try {
+    await _run('leave', () async {
       final matrix = context.read<MatrixService>();
       await room.leave();
       matrix.selectRoom(null);
       if (mounted && widget.isFullPage) Navigator.pop(context);
-    } catch (e) {
-      debugPrint('[Lattice] Leave room failed: $e');
-      if (mounted) setState(() { _loading = false; _error = MatrixService.friendlyAuthError(e); });
-    }
+    });
   }
 
-  Future<void> _setPushRule(Room room, PushRuleState state) async {
-    setState(() { _loading = true; _error = null; });
-    try {
-      await room.setPushRuleState(state);
-    } catch (e) {
-      debugPrint('[Lattice] Set push rule failed: $e');
-      if (mounted) setState(() => _error = MatrixService.friendlyAuthError(e));
-    } finally {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
+  Future<void> _setPushRule(Room room, PushRuleState state) =>
+      _run('pushRule', () => room.setPushRuleState(state));
 
   // ── Build ──────────────────────────────────────────────────
 
@@ -190,7 +170,10 @@ class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
         SharedMediaSection(room: room),
         const Divider(),
         _buildNotificationSection(room, cs, tt),
-        if (room.ownPowerLevel >= 50) ...[
+        if (room.canChangeStateEvent(EventTypes.RoomName) ||
+            room.canChangeStateEvent(EventTypes.RoomTopic) ||
+            room.canChangeStateEvent(EventTypes.Encryption) ||
+            room.canChangePowerLevel) ...[
           const Divider(),
           AdminSettingsSection(room: room),
         ],
@@ -245,23 +228,23 @@ class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
           _ActionButton(
             icon: isMuted ? Icons.notifications_off_outlined : Icons.notifications_outlined,
             label: isMuted ? 'Unmute' : 'Mute',
-            onTap: _loading ? null : () => _toggleMute(room),
+            onTap: _busy('mute') ? null : () => _toggleMute(room),
           ),
           _ActionButton(
             icon: room.isFavourite ? Icons.star_rounded : Icons.star_border_rounded,
             label: room.isFavourite ? 'Starred' : 'Star',
-            onTap: _loading ? null : () => _toggleFavourite(room),
+            onTap: _busy('favourite') ? null : () => _toggleFavourite(room),
           ),
           _ActionButton(
             icon: Icons.person_add_outlined,
             label: 'Invite',
-            onTap: _loading ? null : () => _showInviteDialog(room),
+            onTap: _busy('invite') ? null : () => _showInviteDialog(room),
           ),
           _ActionButton(
             icon: Icons.exit_to_app_rounded,
             label: 'Leave',
             color: cs.error,
-            onTap: _loading ? null : () => _confirmLeave(room),
+            onTap: _busy('leave') ? null : () => _confirmLeave(room),
           ),
         ],
       ),
@@ -307,19 +290,19 @@ class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
           title: const Text('All messages'),
           value: PushRuleState.notify,
           groupValue: room.pushRuleState,
-          onChanged: _loading ? null : (v) => _setPushRule(room, v!),
+          onChanged: _busy('pushRule') ? null : (v) => _setPushRule(room, v!),
         ),
         RadioListTile<PushRuleState>(
           title: const Text('Mentions only'),
           value: PushRuleState.mentionsOnly,
           groupValue: room.pushRuleState,
-          onChanged: _loading ? null : (v) => _setPushRule(room, v!),
+          onChanged: _busy('pushRule') ? null : (v) => _setPushRule(room, v!),
         ),
         RadioListTile<PushRuleState>(
           title: const Text('Muted'),
           value: PushRuleState.dontNotify,
           groupValue: room.pushRuleState,
-          onChanged: _loading ? null : (v) => _setPushRule(room, v!),
+          onChanged: _busy('pushRule') ? null : (v) => _setPushRule(room, v!),
         ),
       ],
     );

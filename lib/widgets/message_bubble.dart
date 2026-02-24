@@ -3,6 +3,7 @@ import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
 import '../services/preferences_service.dart';
+import '../utils/sender_color.dart';
 
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
@@ -53,7 +54,7 @@ class MessageBubble extends StatelessWidget {
               padding: const EdgeInsets.only(right: 8),
               child: CircleAvatar(
                 radius: metrics.avatarRadius,
-                backgroundColor: _senderColor(event.senderId, cs),
+                backgroundColor: senderColor(event.senderId, cs),
                 child: Text(
                   _senderInitial(event),
                   style: TextStyle(
@@ -101,7 +102,7 @@ class MessageBubble extends StatelessWidget {
                         style: tt.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                           fontSize: metrics.senderNameFontSize,
-                          color: _senderColor(event.senderId, cs),
+                          color: senderColor(event.senderId, cs),
                         ),
                       ),
                     ),
@@ -186,21 +187,6 @@ class MessageBubble extends StatelessWidget {
         height: metrics.bodyLineHeight,
       ),
     );
-  }
-
-  Color _senderColor(String senderId, ColorScheme cs) {
-    final hash = senderId.codeUnits.fold<int>(0, (h, c) => h + c);
-    final palette = [
-      cs.primary,
-      cs.tertiary,
-      cs.secondary,
-      cs.error,
-      const Color(0xFF6750A4),
-      const Color(0xFFB4846C),
-      const Color(0xFF7C9A6E),
-      const Color(0xFFC17B5F),
-    ];
-    return palette[hash % palette.length];
   }
 
   String _senderInitial(Event event) {

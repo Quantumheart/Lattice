@@ -19,6 +19,7 @@ class _SharedMediaSectionState extends State<SharedMediaSection> {
   String? _nextBatch;
   bool _loading = false;
   bool _hasMore = true;
+  int _generation = 0;
 
   @override
   void initState() {
@@ -30,6 +31,7 @@ class _SharedMediaSectionState extends State<SharedMediaSection> {
   void didUpdateWidget(SharedMediaSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.room.id != widget.room.id) {
+      _generation++;
       _mediaEvents.clear();
       _nextBatch = null;
       _hasMore = true;
@@ -40,6 +42,7 @@ class _SharedMediaSectionState extends State<SharedMediaSection> {
   Future<void> _loadMedia() async {
     if (_loading) return;
     setState(() => _loading = true);
+    final gen = _generation;
 
     try {
       final result = await widget.room.searchEvents(
@@ -54,7 +57,7 @@ class _SharedMediaSectionState extends State<SharedMediaSection> {
         limit: 20,
       );
 
-      if (!mounted) return;
+      if (!mounted || gen != _generation) return;
       setState(() {
         _mediaEvents.addAll(result.events);
         _nextBatch = result.nextBatch;
@@ -63,7 +66,7 @@ class _SharedMediaSectionState extends State<SharedMediaSection> {
       });
     } catch (e) {
       debugPrint('[Lattice] Load media failed: $e');
-      if (mounted) setState(() => _loading = false);
+      if (mounted && gen == _generation) setState(() => _loading = false);
     }
   }
 
@@ -145,7 +148,7 @@ class _SharedMediaSectionState extends State<SharedMediaSection> {
                 style: tt.bodyMedium,
               ),
               subtitle: Text(
-                _formatFileSize(file.infoMap['size'] as int?),
+                _formatFileSize((file.infoMap['size'] as num?)?.toInt()),
                 style: tt.bodySmall,
               ),
             ),

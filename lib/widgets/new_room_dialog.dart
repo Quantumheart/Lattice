@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart' hide Visibility;
 import 'package:matrix/matrix.dart';
 import '../services/matrix_service.dart';
+import '../utils/known_contacts.dart';
 
 // ── New Room dialog ───────────────────────────────────────────
 
@@ -44,11 +45,16 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
   @override
   void initState() {
     super.initState();
-    _inviteFocusNode.addListener(() => setState(() {}));
+    _inviteFocusNode.addListener(_onFocusChanged);
+  }
+
+  void _onFocusChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _inviteFocusNode.removeListener(_onFocusChanged);
     _nameController.dispose();
     _topicController.dispose();
     _inviteController.dispose();
@@ -62,22 +68,7 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
   // ── Known contacts ──────────────────────────────────────────
 
   List<Profile> _knownContacts() {
-    if (_cachedContacts != null) return _cachedContacts!;
-    final rooms = widget.matrixService.client.rooms
-        .where((r) => r.isDirectChat)
-        .toList();
-    final contacts = <Profile>[];
-    for (final room in rooms) {
-      final mxid = room.directChatMatrixID;
-      if (mxid == null) continue;
-      contacts.add(Profile(
-        userId: mxid,
-        displayName: room.getLocalizedDisplayname(),
-        avatarUrl: room.avatar,
-      ));
-    }
-    _cachedContacts = contacts;
-    return contacts;
+    return _cachedContacts ??= knownContacts(widget.matrixService.client);
   }
 
   // ── Invite search ───────────────────────────────────────────
@@ -248,10 +239,9 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _loading = false;
-        _networkError = MatrixService.friendlyAuthError(e);
-      });
+      setState(() => _networkError = MatrixService.friendlyAuthError(e));
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
   }
 
