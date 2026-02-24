@@ -32,18 +32,23 @@ class _HomeShellState extends State<HomeShell> {
   static const double _collapseThreshold = PreferencesService.collapseThreshold;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final matrix = context.read<MatrixService>();
+    // Close details panel when the selected room changes.
+    if (_detailsPanelRoomId != null &&
+        _detailsPanelRoomId != matrix.selectedRoomId) {
+      setState(() => _showRoomDetails = false);
+    }
+    _detailsPanelRoomId = matrix.selectedRoomId;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final isWide = width >= _wideBreakpoint;
 
     final matrix = context.watch<MatrixService>();
-
-    // Close details panel when the selected room changes.
-    if (_detailsPanelRoomId != null &&
-        _detailsPanelRoomId != matrix.selectedRoomId) {
-      _showRoomDetails = false;
-    }
-    _detailsPanelRoomId = matrix.selectedRoomId;
 
     final child = isWide ? _buildWideLayout(width, matrix) : _buildNarrowLayout(matrix);
 

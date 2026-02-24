@@ -35,6 +35,7 @@ class _NewDirectMessageDialogState extends State<NewDirectMessageDialog> {
   List<Profile> _searchResults = [];
   Timer? _debounce;
   List<Profile>? _cachedContacts;
+  int _searchGeneration = 0;
 
   static final _mxidRegex = RegExp(r'^@[^:]+:.+$');
 
@@ -55,6 +56,7 @@ class _NewDirectMessageDialogState extends State<NewDirectMessageDialog> {
 
   void _onSearchChanged(String query) {
     _debounce?.cancel();
+    _searchGeneration++;
     if (query.trim().isEmpty) {
       setState(() {
         _searchResults = [];
@@ -69,6 +71,7 @@ class _NewDirectMessageDialogState extends State<NewDirectMessageDialog> {
   }
 
   Future<void> _searchDirectory(String query) async {
+    final gen = _searchGeneration;
     setState(() {
       _searching = true;
       _networkError = null;
@@ -77,13 +80,13 @@ class _NewDirectMessageDialogState extends State<NewDirectMessageDialog> {
     try {
       final response = await widget.matrixService.client
           .searchUserDirectory(query, limit: 20);
-      if (!mounted) return;
+      if (!mounted || gen != _searchGeneration) return;
       setState(() {
         _searchResults = response.results;
         _searching = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || gen != _searchGeneration) return;
       setState(() {
         _searching = false;
         _networkError = MatrixService.friendlyAuthError(e);
