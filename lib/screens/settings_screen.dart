@@ -87,7 +87,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       maxHeight: 512,
       imageQuality: 85,
     );
-    if (picked == null) return;
+    if (picked == null || !mounted) return;
 
     setState(() => _avatarUploading = true);
     try {

@@ -114,30 +114,35 @@ class _RoomMembersSectionState extends State<RoomMembersSection> {
 
 // ── Member tile ────────────────────────────────────────────────
 
-class _MemberTile extends StatelessWidget {
+class _MemberTile extends StatefulWidget {
   const _MemberTile({required this.user, required this.room});
 
   final User user;
   final Room room;
 
   @override
+  State<_MemberTile> createState() => _MemberTileState();
+}
+
+class _MemberTileState extends State<_MemberTile> {
+  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final powerLevel = room.getPowerLevelByUserId(user.id);
-    final displayName = user.displayName ?? user.id;
+    final powerLevel = widget.room.getPowerLevelByUserId(widget.user.id);
+    final displayName = widget.user.displayName ?? widget.user.id;
 
     return ListTile(
       dense: true,
       leading: CircleAvatar(
         radius: 16,
-        backgroundColor: senderColor(user.id, cs),
+        backgroundColor: senderColor(widget.user.id, cs),
         child: Text(
           displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
-            color: ThemeData.estimateBrightnessForColor(senderColor(user.id, cs)) == Brightness.dark
+            color: ThemeData.estimateBrightnessForColor(senderColor(widget.user.id, cs)) == Brightness.dark
                 ? Colors.white
                 : Colors.black,
           ),
@@ -149,12 +154,12 @@ class _MemberTile extends StatelessWidget {
         style: tt.bodyMedium,
       ),
       subtitle: Text(
-        user.id,
+        widget.user.id,
         style: tt.bodySmall,
         overflow: TextOverflow.ellipsis,
       ),
       trailing: _roleBadge(powerLevel, cs),
-      onTap: () => _showMemberSheet(context),
+      onTap: () => _showMemberSheet(),
     );
   }
 
@@ -188,14 +193,13 @@ class _MemberTile extends StatelessWidget {
     return null;
   }
 
-  void _showMemberSheet(BuildContext context) {
+  void _showMemberSheet() {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final matrix = context.read<MatrixService>();
-    final scaffold = ScaffoldMessenger.of(context);
-    final powerLevel = room.getPowerLevelByUserId(user.id);
-    final displayName = user.displayName ?? user.id;
-    final isMe = user.id == room.client.userID;
+    final powerLevel = widget.room.getPowerLevelByUserId(widget.user.id);
+    final displayName = widget.user.displayName ?? widget.user.id;
+    final isMe = widget.user.id == widget.room.client.userID;
 
     showModalBottomSheet(
       context: context,
@@ -207,13 +211,13 @@ class _MemberTile extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 32,
-                backgroundColor: senderColor(user.id, cs),
+                backgroundColor: senderColor(widget.user.id, cs),
                 child: Text(
                   displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.w600,
-                    color: ThemeData.estimateBrightnessForColor(senderColor(user.id, cs)) == Brightness.dark
+                    color: ThemeData.estimateBrightnessForColor(senderColor(widget.user.id, cs)) == Brightness.dark
                         ? Colors.white
                         : Colors.black,
                   ),
@@ -221,7 +225,7 @@ class _MemberTile extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(displayName, style: tt.titleMedium),
-              Text(user.id, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+              Text(widget.user.id, style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
               const SizedBox(height: 4),
               Text(
                 _powerLevelLabel(powerLevel),
@@ -232,12 +236,15 @@ class _MemberTile extends StatelessWidget {
                 FilledButton.tonalIcon(
                   onPressed: () async {
                     Navigator.pop(ctx);
+                    if (!mounted) return;
                     try {
-                      final dmRoomId = await matrix.client.startDirectChat(user.id);
+                      final dmRoomId = await matrix.client.startDirectChat(widget.user.id);
+                      if (!mounted) return;
                       matrix.selectRoom(dmRoomId);
                     } catch (e) {
                       debugPrint('[Lattice] Start DM failed: $e');
-                      scaffold.showSnackBar(
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Failed to start chat: ${MatrixService.friendlyAuthError(e)}')),
                       );
                     }
@@ -246,11 +253,11 @@ class _MemberTile extends StatelessWidget {
                   label: const Text('Send message'),
                 ),
                 const SizedBox(height: 8),
-                if (room.canKick)
+                if (widget.room.canKick)
                   TextButton.icon(
                     onPressed: () async {
                       Navigator.pop(ctx);
-                      if (!context.mounted) return;
+                      if (!mounted) return;
                       final confirmed = await showDialog<bool>(
                         context: context,
                         builder: (dCtx) => AlertDialog(
@@ -274,10 +281,11 @@ class _MemberTile extends StatelessWidget {
                       );
                       if (confirmed == true) {
                         try {
-                          await room.kick(user.id);
+                          await widget.room.kick(widget.user.id);
                         } catch (e) {
                           debugPrint('[Lattice] Kick failed: $e');
-                          scaffold.showSnackBar(
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('Kick failed: ${MatrixService.friendlyAuthError(e)}')),
                           );
                         }
@@ -286,11 +294,11 @@ class _MemberTile extends StatelessWidget {
                     icon: Icon(Icons.person_remove_outlined, color: cs.error),
                     label: Text('Kick', style: TextStyle(color: cs.error)),
                   ),
-                if (room.canBan)
+                if (widget.room.canBan)
                   TextButton.icon(
                     onPressed: () async {
                       Navigator.pop(ctx);
-                      if (!context.mounted) return;
+                      if (!mounted) return;
                       final confirmed = await showDialog<bool>(
                         context: context,
                         builder: (dCtx) => AlertDialog(
@@ -314,10 +322,11 @@ class _MemberTile extends StatelessWidget {
                       );
                       if (confirmed == true) {
                         try {
-                          await room.ban(user.id);
+                          await widget.room.ban(widget.user.id);
                         } catch (e) {
                           debugPrint('[Lattice] Ban failed: $e');
-                          scaffold.showSnackBar(
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('Ban failed: ${MatrixService.friendlyAuthError(e)}')),
                           );
                         }
