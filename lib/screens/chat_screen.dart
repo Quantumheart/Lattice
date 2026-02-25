@@ -718,13 +718,21 @@ class _ComposeBar extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 4),
-                IconButton.filled(
-                  onPressed: onSend,
-                  icon: const Icon(Icons.send_rounded, size: 20),
-                  style: IconButton.styleFrom(
-                    backgroundColor: cs.primary,
-                    foregroundColor: cs.onPrimary,
-                  ),
+                ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: controller,
+                  builder: (context, value, _) {
+                    final hasText = value.text.trim().isNotEmpty;
+                    return IconButton.filled(
+                      onPressed: hasText ? onSend : null,
+                      icon: const Icon(Icons.send_rounded, size: 20),
+                      style: IconButton.styleFrom(
+                        backgroundColor:
+                            hasText ? cs.primary : cs.surfaceContainerHighest,
+                        foregroundColor:
+                            hasText ? cs.onPrimary : cs.onSurfaceVariant,
+                      ),
+                    );
+                  },
                 ),
               ],
             ),
