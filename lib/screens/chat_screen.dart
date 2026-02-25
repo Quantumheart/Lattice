@@ -93,16 +93,24 @@ class _ChatScreenState extends State<ChatScreen> {
     _markAsRead(room);
   }
 
+  List<Event> get _visibleEvents =>
+      _timeline?.events
+          .where((e) =>
+              e.type == EventTypes.Message || e.type == EventTypes.Encrypted)
+          .toList() ??
+      [];
+
   void _markAsRead(Room room) {
     _readMarkerTimer?.cancel();
-    _readMarkerTimer = Timer(const Duration(seconds: 1), () {
+    _readMarkerTimer = Timer(const Duration(seconds: 1), () async {
       if (!mounted) return;
       final lastEvent = room.lastEvent;
       if (lastEvent != null && room.notificationCount > 0) {
-        room.setReadMarker(lastEvent.eventId, mRead: lastEvent.eventId)
-            .catchError((e) {
+        try {
+          await room.setReadMarker(lastEvent.eventId, mRead: lastEvent.eventId);
+        } catch (e) {
           debugPrint('[Lattice] Failed to mark as read: $e');
-        });
+        }
       }
     });
   }
@@ -111,12 +119,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final positions = _itemPosListener.itemPositions.value;
     if (positions.isEmpty) return;
     final maxIndex = positions.map((p) => p.index).reduce((a, b) => a > b ? a : b);
-    final events = _timeline?.events
-            .where((e) =>
-                e.type == EventTypes.Message || e.type == EventTypes.Encrypted)
-            .toList() ??
-        [];
-    if (maxIndex >= events.length - 3 && !_loadingHistory) {
+    if (maxIndex >= _visibleEvents.length - 3 && !_loadingHistory) {
       _loadMore();
     }
   }
@@ -259,12 +262,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (closeSearch) _closeSearch();
 
     // Find the event in the current timeline.
-    final events = _timeline?.events
-            .where((e) =>
-                e.type == EventTypes.Message || e.type == EventTypes.Encrypted)
-            .toList() ??
-        [];
-
+    final events = _visibleEvents;
     final index = events.indexWhere((e) => e.eventId == event.eventId);
     if (index == -1) {
       debugPrint('[Lattice] Event not in loaded timeline: ${event.eventId}');
@@ -329,11 +327,7 @@ class _ChatScreenState extends State<ChatScreen> {
       );
     }
 
-    final events = _timeline?.events
-            .where((e) =>
-                e.type == EventTypes.Message || e.type == EventTypes.Encrypted)
-            .toList() ??
-        [];
+    final events = _visibleEvents;
 
     return Scaffold(
       appBar: _isSearching
