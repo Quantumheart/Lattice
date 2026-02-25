@@ -3,7 +3,7 @@ import 'package:matrix/matrix.dart';
 
 import 'reply_preview_banner.dart';
 
-class ComposeBar extends StatelessWidget {
+class ComposeBar extends StatefulWidget {
   const ComposeBar({
     super.key,
     required this.controller,
@@ -16,6 +16,19 @@ class ComposeBar extends StatelessWidget {
   final VoidCallback onSend;
   final Event? replyEvent;
   final VoidCallback onCancelReply;
+
+  @override
+  State<ComposeBar> createState() => _ComposeBarState();
+}
+
+class _ComposeBarState extends State<ComposeBar> {
+  final _focusNode = FocusNode();
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,10 +52,10 @@ class ComposeBar extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (replyEvent != null)
+          if (widget.replyEvent != null)
             ReplyPreviewBanner(
-              event: replyEvent!,
-              onCancel: onCancelReply,
+              event: widget.replyEvent!,
+              onCancel: widget.onCancelReply,
             ),
           Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -56,9 +69,13 @@ class ComposeBar extends StatelessWidget {
                 ),
                 Expanded(
                   child: TextField(
-                    controller: controller,
+                    controller: widget.controller,
+                    focusNode: _focusNode,
                     textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => onSend(),
+                    onSubmitted: (_) {
+                      widget.onSend();
+                      _focusNode.requestFocus();
+                    },
                     decoration: InputDecoration(
                       hintText: 'Type a message…',
                       isDense: true,
@@ -78,11 +95,11 @@ class ComposeBar extends StatelessWidget {
                 ),
                 const SizedBox(width: 4),
                 ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: controller,
+                  valueListenable: widget.controller,
                   builder: (context, value, _) {
                     final hasText = value.text.trim().isNotEmpty;
                     return IconButton.filled(
-                      onPressed: hasText ? onSend : null,
+                      onPressed: hasText ? widget.onSend : null,
                       icon: const Icon(Icons.send_rounded, size: 20),
                       style: IconButton.styleFrom(
                         backgroundColor:
