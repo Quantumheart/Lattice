@@ -9,13 +9,16 @@ import '../utils/media_auth.dart';
 import '../utils/sender_color.dart';
 import 'user_avatar.dart';
 
-class MessageBubble extends StatelessWidget {
+class MessageBubble extends StatefulWidget {
   const MessageBubble({
     super.key,
     required this.event,
     required this.isMe,
     required this.isFirst,
     this.highlighted = false,
+    this.timeline,
+    this.onTapReply,
+    this.onReply,
   });
 
   final Event event;
@@ -27,44 +30,79 @@ class MessageBubble extends StatelessWidget {
   /// Whether this message should be visually highlighted (e.g. from search).
   final bool highlighted;
 
+  /// Timeline for resolving reply parent events.
+  final Timeline? timeline;
+
+  /// Called when user taps an inline reply preview to scroll to the parent.
+  final void Function(Event)? onTapReply;
+
+  /// Called to initiate a reply to this message.
+  final VoidCallback? onReply;
+
+  @override
+  State<MessageBubble> createState() => _MessageBubbleState();
+}
+
+class _MessageBubbleState extends State<MessageBubble> {
+  bool _hovering = false;
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final maxWidth = MediaQuery.sizeOf(context).width * 0.72;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final maxWidth = screenWidth * 0.72;
     final density = context.watch<PreferencesService>().messageDensity;
     final metrics = _DensityMetrics.of(density);
+    final isDesktop = screenWidth >= 720;
 
-    return AnimatedContainer(
+    final replyEventId = widget.event.content
+            .tryGet<Map<String, Object?>>('m.relates_to')
+            ?.tryGet<Map<String, Object?>>('m.in_reply_to')
+            ?.tryGet<String>('event_id');
+
+    // Strip reply fallback from body text for events that are replies.
+    final bodyText = replyEventId != null
+        ? _stripReplyFallback(widget.event.body)
+        : widget.event.body;
+
+    Widget bubble = AnimatedContainer(
       duration: const Duration(milliseconds: 500),
       padding: EdgeInsets.only(
-        top: isFirst ? metrics.firstMessageTopPad : metrics.messageTopPad,
+        top: widget.isFirst
+            ? metrics.firstMessageTopPad
+            : metrics.messageTopPad,
         bottom: metrics.messageBottomPad,
       ),
       decoration: BoxDecoration(
-        color: highlighted
+        color: widget.highlighted
             ? cs.primaryContainer.withValues(alpha: 0.3)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         mainAxisAlignment:
-            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+            widget.isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           // Sender avatar (only for first in group, non-me)
-          if (!isMe && isFirst)
+          if (!widget.isMe && widget.isFirst)
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: UserAvatar(
-                client: event.room.client,
-                avatarUrl: event.senderFromMemoryOrFallback.avatarUrl,
-                userId: event.senderId,
+                client: widget.event.room.client,
+                avatarUrl:
+                    widget.event.senderFromMemoryOrFallback.avatarUrl,
+                userId: widget.event.senderId,
                 size: metrics.avatarRadius * 2,
               ),
             )
-          else if (!isMe)
+          else if (!widget.isMe)
             SizedBox(width: metrics.avatarRadius * 2 + 8),
+
+          // Hover reply button (before bubble for isMe)
+          if (isDesktop && _hovering && widget.onReply != null && widget.isMe)
+            _HoverReplyButton(cs: cs, onReply: widget.onReply!),
 
           // Bubble
           Flexible(
@@ -75,38 +113,54 @@ class MessageBubble extends StatelessWidget {
                 vertical: metrics.bubbleVerticalPad,
               ),
               decoration: BoxDecoration(
-                color: isMe
+                color: widget.isMe
                     ? cs.primary
                     : cs.primaryContainer.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(metrics.bubbleRadius),
                   topRight: Radius.circular(metrics.bubbleRadius),
-                  bottomLeft: Radius.circular(
-                      isMe ? metrics.bubbleRadius : (isFirst ? 4 : metrics.bubbleRadius)),
-                  bottomRight: Radius.circular(
-                      isMe ? (isFirst ? 4 : metrics.bubbleRadius) : metrics.bubbleRadius),
+                  bottomLeft: Radius.circular(widget.isMe
+                      ? metrics.bubbleRadius
+                      : (widget.isFirst ? 4 : metrics.bubbleRadius)),
+                  bottomRight: Radius.circular(widget.isMe
+                      ? (widget.isFirst ? 4 : metrics.bubbleRadius)
+                      : metrics.bubbleRadius),
                 ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Sender name (first in group, non-me)
-                  if (!isMe && isFirst)
+                  // Inline reply preview
+                  if (replyEventId != null)
                     Padding(
-                      padding: EdgeInsets.only(bottom: metrics.senderNameBottomPad),
+                      padding: const EdgeInsets.only(bottom: 4),
+                      child: _InlineReplyPreview(
+                        event: widget.event,
+                        timeline: widget.timeline,
+                        isMe: widget.isMe,
+                        onTap: widget.onTapReply,
+                      ),
+                    ),
+
+                  // Sender name (first in group, non-me)
+                  if (!widget.isMe && widget.isFirst)
+                    Padding(
+                      padding: EdgeInsets.only(
+                          bottom: metrics.senderNameBottomPad),
                       child: Text(
-                        event.senderFromMemoryOrFallback.displayName ??
-                            event.senderId,
+                        widget.event.senderFromMemoryOrFallback
+                                .displayName ??
+                            widget.event.senderId,
                         style: tt.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                           fontSize: metrics.senderNameFontSize,
-                          color: senderColor(event.senderId, cs),
+                          color: senderColor(widget.event.senderId, cs),
                         ),
                       ),
                     ),
 
                   // Body
-                  _buildBody(context, metrics),
+                  _buildBody(context, metrics, bodyText),
 
                   // Timestamp
                   Padding(
@@ -115,18 +169,19 @@ class MessageBubble extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          _formatTime(event.originServerTs),
+                          _formatTime(widget.event.originServerTs),
                           style: tt.bodyMedium?.copyWith(
                             fontSize: metrics.timestampFontSize,
-                            color: isMe
+                            color: widget.isMe
                                 ? cs.onPrimary.withValues(alpha: 0.6)
-                                : cs.onSurfaceVariant.withValues(alpha: 0.5),
+                                : cs.onSurfaceVariant
+                                    .withValues(alpha: 0.5),
                           ),
                         ),
-                        if (isMe) ...[
+                        if (widget.isMe) ...[
                           const SizedBox(width: 4),
                           Icon(
-                            event.status.isSent
+                            widget.event.status.isSent
                                 ? Icons.done_all_rounded
                                 : Icons.done_rounded,
                             size: metrics.statusIconSize,
@@ -140,24 +195,69 @@ class MessageBubble extends StatelessWidget {
               ),
             ),
           ),
+
+          // Hover reply button (after bubble for non-me)
+          if (isDesktop && _hovering && widget.onReply != null && !widget.isMe)
+            _HoverReplyButton(cs: cs, onReply: widget.onReply!),
         ],
       ),
     );
+
+    // Desktop: hover detection + right-click context menu
+    if (isDesktop) {
+      bubble = MouseRegion(
+        onEnter: (_) => setState(() => _hovering = true),
+        onExit: (_) => setState(() => _hovering = false),
+        child: GestureDetector(
+          onSecondaryTapUp: (details) =>
+              _showContextMenu(context, details.globalPosition),
+          child: bubble,
+        ),
+      );
+    }
+
+    return bubble;
   }
 
-  Widget _buildBody(BuildContext context, _DensityMetrics metrics) {
+  void _showContextMenu(BuildContext context, Offset position) {
+    final cs = Theme.of(context).colorScheme;
+    showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+          position.dx, position.dy, position.dx, position.dy),
+      color: cs.surfaceContainer,
+      items: [
+        if (widget.onReply != null)
+          const PopupMenuItem(
+            value: 'reply',
+            child: Row(
+              children: [
+                Icon(Icons.reply_rounded, size: 18),
+                SizedBox(width: 8),
+                Text('Reply'),
+              ],
+            ),
+          ),
+      ],
+    ).then((value) {
+      if (value == 'reply') widget.onReply?.call();
+    });
+  }
+
+  Widget _buildBody(
+      BuildContext context, _DensityMetrics metrics, String bodyText) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    if (event.messageType == MessageTypes.Image) {
-      return _ImageBubble(event: event);
+    if (widget.event.messageType == MessageTypes.Image) {
+      return _ImageBubble(event: widget.event);
     }
 
     // Default: text
     return Text(
-      event.body,
+      bodyText,
       style: tt.bodyLarge?.copyWith(
-        color: isMe ? cs.onPrimary : cs.onSurface,
+        color: widget.isMe ? cs.onPrimary : cs.onSurface,
         fontSize: metrics.bodyFontSize,
         height: metrics.bodyLineHeight,
       ),
@@ -168,6 +268,170 @@ class MessageBubble extends StatelessWidget {
     final h = ts.hour.toString().padLeft(2, '0');
     final m = ts.minute.toString().padLeft(2, '0');
     return '$h:$m';
+  }
+}
+
+/// Strip the `> ` reply fallback lines from a Matrix message body.
+String _stripReplyFallback(String body) {
+  final lines = body.split('\n');
+  int i = 0;
+  while (i < lines.length && lines[i].startsWith('> ')) {
+    i++;
+  }
+  // Skip the blank line after the fallback block.
+  if (i < lines.length && lines[i].isEmpty) i++;
+  return lines.sublist(i).join('\n');
+}
+
+// ── Inline reply preview ──────────────────────────────────────
+
+class _InlineReplyPreview extends StatefulWidget {
+  const _InlineReplyPreview({
+    required this.event,
+    required this.timeline,
+    required this.isMe,
+    this.onTap,
+  });
+
+  final Event event;
+  final Timeline? timeline;
+  final bool isMe;
+  final void Function(Event)? onTap;
+
+  @override
+  State<_InlineReplyPreview> createState() => _InlineReplyPreviewState();
+}
+
+class _InlineReplyPreviewState extends State<_InlineReplyPreview> {
+  Event? _parentEvent;
+  bool _loaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadParent();
+  }
+
+  Future<void> _loadParent() async {
+    if (widget.timeline == null) {
+      if (mounted) setState(() => _loaded = true);
+      return;
+    }
+    try {
+      final parent = await widget.event.getReplyEvent(widget.timeline!);
+      if (mounted) {
+        setState(() {
+          _parentEvent = parent;
+          _loaded = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('[Lattice] Failed to load reply parent: $e');
+      if (mounted) setState(() => _loaded = true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_loaded) return const SizedBox.shrink();
+
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    final parentAvailable =
+        _parentEvent != null && _parentEvent!.type != EventTypes.Redaction;
+    final senderName = parentAvailable
+        ? (_parentEvent!.senderFromMemoryOrFallback.displayName ??
+            _parentEvent!.senderId)
+        : null;
+    final color = parentAvailable
+        ? senderColor(_parentEvent!.senderId, cs)
+        : cs.onSurfaceVariant;
+
+    return GestureDetector(
+      onTap: parentAvailable ? () => widget.onTap?.call(_parentEvent!) : null,
+      child: Container(
+        constraints: const BoxConstraints(minHeight: 36),
+        padding: const EdgeInsets.only(left: 8, right: 4, top: 4, bottom: 4),
+        decoration: BoxDecoration(
+          border: Border(left: BorderSide(color: color, width: 2)),
+          color: widget.isMe
+              ? cs.onPrimary.withValues(alpha: 0.12)
+              : cs.onSurface.withValues(alpha: 0.06),
+          borderRadius: const BorderRadius.only(
+            topRight: Radius.circular(4),
+            bottomRight: Radius.circular(4),
+          ),
+        ),
+        child: parentAvailable
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    senderName!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: tt.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: color,
+                    ),
+                  ),
+                  Text(
+                    _parentEvent!.body,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: tt.bodySmall?.copyWith(
+                      color: widget.isMe
+                          ? cs.onPrimary.withValues(alpha: 0.7)
+                          : cs.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              )
+            : Text(
+                'Message not available',
+                style: tt.bodySmall?.copyWith(
+                  fontStyle: FontStyle.italic,
+                  color: widget.isMe
+                      ? cs.onPrimary.withValues(alpha: 0.5)
+                      : cs.onSurfaceVariant.withValues(alpha: 0.5),
+                ),
+              ),
+      ),
+    );
+  }
+}
+
+// ── Hover reply button ────────────────────────────────────────
+
+class _HoverReplyButton extends StatelessWidget {
+  const _HoverReplyButton({required this.cs, required this.onReply});
+
+  final ColorScheme cs;
+  final VoidCallback onReply;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Material(
+        elevation: 2,
+        borderRadius: BorderRadius.circular(16),
+        color: cs.surfaceContainerHighest,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: onReply,
+          child: Padding(
+            padding: const EdgeInsets.all(6),
+            child: Icon(
+              Icons.reply_rounded,
+              size: 16,
+              color: cs.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

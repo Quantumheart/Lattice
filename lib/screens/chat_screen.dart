@@ -5,9 +5,11 @@ import 'package:matrix/matrix.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../services/matrix_service.dart';
+import '../utils/sender_color.dart';
+import '../widgets/message_bubble.dart';
 import '../widgets/room_avatar.dart';
 import '../widgets/room_details_panel.dart';
-import '../widgets/message_bubble.dart';
+import '../widgets/swipeable_message.dart';
 import '../widgets/user_avatar.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -38,6 +40,9 @@ class _ChatScreenState extends State<ChatScreen> {
   StreamSubscription? _timelineSub;
   bool _loadingHistory = false;
   Timer? _readMarkerTimer;
+
+  // ── Reply state ─────────────────────────────────────────
+  Event? _replyToEvent;
 
   // ── Search state ──────────────────────────────────────────
   bool _isSearching = false;
@@ -115,10 +120,21 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  void _setReplyTo(Event event) {
+    setState(() => _replyToEvent = event);
+  }
+
+  void _cancelReply() {
+    setState(() => _replyToEvent = null);
+  }
+
   Future<void> _send() async {
     final text = _msgCtrl.text.trim();
     if (text.isEmpty) return;
     _msgCtrl.clear();
+
+    final replyEvent = _replyToEvent;
+    setState(() => _replyToEvent = null);
 
     final scaffold = ScaffoldMessenger.of(context);
     final matrix = context.read<MatrixService>();
@@ -126,9 +142,10 @@ class _ChatScreenState extends State<ChatScreen> {
     if (room == null) return;
 
     try {
-      await room.sendTextEvent(text);
+      await room.sendTextEvent(text, inReplyTo: replyEvent);
     } catch (e) {
       _msgCtrl.text = text;
+      setState(() => _replyToEvent = replyEvent);
       scaffold.showSnackBar(
         SnackBar(content: Text('Failed to send: ${MatrixService.friendlyAuthError(e)}')),
       );
@@ -225,8 +242,8 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _scrollToEvent(Event event) {
-    _closeSearch();
+  void _scrollToEvent(Event event, {bool closeSearch = true}) {
+    if (closeSearch) _closeSearch();
 
     // Find the event in the current timeline.
     final events = _timeline?.events
@@ -441,6 +458,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       itemBuilder: (context, i) {
                         final event = events[i];
                         final isMe = event.senderId == matrix.client.userID;
+                        final width = MediaQuery.sizeOf(context).width;
 
                         // Group consecutive messages from same sender.
                         final prevSender = i + 1 < events.length
@@ -448,12 +466,24 @@ class _ChatScreenState extends State<ChatScreen> {
                             : null;
                         final isFirst = event.senderId != prevSender;
 
-                        return MessageBubble(
+                        final bubble = MessageBubble(
                           event: event,
                           isMe: isMe,
                           isFirst: isFirst,
                           highlighted: event.eventId == _highlightedEventId,
+                          timeline: _timeline,
+                          onTapReply: (e) =>
+                              _scrollToEvent(e, closeSearch: false),
+                          onReply: () => _setReplyTo(event),
                         );
+
+                        if (width < 720) {
+                          return SwipeableMessage(
+                            onReply: () => _setReplyTo(event),
+                            child: bubble,
+                          );
+                        }
+                        return bubble;
                       },
                     ),
         ),
@@ -462,6 +492,8 @@ class _ChatScreenState extends State<ChatScreen> {
         _ComposeBar(
           controller: _msgCtrl,
           onSend: _send,
+          replyEvent: _replyToEvent,
+          onCancelReply: _cancelReply,
         ),
       ],
     );
@@ -737,10 +769,14 @@ class _ComposeBar extends StatelessWidget {
   const _ComposeBar({
     required this.controller,
     required this.onSend,
+    this.replyEvent,
+    this.onCancelReply,
   });
 
   final TextEditingController controller;
   final VoidCallback onSend;
+  final Event? replyEvent;
+  final VoidCallback? onCancelReply;
 
   @override
   Widget build(BuildContext context) {
@@ -750,7 +786,7 @@ class _ComposeBar extends StatelessWidget {
       padding: EdgeInsets.only(
         left: 12,
         right: 8,
-        top: 8,
+        top: 0,
         bottom: MediaQuery.paddingOf(context).bottom + 8,
       ),
       decoration: BoxDecoration(
@@ -761,43 +797,124 @@ class _ComposeBar extends StatelessWidget {
           ),
         ),
       ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (replyEvent != null)
+            _ReplyPreviewBanner(
+              event: replyEvent!,
+              onCancel: onCancelReply ?? () {},
+            ),
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Row(
+              children: [
+                IconButton(
+                  icon: Icon(Icons.add_rounded, color: cs.onSurfaceVariant),
+                  onPressed: () {
+                    // TODO: attachment picker
+                  },
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => onSend(),
+                    decoration: InputDecoration(
+                      hintText: 'Type a message…',
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor:
+                          cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                    ),
+                    minLines: 1,
+                    maxLines: 5,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                IconButton.filled(
+                  onPressed: onSend,
+                  icon: const Icon(Icons.send_rounded, size: 20),
+                  style: IconButton.styleFrom(
+                    backgroundColor: cs.primary,
+                    foregroundColor: cs.onPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Reply preview banner ──────────────────────────────────────
+
+class _ReplyPreviewBanner extends StatelessWidget {
+  const _ReplyPreviewBanner({
+    required this.event,
+    required this.onCancel,
+  });
+
+  final Event event;
+  final VoidCallback onCancel;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final color = senderColor(event.senderId, cs);
+    final senderName =
+        event.senderFromMemoryOrFallback.displayName ?? event.senderId;
+
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.only(left: 12, right: 4),
+      decoration: BoxDecoration(
+        border: Border(left: BorderSide(color: color, width: 3)),
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+      ),
       child: Row(
         children: [
-          IconButton(
-            icon: Icon(Icons.add_rounded, color: cs.onSurfaceVariant),
-            onPressed: () {
-              // TODO: attachment picker
-            },
-          ),
+          Icon(Icons.reply_rounded, size: 18, color: color),
+          const SizedBox(width: 8),
           Expanded(
-            child: TextField(
-              controller: controller,
-              textInputAction: TextInputAction.send,
-              onSubmitted: (_) => onSend(),
-              decoration: InputDecoration(
-                hintText: 'Type a message…',
-                isDense: true,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  borderSide: BorderSide.none,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  senderName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tt.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
                 ),
-                filled: true,
-                fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.5),
-              ),
-              minLines: 1,
-              maxLines: 5,
+                Text(
+                  event.body,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tt.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 4),
-          IconButton.filled(
-            onPressed: onSend,
-            icon: const Icon(Icons.send_rounded, size: 20),
-            style: IconButton.styleFrom(
-              backgroundColor: cs.primary,
-              foregroundColor: cs.onPrimary,
-            ),
+          IconButton(
+            icon: const Icon(Icons.close_rounded, size: 18),
+            onPressed: onCancel,
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
           ),
         ],
       ),
