@@ -458,7 +458,6 @@ class _ChatScreenState extends State<ChatScreen> {
                       itemBuilder: (context, i) {
                         final event = events[i];
                         final isMe = event.senderId == matrix.client.userID;
-                        final width = MediaQuery.sizeOf(context).width;
 
                         // Group consecutive messages from same sender.
                         final prevSender = i + 1 < events.length
@@ -477,7 +476,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           onReply: () => _setReplyTo(event),
                         );
 
-                        if (width < 720) {
+                        if (MediaQuery.sizeOf(context).width < 720) {
                           return SwipeableMessage(
                             onReply: () => _setReplyTo(event),
                             child: bubble,
@@ -875,7 +874,7 @@ class _ReplyPreviewBanner extends StatelessWidget {
         event.senderFromMemoryOrFallback.displayName ?? event.senderId;
 
     return Container(
-      height: 48,
+      constraints: const BoxConstraints(minHeight: 48),
       padding: const EdgeInsets.only(left: 12, right: 4),
       decoration: BoxDecoration(
         border: Border(left: BorderSide(color: color, width: 3)),

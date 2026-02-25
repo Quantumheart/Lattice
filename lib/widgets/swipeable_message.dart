@@ -18,6 +18,7 @@ class SwipeableMessage extends StatefulWidget {
 class _SwipeableMessageState extends State<SwipeableMessage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _animCtrl;
+  late Animation<double> _snapBack;
   double _dragExtent = 0;
   bool _triggered = false;
 
@@ -30,11 +31,13 @@ class _SwipeableMessageState extends State<SwipeableMessage>
     _animCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 200),
-    )..addListener(() {
-        setState(() {
-          _dragExtent = _dragExtent * (1 - _animCtrl.value);
-        });
+    );
+    _snapBack = const AlwaysStoppedAnimation(0);
+    _animCtrl.addListener(() {
+      setState(() {
+        _dragExtent = _snapBack.value;
       });
+    });
   }
 
   @override
@@ -58,6 +61,8 @@ class _SwipeableMessageState extends State<SwipeableMessage>
       widget.onReply();
     }
     _triggered = false;
+    _snapBack = Tween<double>(begin: _dragExtent, end: 0)
+        .animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut));
     _animCtrl.forward(from: 0);
   }
 
