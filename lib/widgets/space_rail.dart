@@ -6,6 +6,7 @@ import '../screens/settings_screen.dart';
 import '../services/client_manager.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
+import 'invite_dialog.dart';
 import 'space_action_dialog.dart';
 import 'user_avatar.dart';
 
@@ -123,6 +124,41 @@ class _SpaceRailState extends State<SpaceRail> {
               },
             ),
           ),
+
+          // Invited spaces (non-reorderable, after joined spaces)
+          if (matrix.invitedSpaces.isNotEmpty) ...[
+            Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Divider(height: 1, color: cs.outlineVariant),
+            ),
+            for (final space in matrix.invitedSpaces)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Opacity(
+                  opacity: 0.7,
+                  child: _RailIcon(
+                    label: space.getLocalizedDisplayname().isNotEmpty
+                        ? space.getLocalizedDisplayname()[0].toUpperCase()
+                        : '?',
+                    tooltip:
+                        'Invited: ${space.getLocalizedDisplayname()}',
+                    isSelected: false,
+                    color: cs.outlineVariant,
+                    outlined: true,
+                    onTap: () async {
+                      final result = await InviteDialog.show(
+                        context,
+                        room: space,
+                      );
+                      if (result == true && mounted) {
+                        matrix.selectSpace(space.id);
+                      }
+                    },
+                  ),
+                ),
+              ),
+          ],
 
           // Add space button
           Padding(

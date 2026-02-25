@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../models/space_node.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
+import '../widgets/invite_dialog.dart';
 import '../widgets/space_rail.dart';
 import '../widgets/room_list.dart';
 import '../widgets/room_details_panel.dart';
@@ -350,6 +351,72 @@ class _SpaceListMobileState extends State<_SpaceListMobile> {
                 isDense: true,
               ),
             ),
+          ),
+
+          // Invited spaces
+          Builder(
+            builder: (context) {
+              var invited = matrix.invitedSpaces;
+              if (isSearching) {
+                final q = _query.toLowerCase();
+                invited = invited
+                    .where((r) => r.getLocalizedDisplayname()
+                        .toLowerCase()
+                        .contains(q))
+                    .toList();
+              }
+              if (invited.isEmpty) return const SizedBox.shrink();
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final space in invited)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: cs.tertiaryContainer,
+                          child: Text(
+                            space.getLocalizedDisplayname().isNotEmpty
+                                ? space.getLocalizedDisplayname()[0]
+                                    .toUpperCase()
+                                : '?',
+                            style: TextStyle(
+                                color: cs.onTertiaryContainer),
+                          ),
+                        ),
+                        title: Text(space.getLocalizedDisplayname()),
+                        subtitle: Text(
+                          matrix.inviterDisplayName(space) != null
+                              ? 'Invited by ${matrix.inviterDisplayName(space)}'
+                              : 'Pending invite',
+                          style: tt.bodyMedium,
+                        ),
+                        tileColor: cs.tertiaryContainer
+                            .withValues(alpha: 0.3),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        mouseCursor: SystemMouseCursors.click,
+                        onTap: () async {
+                          final result = await InviteDialog.show(
+                            context,
+                            room: space,
+                          );
+                          if (result == true && context.mounted) {
+                            matrix.selectSpace(space.id);
+                            widget.onSpaceSelected();
+                          }
+                        },
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 4),
+                    child: Divider(height: 1, color: cs.outlineVariant),
+                  ),
+                ],
+              );
+            },
           ),
 
           // Space list

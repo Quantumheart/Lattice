@@ -93,14 +93,17 @@ void main() {
     test('filters rooms to only spaces and sorts alphabetically', () {
       final space1 = MockRoom();
       when(space1.isSpace).thenReturn(true);
+      when(space1.membership).thenReturn(Membership.join);
       when(space1.getLocalizedDisplayname()).thenReturn('B Space');
 
       final space2 = MockRoom();
       when(space2.isSpace).thenReturn(true);
+      when(space2.membership).thenReturn(Membership.join);
       when(space2.getLocalizedDisplayname()).thenReturn('A Space');
 
       final room1 = MockRoom();
       when(room1.isSpace).thenReturn(false);
+      when(room1.membership).thenReturn(Membership.join);
 
       when(mockClient.rooms).thenReturn([space1, room1, space2]);
 
@@ -115,9 +118,11 @@ void main() {
     test('filters out spaces and sorts by last event timestamp', () {
       final space = MockRoom();
       when(space.isSpace).thenReturn(true);
+      when(space.membership).thenReturn(Membership.join);
 
       final olderRoom = MockRoom();
       when(olderRoom.isSpace).thenReturn(false);
+      when(olderRoom.membership).thenReturn(Membership.join);
       when(olderRoom.id).thenReturn('!old:example.com');
       when(olderRoom.lastEvent).thenReturn(_fakeEvent(
         room: olderRoom,
@@ -126,6 +131,7 @@ void main() {
 
       final newerRoom = MockRoom();
       when(newerRoom.isSpace).thenReturn(false);
+      when(newerRoom.membership).thenReturn(Membership.join);
       when(newerRoom.id).thenReturn('!new:example.com');
       when(newerRoom.lastEvent).thenReturn(_fakeEvent(
         room: newerRoom,
@@ -144,16 +150,19 @@ void main() {
     test('returns all non-space rooms regardless of space selection', () {
       final childRoom = MockRoom();
       when(childRoom.isSpace).thenReturn(false);
+      when(childRoom.membership).thenReturn(Membership.join);
       when(childRoom.id).thenReturn('!child:example.com');
       when(childRoom.lastEvent).thenReturn(null);
 
       final otherRoom = MockRoom();
       when(otherRoom.isSpace).thenReturn(false);
+      when(otherRoom.membership).thenReturn(Membership.join);
       when(otherRoom.id).thenReturn('!other:example.com');
       when(otherRoom.lastEvent).thenReturn(null);
 
       final space = MockRoom();
       when(space.isSpace).thenReturn(true);
+      when(space.membership).thenReturn(Membership.join);
       when(space.id).thenReturn('!space:example.com');
       when(space.spaceChildren).thenReturn([
         _fakeSpaceChild('!child:example.com'),
@@ -633,41 +642,48 @@ void main() {
       // Space A contains room1 and subspace
       spaceA = MockRoom();
       when(spaceA.isSpace).thenReturn(true);
+      when(spaceA.membership).thenReturn(Membership.join);
       when(spaceA.id).thenReturn('!spaceA:example.com');
       when(spaceA.getLocalizedDisplayname()).thenReturn('A Space');
 
       // Subspace (child of A) contains room2
       subspace = MockRoom();
       when(subspace.isSpace).thenReturn(true);
+      when(subspace.membership).thenReturn(Membership.join);
       when(subspace.id).thenReturn('!subspace:example.com');
       when(subspace.getLocalizedDisplayname()).thenReturn('Sub Space');
 
       // Space B contains room3
       spaceB = MockRoom();
       when(spaceB.isSpace).thenReturn(true);
+      when(spaceB.membership).thenReturn(Membership.join);
       when(spaceB.id).thenReturn('!spaceB:example.com');
       when(spaceB.getLocalizedDisplayname()).thenReturn('B Space');
 
       room1 = MockRoom();
       when(room1.isSpace).thenReturn(false);
+      when(room1.membership).thenReturn(Membership.join);
       when(room1.id).thenReturn('!room1:example.com');
       when(room1.lastEvent).thenReturn(null);
       when(room1.notificationCount).thenReturn(3);
 
       room2 = MockRoom();
       when(room2.isSpace).thenReturn(false);
+      when(room2.membership).thenReturn(Membership.join);
       when(room2.id).thenReturn('!room2:example.com');
       when(room2.lastEvent).thenReturn(null);
       when(room2.notificationCount).thenReturn(5);
 
       room3 = MockRoom();
       when(room3.isSpace).thenReturn(false);
+      when(room3.membership).thenReturn(Membership.join);
       when(room3.id).thenReturn('!room3:example.com');
       when(room3.lastEvent).thenReturn(null);
       when(room3.notificationCount).thenReturn(0);
 
       orphanRoom = MockRoom();
       when(orphanRoom.isSpace).thenReturn(false);
+      when(orphanRoom.membership).thenReturn(Membership.join);
       when(orphanRoom.id).thenReturn('!orphan:example.com');
       when(orphanRoom.lastEvent).thenReturn(null);
       when(orphanRoom.notificationCount).thenReturn(1);
@@ -817,6 +833,7 @@ void main() {
       // Add a second subspace to Space A
       final subspace2 = MockRoom();
       when(subspace2.isSpace).thenReturn(true);
+      when(subspace2.membership).thenReturn(Membership.join);
       when(subspace2.id).thenReturn('!subspace2:example.com');
       when(subspace2.getLocalizedDisplayname()).thenReturn('A Sub');
       when(subspace2.spaceChildren).thenReturn([]);
@@ -858,6 +875,7 @@ void main() {
       // irrelevant, but if we add a new top-level space C:
       final spaceC = MockRoom();
       when(spaceC.isSpace).thenReturn(true);
+      when(spaceC.membership).thenReturn(Membership.join);
       when(spaceC.id).thenReturn('!spaceC:example.com');
       when(spaceC.getLocalizedDisplayname()).thenReturn('C Space');
       when(spaceC.spaceChildren).thenReturn([]);

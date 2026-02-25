@@ -119,7 +119,9 @@ mixin SelectionMixin on ChangeNotifier {
   }
 
   void _rebuildSpaceTree() {
-    final allSpaces = client.rooms.where((r) => r.isSpace).toList();
+    final allSpaces = client.rooms
+        .where((r) => r.isSpace && r.membership == Membership.join)
+        .toList();
 
     // Build a map: spaceId → SpaceNode (flat, no nesting yet)
     final nodeMap = <String, _MutableNode>{};
@@ -130,7 +132,9 @@ mixin SelectionMixin on ChangeNotifier {
         final childId = child.roomId;
         if (childId == null) continue;
         final childRoom = client.getRoomById(childId);
-        if (childRoom == null) continue; // unjoined — skip
+        if (childRoom == null || childRoom.membership != Membership.join) {
+          continue;
+        }
         if (childRoom.isSpace) {
           subspaceIds.add(childId);
         } else {
@@ -212,22 +216,51 @@ mixin SelectionMixin on ChangeNotifier {
 
   // ── Helpers ──────────────────────────────────────────────────
 
-  /// Returns spaces (rooms with type m.space), sorted by custom order.
+  /// Returns joined spaces, sorted by custom order.
   List<Room> get spaces => _sortByCustomOrder(
-        client.rooms.where((r) => r.isSpace).toList(),
+        client.rooms
+            .where((r) => r.isSpace && r.membership == Membership.join)
+            .toList(),
         (r) => r.id,
         (r) => r.getLocalizedDisplayname(),
       );
 
-  /// Returns all non-space rooms sorted by recency.
+  /// Returns all joined non-space rooms sorted by recency.
   List<Room> get rooms {
-    final list = client.rooms.where((r) => !r.isSpace).toList()
+    final list = client.rooms
+        .where((r) => !r.isSpace && r.membership == Membership.join)
+        .toList()
       ..sort((a, b) {
         final aTs = a.lastEvent?.originServerTs ?? DateTime(1970);
         final bTs = b.lastEvent?.originServerTs ?? DateTime(1970);
         return bTs.compareTo(aTs);
       });
     return list;
+  }
+
+  /// Returns invited non-space rooms sorted alphabetically.
+  List<Room> get invitedRooms => client.rooms
+      .where((r) => !r.isSpace && r.membership == Membership.invite)
+      .toList()
+    ..sort((a, b) => a.getLocalizedDisplayname().compareTo(
+        b.getLocalizedDisplayname()));
+
+  /// Returns invited spaces sorted alphabetically.
+  List<Room> get invitedSpaces => client.rooms
+      .where((r) => r.isSpace && r.membership == Membership.invite)
+      .toList()
+    ..sort((a, b) => a.getLocalizedDisplayname().compareTo(
+        b.getLocalizedDisplayname()));
+
+  /// Returns the display name of the user who invited us to [room],
+  /// or null if not found.
+  String? inviterDisplayName(Room room) {
+    final userId = client.userID;
+    if (userId == null) return null;
+    final inviteState = room.getState(EventTypes.RoomMember, userId);
+    if (inviteState == null) return null;
+    final senderId = inviteState.senderId;
+    return room.unsafeGetUserFromMemoryOrFallback(senderId).calcDisplayname();
   }
 
   /// Rooms that don't belong to any space.

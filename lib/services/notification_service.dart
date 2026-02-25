@@ -123,18 +123,67 @@ class NotificationService {
     if (!preferencesService.osNotificationsEnabled) return;
     if (preferencesService.notificationLevel == NotificationLevel.off) return;
 
+    // Process joined room events (messages).
     final joinedRooms = sync.rooms?.join;
-    if (joinedRooms == null) return;
+    if (joinedRooms != null) {
+      for (final entry in joinedRooms.entries) {
+        final events = entry.value.timeline?.events;
+        if (events == null || events.isEmpty) continue;
+        final roomId = entry.key;
+        if (_processingRooms.contains(roomId)) continue;
+        _processRoomEvents(roomId, events).catchError((e) {
+          debugPrint('[Lattice] Error processing room $roomId: $e');
+        });
+      }
+    }
 
-    for (final entry in joinedRooms.entries) {
-      final events = entry.value.timeline?.events;
-      if (events == null || events.isEmpty) continue;
-      // Skip rooms already being processed to avoid duplicate notifications.
-      final roomId = entry.key;
-      if (_processingRooms.contains(roomId)) continue;
-      _processRoomEvents(roomId, events).catchError((e) {
-        debugPrint('[Lattice] Error processing room $roomId: $e');
-      });
+    // Process new invites.
+    final inviteRooms = sync.rooms?.invite;
+    if (inviteRooms != null) {
+      for (final entry in inviteRooms.entries) {
+        final roomId = entry.key;
+        if (_processingRooms.contains(roomId)) continue;
+        _processInvite(roomId, entry.value).catchError((e) {
+          debugPrint('[Lattice] Error processing invite $roomId: $e');
+        });
+      }
+    }
+  }
+
+  Future<void> _processInvite(
+    String roomId,
+    InvitedRoomUpdate update,
+  ) async {
+    _processingRooms.add(roomId);
+    try {
+      final client = matrixService.client;
+      final room = client.getRoomById(roomId);
+      final roomName = room?.getLocalizedDisplayname() ?? roomId;
+
+      // Find who sent the invite from the invite state.
+      String inviterName = 'Someone';
+      final inviteEvents = update.inviteState;
+      if (inviteEvents != null) {
+        for (final event in inviteEvents) {
+          if (event.type == EventTypes.RoomMember &&
+              event.stateKey == client.userID) {
+            inviterName = room
+                    ?.unsafeGetUserFromMemoryOrFallback(event.senderId)
+                    .calcDisplayname() ??
+                event.senderId;
+            break;
+          }
+        }
+      }
+
+      await _showNotification(
+        roomId: roomId,
+        title: roomName,
+        senderName: inviterName,
+        body: 'invited you to join',
+      );
+    } finally {
+      _processingRooms.remove(roomId);
     }
   }
 

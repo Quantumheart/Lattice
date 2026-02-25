@@ -34,6 +34,11 @@ class _RoomItem extends _ListItem {
   _RoomItem({required this.room, this.depth = 0});
 }
 
+class _InviteItem extends _ListItem {
+  final Room room;
+  _InviteItem({required this.room});
+}
+
 class _FilterBarItem extends _ListItem {}
 
 class RoomList extends StatefulWidget {
@@ -119,6 +124,18 @@ class _RoomListState extends State<RoomList>
     // Space filter bar
     if (selectedIds.isNotEmpty) {
       items.add(_FilterBarItem());
+    }
+
+    // Invited rooms at the top
+    var invitedRooms = matrix.invitedRooms;
+    if (_query.isNotEmpty) {
+      final q = _query.toLowerCase();
+      invitedRooms = invitedRooms
+          .where((r) => r.getLocalizedDisplayname().toLowerCase().contains(q))
+          .toList();
+    }
+    for (final room in invitedRooms) {
+      items.add(_InviteItem(room: room));
     }
 
     // Determine which top-level spaces to show
@@ -299,6 +316,8 @@ class _RoomListState extends State<RoomList>
                           return switch (item) {
                             _FilterBarItem() =>
                               _SpaceFilterBar(matrix: matrix),
+                            _InviteItem() =>
+                              _InviteTile(room: item.room),
                             _HeaderItem() => _SectionHeader(
                                 item: item,
                                 prefs: prefs,
@@ -513,6 +532,174 @@ class _SectionHeader extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Invite tile ─────────────────────────────────────────────
+class _InviteTile extends StatefulWidget {
+  const _InviteTile({required this.room});
+  final Room room;
+
+  @override
+  State<_InviteTile> createState() => _InviteTileState();
+}
+
+class _InviteTileState extends State<_InviteTile> {
+  bool _isJoining = false;
+  bool _isDeclining = false;
+
+  bool get _inFlight => _isJoining || _isDeclining;
+
+  Future<void> _accept() async {
+    if (_inFlight) return;
+    final matrix = context.read<MatrixService>();
+    setState(() => _isJoining = true);
+    try {
+      await widget.room.join();
+      // Wait for next sync so the room is available as joined.
+      await matrix.client.onSync.stream.first
+          .timeout(const Duration(seconds: 5));
+      if (mounted) matrix.selectRoom(widget.room.id);
+    } catch (e) {
+      debugPrint('[Lattice] Accept invite failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(MatrixService.friendlyAuthError(e))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isJoining = false);
+    }
+  }
+
+  Future<void> _decline() async {
+    if (_inFlight) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Decline invite'),
+        content: Text(
+          'Decline invite to ${widget.room.getLocalizedDisplayname()}?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Decline'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isDeclining = true);
+    try {
+      await widget.room.leave();
+    } catch (e) {
+      debugPrint('[Lattice] Decline invite failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(MatrixService.friendlyAuthError(e))),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isDeclining = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final matrix = context.watch<MatrixService>();
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final inviter = matrix.inviterDisplayName(widget.room);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Material(
+        color: cs.tertiaryContainer.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          mouseCursor: SystemMouseCursors.click,
+          onTap: _inFlight ? null : _accept,
+          child: Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Row(
+              children: [
+                // Avatar
+                if (_isJoining)
+                  const SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Center(
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2.5),
+                      ),
+                    ),
+                  )
+                else
+                  RoomAvatarWidget(room: widget.room, size: 48),
+
+                const SizedBox(width: 12),
+
+                // Name + invite subtitle
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.room.getLocalizedDisplayname(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tt.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        inviter != null
+                            ? 'Invited by $inviter'
+                            : 'Pending invite',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tt.bodyMedium?.copyWith(
+                          color: cs.onTertiaryContainer
+                              .withValues(alpha: 0.7),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(width: 8),
+
+                // Decline button
+                if (_isDeclining)
+                  const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: cs.error),
+                    tooltip: 'Decline invite',
+                    onPressed: _inFlight ? null : _decline,
+                    visualDensity: VisualDensity.compact,
+                  ),
+              ],
+            ),
           ),
         ),
       ),

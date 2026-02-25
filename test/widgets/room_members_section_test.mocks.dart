@@ -7745,6 +7745,20 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
       ) as List<_i2.Room>);
 
   @override
+  List<_i2.Room> get invitedRooms => (super.noSuchMethod(
+        Invocation.getter(#invitedRooms),
+        returnValue: <_i2.Room>[],
+        returnValueForMissingStub: <_i2.Room>[],
+      ) as List<_i2.Room>);
+
+  @override
+  List<_i2.Room> get invitedSpaces => (super.noSuchMethod(
+        Invocation.getter(#invitedSpaces),
+        returnValue: <_i2.Room>[],
+        returnValueForMissingStub: <_i2.Room>[],
+      ) as List<_i2.Room>);
+
+  @override
   List<_i2.Room> get orphanRooms => (super.noSuchMethod(
         Invocation.getter(#orphanRooms),
         returnValue: <_i2.Room>[],
@@ -7898,6 +7912,15 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
         ),
         returnValueForMissingStub: null,
       );
+
+  @override
+  String? inviterDisplayName(_i2.Room? room) => (super.noSuchMethod(
+        Invocation.method(
+          #inviterDisplayName,
+          [room],
+        ),
+        returnValueForMissingStub: null,
+      ) as String?);
 
   @override
   List<_i2.Room> roomsForSpace(String? spaceId) => (super.noSuchMethod(
