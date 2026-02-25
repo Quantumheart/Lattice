@@ -93,7 +93,11 @@ class _RoomListState extends State<RoomList>
   }
 
   List<Room> _applyFilters(
-      List<Room> rooms, RoomCategory filter, PreferencesService prefs) {
+    List<Room> rooms,
+    RoomCategory filter,
+    PreferencesService prefs, {
+    bool isInvite = false,
+  }) {
     if (_query.isNotEmpty) {
       final q = _query.toLowerCase();
       rooms = rooms
@@ -106,10 +110,13 @@ class _RoomListState extends State<RoomList>
       RoomCategory.directMessages =>
         rooms.where((r) => r.isDirectChat).toList(),
       RoomCategory.groups => rooms.where((r) => !r.isDirectChat).toList(),
-      RoomCategory.unread =>
-        rooms.where((r) => effectiveUnreadCount(r, prefs) > 0).toList(),
-      RoomCategory.favourites =>
-        rooms.where((r) => r.isFavourite).toList(),
+      // Invites are always "unread" and never favourited.
+      RoomCategory.unread => isInvite
+          ? rooms
+          : rooms.where((r) => effectiveUnreadCount(r, prefs) > 0).toList(),
+      RoomCategory.favourites => isInvite
+          ? []
+          : rooms.where((r) => r.isFavourite).toList(),
     };
   }
 
@@ -127,25 +134,8 @@ class _RoomListState extends State<RoomList>
     }
 
     // Invited rooms at the top (filtered by search and category)
-    var invitedRooms = matrix.invitedRooms;
-    if (_query.isNotEmpty) {
-      final q = _query.toLowerCase();
-      invitedRooms = invitedRooms
-          .where((r) => r.getLocalizedDisplayname().toLowerCase().contains(q))
-          .toList();
-    }
-    if (filter != RoomCategory.all) {
-      invitedRooms = switch (filter) {
-        RoomCategory.all => invitedRooms,
-        RoomCategory.directMessages =>
-          invitedRooms.where((r) => r.isDirectChat).toList(),
-        RoomCategory.groups =>
-          invitedRooms.where((r) => !r.isDirectChat).toList(),
-        // Invites are always "unread" and never favourited
-        RoomCategory.unread => invitedRooms,
-        RoomCategory.favourites => [],
-      };
-    }
+    final invitedRooms =
+        _applyFilters(matrix.invitedRooms, filter, prefs, isInvite: true);
     for (final room in invitedRooms) {
       items.add(_InviteItem(room: room));
     }
@@ -636,7 +626,7 @@ class _InviteTileState extends State<_InviteTile> {
 
   @override
   Widget build(BuildContext context) {
-    final matrix = context.read<MatrixService>();
+    final matrix = context.watch<MatrixService>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final inviter = matrix.inviterDisplayName(widget.room);

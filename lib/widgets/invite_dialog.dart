@@ -141,12 +141,12 @@ class _InviteDialogState extends State<InviteDialog> {
         FilledButton(
           onPressed: inFlight ? null : _accept,
           child: _accepting
-              ? const SizedBox(
+              ? SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    color: cs.onPrimary,
                   ),
                 )
               : const Text('Accept'),

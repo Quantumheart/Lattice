@@ -129,6 +129,8 @@ class NotificationService {
     final joinedRooms = sync.rooms?.join;
     if (joinedRooms != null) {
       for (final entry in joinedRooms.entries) {
+        // Room joined — allow re-invite notifications in the future.
+        _notifiedInvites.remove(entry.key);
         final events = entry.value.timeline?.events;
         if (events == null || events.isEmpty) continue;
         final roomId = entry.key;
@@ -136,6 +138,14 @@ class NotificationService {
         _processRoomEvents(roomId, events).catchError((e) {
           debugPrint('[Lattice] Error processing room $roomId: $e');
         });
+      }
+    }
+
+    // Room left/declined — allow re-invite notifications in the future.
+    final leftRooms = sync.rooms?.leave;
+    if (leftRooms != null) {
+      for (final roomId in leftRooms.keys) {
+        _notifiedInvites.remove(roomId);
       }
     }
 
@@ -158,6 +168,7 @@ class NotificationService {
   ) async {
     _processingRooms.add(roomId);
     try {
+      if (_disposed) return;
       // Deduplicate: only notify once per invite room.
       if (_notifiedInvites.contains(roomId)) return;
 
@@ -218,6 +229,7 @@ class NotificationService {
     String roomId,
     List<MatrixEvent> events,
   ) async {
+    if (_disposed) return;
     final client = matrixService.client;
     final room = client.getRoomById(roomId);
     if (room == null) return;
@@ -267,6 +279,8 @@ class NotificationService {
       )) {
         continue;
       }
+
+      if (_disposed) return;
 
       final senderName = room
           .unsafeGetUserFromMemoryOrFallback(matrixEvent.senderId)

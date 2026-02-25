@@ -310,6 +310,54 @@ void main() {
 
       verifyNever(mockPlugin.show(any, any, any, any, payload: anyNamed('payload')));
     });
+
+    test('allows re-invite notification after room is left', () async {
+      service.isAppResumed = false;
+      await skipFirstSync();
+
+      // First invite — should notify.
+      final invite1 = makeInviteSyncUpdate(roomId: roomId);
+      mockClient.onSync.add(invite1);
+      await Future.delayed(const Duration(milliseconds: 50));
+      verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
+
+      // Room left (declined).
+      final leaveSync = SyncUpdate(
+        nextBatch: 'batch_2',
+        rooms: RoomsUpdate(leave: {roomId: LeftRoomUpdate()}),
+      );
+      mockClient.onSync.add(leaveSync);
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // Re-invite — should notify again.
+      mockClient.onSync.add(invite1);
+      await Future.delayed(const Duration(milliseconds: 50));
+      verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
+    });
+
+    test('allows re-invite notification after room is joined', () async {
+      service.isAppResumed = false;
+      await skipFirstSync();
+
+      // First invite — should notify.
+      final invite1 = makeInviteSyncUpdate(roomId: roomId);
+      mockClient.onSync.add(invite1);
+      await Future.delayed(const Duration(milliseconds: 50));
+      verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
+
+      // Room joined.
+      final joinSync = SyncUpdate(
+        nextBatch: 'batch_2',
+        rooms: RoomsUpdate(join: {roomId: JoinedRoomUpdate()}),
+      );
+      mockClient.onSync.add(joinSync);
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // Re-invite — should notify again.
+      mockClient.onSync.add(invite1);
+      await Future.delayed(const Duration(milliseconds: 50));
+      verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
+    });
   });
 
   group('notification content', () {

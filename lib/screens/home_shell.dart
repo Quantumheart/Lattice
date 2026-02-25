@@ -405,7 +405,7 @@ class _SpaceListMobileState extends State<_SpaceListMobile> {
                             context,
                             room: space,
                           );
-                          if (result == true && context.mounted) {
+                          if (result == true && mounted) {
                             matrix.selectSpace(space.id);
                             widget.onSpaceSelected();
                           }
