@@ -9,7 +9,7 @@ class ChatSearchController extends ChangeNotifier {
   final Room? Function() getRoom;
 
   // ── Constants ──────────────────────────────────────────────
-  static const searchBatchLimit = 500;
+  static const searchBatchLimit = 50;
   static const minQueryLength = 3;
   static const _debounceDuration = Duration(milliseconds: 500);
 
@@ -34,6 +34,8 @@ class ChatSearchController extends ChangeNotifier {
 
   String _query = '';
   String get query => _query;
+
+  bool _disposed = false;
 
   Timer? _debounceTimer;
   Timer? _highlightTimer;
@@ -102,6 +104,8 @@ class ChatSearchController extends ChangeNotifier {
         nextBatch: loadMore ? _nextBatch : null,
       );
 
+      if (_disposed) return;
+
       if (loadMore) {
         _results.addAll(result.events);
       } else {
@@ -112,6 +116,7 @@ class ChatSearchController extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       debugPrint('[Lattice] Search error: $e');
+      if (_disposed) return;
       _isLoading = false;
       _error = 'Search failed. Please try again.';
       notifyListeners();
@@ -124,6 +129,7 @@ class ChatSearchController extends ChangeNotifier {
     notifyListeners();
 
     _highlightTimer = Timer(const Duration(seconds: 2), () {
+      if (_disposed) return;
       _highlightedEventId = null;
       notifyListeners();
     });
@@ -131,6 +137,7 @@ class ChatSearchController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     _debounceTimer?.cancel();
     _highlightTimer?.cancel();
     super.dispose();
