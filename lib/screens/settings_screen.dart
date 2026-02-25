@@ -7,8 +7,11 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/client_manager.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
+import '../widgets/backup_info_dialog.dart';
 import '../widgets/bootstrap_dialog.dart';
+import '../widgets/density_picker_dialog.dart';
 import '../widgets/section_header.dart';
+import '../widgets/theme_picker_dialog.dart';
 import '../widgets/user_avatar.dart';
 import 'devices_screen.dart';
 import 'notification_settings_screen.dart';
@@ -332,7 +335,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Icons.dark_mode_outlined,
                   title: 'Theme',
                   subtitle: prefs.themeModeLabel,
-                  onTap: () => _showThemePicker(context),
+                  onTap: () => ThemePickerDialog.show(context),
                 ),
                 const Divider(height: 1, indent: 56),
                 _SettingsTile(
@@ -352,7 +355,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Icons.text_fields_rounded,
                   title: 'Message density',
                   subtitle: prefs.messageDensity.label,
-                  onTap: () => _showDensityPicker(context),
+                  onTap: () => DensityPickerDialog.show(context),
                 ),
               ],
             ),
@@ -378,7 +381,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   onTap: matrix.chatBackupLoading
                       ? () {}
                       : () => matrix.chatBackupEnabled
-                          ? _showBackupInfo(context)
+                          ? BackupInfoDialog.show(
+                              context,
+                              onDisableBackup: () =>
+                                  _confirmDisableBackup(context),
+                            )
                           : BootstrapDialog.show(context),
                 ),
                 const Divider(height: 1, indent: 56),
@@ -441,129 +448,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
 
           const SizedBox(height: 32),
-        ],
-      ),
-    );
-  }
-
-  void _showThemePicker(BuildContext context) {
-    final prefs = context.read<PreferencesService>();
-    final options = [
-      (ThemeMode.system, 'System default'),
-      (ThemeMode.light, 'Light'),
-      (ThemeMode.dark, 'Dark'),
-    ];
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Theme'),
-          contentPadding: const EdgeInsets.only(top: 12, bottom: 8),
-          content: RadioGroup<ThemeMode>(
-            groupValue: prefs.themeMode,
-            onChanged: (ThemeMode? value) {
-              if (value != null) {
-                prefs.setThemeMode(value);
-                Navigator.pop(ctx);
-              }
-            },
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: options.map((option) {
-                final (mode, label) = option;
-                return RadioListTile<ThemeMode>(
-                  title: Text(label),
-                  value: mode,
-                  mouseCursor: SystemMouseCursors.click,
-                );
-              }).toList(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showDensityPicker(BuildContext context) {
-    final prefs = context.read<PreferencesService>();
-    showDialog(
-      context: context,
-      builder: (ctx) {
-        return AlertDialog(
-          title: const Text('Message density'),
-          contentPadding: const EdgeInsets.only(top: 12, bottom: 8),
-          content: RadioGroup<MessageDensity>(
-            groupValue: prefs.messageDensity,
-            onChanged: (MessageDensity? value) {
-              if (value != null) {
-                prefs.setMessageDensity(value);
-                Navigator.pop(ctx);
-              }
-            },
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: MessageDensity.values.map((density) {
-                return RadioListTile<MessageDensity>(
-                  title: Text(density.label),
-                  value: density,
-                  mouseCursor: SystemMouseCursors.click,
-                );
-              }).toList(),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showBackupInfo(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Chat backup'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.check_circle,
-              color: Theme.of(ctx).colorScheme.primary,
-              size: 64,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Your keys are backed up. Your encrypted messages are '
-              'secure and accessible from any device.',
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _confirmDisableBackup(context);
-            },
-            child: Text(
-              'Disable backup',
-              style: TextStyle(color: Theme.of(ctx).colorScheme.error),
-            ),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK'),
-          ),
         ],
       ),
     );
