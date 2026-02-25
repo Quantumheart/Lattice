@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../services/matrix_service.dart';
 import '../widgets/app_logo_header.dart';
+import '../widgets/password_field.dart';
 import '../widgets/registration_controller.dart';
 import '../widgets/registration_views.dart';
 
@@ -25,8 +26,6 @@ class _RegistrationScreenState extends State<RegistrationScreen>
   final _confirmPasswordCtrl = TextEditingController();
   final _tokenCtrl = TextEditingController();
 
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
   String? _confirmPasswordError;
 
   late final AnimationController _fadeCtrl;
@@ -209,51 +208,20 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                   const SizedBox(height: 14),
 
                   // ── Password ──
-                  TextField(
+                  PasswordField(
                     controller: _passwordCtrl,
                     enabled: formEnabled,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      prefixIcon:
-                          Icon(Icons.lock_outline, color: cs.onSurfaceVariant),
-                      hintText: 'Password',
-                      errorText: _controller.passwordError,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                          color: cs.onSurfaceVariant,
-                        ),
-                        onPressed: () => setState(
-                            () => _obscurePassword = !_obscurePassword),
-                      ),
-                    ),
+                    errorText: _controller.passwordError,
                     textInputAction: TextInputAction.next,
                   ),
                   const SizedBox(height: 14),
 
                   // ── Confirm Password ──
-                  TextField(
+                  PasswordField(
                     controller: _confirmPasswordCtrl,
+                    hintText: 'Confirm password',
                     enabled: formEnabled,
-                    obscureText: _obscureConfirmPassword,
-                    decoration: InputDecoration(
-                      prefixIcon:
-                          Icon(Icons.lock_outline, color: cs.onSurfaceVariant),
-                      hintText: 'Confirm password',
-                      errorText: _confirmPasswordError,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscureConfirmPassword
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                          color: cs.onSurfaceVariant,
-                        ),
-                        onPressed: () => setState(() =>
-                            _obscureConfirmPassword = !_obscureConfirmPassword),
-                      ),
-                    ),
+                    errorText: _confirmPasswordError,
                     textInputAction: TextInputAction.done,
                     onSubmitted: formEnabled ? (_) => _submit() : null,
                   ),

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../services/client_manager.dart';
 import '../services/matrix_service.dart';
 import '../widgets/login_controller.dart';
+import '../widgets/password_field.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({
@@ -23,8 +24,6 @@ class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   final _usernameCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
-  bool _obscurePassword = true;
-
   late final AnimationController _fadeCtrl;
   late final Animation<double> _fadeAnim;
 
@@ -144,25 +143,9 @@ class _LoginScreenState extends State<LoginScreen>
                       textInputAction: TextInputAction.next,
                     ),
                     const SizedBox(height: 14),
-                    TextField(
+                    PasswordField(
                       controller: _passwordCtrl,
                       enabled: formEnabled,
-                      obscureText: _obscurePassword,
-                      decoration: InputDecoration(
-                        prefixIcon: Icon(Icons.lock_outline,
-                            color: cs.onSurfaceVariant),
-                        hintText: 'Password',
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
-                            color: cs.onSurfaceVariant,
-                          ),
-                          onPressed: () => setState(
-                              () => _obscurePassword = !_obscurePassword),
-                        ),
-                      ),
                       textInputAction: TextInputAction.done,
                       onSubmitted: formEnabled ? (_) => _login() : null,
                     ),
