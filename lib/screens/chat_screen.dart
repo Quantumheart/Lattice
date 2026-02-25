@@ -66,9 +66,8 @@ class _ChatScreenState extends State<ChatScreen> {
     if (old.roomId != widget.roomId) {
       _timeline?.cancelSubscriptions();
       _readMarkerTimer?.cancel();
-      _search.removeListener(_onSearchChanged);
-      _search.close();
       _replyNotifier.value = null;
+      _search.removeListener(_onSearchChanged);
       _search.dispose();
       _search = _createSearchController();
       _initTimeline();
@@ -103,21 +102,13 @@ class _ChatScreenState extends State<ChatScreen> {
     _markAsRead(room);
   }
 
-  List<Event>? _cachedVisibleEvents;
-  int _lastTimelineLength = -1;
-
   List<Event> get _visibleEvents {
     final events = _timeline?.events;
     if (events == null) return [];
-    if (_cachedVisibleEvents != null && events.length == _lastTimelineLength) {
-      return _cachedVisibleEvents!;
-    }
-    _lastTimelineLength = events.length;
-    _cachedVisibleEvents = events
+    return events
         .where((e) =>
             e.type == EventTypes.Message || e.type == EventTypes.Encrypted)
         .toList();
-    return _cachedVisibleEvents!;
   }
 
   void _markAsRead(Room room) {
