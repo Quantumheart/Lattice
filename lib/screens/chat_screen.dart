@@ -45,7 +45,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Timer? _readMarkerTimer;
 
   // ── Reply state ─────────────────────────────────────────
-  Event? _replyToEvent;
+  final _replyNotifier = ValueNotifier<Event?>(null);
 
   // ── Search ─────────────────────────────────────────────
   late ChatSearchController _search;
@@ -68,7 +68,7 @@ class _ChatScreenState extends State<ChatScreen> {
       _readMarkerTimer?.cancel();
       _search.removeListener(_onSearchChanged);
       _search.close();
-      _replyToEvent = null;
+      _replyNotifier.value = null;
       _search.dispose();
       _search = _createSearchController();
       _initTimeline();
@@ -159,11 +159,11 @@ class _ChatScreenState extends State<ChatScreen> {
   // ── Reply ──────────────────────────────────────────────
 
   void _setReplyTo(Event event) {
-    setState(() => _replyToEvent = event);
+    _replyNotifier.value = event;
   }
 
   void _cancelReply() {
-    setState(() => _replyToEvent = null);
+    _replyNotifier.value = null;
   }
 
   // ── Send ───────────────────────────────────────────────
@@ -173,8 +173,8 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.isEmpty) return;
     _msgCtrl.clear();
 
-    final replyEvent = _replyToEvent;
-    setState(() => _replyToEvent = null);
+    final replyEvent = _replyNotifier.value;
+    _replyNotifier.value = null;
 
     final scaffold = ScaffoldMessenger.of(context);
     final matrix = context.read<MatrixService>();
@@ -185,7 +185,7 @@ class _ChatScreenState extends State<ChatScreen> {
       await room.sendTextEvent(text, inReplyTo: replyEvent);
     } catch (e) {
       _msgCtrl.text = text;
-      setState(() => _replyToEvent = replyEvent);
+      _replyNotifier.value = replyEvent;
       scaffold.showSnackBar(
         SnackBar(content: Text('Failed to send: ${MatrixService.friendlyAuthError(e)}')),
       );
@@ -209,9 +209,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _scrollToEvent(Event event, {bool closeSearch = true}) {
     if (closeSearch) _closeSearch();
+    _navigateToEvent(event);
+  }
 
-    final events = _visibleEvents;
-    final index = events.indexWhere((e) => e.eventId == event.eventId);
+  void _navigateToEvent(Event event) {
+    final index = _visibleEvents.indexWhere((e) => e.eventId == event.eventId);
     if (index == -1) {
       debugPrint('[Lattice] Event not in loaded timeline: ${event.eventId}');
       if (mounted) {
@@ -243,6 +245,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     _itemPosListener.itemPositions.removeListener(_onScroll);
     _msgCtrl.dispose();
+    _replyNotifier.dispose();
     _searchCtrl.dispose();
     _searchFocusNode.dispose();
     _readMarkerTimer?.cancel();
@@ -318,11 +321,14 @@ class _ChatScreenState extends State<ChatScreen> {
                     )
                   : _buildMessageList(events, matrix),
         ),
-        ComposeBar(
-          controller: _msgCtrl,
-          onSend: _send,
-          replyEvent: _replyToEvent,
-          onCancelReply: _cancelReply,
+        ValueListenableBuilder<Event?>(
+          valueListenable: _replyNotifier,
+          builder: (context, replyEvent, _) => ComposeBar(
+            controller: _msgCtrl,
+            onSend: _send,
+            replyEvent: replyEvent,
+            onCancelReply: _cancelReply,
+          ),
         ),
       ],
     );
@@ -337,33 +343,36 @@ class _ChatScreenState extends State<ChatScreen> {
       reverse: true,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       itemCount: events.length,
-      itemBuilder: (context, i) {
-        final event = events[i];
-        final isMe = event.senderId == matrix.client.userID;
-
-        // Group consecutive messages from same sender.
-        final prevSender =
-            i + 1 < events.length ? events[i + 1].senderId : null;
-        final isFirst = event.senderId != prevSender;
-
-        final bubble = MessageBubble(
-          event: event,
-          isMe: isMe,
-          isFirst: isFirst,
-          highlighted: event.eventId == _search.highlightedEventId,
-          timeline: _timeline,
-          onTapReply: (e) => _scrollToEvent(e, closeSearch: false),
-          onReply: () => _setReplyTo(event),
-        );
-
-        if (isMobile) {
-          return SwipeableMessage(
-            onReply: () => _setReplyTo(event),
-            child: bubble,
-          );
-        }
-        return bubble;
-      },
+      itemBuilder: (context, i) =>
+          _buildMessageItem(events, i, matrix, isMobile),
     );
+  }
+
+  Widget _buildMessageItem(
+      List<Event> events, int i, MatrixService matrix, bool isMobile) {
+    final event = events[i];
+    final isMe = event.senderId == matrix.client.userID;
+
+    // Group consecutive messages from same sender.
+    final prevSender = i + 1 < events.length ? events[i + 1].senderId : null;
+    final isFirst = event.senderId != prevSender;
+
+    final bubble = MessageBubble(
+      event: event,
+      isMe: isMe,
+      isFirst: isFirst,
+      highlighted: event.eventId == _search.highlightedEventId,
+      timeline: _timeline,
+      onTapReply: _navigateToEvent,
+      onReply: () => _setReplyTo(event),
+    );
+
+    if (isMobile) {
+      return SwipeableMessage(
+        onReply: () => _setReplyTo(event),
+        child: bubble,
+      );
+    }
+    return bubble;
   }
 }
