@@ -51,6 +51,8 @@ class ChatSearchController extends ChangeNotifier {
 
   void close() {
     _debounceTimer?.cancel();
+    _highlightTimer?.cancel();
+    _highlightedEventId = null;
     _isSearching = false;
     _results = [];
     _nextBatch = null;

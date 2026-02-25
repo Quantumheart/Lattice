@@ -68,6 +68,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (old.roomId != widget.roomId) {
       _timeline?.cancelSubscriptions();
       _readMarkerTimer?.cancel();
+      _search.removeListener(_onSearchChanged);
       _search.close();
       _replyToEvent = null;
       _search.dispose();
@@ -98,12 +99,22 @@ class _ChatScreenState extends State<ChatScreen> {
     _markAsRead(room);
   }
 
-  List<Event> get _visibleEvents =>
-      _timeline?.events
-          .where((e) =>
-              e.type == EventTypes.Message || e.type == EventTypes.Encrypted)
-          .toList() ??
-      [];
+  List<Event>? _cachedVisibleEvents;
+  int _lastTimelineLength = -1;
+
+  List<Event> get _visibleEvents {
+    final events = _timeline?.events;
+    if (events == null) return [];
+    if (_cachedVisibleEvents != null && events.length == _lastTimelineLength) {
+      return _cachedVisibleEvents!;
+    }
+    _lastTimelineLength = events.length;
+    _cachedVisibleEvents = events
+        .where((e) =>
+            e.type == EventTypes.Message || e.type == EventTypes.Encrypted)
+        .toList();
+    return _cachedVisibleEvents!;
+  }
 
   void _markAsRead(Room room) {
     _readMarkerTimer?.cancel();
@@ -227,6 +238,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _searchCtrl.dispose();
     _searchFocusNode.dispose();
     _readMarkerTimer?.cancel();
+    _search.removeListener(_onSearchChanged);
     _search.dispose();
     _timeline?.cancelSubscriptions();
     super.dispose();
@@ -374,43 +386,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                       ),
                     )
-                  : ScrollablePositionedList.builder(
-                      itemScrollController: _itemScrollCtrl,
-                      itemPositionsListener: _itemPosListener,
-                      reverse: true,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                      itemCount: events.length,
-                      itemBuilder: (context, i) {
-                        final event = events[i];
-                        final isMe = event.senderId == matrix.client.userID;
-
-                        // Group consecutive messages from same sender.
-                        final prevSender = i + 1 < events.length
-                            ? events[i + 1].senderId
-                            : null;
-                        final isFirst = event.senderId != prevSender;
-
-                        final bubble = MessageBubble(
-                          event: event,
-                          isMe: isMe,
-                          isFirst: isFirst,
-                          highlighted: event.eventId == _search.highlightedEventId,
-                          timeline: _timeline,
-                          onTapReply: (e) =>
-                              _scrollToEvent(e, closeSearch: false),
-                          onReply: () => _setReplyTo(event),
-                        );
-
-                        if (MediaQuery.sizeOf(context).width < 720) {
-                          return SwipeableMessage(
-                            onReply: () => _setReplyTo(event),
-                            child: bubble,
-                          );
-                        }
-                        return bubble;
-                      },
-                    ),
+                  : _buildMessageList(events, matrix),
         ),
 
         // ── Compose bar ──
@@ -421,6 +397,45 @@ class _ChatScreenState extends State<ChatScreen> {
           onCancelReply: _cancelReply,
         ),
       ],
+    );
+  }
+
+  Widget _buildMessageList(List<Event> events, MatrixService matrix) {
+    final isMobile = MediaQuery.sizeOf(context).width < 720;
+
+    return ScrollablePositionedList.builder(
+      itemScrollController: _itemScrollCtrl,
+      itemPositionsListener: _itemPosListener,
+      reverse: true,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      itemCount: events.length,
+      itemBuilder: (context, i) {
+        final event = events[i];
+        final isMe = event.senderId == matrix.client.userID;
+
+        // Group consecutive messages from same sender.
+        final prevSender =
+            i + 1 < events.length ? events[i + 1].senderId : null;
+        final isFirst = event.senderId != prevSender;
+
+        final bubble = MessageBubble(
+          event: event,
+          isMe: isMe,
+          isFirst: isFirst,
+          highlighted: event.eventId == _search.highlightedEventId,
+          timeline: _timeline,
+          onTapReply: (e) => _scrollToEvent(e, closeSearch: false),
+          onReply: () => _setReplyTo(event),
+        );
+
+        if (isMobile) {
+          return SwipeableMessage(
+            onReply: () => _setReplyTo(event),
+            child: bubble,
+          );
+        }
+        return bubble;
+      },
     );
   }
 
@@ -650,13 +665,13 @@ class _ComposeBar extends StatelessWidget {
     required this.controller,
     required this.onSend,
     this.replyEvent,
-    this.onCancelReply,
+    required this.onCancelReply,
   });
 
   final TextEditingController controller;
   final VoidCallback onSend;
   final Event? replyEvent;
-  final VoidCallback? onCancelReply;
+  final VoidCallback onCancelReply;
 
   @override
   Widget build(BuildContext context) {
@@ -683,7 +698,7 @@ class _ComposeBar extends StatelessWidget {
           if (replyEvent != null)
             _ReplyPreviewBanner(
               event: replyEvent!,
-              onCancel: onCancelReply ?? () {},
+              onCancel: onCancelReply,
             ),
           Padding(
             padding: const EdgeInsets.only(top: 8),
@@ -788,7 +803,7 @@ class _ReplyPreviewBanner extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  event.body,
+                  stripReplyFallback(event.body),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: tt.bodySmall?.copyWith(

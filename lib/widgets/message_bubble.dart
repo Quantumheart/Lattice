@@ -218,9 +218,9 @@ class _MessageBubbleState extends State<MessageBubble> {
     return bubble;
   }
 
-  void _showContextMenu(BuildContext context, Offset position) {
+  Future<void> _showContextMenu(BuildContext context, Offset position) async {
     final cs = Theme.of(context).colorScheme;
-    showMenu<String>(
+    final value = await showMenu<String>(
       context: context,
       position: RelativeRect.fromLTRB(
           position.dx, position.dy, position.dx, position.dy),
@@ -248,12 +248,12 @@ class _MessageBubbleState extends State<MessageBubble> {
           ),
         ),
       ],
-    ).then((value) {
-      if (value == 'reply') widget.onReply?.call();
-      if (value == 'copy') {
-        Clipboard.setData(ClipboardData(text: widget.event.body));
-      }
-    });
+    );
+    if (!mounted) return;
+    if (value == 'reply') widget.onReply?.call();
+    if (value == 'copy') {
+      Clipboard.setData(ClipboardData(text: stripReplyFallback(widget.event.body)));
+    }
   }
 
   Widget _buildBody(
@@ -318,6 +318,7 @@ class _InlineReplyPreview extends StatefulWidget {
 class _InlineReplyPreviewState extends State<_InlineReplyPreview> {
   Event? _parentEvent;
   bool _loaded = false;
+  int _generation = 0;
 
   @override
   void initState() {
@@ -329,6 +330,7 @@ class _InlineReplyPreviewState extends State<_InlineReplyPreview> {
   void didUpdateWidget(_InlineReplyPreview oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.event != widget.event || oldWidget.timeline != widget.timeline) {
+      _generation++;
       _loaded = false;
       _parentEvent = null;
       _loadParent();
@@ -336,13 +338,14 @@ class _InlineReplyPreviewState extends State<_InlineReplyPreview> {
   }
 
   Future<void> _loadParent() async {
+    final gen = _generation;
     if (widget.timeline == null) {
-      if (mounted) setState(() => _loaded = true);
+      if (mounted && gen == _generation) setState(() => _loaded = true);
       return;
     }
     try {
       final parent = await widget.event.getReplyEvent(widget.timeline!);
-      if (mounted) {
+      if (mounted && gen == _generation) {
         setState(() {
           _parentEvent = parent;
           _loaded = true;
@@ -350,7 +353,7 @@ class _InlineReplyPreviewState extends State<_InlineReplyPreview> {
       }
     } catch (e) {
       debugPrint('[Lattice] Failed to load reply parent: $e');
-      if (mounted) setState(() => _loaded = true);
+      if (mounted && gen == _generation) setState(() => _loaded = true);
     }
   }
 
@@ -400,7 +403,7 @@ class _InlineReplyPreviewState extends State<_InlineReplyPreview> {
                     ),
                   ),
                   Text(
-                    _parentEvent!.body,
+                    stripReplyFallback(_parentEvent!.body),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: tt.bodySmall?.copyWith(
