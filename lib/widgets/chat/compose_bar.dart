@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
+import '../../models/upload_state.dart';
 import 'reply_preview_banner.dart';
+import 'upload_progress_banner.dart';
 
 class ComposeBar extends StatefulWidget {
   const ComposeBar({
@@ -10,12 +12,16 @@ class ComposeBar extends StatefulWidget {
     required this.onSend,
     this.replyEvent,
     required this.onCancelReply,
+    this.onAttach,
+    this.uploadNotifier,
   });
 
   final TextEditingController controller;
   final VoidCallback onSend;
   final Event? replyEvent;
   final VoidCallback onCancelReply;
+  final VoidCallback? onAttach;
+  final ValueNotifier<UploadState?>? uploadNotifier;
 
   @override
   State<ComposeBar> createState() => _ComposeBarState();
@@ -57,16 +63,22 @@ class _ComposeBarState extends State<ComposeBar> {
               event: widget.replyEvent!,
               onCancel: widget.onCancelReply,
             ),
+          if (widget.uploadNotifier != null)
+            ValueListenableBuilder<UploadState?>(
+              valueListenable: widget.uploadNotifier!,
+              builder: (context, uploadState, _) {
+                if (uploadState == null) return const SizedBox.shrink();
+                return UploadProgressBanner(
+                  state: uploadState,
+                  onCancel: () => widget.uploadNotifier!.value = null,
+                );
+              },
+            ),
           Padding(
             padding: const EdgeInsets.only(top: 8),
             child: Row(
               children: [
-                IconButton(
-                  icon: Icon(Icons.add_rounded, color: cs.onSurfaceVariant),
-                  onPressed: () {
-                    // TODO: attachment picker
-                  },
-                ),
+                _buildAttachButton(cs),
                 Expanded(
                   child: TextField(
                     controller: widget.controller,
@@ -115,6 +127,27 @@ class _ComposeBarState extends State<ComposeBar> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAttachButton(ColorScheme cs) {
+    if (widget.uploadNotifier == null) {
+      return IconButton(
+        icon: Icon(Icons.add_rounded, color: cs.onSurfaceVariant),
+        onPressed: widget.onAttach,
+      );
+    }
+
+    return ValueListenableBuilder<UploadState?>(
+      valueListenable: widget.uploadNotifier!,
+      builder: (context, uploadState, _) {
+        final isUploading =
+            uploadState != null && uploadState.status == UploadStatus.uploading;
+        return IconButton(
+          icon: Icon(Icons.add_rounded, color: cs.onSurfaceVariant),
+          onPressed: isUploading ? null : widget.onAttach,
+        );
+      },
     );
   }
 }

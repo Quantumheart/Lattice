@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:matrix/matrix.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
+import '../models/upload_state.dart';
 import '../services/chat_search_controller.dart';
 import '../services/matrix_service.dart';
 import '../widgets/chat/chat_app_bar.dart';
@@ -46,6 +48,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // ── Reply state ─────────────────────────────────────────
   final _replyNotifier = ValueNotifier<Event?>(null);
+
+  // ── Upload state ────────────────────────────────────────
+  final _uploadNotifier = ValueNotifier<UploadState?>(null);
 
   // ── Search ─────────────────────────────────────────────
   late ChatSearchController _search;
@@ -157,6 +162,54 @@ class _ChatScreenState extends State<ChatScreen> {
     _replyNotifier.value = null;
   }
 
+  // ── Attach ─────────────────────────────────────────────
+
+  Future<void> _pickAndSendFile() async {
+    final scaffold = ScaffoldMessenger.of(context);
+    final matrix = context.read<MatrixService>();
+
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.any,
+      withData: true,
+    );
+    if (result == null || result.files.isEmpty) return;
+
+    final picked = result.files.first;
+    final bytes = picked.bytes;
+    final name = picked.name;
+    if (bytes == null) return;
+
+    _uploadNotifier.value = UploadState(
+      status: UploadStatus.uploading,
+      fileName: name,
+    );
+    final room = matrix.client.getRoomById(widget.roomId);
+    if (room == null) {
+      _uploadNotifier.value = null;
+      return;
+    }
+
+    try {
+      final file = MatrixFile.fromMimeType(bytes: bytes, name: name);
+      await room.sendFileEvent(file);
+      _uploadNotifier.value = null;
+    } on FileTooBigMatrixException {
+      _uploadNotifier.value = null;
+      scaffold.showSnackBar(
+        const SnackBar(content: Text('File too large for this server')),
+      );
+    } catch (e) {
+      _uploadNotifier.value = UploadState(
+        status: UploadStatus.error,
+        fileName: name,
+        error: e.toString(),
+      );
+      scaffold.showSnackBar(
+        SnackBar(content: Text('Upload failed: ${MatrixService.friendlyAuthError(e)}')),
+      );
+    }
+  }
+
   // ── Send ───────────────────────────────────────────────
 
   Future<void> _send() async {
@@ -237,6 +290,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _itemPosListener.itemPositions.removeListener(_onScroll);
     _msgCtrl.dispose();
     _replyNotifier.dispose();
+    _uploadNotifier.dispose();
     _searchCtrl.dispose();
     _searchFocusNode.dispose();
     _readMarkerTimer?.cancel();
@@ -319,6 +373,8 @@ class _ChatScreenState extends State<ChatScreen> {
             onSend: _send,
             replyEvent: replyEvent,
             onCancelReply: _cancelReply,
+            onAttach: _pickAndSendFile,
+            uploadNotifier: _uploadNotifier,
           ),
         ),
       ],
