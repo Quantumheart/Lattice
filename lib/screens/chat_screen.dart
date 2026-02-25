@@ -6,11 +6,10 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../services/chat_search_controller.dart';
 import '../services/matrix_service.dart';
+import '../widgets/chat_app_bar.dart';
 import '../widgets/compose_bar.dart';
 import '../widgets/message_bubble.dart';
-import '../widgets/room_avatar.dart';
-import '../widgets/room_details_panel.dart';
-import '../widgets/search_result_tile.dart';
+import '../widgets/search_results_body.dart';
 import '../widgets/swipeable_message.dart';
 
 class ChatScreen extends StatefulWidget {
@@ -34,6 +33,10 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
+  static const _historyLoadThreshold = 3;
+  static const _scrollAnimationDuration = Duration(milliseconds: 400);
+  static const _readMarkerDelay = Duration(seconds: 1);
+
   final _msgCtrl = TextEditingController();
   final _itemScrollCtrl = ItemScrollController();
   final _itemPosListener = ItemPositionsListener.create();
@@ -52,10 +55,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    _search = ChatSearchController(
-      roomId: widget.roomId,
-      getRoom: () => context.read<MatrixService>().client.getRoomById(widget.roomId),
-    )..addListener(_onSearchChanged);
+    _search = _createSearchController();
     _initTimeline();
     _itemPosListener.itemPositions.addListener(_onScroll);
   }
@@ -70,17 +70,23 @@ class _ChatScreenState extends State<ChatScreen> {
       _search.close();
       _replyToEvent = null;
       _search.dispose();
-      _search = ChatSearchController(
-        roomId: widget.roomId,
-        getRoom: () => context.read<MatrixService>().client.getRoomById(widget.roomId),
-      )..addListener(_onSearchChanged);
+      _search = _createSearchController();
       _initTimeline();
     }
+  }
+
+  ChatSearchController _createSearchController() {
+    return ChatSearchController(
+      roomId: widget.roomId,
+      getRoom: () => context.read<MatrixService>().client.getRoomById(widget.roomId),
+    )..addListener(_onSearchChanged);
   }
 
   void _onSearchChanged() {
     if (mounted) setState(() {});
   }
+
+  // ── Timeline ───────────────────────────────────────────
 
   Future<void> _initTimeline() async {
     final matrix = context.read<MatrixService>();
@@ -116,7 +122,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _markAsRead(Room room) {
     _readMarkerTimer?.cancel();
-    _readMarkerTimer = Timer(const Duration(seconds: 1), () async {
+    _readMarkerTimer = Timer(_readMarkerDelay, () async {
       if (!mounted) return;
       final lastEvent = room.lastEvent;
       if (lastEvent != null && room.notificationCount > 0) {
@@ -133,7 +139,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final positions = _itemPosListener.itemPositions.value;
     if (positions.isEmpty) return;
     final maxIndex = positions.map((p) => p.index).reduce((a, b) => a > b ? a : b);
-    if (maxIndex >= _visibleEvents.length - 3 && !_loadingHistory) {
+    if (maxIndex >= _visibleEvents.length - _historyLoadThreshold && !_loadingHistory) {
       _loadMore();
     }
   }
@@ -150,6 +156,8 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  // ── Reply ──────────────────────────────────────────────
+
   void _setReplyTo(Event event) {
     setState(() => _replyToEvent = event);
   }
@@ -157,6 +165,8 @@ class _ChatScreenState extends State<ChatScreen> {
   void _cancelReply() {
     setState(() => _replyToEvent = null);
   }
+
+  // ── Send ───────────────────────────────────────────────
 
   Future<void> _send() async {
     final text = _msgCtrl.text.trim();
@@ -221,7 +231,7 @@ class _ChatScreenState extends State<ChatScreen> {
       if (_itemScrollCtrl.isAttached) {
         _itemScrollCtrl.scrollTo(
           index: index,
-          duration: const Duration(milliseconds: 400),
+          duration: _scrollAnimationDuration,
           curve: Curves.easeInOut,
           alignment: 0.5,
         );
@@ -242,11 +252,12 @@ class _ChatScreenState extends State<ChatScreen> {
     super.dispose();
   }
 
+  // ── Build ──────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     final matrix = context.watch<MatrixService>();
     final room = matrix.client.getRoomById(widget.roomId);
-    final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
     if (room == null) {
@@ -255,122 +266,43 @@ class _ChatScreenState extends State<ChatScreen> {
       );
     }
 
-    final events = _visibleEvents;
-
-    return Scaffold(
-      appBar: _search.isSearching
-          ? _buildSearchAppBar(cs, tt)
-          : _buildDefaultAppBar(room, tt),
-      body: _search.isSearching
-          ? _buildSearchBody(cs, tt)
-          : _buildChatBody(events, matrix, cs, tt),
-    );
-  }
-
-  // ── Default app bar ───────────────────────────────────────
-
-  AppBar _buildDefaultAppBar(Room room, TextTheme tt) {
-    return AppBar(
-      leading: widget.onBack != null
-          ? IconButton(
-              icon: const Icon(Icons.arrow_back_rounded),
-              onPressed: widget.onBack,
-            )
-          : null,
-      automaticallyImplyLeading: false,
-      titleSpacing: widget.onBack != null ? 0 : 16,
-      title: Row(
-        children: [
-          RoomAvatarWidget(room: room, size: 34),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  room.getLocalizedDisplayname(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tt.titleMedium,
-                ),
-                Text(
-                  _memberCountLabel(room),
-                  style: tt.bodyMedium?.copyWith(fontSize: 11),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.search_rounded),
-          onPressed: _openSearch,
-        ),
-        IconButton(
-          icon: const Icon(Icons.more_vert_rounded),
-          onPressed: () {
-            if (widget.onShowDetails != null) {
-              widget.onShowDetails!();
-            } else {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => RoomDetailsPanel(
-                    roomId: widget.roomId,
-                    isFullPage: true,
-                  ),
-                ),
-              );
-            }
-          },
-        ),
-      ],
-    );
-  }
-
-  // ── Search app bar ────────────────────────────────────────
-
-  AppBar _buildSearchAppBar(ColorScheme cs, TextTheme tt) {
-    return AppBar(
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_rounded),
-        onPressed: _closeSearch,
-      ),
-      titleSpacing: 0,
-      title: TextField(
+    late final PreferredSizeWidget appBar;
+    if (_search.isSearching) {
+      appBar = ChatSearchAppBar(
         controller: _searchCtrl,
         focusNode: _searchFocusNode,
         onChanged: _search.onQueryChanged,
-        style: tt.bodyLarge,
-        decoration: InputDecoration(
-          hintText: 'Search messages…',
-          border: InputBorder.none,
-          hintStyle: tt.bodyLarge?.copyWith(
-            color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-          ),
-        ),
-      ),
-      actions: [
-        if (_searchCtrl.text.isNotEmpty)
-          IconButton(
-            icon: const Icon(Icons.close_rounded),
-            onPressed: () {
-              _searchCtrl.clear();
-              _search.onQueryChanged('');
-              _searchFocusNode.requestFocus();
-            },
-          ),
-      ],
+        onClose: _closeSearch,
+      );
+    } else {
+      appBar = ChatAppBar(
+        room: room,
+        onBack: widget.onBack,
+        onShowDetails: widget.onShowDetails,
+        onSearch: _openSearch,
+      );
+    }
+
+    return Scaffold(
+      appBar: appBar,
+      body: _search.isSearching
+          ? SearchResultsBody(
+              search: _search,
+              onTapResult: _scrollToEvent,
+            )
+          : _buildChatBody(matrix),
     );
   }
 
   // ── Chat body (messages + compose) ────────────────────────
 
-  Widget _buildChatBody(
-      List<Event> events, MatrixService matrix, ColorScheme cs, TextTheme tt) {
+  Widget _buildChatBody(MatrixService matrix) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final events = _visibleEvents;
+
     return Column(
       children: [
-        // ── Messages ──
         Expanded(
           child: _timeline == null
               ? const Center(child: CircularProgressIndicator())
@@ -386,8 +318,6 @@ class _ChatScreenState extends State<ChatScreen> {
                     )
                   : _buildMessageList(events, matrix),
         ),
-
-        // ── Compose bar ──
         ComposeBar(
           controller: _msgCtrl,
           onSend: _send,
@@ -435,118 +365,5 @@ class _ChatScreenState extends State<ChatScreen> {
         return bubble;
       },
     );
-  }
-
-  // ── Search body (results list) ────────────────────────────
-
-  Widget _buildSearchBody(ColorScheme cs, TextTheme tt) {
-    final query = _search.query;
-
-    // Not enough characters yet.
-    if (query.length < ChatSearchController.minQueryLength) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Text(
-            'Type at least ${ChatSearchController.minQueryLength} characters to search',
-            style: tt.bodyMedium?.copyWith(
-              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
-    }
-
-    // Error state.
-    if (_search.error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.error_outline_rounded,
-                  size: 48, color: cs.error.withValues(alpha: 0.6)),
-              const SizedBox(height: 12),
-              Text(
-                _search.error!,
-                style: tt.bodyMedium?.copyWith(color: cs.error),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Loading first batch.
-    if (_search.isLoading && _search.results.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    // Empty results.
-    if (_search.results.isEmpty && !_search.isLoading) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.search_off_rounded,
-                  size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
-              const SizedBox(height: 12),
-              Text(
-                'No messages found for "$query"',
-                style: tt.bodyMedium?.copyWith(
-                  color: cs.onSurfaceVariant.withValues(alpha: 0.6),
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Results list.
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      itemCount: _search.results.length + (_search.nextBatch != null ? 1 : 0),
-      itemBuilder: (context, i) {
-        // "Load more" button at the end.
-        if (i == _search.results.length) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Center(
-              child: _search.isLoading
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : TextButton(
-                      onPressed: () => _search.performSearch(loadMore: true),
-                      child: const Text('Load more results'),
-                    ),
-            ),
-          );
-        }
-
-        final event = _search.results[i];
-        return SearchResultTile(
-          event: event,
-          query: query,
-          onTap: () => _scrollToEvent(event),
-        );
-      },
-    );
-  }
-
-  String _memberCountLabel(Room room) {
-    final count = room.summary.mJoinedMemberCount ?? 0;
-    if (count == 0) return '';
-    if (count == 1) return '1 member';
-    return '$count members';
   }
 }
