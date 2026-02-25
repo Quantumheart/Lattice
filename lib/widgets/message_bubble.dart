@@ -1,6 +1,5 @@
-import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
@@ -63,7 +62,7 @@ class _MessageBubbleState extends State<MessageBubble> {
 
     // Strip reply fallback from body text for events that are replies.
     final bodyText = replyEventId != null
-        ? _stripReplyFallback(widget.event.body)
+        ? stripReplyFallback(widget.event.body)
         : widget.event.body;
 
     Widget bubble = AnimatedContainer(
@@ -238,9 +237,22 @@ class _MessageBubbleState extends State<MessageBubble> {
               ],
             ),
           ),
+        const PopupMenuItem(
+          value: 'copy',
+          child: Row(
+            children: [
+              Icon(Icons.copy_rounded, size: 18),
+              SizedBox(width: 8),
+              Text('Copy'),
+            ],
+          ),
+        ),
       ],
     ).then((value) {
       if (value == 'reply') widget.onReply?.call();
+      if (value == 'copy') {
+        Clipboard.setData(ClipboardData(text: widget.event.body));
+      }
     });
   }
 
@@ -272,10 +284,11 @@ class _MessageBubbleState extends State<MessageBubble> {
 }
 
 /// Strip the `> ` reply fallback lines from a Matrix message body.
-String _stripReplyFallback(String body) {
+/// Handles both `> text` and bare `>` lines per the Matrix spec.
+String stripReplyFallback(String body) {
   final lines = body.split('\n');
   int i = 0;
-  while (i < lines.length && lines[i].startsWith('> ')) {
+  while (i < lines.length && (lines[i].startsWith('> ') || lines[i] == '>')) {
     i++;
   }
   // Skip the blank line after the fallback block.
@@ -310,6 +323,16 @@ class _InlineReplyPreviewState extends State<_InlineReplyPreview> {
   void initState() {
     super.initState();
     _loadParent();
+  }
+
+  @override
+  void didUpdateWidget(_InlineReplyPreview oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.event != widget.event || oldWidget.timeline != widget.timeline) {
+      _loaded = false;
+      _parentEvent = null;
+      _loadParent();
+    }
   }
 
   Future<void> _loadParent() async {
