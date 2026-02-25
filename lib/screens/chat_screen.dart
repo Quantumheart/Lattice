@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:matrix/matrix.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
+import '../services/chat_search_controller.dart';
 import '../services/matrix_service.dart';
 import '../utils/sender_color.dart';
 import '../utils/text_highlight.dart';
@@ -45,24 +46,18 @@ class _ChatScreenState extends State<ChatScreen> {
   // ── Reply state ─────────────────────────────────────────
   Event? _replyToEvent;
 
-  // ── Search state ──────────────────────────────────────────
-  bool _isSearching = false;
+  // ── Search ─────────────────────────────────────────────
+  late ChatSearchController _search;
   final _searchCtrl = TextEditingController();
   final _searchFocusNode = FocusNode();
-  List<Event> _searchResults = [];
-  String? _searchNextBatch;
-  bool _isSearchLoading = false;
-  String? _searchError;
-  Timer? _debounceTimer;
-  String? _highlightedEventId;
-  Timer? _highlightTimer;
-  static const _searchBatchLimit = 500;
-  static const _minQueryLength = 3;
-  static const _debounceDuration = Duration(milliseconds: 500);
 
   @override
   void initState() {
     super.initState();
+    _search = ChatSearchController(
+      roomId: widget.roomId,
+      getRoom: () => context.read<MatrixService>().client.getRoomById(widget.roomId),
+    )..addListener(_onSearchChanged);
     _initTimeline();
     _itemPosListener.itemPositions.addListener(_onScroll);
   }
@@ -73,11 +68,19 @@ class _ChatScreenState extends State<ChatScreen> {
     if (old.roomId != widget.roomId) {
       _timeline?.cancelSubscriptions();
       _readMarkerTimer?.cancel();
-      _highlightTimer?.cancel();
-      _closeSearch();
+      _search.close();
       _replyToEvent = null;
+      _search.dispose();
+      _search = ChatSearchController(
+        roomId: widget.roomId,
+        getRoom: () => context.read<MatrixService>().client.getRoomById(widget.roomId),
+      )..addListener(_onSearchChanged);
       _initTimeline();
     }
+  }
+
+  void _onSearchChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _initTimeline() async {
@@ -173,97 +176,21 @@ class _ChatScreenState extends State<ChatScreen> {
   // ── Search methods ────────────────────────────────────────
 
   void _openSearch() {
-    setState(() {
-      _isSearching = true;
-      _searchResults = [];
-      _searchNextBatch = null;
-      _searchError = null;
-    });
-    // Delay focus request to after the frame builds.
+    _search.open();
+    _searchCtrl.clear();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _searchFocusNode.requestFocus();
     });
   }
 
   void _closeSearch() {
-    _debounceTimer?.cancel();
+    _search.close();
     _searchCtrl.clear();
-    setState(() {
-      _isSearching = false;
-      _searchResults = [];
-      _searchNextBatch = null;
-      _isSearchLoading = false;
-      _searchError = null;
-    });
-  }
-
-  void _onSearchChanged(String query) {
-    _debounceTimer?.cancel();
-    if (query.trim().length < _minQueryLength) {
-      setState(() {
-        _searchResults = [];
-        _searchNextBatch = null;
-        _searchError = null;
-      });
-      return;
-    }
-    // Rebuild to show/hide close button immediately.
-    setState(() {});
-    _debounceTimer = Timer(_debounceDuration, () {
-      _performSearch();
-    });
-  }
-
-  Future<void> _performSearch({bool loadMore = false}) async {
-    final query = _searchCtrl.text.trim();
-    if (query.length < _minQueryLength) return;
-
-    final matrix = context.read<MatrixService>();
-    final room = matrix.client.getRoomById(widget.roomId);
-    if (room == null) return;
-
-    setState(() {
-      _isSearchLoading = true;
-      _searchError = null;
-      if (!loadMore) {
-        _searchResults = [];
-        _searchNextBatch = null;
-      }
-    });
-
-    try {
-      debugPrint('[Lattice] Searching room for: $query');
-      final result = await room.searchEvents(
-        searchTerm: query,
-        limit: _searchBatchLimit,
-        nextBatch: loadMore ? _searchNextBatch : null,
-      );
-
-      if (!mounted) return;
-
-      setState(() {
-        if (loadMore) {
-          _searchResults.addAll(result.events);
-        } else {
-          _searchResults = result.events.toList();
-        }
-        _searchNextBatch = result.nextBatch;
-        _isSearchLoading = false;
-      });
-    } catch (e) {
-      debugPrint('[Lattice] Search error: $e');
-      if (!mounted) return;
-      setState(() {
-        _isSearchLoading = false;
-        _searchError = 'Search failed. Please try again.';
-      });
-    }
   }
 
   void _scrollToEvent(Event event, {bool closeSearch = true}) {
     if (closeSearch) _closeSearch();
 
-    // Find the event in the current timeline.
     final events = _visibleEvents;
     final index = events.indexWhere((e) => e.eventId == event.eventId);
     if (index == -1) {
@@ -279,10 +206,8 @@ class _ChatScreenState extends State<ChatScreen> {
       return;
     }
 
-    setState(() => _highlightedEventId = event.eventId);
+    _search.setHighlight(event.eventId);
 
-    // Scroll to the target message by index. Post-frame callback is needed
-    // because _closeSearch() triggers a rebuild that remounts the list.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_itemScrollCtrl.isAttached) {
         _itemScrollCtrl.scrollTo(
@@ -291,14 +216,6 @@ class _ChatScreenState extends State<ChatScreen> {
           curve: Curves.easeInOut,
           alignment: 0.5,
         );
-      }
-    });
-
-    // Clear highlight after a delay.
-    _highlightTimer?.cancel();
-    _highlightTimer = Timer(const Duration(seconds: 2), () {
-      if (mounted) {
-        setState(() => _highlightedEventId = null);
       }
     });
   }
@@ -310,8 +227,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _searchCtrl.dispose();
     _searchFocusNode.dispose();
     _readMarkerTimer?.cancel();
-    _highlightTimer?.cancel();
-    _debounceTimer?.cancel();
+    _search.dispose();
     _timeline?.cancelSubscriptions();
     super.dispose();
   }
@@ -332,10 +248,10 @@ class _ChatScreenState extends State<ChatScreen> {
     final events = _visibleEvents;
 
     return Scaffold(
-      appBar: _isSearching
+      appBar: _search.isSearching
           ? _buildSearchAppBar(cs, tt)
           : _buildDefaultAppBar(room, tt),
-      body: _isSearching
+      body: _search.isSearching
           ? _buildSearchBody(cs, tt)
           : _buildChatBody(events, matrix, cs, tt),
     );
@@ -414,7 +330,7 @@ class _ChatScreenState extends State<ChatScreen> {
       title: TextField(
         controller: _searchCtrl,
         focusNode: _searchFocusNode,
-        onChanged: _onSearchChanged,
+        onChanged: _search.onQueryChanged,
         style: tt.bodyLarge,
         decoration: InputDecoration(
           hintText: 'Search messages…',
@@ -430,7 +346,7 @@ class _ChatScreenState extends State<ChatScreen> {
             icon: const Icon(Icons.close_rounded),
             onPressed: () {
               _searchCtrl.clear();
-              _onSearchChanged('');
+              _search.onQueryChanged('');
               _searchFocusNode.requestFocus();
             },
           ),
@@ -479,7 +395,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           event: event,
                           isMe: isMe,
                           isFirst: isFirst,
-                          highlighted: event.eventId == _highlightedEventId,
+                          highlighted: event.eventId == _search.highlightedEventId,
                           timeline: _timeline,
                           onTapReply: (e) =>
                               _scrollToEvent(e, closeSearch: false),
@@ -511,15 +427,15 @@ class _ChatScreenState extends State<ChatScreen> {
   // ── Search body (results list) ────────────────────────────
 
   Widget _buildSearchBody(ColorScheme cs, TextTheme tt) {
-    final query = _searchCtrl.text.trim();
+    final query = _search.query;
 
     // Not enough characters yet.
-    if (query.length < _minQueryLength) {
+    if (query.length < ChatSearchController.minQueryLength) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
           child: Text(
-            'Type at least $_minQueryLength characters to search',
+            'Type at least ${ChatSearchController.minQueryLength} characters to search',
             style: tt.bodyMedium?.copyWith(
               color: cs.onSurfaceVariant.withValues(alpha: 0.5),
             ),
@@ -530,7 +446,7 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     // Error state.
-    if (_searchError != null) {
+    if (_search.error != null) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -541,7 +457,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   size: 48, color: cs.error.withValues(alpha: 0.6)),
               const SizedBox(height: 12),
               Text(
-                _searchError!,
+                _search.error!,
                 style: tt.bodyMedium?.copyWith(color: cs.error),
                 textAlign: TextAlign.center,
               ),
@@ -552,12 +468,12 @@ class _ChatScreenState extends State<ChatScreen> {
     }
 
     // Loading first batch.
-    if (_isSearchLoading && _searchResults.isEmpty) {
+    if (_search.isLoading && _search.results.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
     // Empty results.
-    if (_searchResults.isEmpty && !_isSearchLoading) {
+    if (_search.results.isEmpty && !_search.isLoading) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -583,28 +499,28 @@ class _ChatScreenState extends State<ChatScreen> {
     // Results list.
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 4),
-      itemCount: _searchResults.length + (_searchNextBatch != null ? 1 : 0),
+      itemCount: _search.results.length + (_search.nextBatch != null ? 1 : 0),
       itemBuilder: (context, i) {
         // "Load more" button at the end.
-        if (i == _searchResults.length) {
+        if (i == _search.results.length) {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Center(
-              child: _isSearchLoading
+              child: _search.isLoading
                   ? const SizedBox(
                       width: 24,
                       height: 24,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
                   : TextButton(
-                      onPressed: () => _performSearch(loadMore: true),
+                      onPressed: () => _search.performSearch(loadMore: true),
                       child: const Text('Load more results'),
                     ),
             ),
           );
         }
 
-        final event = _searchResults[i];
+        final event = _search.results[i];
         return _SearchResultTile(
           event: event,
           query: query,
