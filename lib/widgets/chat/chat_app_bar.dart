@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
-import 'room_avatar.dart';
-import 'room_details_panel.dart';
+import '../room_avatar.dart';
+import '../room_details_panel.dart';
 
 /// Default app bar for the chat screen showing room name, avatar, and actions.
 class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {

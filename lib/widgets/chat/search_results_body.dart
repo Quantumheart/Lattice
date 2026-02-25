@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
-import '../services/chat_search_controller.dart';
+import '../../services/chat_search_controller.dart';
 import 'search_result_tile.dart';
 
 /// Displays search results for in-room message search.

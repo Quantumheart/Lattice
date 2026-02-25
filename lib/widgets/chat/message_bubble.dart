@@ -3,10 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
-import '../services/preferences_service.dart';
-import '../utils/media_auth.dart';
-import '../utils/sender_color.dart';
-import 'user_avatar.dart';
+import '../../services/preferences_service.dart';
+import '../../utils/media_auth.dart';
+import '../../utils/sender_color.dart';
+import '../user_avatar.dart';
 
 class MessageBubble extends StatefulWidget {
   const MessageBubble({
