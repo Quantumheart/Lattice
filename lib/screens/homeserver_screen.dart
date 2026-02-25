@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/matrix_service.dart' show MatrixService;
+import '../widgets/app_logo_header.dart';
 import '../widgets/homeserver_controller.dart';
 import 'login_screen.dart';
 import 'registration_screen.dart';
@@ -81,7 +82,6 @@ class _HomeserverScreenState extends State<HomeserverScreen>
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
 
     final isChecking = _controller.state == HomeserverState.checking;
     final hasError = _controller.state == HomeserverState.error;
@@ -97,28 +97,9 @@ class _HomeserverScreenState extends State<HomeserverScreen>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // ── Logo ──
-                  Container(
-                    width: 72,
-                    height: 72,
-                    decoration: BoxDecoration(
-                      color: cs.primaryContainer,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Icon(
-                      Icons.hub_rounded,
-                      size: 36,
-                      color: cs.onPrimaryContainer,
-                    ),
+                  const AppLogoHeader(
+                    subtitle: 'Connect to the Matrix network',
                   ),
-                  const SizedBox(height: 20),
-                  Text('Lattice', style: tt.displayLarge),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Connect to the Matrix network',
-                    style: tt.bodyMedium,
-                  ),
-                  const SizedBox(height: 40),
 
                   // ── Homeserver ──
                   TextField(
