@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -171,6 +173,39 @@ void main() {
       await ctrl.performSearch();
       expect(ctrl.results, isEmpty);
       ctrl.dispose();
+    });
+
+    test('does not notify listeners after disposal', () async {
+      // Use a separate controller to avoid double-dispose in tearDown.
+      final ctrl = ChatSearchController(
+        roomId: '!room:example.com',
+        getRoom: () => mockRoom,
+      );
+      ctrl.open();
+      ctrl.onQueryChanged('hello');
+
+      final completer = Completer<({List<Event> events, String? nextBatch, DateTime? searchedUntil})>();
+      when(mockRoom.searchEvents(
+        searchTerm: anyNamed('searchTerm'),
+        limit: anyNamed('limit'),
+        nextBatch: anyNamed('nextBatch'),
+      )).thenAnswer((_) => completer.future);
+
+      // Start the search but don't await it.
+      final searchFuture = ctrl.performSearch();
+
+      // Dispose before the search completes.
+      ctrl.dispose();
+
+      // Complete the search after disposal.
+      completer.complete((
+        events: <Event>[MockEvent()],
+        nextBatch: null as String?,
+        searchedUntil: null as DateTime?,
+      ));
+
+      // Should not throw.
+      await searchFuture;
     });
   });
 
