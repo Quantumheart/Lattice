@@ -215,6 +215,103 @@ void main() {
     });
   });
 
+  group('invite notifications', () {
+    SyncUpdate makeInviteSyncUpdate({
+      required String roomId,
+      List<StrippedStateEvent>? inviteState,
+    }) {
+      return SyncUpdate(
+        nextBatch: 'batch_1',
+        rooms: RoomsUpdate(
+          invite: {
+            roomId: InvitedRoomUpdate(
+              inviteState: inviteState,
+            ),
+          },
+        ),
+      );
+    }
+
+    Future<void> skipFirstSync() async {
+      service.startListening();
+      mockClient.onSync.add(SyncUpdate(nextBatch: 'batch_0'));
+      await Future.delayed(Duration.zero);
+    }
+
+    test('shows notification for invite', () async {
+      service.isAppResumed = false;
+      await skipFirstSync();
+
+      final update = makeInviteSyncUpdate(
+        roomId: roomId,
+        inviteState: [
+          StrippedStateEvent(
+            type: EventTypes.RoomMember,
+            content: {'membership': 'invite'},
+            senderId: otherUserId,
+            stateKey: ownUserId,
+          ),
+        ],
+      );
+      mockClient.onSync.add(update);
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      verify(mockPlugin.show(any, 'General', argThat(contains('invited you to join')), any,
+              payload: roomId))
+          .called(1);
+    });
+
+    test('deduplicates invite notifications across syncs', () async {
+      service.isAppResumed = false;
+      await skipFirstSync();
+
+      final update = makeInviteSyncUpdate(roomId: roomId);
+      mockClient.onSync.add(update);
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // Same invite again in next sync.
+      mockClient.onSync.add(update);
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
+    });
+
+    test('suppressed when app is in foreground', () async {
+      service.isAppResumed = true;
+      await skipFirstSync();
+
+      final update = makeInviteSyncUpdate(roomId: roomId);
+      mockClient.onSync.add(update);
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      verifyNever(mockPlugin.show(any, any, any, any, payload: anyNamed('payload')));
+    });
+
+    test('shown when app in foreground but foreground notifications enabled', () async {
+      service.isAppResumed = true;
+      await prefs.setForegroundNotificationsEnabled(true);
+      await skipFirstSync();
+
+      final update = makeInviteSyncUpdate(roomId: roomId);
+      mockClient.onSync.add(update);
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
+    });
+
+    test('suppressed when room push rule is dontNotify', () async {
+      when(mockRoom.pushRuleState).thenReturn(PushRuleState.dontNotify);
+      service.isAppResumed = false;
+      await skipFirstSync();
+
+      final update = makeInviteSyncUpdate(roomId: roomId);
+      mockClient.onSync.add(update);
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      verifyNever(mockPlugin.show(any, any, any, any, payload: anyNamed('payload')));
+    });
+  });
+
   group('notification content', () {
     test('notification ID is derived from stable FNV-1a hash of roomId', () async {
       service.startListening();

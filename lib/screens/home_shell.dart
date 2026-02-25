@@ -385,12 +385,15 @@ class _SpaceListMobileState extends State<_SpaceListMobile> {
                           ),
                         ),
                         title: Text(space.getLocalizedDisplayname()),
-                        subtitle: Text(
-                          matrix.inviterDisplayName(space) != null
-                              ? 'Invited by ${matrix.inviterDisplayName(space)}'
-                              : 'Pending invite',
-                          style: tt.bodyMedium,
-                        ),
+                        subtitle: Builder(builder: (_) {
+                          final inviter = matrix.inviterDisplayName(space);
+                          return Text(
+                            inviter != null
+                                ? 'Invited by $inviter'
+                                : 'Pending invite',
+                            style: tt.bodyMedium,
+                          );
+                        }),
                         tileColor: cs.tertiaryContainer
                             .withValues(alpha: 0.3),
                         shape: RoundedRectangleBorder(

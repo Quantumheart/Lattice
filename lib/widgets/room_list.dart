@@ -126,13 +126,25 @@ class _RoomListState extends State<RoomList>
       items.add(_FilterBarItem());
     }
 
-    // Invited rooms at the top
+    // Invited rooms at the top (filtered by search and category)
     var invitedRooms = matrix.invitedRooms;
     if (_query.isNotEmpty) {
       final q = _query.toLowerCase();
       invitedRooms = invitedRooms
           .where((r) => r.getLocalizedDisplayname().toLowerCase().contains(q))
           .toList();
+    }
+    if (filter != RoomCategory.all) {
+      invitedRooms = switch (filter) {
+        RoomCategory.all => invitedRooms,
+        RoomCategory.directMessages =>
+          invitedRooms.where((r) => r.isDirectChat).toList(),
+        RoomCategory.groups =>
+          invitedRooms.where((r) => !r.isDirectChat).toList(),
+        // Invites are always "unread" and never favourited
+        RoomCategory.unread => invitedRooms,
+        RoomCategory.favourites => [],
+      };
     }
     for (final room in invitedRooms) {
       items.add(_InviteItem(room: room));
@@ -560,10 +572,6 @@ class _InviteTileState extends State<_InviteTile> {
     setState(() => _isJoining = true);
     try {
       await widget.room.join();
-      // Wait for next sync so the room is available as joined.
-      await matrix.client.onSync.stream.first
-          .timeout(const Duration(seconds: 5));
-      if (mounted) matrix.selectRoom(widget.room.id);
     } catch (e) {
       debugPrint('[Lattice] Accept invite failed: $e');
       if (mounted) {
@@ -571,8 +579,20 @@ class _InviteTileState extends State<_InviteTile> {
           SnackBar(content: Text(MatrixService.friendlyAuthError(e))),
         );
       }
-    } finally {
       if (mounted) setState(() => _isJoining = false);
+      return;
+    }
+    // Join succeeded — wait briefly for the sync so the room appears as joined.
+    // A timeout here is not an error; the room will appear on the next sync.
+    try {
+      await matrix.client.onSync.stream.first
+          .timeout(const Duration(seconds: 5));
+    } catch (_) {
+      // Timeout is fine — the join already succeeded server-side.
+    }
+    if (mounted) {
+      matrix.selectRoom(widget.room.id);
+      setState(() => _isJoining = false);
     }
   }
 
@@ -616,7 +636,7 @@ class _InviteTileState extends State<_InviteTile> {
 
   @override
   Widget build(BuildContext context) {
-    final matrix = context.watch<MatrixService>();
+    final matrix = context.read<MatrixService>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final inviter = matrix.inviterDisplayName(widget.room);

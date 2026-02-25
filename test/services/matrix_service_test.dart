@@ -629,6 +629,115 @@ void main() {
     });
   });
 
+  group('invitedRooms', () {
+    test('returns only non-space rooms with invite membership, sorted alphabetically', () {
+      final invitedRoom1 = MockRoom();
+      when(invitedRoom1.isSpace).thenReturn(false);
+      when(invitedRoom1.membership).thenReturn(Membership.invite);
+      when(invitedRoom1.getLocalizedDisplayname()).thenReturn('B Room');
+
+      final invitedRoom2 = MockRoom();
+      when(invitedRoom2.isSpace).thenReturn(false);
+      when(invitedRoom2.membership).thenReturn(Membership.invite);
+      when(invitedRoom2.getLocalizedDisplayname()).thenReturn('A Room');
+
+      final joinedRoom = MockRoom();
+      when(joinedRoom.isSpace).thenReturn(false);
+      when(joinedRoom.membership).thenReturn(Membership.join);
+
+      final invitedSpace = MockRoom();
+      when(invitedSpace.isSpace).thenReturn(true);
+      when(invitedSpace.membership).thenReturn(Membership.invite);
+
+      when(mockClient.rooms).thenReturn([invitedRoom1, joinedRoom, invitedRoom2, invitedSpace]);
+
+      final result = service.invitedRooms;
+      expect(result, hasLength(2));
+      expect(result[0].getLocalizedDisplayname(), 'A Room');
+      expect(result[1].getLocalizedDisplayname(), 'B Room');
+    });
+
+    test('returns empty list when no invites', () {
+      final joinedRoom = MockRoom();
+      when(joinedRoom.isSpace).thenReturn(false);
+      when(joinedRoom.membership).thenReturn(Membership.join);
+
+      when(mockClient.rooms).thenReturn([joinedRoom]);
+
+      expect(service.invitedRooms, isEmpty);
+    });
+  });
+
+  group('invitedSpaces', () {
+    test('returns only spaces with invite membership, sorted alphabetically', () {
+      final invitedSpace1 = MockRoom();
+      when(invitedSpace1.isSpace).thenReturn(true);
+      when(invitedSpace1.membership).thenReturn(Membership.invite);
+      when(invitedSpace1.getLocalizedDisplayname()).thenReturn('Z Space');
+
+      final invitedSpace2 = MockRoom();
+      when(invitedSpace2.isSpace).thenReturn(true);
+      when(invitedSpace2.membership).thenReturn(Membership.invite);
+      when(invitedSpace2.getLocalizedDisplayname()).thenReturn('A Space');
+
+      final invitedRoom = MockRoom();
+      when(invitedRoom.isSpace).thenReturn(false);
+      when(invitedRoom.membership).thenReturn(Membership.invite);
+
+      final joinedSpace = MockRoom();
+      when(joinedSpace.isSpace).thenReturn(true);
+      when(joinedSpace.membership).thenReturn(Membership.join);
+
+      when(mockClient.rooms).thenReturn([invitedSpace1, invitedRoom, joinedSpace, invitedSpace2]);
+
+      final result = service.invitedSpaces;
+      expect(result, hasLength(2));
+      expect(result[0].getLocalizedDisplayname(), 'A Space');
+      expect(result[1].getLocalizedDisplayname(), 'Z Space');
+    });
+  });
+
+  group('inviterDisplayName', () {
+    test('returns display name of the inviter', () {
+      final room = MockRoom();
+      when(room.client).thenReturn(mockClient);
+      when(mockClient.userID).thenReturn('@me:example.com');
+
+      final inviteEvent = Event(
+        type: EventTypes.RoomMember,
+        content: {'membership': 'invite'},
+        eventId: '\$invite1',
+        senderId: '@alice:example.com',
+        originServerTs: DateTime.now(),
+        room: room,
+        stateKey: '@me:example.com',
+      );
+      when(room.getState(EventTypes.RoomMember, '@me:example.com'))
+          .thenReturn(inviteEvent);
+      when(room.unsafeGetUserFromMemoryOrFallback('@alice:example.com'))
+          .thenReturn(User('@alice:example.com', room: room, displayName: 'Alice'));
+
+      final result = service.inviterDisplayName(room);
+      expect(result, 'Alice');
+    });
+
+    test('returns null when no userID', () {
+      final room = MockRoom();
+      when(mockClient.userID).thenReturn(null);
+
+      expect(service.inviterDisplayName(room), isNull);
+    });
+
+    test('returns null when no invite state event', () {
+      final room = MockRoom();
+      when(mockClient.userID).thenReturn('@me:example.com');
+      when(room.getState(EventTypes.RoomMember, '@me:example.com'))
+          .thenReturn(null);
+
+      expect(service.inviterDisplayName(room), isNull);
+    });
+  });
+
   group('space tree', () {
     late MockRoom spaceA;
     late MockRoom spaceB;

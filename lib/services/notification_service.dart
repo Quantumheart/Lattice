@@ -49,6 +49,7 @@ class NotificationService {
   bool _firstSyncDone = false;
   bool _disposed = false;
   final Set<String> _processingRooms = {};
+  final Set<String> _notifiedInvites = {};
 
   /// Whether the app is currently in the foreground. Updated by the holder.
   bool isAppResumed = true;
@@ -109,6 +110,7 @@ class NotificationService {
     _syncSub?.cancel();
     _syncSub = null;
     _firstSyncDone = false;
+    _notifiedInvites.clear();
   }
 
   // ── Sync handler ─────────────────────────────────────────────
@@ -156,8 +158,20 @@ class NotificationService {
   ) async {
     _processingRooms.add(roomId);
     try {
+      // Deduplicate: only notify once per invite room.
+      if (_notifiedInvites.contains(roomId)) return;
+
+      // Suppress when the app is in the foreground (matches message behavior).
+      if (isAppResumed && !preferencesService.foregroundNotificationsEnabled) {
+        return;
+      }
+
       final client = matrixService.client;
       final room = client.getRoomById(roomId);
+
+      // Respect per-room push rules.
+      if (room?.pushRuleState == PushRuleState.dontNotify) return;
+
       final roomName = room?.getLocalizedDisplayname() ?? roomId;
 
       // Find who sent the invite from the invite state.
@@ -182,6 +196,7 @@ class NotificationService {
         senderName: inviterName,
         body: 'invited you to join',
       );
+      _notifiedInvites.add(roomId);
     } finally {
       _processingRooms.remove(roomId);
     }

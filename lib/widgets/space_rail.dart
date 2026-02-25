@@ -126,39 +126,46 @@ class _SpaceRailState extends State<SpaceRail> {
           ),
 
           // Invited spaces (non-reorderable, after joined spaces)
-          if (matrix.invitedSpaces.isNotEmpty) ...[
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Divider(height: 1, color: cs.outlineVariant),
-            ),
-            for (final space in matrix.invitedSpaces)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Opacity(
-                  opacity: 0.7,
-                  child: _RailIcon(
-                    label: space.getLocalizedDisplayname().isNotEmpty
-                        ? space.getLocalizedDisplayname()[0].toUpperCase()
-                        : '?',
-                    tooltip:
-                        'Invited: ${space.getLocalizedDisplayname()}',
-                    isSelected: false,
-                    color: cs.outlineVariant,
-                    outlined: true,
-                    onTap: () async {
-                      final result = await InviteDialog.show(
-                        context,
-                        room: space,
-                      );
-                      if (result == true && mounted) {
-                        matrix.selectSpace(space.id);
-                      }
-                    },
-                  ),
+          Builder(builder: (_) {
+            final invited = matrix.invitedSpaces;
+            if (invited.isEmpty) return const SizedBox.shrink();
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  child: Divider(height: 1, color: cs.outlineVariant),
                 ),
-              ),
-          ],
+                for (final space in invited)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Opacity(
+                      opacity: 0.7,
+                      child: _RailIcon(
+                        label: space.getLocalizedDisplayname().isNotEmpty
+                            ? space.getLocalizedDisplayname()[0].toUpperCase()
+                            : '?',
+                        tooltip:
+                            'Invited: ${space.getLocalizedDisplayname()}',
+                        isSelected: false,
+                        color: cs.outlineVariant,
+                        outlined: true,
+                        onTap: () async {
+                          final result = await InviteDialog.show(
+                            context,
+                            room: space,
+                          );
+                          if (result == true && mounted) {
+                            matrix.selectSpace(space.id);
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+              ],
+            );
+          }),
 
           // Add space button
           Padding(
