@@ -37,7 +37,6 @@ class _ChatScreenState extends State<ChatScreen> {
   final _itemScrollCtrl = ItemScrollController();
   final _itemPosListener = ItemPositionsListener.create();
   Timeline? _timeline;
-  StreamSubscription? _timelineSub;
   bool _loadingHistory = false;
   Timer? _readMarkerTimer;
 
@@ -54,6 +53,7 @@ class _ChatScreenState extends State<ChatScreen> {
   String? _searchError;
   Timer? _debounceTimer;
   String? _highlightedEventId;
+  Timer? _highlightTimer;
   static const _searchBatchLimit = 500;
   static const _minQueryLength = 3;
   static const _debounceDuration = Duration(milliseconds: 500);
@@ -63,6 +63,19 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     _initTimeline();
     _itemPosListener.itemPositions.addListener(_onScroll);
+  }
+
+  @override
+  void didUpdateWidget(ChatScreen old) {
+    super.didUpdateWidget(old);
+    if (old.roomId != widget.roomId) {
+      _timeline?.cancelSubscriptions();
+      _readMarkerTimer?.cancel();
+      _highlightTimer?.cancel();
+      _closeSearch();
+      _replyToEvent = null;
+      _initTimeline();
+    }
   }
 
   Future<void> _initTimeline() async {
@@ -282,7 +295,8 @@ class _ChatScreenState extends State<ChatScreen> {
     });
 
     // Clear highlight after a delay.
-    Timer(const Duration(seconds: 2), () {
+    _highlightTimer?.cancel();
+    _highlightTimer = Timer(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() => _highlightedEventId = null);
       }
@@ -296,8 +310,8 @@ class _ChatScreenState extends State<ChatScreen> {
     _searchCtrl.dispose();
     _searchFocusNode.dispose();
     _readMarkerTimer?.cancel();
+    _highlightTimer?.cancel();
     _debounceTimer?.cancel();
-    _timelineSub?.cancel();
     _timeline?.cancelSubscriptions();
     super.dispose();
   }
