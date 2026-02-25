@@ -6,11 +6,11 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../services/chat_search_controller.dart';
 import '../services/matrix_service.dart';
-import '../widgets/chat_app_bar.dart';
-import '../widgets/compose_bar.dart';
-import '../widgets/message_bubble.dart';
-import '../widgets/search_results_body.dart';
-import '../widgets/swipeable_message.dart';
+import '../widgets/chat/chat_app_bar.dart';
+import '../widgets/chat/compose_bar.dart';
+import '../widgets/chat/message_bubble.dart';
+import '../widgets/chat/search_results_body.dart';
+import '../widgets/chat/swipeable_message.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({

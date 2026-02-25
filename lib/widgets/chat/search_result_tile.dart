@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
-import '../utils/text_highlight.dart';
-import '../utils/time_format.dart';
-import 'user_avatar.dart';
+import '../../utils/text_highlight.dart';
+import '../../utils/time_format.dart';
+import '../user_avatar.dart';
 
 class SearchResultTile extends StatelessWidget {
   const SearchResultTile({

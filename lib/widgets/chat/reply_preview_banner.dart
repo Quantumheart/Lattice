@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
-import '../utils/sender_color.dart';
+import '../../utils/sender_color.dart';
 import 'message_bubble.dart' show stripReplyFallback;
 
 class ReplyPreviewBanner extends StatelessWidget {
