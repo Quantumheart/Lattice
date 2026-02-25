@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/preferences_service.dart';
+import '../widgets/section_header.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -48,7 +49,7 @@ class _NotificationSettingsScreenState
         padding: const EdgeInsets.all(16),
         children: [
           // ── Notification level ──────────────────────────────
-          const _SectionHeader(label: 'NOTIFICATION LEVEL'),
+          const SectionHeader(label: 'NOTIFICATION LEVEL'),
           Card(
             child: RadioGroup<NotificationLevel>(
               groupValue: prefs.notificationLevel,
@@ -81,7 +82,7 @@ class _NotificationSettingsScreenState
           ),
 
           // ── Custom keywords ─────────────────────────────────
-          const _SectionHeader(label: 'CUSTOM KEYWORDS'),
+          const SectionHeader(label: 'CUSTOM KEYWORDS'),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -142,7 +143,7 @@ class _NotificationSettingsScreenState
           const SizedBox(height: 24),
 
           // ── OS notifications ─────────────────────────────────
-          const _SectionHeader(label: 'OS NOTIFICATIONS'),
+          const SectionHeader(label: 'OS NOTIFICATIONS'),
           Card(
             child: Column(
               children: [
@@ -187,25 +188,3 @@ class _NotificationSettingsScreenState
   }
 }
 
-// ── Section header ──────────────────────────────────────────────
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
-      child: Text(
-        label,
-        style: tt.labelSmall?.copyWith(
-          color: cs.primary,
-          letterSpacing: 1.5,
-        ),
-      ),
-    );
-  }
-}

@@ -8,6 +8,7 @@ import '../extensions/device_extension.dart';
 import '../services/matrix_service.dart';
 import '../widgets/device_list_item.dart';
 import '../widgets/key_verification_dialog.dart';
+import '../widgets/section_header.dart';
 
 class DevicesScreen extends StatefulWidget {
   const DevicesScreen({super.key});
@@ -379,7 +380,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
 
           // ── This Device ──
           if (thisDevice.isNotEmpty) ...[
-            const _SectionHeader(label: 'THIS DEVICE'),
+            const SectionHeader(label: 'THIS DEVICE'),
             Card(
               child: DeviceListItem(
                 device: thisDevice.first,
@@ -392,7 +393,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
           ],
 
           // ── Other Devices ──
-          const _SectionHeader(label: 'OTHER DEVICES'),
+          const SectionHeader(label: 'OTHER DEVICES'),
           if (otherDevices.isEmpty)
             Card(
               child: Padding(
@@ -466,25 +467,3 @@ class _DevicesScreenState extends State<DevicesScreen> {
   }
 }
 
-// ── Private Section Header ───────────────────────────────────
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
-      child: Text(
-        label,
-        style: tt.labelSmall?.copyWith(
-          color: cs.primary,
-          letterSpacing: 1.5,
-        ),
-      ),
-    );
-  }
-}
