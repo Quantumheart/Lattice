@@ -6,14 +6,12 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../services/chat_search_controller.dart';
 import '../services/matrix_service.dart';
-import '../utils/sender_color.dart';
-import '../utils/text_highlight.dart';
-import '../utils/time_format.dart';
+import '../widgets/compose_bar.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/room_avatar.dart';
 import '../widgets/room_details_panel.dart';
+import '../widgets/search_result_tile.dart';
 import '../widgets/swipeable_message.dart';
-import '../widgets/user_avatar.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({
@@ -390,7 +388,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
 
         // ── Compose bar ──
-        _ComposeBar(
+        ComposeBar(
           controller: _msgCtrl,
           onSend: _send,
           replyEvent: _replyToEvent,
@@ -536,7 +534,7 @@ class _ChatScreenState extends State<ChatScreen> {
         }
 
         final event = _search.results[i];
-        return _SearchResultTile(
+        return SearchResultTile(
           event: event,
           query: query,
           onTap: () => _scrollToEvent(event),
@@ -550,277 +548,5 @@ class _ChatScreenState extends State<ChatScreen> {
     if (count == 0) return '';
     if (count == 1) return '1 member';
     return '$count members';
-  }
-}
-
-// ── Search result tile ────────────────────────────────────────
-
-class _SearchResultTile extends StatelessWidget {
-  const _SearchResultTile({
-    required this.event,
-    required this.query,
-    required this.onTap,
-  });
-
-  final Event event;
-  final String query;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final senderName =
-        event.senderFromMemoryOrFallback.displayName ?? event.senderId;
-
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Sender avatar
-            UserAvatar(
-              client: event.room.client,
-              avatarUrl: event.senderFromMemoryOrFallback.avatarUrl,
-              userId: event.senderId,
-              size: 36,
-            ),
-            const SizedBox(width: 12),
-
-            // Content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Sender name + timestamp
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          senderName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tt.bodyMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        formatRelativeTimestamp(event.originServerTs),
-                        style: tt.bodySmall?.copyWith(
-                          color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-
-                  // Message body with highlighted query
-                  _buildHighlightedBody(tt, cs),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHighlightedBody(TextTheme tt, ColorScheme cs) {
-    final body = event.body;
-    final spans = highlightSpans(body, query);
-
-    return RichText(
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
-      text: TextSpan(
-        style: tt.bodyMedium?.copyWith(
-          color: cs.onSurfaceVariant.withValues(alpha: 0.7),
-        ),
-        children: spans.map((span) {
-          if (span.isMatch) {
-            return TextSpan(
-              text: span.text,
-              style: TextStyle(
-                backgroundColor: cs.primaryContainer,
-                color: cs.onPrimaryContainer,
-                fontWeight: FontWeight.w600,
-              ),
-            );
-          }
-          return TextSpan(text: span.text);
-        }).toList(),
-      ),
-    );
-  }
-
-}
-
-// ── Compose bar ───────────────────────────────────────────────
-
-class _ComposeBar extends StatelessWidget {
-  const _ComposeBar({
-    required this.controller,
-    required this.onSend,
-    this.replyEvent,
-    required this.onCancelReply,
-  });
-
-  final TextEditingController controller;
-  final VoidCallback onSend;
-  final Event? replyEvent;
-  final VoidCallback onCancelReply;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: EdgeInsets.only(
-        left: 12,
-        right: 8,
-        top: 0,
-        bottom: MediaQuery.paddingOf(context).bottom + 8,
-      ),
-      decoration: BoxDecoration(
-        color: cs.surface,
-        border: Border(
-          top: BorderSide(
-            color: cs.outlineVariant.withValues(alpha: 0.3),
-          ),
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (replyEvent != null)
-            _ReplyPreviewBanner(
-              event: replyEvent!,
-              onCancel: onCancelReply,
-            ),
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: Icon(Icons.add_rounded, color: cs.onSurfaceVariant),
-                  onPressed: () {
-                    // TODO: attachment picker
-                  },
-                ),
-                Expanded(
-                  child: TextField(
-                    controller: controller,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) => onSend(),
-                    decoration: InputDecoration(
-                      hintText: 'Type a message…',
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
-                      ),
-                      filled: true,
-                      fillColor:
-                          cs.surfaceContainerHighest.withValues(alpha: 0.5),
-                    ),
-                    minLines: 1,
-                    maxLines: 5,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: controller,
-                  builder: (context, value, _) {
-                    final hasText = value.text.trim().isNotEmpty;
-                    return IconButton.filled(
-                      onPressed: hasText ? onSend : null,
-                      icon: const Icon(Icons.send_rounded, size: 20),
-                      style: IconButton.styleFrom(
-                        backgroundColor:
-                            hasText ? cs.primary : cs.surfaceContainerHighest,
-                        foregroundColor:
-                            hasText ? cs.onPrimary : cs.onSurfaceVariant,
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Reply preview banner ──────────────────────────────────────
-
-class _ReplyPreviewBanner extends StatelessWidget {
-  const _ReplyPreviewBanner({
-    required this.event,
-    required this.onCancel,
-  });
-
-  final Event event;
-  final VoidCallback onCancel;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final color = senderColor(event.senderId, cs);
-    final senderName =
-        event.senderFromMemoryOrFallback.displayName ?? event.senderId;
-
-    return Container(
-      constraints: const BoxConstraints(minHeight: 48),
-      padding: const EdgeInsets.only(left: 12, right: 4),
-      decoration: BoxDecoration(
-        border: Border(left: BorderSide(color: color, width: 3)),
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.reply_rounded, size: 18, color: color),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  senderName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tt.bodySmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: color,
-                  ),
-                ),
-                Text(
-                  stripReplyFallback(event.body),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tt.bodySmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            icon: const Icon(Icons.close_rounded, size: 18),
-            onPressed: onCancel,
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-          ),
-        ],
-      ),
-    );
   }
 }
