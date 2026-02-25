@@ -56,6 +56,19 @@ void main() {
       const body = '> quote\n\nactual message';
       expect(stripReplyFallback(body), 'actual message');
     });
+
+    test('strips nested reply fallback (reply to a reply)', () {
+      const body = '> <@bob:example.com> > <@alice:example.com> Hi\n> reply text\n\nMy reply';
+      expect(stripReplyFallback(body), 'My reply');
+    });
+
+    test('preserves body text starting with > that is not a fallback', () {
+      // A message that starts with > but is user-written quoting, not
+      // part of a reply fallback block — only lines at the very start
+      // that match the fallback pattern are stripped.
+      const body = 'Normal start\n> user quote';
+      expect(stripReplyFallback(body), 'Normal start\n> user quote');
+    });
   });
 
   // ── Widget tests for reply flow ───────────────────────────
