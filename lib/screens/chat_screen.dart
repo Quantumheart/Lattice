@@ -6,6 +6,8 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 import '../services/matrix_service.dart';
 import '../utils/sender_color.dart';
+import '../utils/text_highlight.dart';
+import '../utils/time_format.dart';
 import '../widgets/message_bubble.dart';
 import '../widgets/room_avatar.dart';
 import '../widgets/room_details_panel.dart';
@@ -675,7 +677,7 @@ class _SearchResultTile extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        _formatTimestamp(event.originServerTs),
+                        formatRelativeTimestamp(event.originServerTs),
                         style: tt.bodySmall?.copyWith(
                           color: cs.onSurfaceVariant.withValues(alpha: 0.5),
                         ),
@@ -697,7 +699,7 @@ class _SearchResultTile extends StatelessWidget {
 
   Widget _buildHighlightedBody(TextTheme tt, ColorScheme cs) {
     final body = event.body;
-    final spans = _highlightSpans(body, query);
+    final spans = highlightSpans(body, query);
 
     return RichText(
       maxLines: 2,
@@ -723,51 +725,6 @@ class _SearchResultTile extends StatelessWidget {
     );
   }
 
-  String _formatTimestamp(DateTime ts) {
-    final now = DateTime.now();
-    final diff = now.difference(ts);
-    if (diff.inMinutes < 1) return 'now';
-    if (diff.inHours < 24) {
-      final h = ts.hour.toString().padLeft(2, '0');
-      final m = ts.minute.toString().padLeft(2, '0');
-      return '$h:$m';
-    }
-    if (diff.inDays < 7) return '${diff.inDays}d ago';
-    return '${ts.day.toString().padLeft(2, '0')}/${ts.month.toString().padLeft(2, '0')}';
-  }
-}
-
-// ── Highlighted text helpers ──────────────────────────────────
-
-class _HighlightSpan {
-  const _HighlightSpan(this.text, this.isMatch);
-  final String text;
-  final bool isMatch;
-}
-
-List<_HighlightSpan> _highlightSpans(String text, String query) {
-  if (query.isEmpty) return [_HighlightSpan(text, false)];
-
-  final lower = text.toLowerCase();
-  final queryLower = query.toLowerCase();
-  final spans = <_HighlightSpan>[];
-  var start = 0;
-
-  while (start < text.length) {
-    final index = lower.indexOf(queryLower, start);
-    if (index == -1) {
-      spans.add(_HighlightSpan(text.substring(start), false));
-      break;
-    }
-    if (index > start) {
-      spans.add(_HighlightSpan(text.substring(start, index), false));
-    }
-    spans
-        .add(_HighlightSpan(text.substring(index, index + query.length), true));
-    start = index + query.length;
-  }
-
-  return spans;
 }
 
 // ── Compose bar ───────────────────────────────────────────────
