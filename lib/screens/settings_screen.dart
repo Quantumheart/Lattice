@@ -8,6 +8,7 @@ import '../services/client_manager.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
 import '../widgets/bootstrap_dialog.dart';
+import '../widgets/section_header.dart';
 import '../widgets/user_avatar.dart';
 import 'devices_screen.dart';
 import 'notification_settings_screen.dart';
@@ -272,7 +273,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // ── Account Switcher ──
           if (manager.hasMultipleAccounts) ...[
             const SizedBox(height: 16),
-            const _SectionHeader(label: 'ACCOUNTS'),
+            const SectionHeader(label: 'ACCOUNTS'),
             Card(
               child: Column(
                 children: [
@@ -323,7 +324,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 16),
 
           // ── Preferences ──
-          const _SectionHeader(label: 'PREFERENCES'),
+          const SectionHeader(label: 'PREFERENCES'),
           Card(
             child: Column(
               children: [
@@ -360,7 +361,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 16),
 
           // ── Security ──
-          const _SectionHeader(label: 'SECURITY'),
+          const SectionHeader(label: 'SECURITY'),
           Card(
             child: Column(
               children: [
@@ -400,7 +401,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 16),
 
           // ── About ──
-          const _SectionHeader(label: 'ABOUT'),
+          const SectionHeader(label: 'ABOUT'),
           Card(
             child: Column(
               children: [
@@ -653,27 +654,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8),
-      child: Text(
-        label,
-        style: tt.labelSmall?.copyWith(
-          color: cs.primary,
-          letterSpacing: 1.5,
-        ),
-      ),
-    );
-  }
 }
 
 class _DisableBackupDialog extends StatefulWidget {
