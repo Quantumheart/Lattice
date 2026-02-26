@@ -17,15 +17,15 @@ class MentionSuggestion {
   /// The mxc:// avatar URI, if available.
   final Uri? avatarUrl;
 
-  /// The Matrix [User] (for user mentions) or [Room] (for room mentions).
-  final dynamic source;
+  /// For room suggestions: the internal room ID (for avatar lookup).
+  final String? roomId;
 
   const MentionSuggestion({
     required this.type,
     required this.displayName,
     required this.id,
     this.avatarUrl,
-    this.source,
+    this.roomId,
   });
 }
 
@@ -46,6 +46,8 @@ class MentionAutocompleteController extends ChangeNotifier {
   final Room room;
   final List<Room> joinedRooms;
 
+  static final _specialCharsRegex = RegExp(r'[^\w.-]');
+
   bool _isActive = false;
   MentionTriggerType? _triggerType;
   int _triggerOffset = -1;
@@ -62,6 +64,9 @@ class MentionAutocompleteController extends ChangeNotifier {
   String get query => _query;
   List<MentionSuggestion> get suggestions => _suggestions;
   int get selectedIndex => _selectedIndex;
+
+  /// Whether the overlay has visible suggestions that can be confirmed.
+  bool get hasSuggestions => _isActive && _suggestions.isNotEmpty;
 
   // ── Trigger detection ──────────────────────────────────────
 
@@ -153,8 +158,11 @@ class MentionAutocompleteController extends ChangeNotifier {
       });
     }
 
+    final members = _cachedMembers;
+    if (members == null) return;
+
     final lowerQuery = _query.toLowerCase();
-    _suggestions = _cachedMembers!
+    _suggestions = members
         .where((u) =>
             u.displayName != null &&
             u.displayName!.toLowerCase().contains(lowerQuery))
@@ -164,7 +172,6 @@ class MentionAutocompleteController extends ChangeNotifier {
               displayName: u.displayName ?? u.id,
               id: u.id,
               avatarUrl: u.avatarUrl,
-              source: u,
             ))
         .toList();
   }
@@ -180,7 +187,7 @@ class MentionAutocompleteController extends ChangeNotifier {
               displayName: r.getLocalizedDisplayname(),
               id: r.canonicalAlias.isNotEmpty ? r.canonicalAlias : r.id,
               avatarUrl: r.avatar,
-              source: r,
+              roomId: r.id,
             ))
         .toList();
   }
@@ -233,7 +240,8 @@ class MentionAutocompleteController extends ChangeNotifier {
     if (suggestion.type == MentionTriggerType.user) {
       final name = suggestion.displayName;
       // Use bracket syntax for names with spaces or special characters.
-      final needsBrackets = name.contains(' ') || name.contains(RegExp(r'[^\w.-]'));
+      final needsBrackets =
+          name.contains(' ') || name.contains(_specialCharsRegex);
       return needsBrackets ? '@[$name] ' : '@$name ';
     } else {
       // Room mention: use canonical alias if available.

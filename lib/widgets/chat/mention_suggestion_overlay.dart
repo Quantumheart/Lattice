@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
+import '../room_avatar.dart';
 import '../user_avatar.dart';
 import 'mention_autocomplete_controller.dart';
 
@@ -91,12 +92,7 @@ class _SuggestionTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
             children: [
-              UserAvatar(
-                client: client,
-                avatarUrl: suggestion.avatarUrl,
-                userId: suggestion.id,
-                size: 32,
-              ),
+              _buildAvatar(),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(
@@ -126,6 +122,22 @@ class _SuggestionTile extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAvatar() {
+    if (suggestion.type == MentionTriggerType.room &&
+        suggestion.roomId != null) {
+      final room = client.getRoomById(suggestion.roomId!);
+      if (room != null) {
+        return RoomAvatarWidget(room: room, size: 32);
+      }
+    }
+    return UserAvatar(
+      client: client,
+      avatarUrl: suggestion.avatarUrl,
+      userId: suggestion.id,
+      size: 32,
     );
   }
 }
