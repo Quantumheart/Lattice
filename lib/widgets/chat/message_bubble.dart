@@ -307,6 +307,7 @@ class _MessageBubbleState extends State<MessageBubble> {
         html: formattedBody,
         style: textStyle,
         isMe: widget.isMe,
+        room: widget.event.room,
       );
     }
 

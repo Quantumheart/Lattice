@@ -2,10 +2,12 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart' as dom;
+import 'package:matrix/matrix.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'code_block.dart';
 import 'linkable_text.dart';
+import 'mention_pill.dart';
 
 /// Renders Matrix HTML `formatted_body` as a styled [Text.rich] widget.
 ///
@@ -18,11 +20,19 @@ class HtmlMessageText extends StatelessWidget {
     required this.html,
     required this.style,
     required this.isMe,
+    this.room,
   });
 
   final String html;
   final TextStyle? style;
   final bool isMe;
+
+  /// The room this message belongs to, used for resolving mention display names.
+  final Room? room;
+
+  static final _matrixToRegex = RegExp(
+    r'^https://matrix\.to/#/([^?]+)',
+  );
 
   static final _mxReplyRegex = RegExp(
     r'<mx-reply>.*?</mx-reply>',
@@ -231,6 +241,21 @@ class HtmlMessageText extends StatelessWidget {
       case 'a':
         final href = node.attributes['href'];
         if (href != null && href.isNotEmpty) {
+          // Check for matrix.to mention links.
+          final mentionMatch = _matrixToRegex.firstMatch(href);
+          if (mentionMatch != null) {
+            final identifier =
+                Uri.decodeComponent(mentionMatch.group(1)!);
+            final pill = _buildMentionPill(identifier, currentStyle);
+            if (pill != null) {
+              spans.add(WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: pill,
+              ));
+              return;
+            }
+          }
+
           final aStyle = currentStyle.copyWith(
             color: linkColor,
             decoration: TextDecoration.underline,
@@ -262,6 +287,46 @@ class HtmlMessageText extends StatelessWidget {
           _buildSpans(child, currentStyle, linkColor, spans);
         }
     }
+  }
+
+  /// Builds a [MentionPill] for a Matrix identifier, or returns null if
+  /// the identifier is not a recognized mention format.
+  Widget? _buildMentionPill(String identifier, TextStyle currentStyle) {
+    if (identifier.startsWith('@')) {
+      // User mention.
+      final displayName = room
+              ?.unsafeGetUserFromMemoryOrFallback(identifier)
+              .displayName ??
+          identifier;
+      return MentionPill(
+        displayName: displayName,
+        matrixId: identifier,
+        type: MentionType.user,
+        isMe: isMe,
+        style: currentStyle,
+      );
+    } else if (identifier.startsWith('!') || identifier.startsWith('#')) {
+      // Room mention (room ID or alias).
+      const type = MentionType.room;
+      String displayName;
+      if (identifier.startsWith('#')) {
+        // Alias — show it directly (without the leading #, MentionPill adds it).
+        displayName = identifier.substring(1);
+      } else {
+        // Room ID — try to resolve a local display name.
+        final resolved = room?.client.getRoomById(identifier);
+        displayName =
+            resolved?.getLocalizedDisplayname() ?? identifier;
+      }
+      return MentionPill(
+        displayName: displayName,
+        matrixId: identifier,
+        type: type,
+        isMe: isMe,
+        style: currentStyle,
+      );
+    }
+    return null;
   }
 
   /// Adds text with auto-linked URLs, reusing [LinkableText]'s regex.
