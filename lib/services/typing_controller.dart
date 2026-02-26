@@ -61,9 +61,11 @@ class TypingController {
     _inactivityTimer = Timer(_inactivityTimeout, stop);
   }
 
-  void _sendTyping(bool typing) {
-    room.setTyping(typing, timeout: typing ? _inactivityTimeout.inMilliseconds : null).catchError((e) {
+  Future<void> _sendTyping(bool typing) async {
+    try {
+      await room.setTyping(typing, timeout: typing ? _inactivityTimeout.inMilliseconds : null);
+    } catch (e) {
       debugPrint('[Lattice] Failed to set typing: $e');
-    });
+    }
   }
 }

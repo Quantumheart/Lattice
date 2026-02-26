@@ -81,8 +81,6 @@ class _ChatScreenState extends State<ChatScreen> {
     if (old.roomId != widget.roomId) {
       _timeline?.cancelSubscriptions();
       _readMarkerTimer?.cancel();
-      _typingCtrl?.dispose();
-      _typingCtrl = null;
       _replyNotifier.value = null;
       _editNotifier.value = null;
       _msgCtrl.clear();
@@ -426,13 +424,13 @@ class _ChatScreenState extends State<ChatScreen> {
               search: _search,
               onTapResult: _scrollToEvent,
             )
-          : _buildChatBody(matrix),
+          : _buildChatBody(matrix, room),
     );
   }
 
   // ── Chat body (messages + compose) ────────────────────────
 
-  Widget _buildChatBody(MatrixService matrix) {
+  Widget _buildChatBody(MatrixService matrix, Room room) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final events = _visibleEvents;
@@ -455,8 +453,9 @@ class _ChatScreenState extends State<ChatScreen> {
                   : _buildMessageList(events, matrix),
         ),
         TypingIndicator(
-          room: matrix.client.getRoomById(widget.roomId)!,
+          room: room,
           myUserId: matrix.client.userID,
+          syncStream: matrix.client.onSync.stream,
         ),
         ValueListenableBuilder<Event?>(
           valueListenable: _replyNotifier,
@@ -464,7 +463,6 @@ class _ChatScreenState extends State<ChatScreen> {
             return ValueListenableBuilder<Event?>(
               valueListenable: _editNotifier,
               builder: (context, editEvent, _) {
-                final room = matrix.client.getRoomById(widget.roomId);
                 return ComposeBar(
                   controller: _msgCtrl,
                   onSend: _send,

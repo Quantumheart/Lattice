@@ -20,12 +20,14 @@ void main() {
 
   group('TypingController', () {
     test('onTextChanged sends typing true', () {
-      final ctrl = TypingController(room: mockRoom);
-      ctrl.onTextChanged('hello');
+      fakeAsync((async) {
+        final ctrl = TypingController(room: mockRoom);
+        ctrl.onTextChanged('hello');
 
-      verify(mockRoom.setTyping(true, timeout: 30000)).called(1);
+        verify(mockRoom.setTyping(true, timeout: 30000)).called(1);
 
-      ctrl.dispose();
+        ctrl.dispose();
+      });
     });
 
     test('rapid calls within 4s do not re-send', () {
@@ -57,26 +59,30 @@ void main() {
     });
 
     test('stop sends false', () {
-      final ctrl = TypingController(room: mockRoom);
-      ctrl.onTextChanged('hello');
+      fakeAsync((async) {
+        final ctrl = TypingController(room: mockRoom);
+        ctrl.onTextChanged('hello');
 
-      ctrl.stop();
+        ctrl.stop();
 
-      verify(mockRoom.setTyping(false)).called(1);
+        verify(mockRoom.setTyping(false)).called(1);
 
-      ctrl.dispose();
+        ctrl.dispose();
+      });
     });
 
     test('stop is idempotent', () {
-      final ctrl = TypingController(room: mockRoom);
-      ctrl.onTextChanged('hello');
+      fakeAsync((async) {
+        final ctrl = TypingController(room: mockRoom);
+        ctrl.onTextChanged('hello');
 
-      ctrl.stop();
-      ctrl.stop();
+        ctrl.stop();
+        ctrl.stop();
 
-      verify(mockRoom.setTyping(false)).called(1);
+        verify(mockRoom.setTyping(false)).called(1);
 
-      ctrl.dispose();
+        ctrl.dispose();
+      });
     });
 
     test('30s inactivity auto-stops', () {
@@ -93,23 +99,50 @@ void main() {
     });
 
     test('empty text triggers stop', () {
-      final ctrl = TypingController(room: mockRoom);
-      ctrl.onTextChanged('hello');
+      fakeAsync((async) {
+        final ctrl = TypingController(room: mockRoom);
+        ctrl.onTextChanged('hello');
 
-      ctrl.onTextChanged('');
+        ctrl.onTextChanged('');
 
-      verify(mockRoom.setTyping(false)).called(1);
+        verify(mockRoom.setTyping(false)).called(1);
 
-      ctrl.dispose();
+        ctrl.dispose();
+      });
     });
 
     test('dispose calls stop', () {
-      final ctrl = TypingController(room: mockRoom);
-      ctrl.onTextChanged('hello');
+      fakeAsync((async) {
+        final ctrl = TypingController(room: mockRoom);
+        ctrl.onTextChanged('hello');
 
-      ctrl.dispose();
+        ctrl.dispose();
 
-      verify(mockRoom.setTyping(false)).called(1);
+        verify(mockRoom.setTyping(false)).called(1);
+      });
+    });
+
+    test('remains consistent when setTyping throws', () {
+      fakeAsync((async) {
+        when(mockRoom.setTyping(true, timeout: anyNamed('timeout')))
+            .thenAnswer((_) async => throw Exception('network error'));
+
+        final ctrl = TypingController(room: mockRoom);
+        ctrl.onTextChanged('hello');
+        async.flushMicrotasks();
+
+        // Controller should still consider itself typing despite the error,
+        // so a subsequent call within 4s should be debounced.
+        ctrl.onTextChanged('hello!');
+        verify(mockRoom.setTyping(true, timeout: 30000)).called(1);
+
+        // After 4s+ it should re-send.
+        async.elapse(const Duration(seconds: 5));
+        ctrl.onTextChanged('hello!!');
+        verify(mockRoom.setTyping(true, timeout: 30000)).called(1);
+
+        ctrl.dispose();
+      });
     });
   });
 }

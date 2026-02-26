@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:provider/provider.dart';
 import 'package:lattice/services/matrix_service.dart';
 import 'package:lattice/services/preferences_service.dart';
@@ -35,6 +36,7 @@ void main() {
     when(mockMatrix.client).thenReturn(mockClient);
     when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
     when(mockClient.userID).thenReturn('@me:example.com');
+    when(mockClient.onSync).thenReturn(CachedStreamController());
     when(mockRoom.getLocalizedDisplayname()).thenReturn('Test Room');
     when(mockRoom.id).thenReturn('!room:example.com');
     when(mockRoom.summary).thenReturn(
