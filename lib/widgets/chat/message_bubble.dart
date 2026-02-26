@@ -20,6 +20,7 @@ class MessageBubble extends StatefulWidget {
     this.timeline,
     this.onTapReply,
     this.onReply,
+    this.onEdit,
   });
 
   final Event event;
@@ -40,6 +41,9 @@ class MessageBubble extends StatefulWidget {
   /// Called to initiate a reply to this message.
   final VoidCallback? onReply;
 
+  /// Called to initiate editing this message (own messages only).
+  final VoidCallback? onEdit;
+
   @override
   State<MessageBubble> createState() => _MessageBubbleState();
 }
@@ -57,6 +61,14 @@ class _MessageBubbleState extends State<MessageBubble> {
     final metrics = _DensityMetrics.of(density);
     final isDesktop = screenWidth >= 720;
 
+    // Resolve edits: use the display event for rendered content.
+    final displayEvent = widget.timeline != null
+        ? widget.event.getDisplayEvent(widget.timeline!)
+        : widget.event;
+    final isEdited = widget.timeline != null &&
+        widget.event.hasAggregatedEvents(
+            widget.timeline!, RelationshipTypes.edit);
+
     final replyEventId = widget.event.content
             .tryGet<Map<String, Object?>>('m.relates_to')
             ?.tryGet<Map<String, Object?>>('m.in_reply_to')
@@ -64,8 +76,8 @@ class _MessageBubbleState extends State<MessageBubble> {
 
     // Strip reply fallback from body text for events that are replies.
     final bodyText = replyEventId != null
-        ? stripReplyFallback(widget.event.body)
-        : widget.event.body;
+        ? stripReplyFallback(displayEvent.body)
+        : displayEvent.body;
 
     Widget bubble = AnimatedContainer(
       duration: const Duration(milliseconds: 500),
@@ -169,6 +181,20 @@ class _MessageBubbleState extends State<MessageBubble> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        if (isEdited)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: Text(
+                              '(edited)',
+                              style: tt.bodyMedium?.copyWith(
+                                fontSize: metrics.timestampFontSize,
+                                color: widget.isMe
+                                    ? cs.onPrimary.withValues(alpha: 0.6)
+                                    : cs.onSurfaceVariant
+                                        .withValues(alpha: 0.5),
+                              ),
+                            ),
+                          ),
                         Text(
                           _formatTime(widget.event.originServerTs),
                           style: tt.bodyMedium?.copyWith(
@@ -254,6 +280,17 @@ class _MessageBubbleState extends State<MessageBubble> {
               ],
             ),
           ),
+        if (widget.onEdit != null)
+          const PopupMenuItem(
+            value: 'edit',
+            child: Row(
+              children: [
+                Icon(Icons.edit_rounded, size: 18),
+                SizedBox(width: 8),
+                Text('Edit'),
+              ],
+            ),
+          ),
         const PopupMenuItem(
           value: 'copy',
           child: Row(
@@ -268,6 +305,7 @@ class _MessageBubbleState extends State<MessageBubble> {
     );
     if (!mounted) return;
     if (value == 'reply') widget.onReply?.call();
+    if (value == 'edit') widget.onEdit?.call();
     if (value == 'copy') {
       Clipboard.setData(ClipboardData(text: stripReplyFallback(widget.event.body)));
     }

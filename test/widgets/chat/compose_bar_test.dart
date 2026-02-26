@@ -29,6 +29,7 @@ Widget _wrap({
         controller: controller,
         onSend: onSend,
         onCancelReply: () {},
+        onCancelEdit: () {},
         room: room,
         joinedRooms: joinedRooms,
       ),

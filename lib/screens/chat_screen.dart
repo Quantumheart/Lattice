@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:matrix/matrix.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -10,7 +11,7 @@ import '../services/chat_search_controller.dart';
 import '../services/matrix_service.dart';
 import '../widgets/chat/chat_app_bar.dart';
 import '../widgets/chat/compose_bar.dart';
-import '../widgets/chat/message_bubble.dart';
+import '../widgets/chat/message_bubble.dart' show MessageBubble, stripReplyFallback;
 import '../widgets/chat/search_results_body.dart';
 import '../widgets/chat/swipeable_message.dart';
 
@@ -49,6 +50,9 @@ class _ChatScreenState extends State<ChatScreen> {
   // ── Reply state ─────────────────────────────────────────
   final _replyNotifier = ValueNotifier<Event?>(null);
 
+  // ── Edit state ──────────────────────────────────────────
+  final _editNotifier = ValueNotifier<Event?>(null);
+
   // ── Upload state ────────────────────────────────────────
   final _uploadNotifier = ValueNotifier<UploadState?>(null);
 
@@ -72,6 +76,8 @@ class _ChatScreenState extends State<ChatScreen> {
       _timeline?.cancelSubscriptions();
       _readMarkerTimer?.cancel();
       _replyNotifier.value = null;
+      _editNotifier.value = null;
+      _msgCtrl.clear();
       _search.removeListener(_onSearchChanged);
       _search.dispose();
       _search = _createSearchController();
@@ -112,7 +118,8 @@ class _ChatScreenState extends State<ChatScreen> {
     if (events == null) return [];
     return events
         .where((e) =>
-            e.type == EventTypes.Message || e.type == EventTypes.Encrypted)
+            (e.type == EventTypes.Message || e.type == EventTypes.Encrypted) &&
+            e.relationshipType != RelationshipTypes.edit)
         .toList();
   }
 
@@ -160,6 +167,23 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _cancelReply() {
     _replyNotifier.value = null;
+  }
+
+  // ── Edit ───────────────────────────────────────────────
+
+  void _setEditEvent(Event event) {
+    _replyNotifier.value = null;
+    _editNotifier.value = event;
+    final displayEvent =
+        _timeline != null ? event.getDisplayEvent(_timeline!) : event;
+    _msgCtrl.text = stripReplyFallback(displayEvent.body);
+    _msgCtrl.selection =
+        TextSelection.collapsed(offset: _msgCtrl.text.length);
+  }
+
+  void _cancelEdit() {
+    _editNotifier.value = null;
+    _msgCtrl.clear();
   }
 
   // ── Attach ─────────────────────────────────────────────
@@ -220,16 +244,24 @@ class _ChatScreenState extends State<ChatScreen> {
     final replyEvent = _replyNotifier.value;
     _replyNotifier.value = null;
 
+    final editEvent = _editNotifier.value;
+    _editNotifier.value = null;
+
     final scaffold = ScaffoldMessenger.of(context);
     final matrix = context.read<MatrixService>();
     final room = matrix.client.getRoomById(widget.roomId);
     if (room == null) return;
 
     try {
-      await room.sendTextEvent(text, inReplyTo: replyEvent);
+      await room.sendTextEvent(
+        text,
+        inReplyTo: editEvent == null ? replyEvent : null,
+        editEventId: editEvent?.eventId,
+      );
     } catch (e) {
       _msgCtrl.text = text;
       _replyNotifier.value = replyEvent;
+      _editNotifier.value = editEvent;
       scaffold.showSnackBar(
         SnackBar(content: Text('Failed to send: ${MatrixService.friendlyAuthError(e)}')),
       );
@@ -290,6 +322,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _itemPosListener.itemPositions.removeListener(_onScroll);
     _msgCtrl.dispose();
     _replyNotifier.dispose();
+    _editNotifier.dispose();
     _uploadNotifier.dispose();
     _searchCtrl.dispose();
     _searchFocusNode.dispose();
@@ -369,16 +402,23 @@ class _ChatScreenState extends State<ChatScreen> {
         ValueListenableBuilder<Event?>(
           valueListenable: _replyNotifier,
           builder: (context, replyEvent, _) {
-            final room = matrix.client.getRoomById(widget.roomId);
-            return ComposeBar(
-              controller: _msgCtrl,
-              onSend: _send,
-              replyEvent: replyEvent,
-              onCancelReply: _cancelReply,
-              onAttach: _pickAndSendFile,
-              uploadNotifier: _uploadNotifier,
-              room: room,
-              joinedRooms: matrix.rooms,
+            return ValueListenableBuilder<Event?>(
+              valueListenable: _editNotifier,
+              builder: (context, editEvent, _) {
+                final room = matrix.client.getRoomById(widget.roomId);
+                return ComposeBar(
+                  controller: _msgCtrl,
+                  onSend: _send,
+                  replyEvent: replyEvent,
+                  onCancelReply: _cancelReply,
+                  editEvent: editEvent,
+                  onCancelEdit: _cancelEdit,
+                  onAttach: _pickAndSendFile,
+                  uploadNotifier: _uploadNotifier,
+                  room: room,
+                  joinedRooms: matrix.rooms,
+                );
+              },
             );
           },
         ),
@@ -417,14 +457,125 @@ class _ChatScreenState extends State<ChatScreen> {
       timeline: _timeline,
       onTapReply: _navigateToEvent,
       onReply: () => _setReplyTo(event),
+      onEdit: isMe ? () => _setEditEvent(event) : null,
     );
 
     if (isMobile) {
       return SwipeableMessage(
         onReply: () => _setReplyTo(event),
-        child: bubble,
+        child: _LongPressWrapper(
+          onLongPress: () => _showMobileActions(event, isMe),
+          child: bubble,
+        ),
       );
     }
     return bubble;
+  }
+
+  void _showMobileActions(Event event, bool isMe) {
+    showModalBottomSheet<void>(
+      context: context,
+      builder: (ctx) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.reply_rounded),
+                title: const Text('Reply'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _setReplyTo(event);
+                },
+              ),
+              if (isMe)
+                ListTile(
+                  leading: const Icon(Icons.edit_rounded),
+                  title: const Text('Edit'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _setEditEvent(event);
+                  },
+                ),
+              ListTile(
+                leading: const Icon(Icons.copy_rounded),
+                title: const Text('Copy'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  Clipboard.setData(
+                    ClipboardData(text: stripReplyFallback(event.body)),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Detects long press using raw pointer events so it does not participate in
+/// the gesture arena and therefore does not interfere with the horizontal drag
+/// recogniser in [SwipeableMessage].
+class _LongPressWrapper extends StatefulWidget {
+  const _LongPressWrapper({required this.onLongPress, required this.child});
+
+  final VoidCallback onLongPress;
+  final Widget child;
+
+  @override
+  State<_LongPressWrapper> createState() => _LongPressWrapperState();
+}
+
+class _LongPressWrapperState extends State<_LongPressWrapper> {
+  static const _longPressDuration = Duration(milliseconds: 500);
+  static const _touchSlop = 18.0;
+
+  Timer? _timer;
+  Offset? _startPosition;
+
+  void _onPointerDown(PointerDownEvent event) {
+    _startPosition = event.position;
+    _timer?.cancel();
+    _timer = Timer(_longPressDuration, () {
+      widget.onLongPress();
+      HapticFeedback.mediumImpact();
+    });
+  }
+
+  void _onPointerMove(PointerMoveEvent event) {
+    if (_startPosition != null &&
+        (event.position - _startPosition!).distance > _touchSlop) {
+      _timer?.cancel();
+      _timer = null;
+    }
+  }
+
+  void _onPointerUp(PointerUpEvent event) {
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  void _onPointerCancel(PointerCancelEvent event) {
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerDown: _onPointerDown,
+      onPointerMove: _onPointerMove,
+      onPointerUp: _onPointerUp,
+      onPointerCancel: _onPointerCancel,
+      child: widget.child,
+    );
   }
 }
