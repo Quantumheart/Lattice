@@ -115,7 +115,7 @@ class _ComposeBarState extends State<ComposeBar> {
     }
 
     final mc = _mentionController;
-    if (mc == null || !mc.isActive) return KeyEventResult.ignored;
+    if (mc == null || !mc.hasSuggestions) return KeyEventResult.ignored;
 
     if (event.logicalKey == LogicalKeyboardKey.arrowUp) {
       mc.moveUp();

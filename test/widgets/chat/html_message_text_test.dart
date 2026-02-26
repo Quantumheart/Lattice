@@ -1,9 +1,20 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 
 import 'package:lattice/widgets/chat/code_block.dart';
 import 'package:lattice/widgets/chat/html_message_text.dart';
+import 'package:lattice/widgets/chat/mention_pill.dart';
+
+@GenerateNiceMocks([
+  MockSpec<Room>(),
+  MockSpec<Client>(),
+  MockSpec<User>(),
+])
+import 'html_message_text_test.mocks.dart';
 
 Widget _wrap(Widget child) {
   return MaterialApp(
@@ -435,6 +446,116 @@ void main() {
       final codeBlock = tester.widget<CodeBlock>(find.byType(CodeBlock));
       expect(codeBlock.language, isNull);
       expect(codeBlock.code, 'plain preformatted');
+    });
+  });
+
+  group('HtmlMessageText mention pills', () {
+    late MockRoom mockRoom;
+    late MockClient mockClient;
+
+    setUp(() {
+      mockRoom = MockRoom();
+      mockClient = MockClient();
+      when(mockRoom.client).thenReturn(mockClient);
+
+      final alice = MockUser();
+      when(alice.displayName).thenReturn('Alice');
+      when(mockRoom.unsafeGetUserFromMemoryOrFallback('@alice:example.com'))
+          .thenReturn(alice);
+    });
+
+    testWidgets('matrix.to user link renders as MentionPill', (tester) async {
+      await tester.pumpWidget(_wrap(
+        HtmlMessageText(
+          html:
+              '<a href="https://matrix.to/#/@alice:example.com">Alice</a>',
+          style: const TextStyle(fontSize: 14),
+          isMe: false,
+          room: mockRoom,
+        ),
+      ));
+
+      expect(find.byType(MentionPill), findsOneWidget);
+      final pill = tester.widget<MentionPill>(find.byType(MentionPill));
+      expect(pill.type, MentionType.user);
+      expect(pill.displayName, 'Alice');
+      expect(pill.matrixId, '@alice:example.com');
+    });
+
+    testWidgets('matrix.to room alias link renders as MentionPill',
+        (tester) async {
+      await tester.pumpWidget(_wrap(
+        HtmlMessageText(
+          html:
+              '<a href="https://matrix.to/#/%23general:example.com">General</a>',
+          style: const TextStyle(fontSize: 14),
+          isMe: false,
+          room: mockRoom,
+        ),
+      ));
+
+      expect(find.byType(MentionPill), findsOneWidget);
+      final pill = tester.widget<MentionPill>(find.byType(MentionPill));
+      expect(pill.type, MentionType.room);
+      expect(pill.matrixId, '#general:example.com');
+    });
+
+    testWidgets('matrix.to room ID link renders as MentionPill',
+        (tester) async {
+      final resolvedRoom = MockRoom();
+      when(resolvedRoom.getLocalizedDisplayname()).thenReturn('Dev Room');
+      when(mockClient.getRoomById('!dev:example.com'))
+          .thenReturn(resolvedRoom);
+
+      await tester.pumpWidget(_wrap(
+        HtmlMessageText(
+          html:
+              '<a href="https://matrix.to/#/!dev:example.com">Dev Room</a>',
+          style: const TextStyle(fontSize: 14),
+          isMe: false,
+          room: mockRoom,
+        ),
+      ));
+
+      expect(find.byType(MentionPill), findsOneWidget);
+      final pill = tester.widget<MentionPill>(find.byType(MentionPill));
+      expect(pill.type, MentionType.room);
+      expect(pill.displayName, 'Dev Room');
+    });
+
+    testWidgets('non-matrix.to links render as regular links, not pills',
+        (tester) async {
+      await tester.pumpWidget(_wrap(
+        HtmlMessageText(
+          html: '<a href="https://example.com">example</a>',
+          style: const TextStyle(fontSize: 14),
+          isMe: false,
+          room: mockRoom,
+        ),
+      ));
+
+      expect(find.byType(MentionPill), findsNothing);
+      final spans = _extractFlatSpans(tester);
+      expect(spans[0].text, 'example');
+      expect(spans[0].recognizer, isA<TapGestureRecognizer>());
+    });
+
+    testWidgets('mention pill renders without room (graceful fallback)',
+        (tester) async {
+      await tester.pumpWidget(_wrap(
+        const HtmlMessageText(
+          html:
+              '<a href="https://matrix.to/#/@unknown:example.com">Unknown</a>',
+          style: TextStyle(fontSize: 14),
+          isMe: false,
+          room: null,
+        ),
+      ));
+
+      expect(find.byType(MentionPill), findsOneWidget);
+      final pill = tester.widget<MentionPill>(find.byType(MentionPill));
+      // Without a room, displayName falls back to the raw identifier.
+      expect(pill.matrixId, '@unknown:example.com');
     });
   });
 }
