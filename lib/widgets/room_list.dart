@@ -796,7 +796,7 @@ class _RoomTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        _lastMessagePreview(lastEvent),
+                        _lastMessagePreview(lastEvent, matrix.client.userID),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: tt.bodyMedium?.copyWith(
@@ -861,8 +861,18 @@ class _RoomTile extends StatelessWidget {
     return palette[index % palette.length];
   }
 
-  String _lastMessagePreview(Event? event) {
+  String _lastMessagePreview(Event? event, String? myUserId) {
     if (event == null) return 'No messages yet';
+    if (event.redacted) {
+      final isMe = event.senderId == myUserId;
+      if (isMe) return 'You deleted this message';
+      final redactor = event.redactedBecause?.senderId;
+      final isSelfRedact = redactor == event.senderId;
+      if (isSelfRedact || redactor == null) return 'This message was deleted';
+      final redactorUser =
+          event.room.unsafeGetUserFromMemoryOrFallback(redactor);
+      return 'Deleted by ${redactorUser.displayName ?? redactor}';
+    }
     if (event.messageType == MessageTypes.Text) {
       return event.body;
     }
