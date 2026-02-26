@@ -55,7 +55,7 @@ class _ComposeBarState extends State<ComposeBar> {
   @override
   void didUpdateWidget(ComposeBar old) {
     super.didUpdateWidget(old);
-    if (old.room != widget.room || old.joinedRooms != widget.joinedRooms) {
+    if (old.room?.id != widget.room?.id) {
       _mentionController?.removeListener(_onMentionChanged);
       _mentionController?.dispose();
       _initMentionController();
@@ -88,10 +88,12 @@ class _ComposeBarState extends State<ComposeBar> {
   }
 
   void _handleSend() {
-    if (_mentionController != null && _mentionController!.isActive) {
+    if (_mentionController != null && _mentionController!.hasSuggestions) {
       _mentionController!.confirmSelection();
       return;
     }
+    // Dismiss empty autocomplete so it doesn't linger after send.
+    _mentionController?.dismiss();
     if (widget.controller.text.trim().isNotEmpty) {
       widget.onSend();
       _focusNode.requestFocus();
