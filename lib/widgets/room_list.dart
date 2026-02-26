@@ -8,6 +8,7 @@ import '../services/preferences_service.dart';
 import '../utils/notification_filter.dart';
 import 'new_dm_dialog.dart';
 import 'new_room_dialog.dart';
+import 'chat/message_bubble.dart' show stripReplyFallback;
 import 'room_avatar.dart';
 
 // ── List item types for the flat interleaved list ──────────
@@ -873,14 +874,15 @@ class _RoomTile extends StatelessWidget {
           event.room.unsafeGetUserFromMemoryOrFallback(redactor);
       return 'Deleted by ${redactorUser.displayName ?? redactor}';
     }
+    final body = stripReplyFallback(event.body);
     if (event.messageType == MessageTypes.Text) {
-      return event.body;
+      return body;
     }
     if (event.messageType == MessageTypes.Image) return '📷 Image';
     if (event.messageType == MessageTypes.Video) return '🎬 Video';
     if (event.messageType == MessageTypes.File) return '📎 File';
     if (event.messageType == MessageTypes.Audio) return '🎵 Audio';
-    return event.body;
+    return body;
   }
 
   String _formatTime(DateTime? ts) {
