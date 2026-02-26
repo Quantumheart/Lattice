@@ -142,13 +142,20 @@ void main() {
         ),
       ));
 
-      // Find RichText widgets that have monospace font in their root span.
+      // Find a RichText whose span tree contains monospace font.
       final richTexts =
           tester.widgetList<RichText>(find.byType(RichText)).toList();
-      final codeRichText = richTexts.firstWhere(
-        (rt) => (rt.text as TextSpan).style?.fontFamily == 'monospace',
-      );
-      expect(codeRichText, isNotNull);
+
+      bool hasMonospace(InlineSpan span) {
+        if (span is TextSpan) {
+          if (span.style?.fontFamily == 'monospace') return true;
+          return span.children?.any(hasMonospace) ?? false;
+        }
+        return false;
+      }
+
+      final codeRichText = richTexts.where((rt) => hasMonospace(rt.text));
+      expect(codeRichText, isNotEmpty);
     });
 
     testWidgets('uses appropriate background for isMe=true', (tester) async {
@@ -214,24 +221,41 @@ void main() {
         ),
       ));
 
-      // Find the RichText that contains the code (has monospace font).
+      // Collect all TextSpans from every RichText in the tree.
       final richTexts =
           tester.widgetList<RichText>(find.byType(RichText)).toList();
-      final codeRichText = richTexts.firstWhere(
-        (rt) => (rt.text as TextSpan).style?.fontFamily == 'monospace',
-      );
-      final rootSpan = codeRichText.text as TextSpan;
 
-      // The children should have multiple spans with different styles
-      // (syntax highlighting produces colored spans).
-      expect(rootSpan.children, isNotNull);
-      expect(rootSpan.children!.length, greaterThan(1));
+      List<TextSpan> collectLeafSpans(InlineSpan span) {
+        final leaves = <TextSpan>[];
+        if (span is TextSpan) {
+          if (span.children == null || span.children!.isEmpty) {
+            leaves.add(span);
+          } else {
+            for (final child in span.children!) {
+              leaves.addAll(collectLeafSpans(child));
+            }
+          }
+        }
+        return leaves;
+      }
 
-      // At least some spans should have non-null styles with colors set
+      // Find the RichText whose plain text contains the code.
+      final codeRichText = richTexts.firstWhere((rt) {
+        final span = rt.text;
+        if (span is! TextSpan) return false;
+        return span.toPlainText().contains('void main()');
+      });
+
+      final allLeaves = collectLeafSpans(codeRichText.text as TextSpan);
+
+      // Syntax highlighting should produce multiple leaf spans.
+      expect(allLeaves.length, greaterThan(1));
+
+      // At least some spans should have styles with colors or font weight set
       // (indicating syntax highlighting was applied).
-      final styledSpans = rootSpan.children!
-          .whereType<TextSpan>()
-          .where((s) => s.style?.color != null || s.style?.fontWeight != null);
+      final styledSpans = allLeaves.where(
+        (s) => s.style?.color != null || s.style?.fontWeight != null,
+      );
       expect(styledSpans, isNotEmpty);
     });
   });

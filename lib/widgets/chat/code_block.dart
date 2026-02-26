@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:highlight/highlight_core.dart' as hi;
 import 'package:highlight/languages/bash.dart' as lang_bash;
-import 'package:highlight/languages/c.dart' as lang_c;
 import 'package:highlight/languages/cpp.dart' as lang_cpp;
 import 'package:highlight/languages/cs.dart' as lang_cs;
 import 'package:highlight/languages/css.dart' as lang_css;
@@ -46,7 +45,7 @@ class CodeBlock extends StatelessWidget {
   static hi.Highlight _initHighlight() {
     final h = hi.Highlight();
     h.registerLanguage('bash', lang_bash.bash);
-    h.registerLanguage('c', lang_c.c);
+    h.registerLanguage('c', lang_cpp.cpp);
     h.registerLanguage('cpp', lang_cpp.cpp);
     h.registerLanguage('csharp', lang_cs.cs);
     h.registerLanguage('css', lang_css.css);
@@ -204,18 +203,16 @@ class CodeBlock extends StatelessWidget {
     hi.Node node,
     Map<String, TextStyle> theme,
     Color defaultColor,
-    List<TextSpan> spans,
-  ) {
+    List<TextSpan> spans, [
+    String? inheritedClassName,
+  ]) {
+    final effectiveClass = node.className ?? inheritedClassName;
     if (node.value != null) {
-      final style = node.className != null ? theme[node.className] : null;
+      final style = effectiveClass != null ? theme[effectiveClass] : null;
       spans.add(TextSpan(text: node.value, style: style));
     } else if (node.children != null) {
       for (final child in node.children!) {
-        // Nested nodes may refine the class name.
-        if (child.className == null && node.className != null) {
-          child.className = node.className;
-        }
-        _walkNode(child, theme, defaultColor, spans);
+        _walkNode(child, theme, defaultColor, spans, effectiveClass);
       }
     }
   }
