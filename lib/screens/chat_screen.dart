@@ -11,6 +11,7 @@ import '../services/chat_search_controller.dart';
 import '../services/matrix_service.dart';
 import '../widgets/chat/chat_app_bar.dart';
 import '../widgets/chat/compose_bar.dart';
+import '../widgets/chat/message_action_sheet.dart';
 import '../widgets/chat/message_bubble.dart' show MessageBubble, stripReplyFallback;
 import '../widgets/chat/search_results_body.dart';
 import '../widgets/chat/swipeable_message.dart';
@@ -464,7 +465,7 @@ class _ChatScreenState extends State<ChatScreen> {
       return SwipeableMessage(
         onReply: () => _setReplyTo(event),
         child: _LongPressWrapper(
-          onLongPress: () => _showMobileActions(event, isMe),
+          onLongPress: (rect) => _showMobileActions(event, isMe, rect),
           child: bubble,
         ),
       );
@@ -472,45 +473,35 @@ class _ChatScreenState extends State<ChatScreen> {
     return bubble;
   }
 
-  void _showMobileActions(Event event, bool isMe) {
-    showModalBottomSheet<void>(
+  void _showMobileActions(Event event, bool isMe, Rect bubbleRect) {
+    final actions = <MessageAction>[
+      MessageAction(
+        label: 'Reply',
+        icon: Icons.reply_rounded,
+        onTap: () => _setReplyTo(event),
+      ),
+      if (isMe)
+        MessageAction(
+          label: 'Edit',
+          icon: Icons.edit_rounded,
+          onTap: () => _setEditEvent(event),
+        ),
+      MessageAction(
+        label: 'Copy',
+        icon: Icons.copy_rounded,
+        onTap: () => Clipboard.setData(
+          ClipboardData(text: stripReplyFallback(event.body)),
+        ),
+      ),
+    ];
+
+    showMessageActionSheet(
       context: context,
-      builder: (ctx) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: const Icon(Icons.reply_rounded),
-                title: const Text('Reply'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _setReplyTo(event);
-                },
-              ),
-              if (isMe)
-                ListTile(
-                  leading: const Icon(Icons.edit_rounded),
-                  title: const Text('Edit'),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _setEditEvent(event);
-                  },
-                ),
-              ListTile(
-                leading: const Icon(Icons.copy_rounded),
-                title: const Text('Copy'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  Clipboard.setData(
-                    ClipboardData(text: stripReplyFallback(event.body)),
-                  );
-                },
-              ),
-            ],
-          ),
-        );
-      },
+      event: event,
+      isMe: isMe,
+      bubbleRect: bubbleRect,
+      actions: actions,
+      timeline: _timeline,
     );
   }
 }
@@ -521,7 +512,7 @@ class _ChatScreenState extends State<ChatScreen> {
 class _LongPressWrapper extends StatefulWidget {
   const _LongPressWrapper({required this.onLongPress, required this.child});
 
-  final VoidCallback onLongPress;
+  final void Function(Rect bubbleRect) onLongPress;
   final Widget child;
 
   @override
@@ -539,7 +530,12 @@ class _LongPressWrapperState extends State<_LongPressWrapper> {
     _startPosition = event.position;
     _timer?.cancel();
     _timer = Timer(_longPressDuration, () {
-      widget.onLongPress();
+      final box = context.findRenderObject() as RenderBox?;
+      if (box != null && box.hasSize) {
+        final topLeft = box.localToGlobal(Offset.zero);
+        final rect = topLeft & box.size;
+        widget.onLongPress(rect);
+      }
       HapticFeedback.mediumImpact();
     });
   }
