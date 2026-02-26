@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:matrix/matrix.dart';
@@ -29,6 +31,7 @@ class ComposeBar extends StatefulWidget {
 }
 
 class _ComposeBarState extends State<ComposeBar> {
+  static final bool _isMacOS = Platform.isMacOS;
   final _focusNode = FocusNode();
 
   @override
@@ -42,6 +45,15 @@ class _ComposeBarState extends State<ComposeBar> {
       widget.onSend();
       _focusNode.requestFocus();
     }
+  }
+
+  void _jumpToStart() {
+    widget.controller.selection = const TextSelection.collapsed(offset: 0);
+  }
+
+  void _jumpToEnd() {
+    widget.controller.selection =
+        TextSelection.collapsed(offset: widget.controller.text.length);
   }
 
   @override
@@ -92,6 +104,10 @@ class _ComposeBarState extends State<ComposeBar> {
                     bindings: {
                       const SingleActivator(LogicalKeyboardKey.enter):
                           _handleSend,
+                      SingleActivator(LogicalKeyboardKey.arrowUp,
+                          meta: _isMacOS, control: !_isMacOS): _jumpToStart,
+                      SingleActivator(LogicalKeyboardKey.arrowDown,
+                          meta: _isMacOS, control: !_isMacOS): _jumpToEnd,
                     },
                     child: TextField(
                       controller: widget.controller,
@@ -121,7 +137,7 @@ class _ComposeBarState extends State<ComposeBar> {
                   builder: (context, value, _) {
                     final hasText = value.text.trim().isNotEmpty;
                     return IconButton.filled(
-                      onPressed: hasText ? widget.onSend : null,
+                      onPressed: hasText ? _handleSend : null,
                       icon: const Icon(Icons.send_rounded, size: 20),
                       style: IconButton.styleFrom(
                         backgroundColor:

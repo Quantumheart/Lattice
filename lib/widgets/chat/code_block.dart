@@ -191,7 +191,7 @@ class CodeBlock extends StatelessWidget {
       return [TextSpan(text: code)];
     }
 
-    final theme = _buildThemeMap(cs, brightness, defaultColor);
+    final theme = _getThemeMap(cs, brightness, defaultColor);
     final spans = <TextSpan>[];
     for (final node in result.nodes!) {
       _walkNode(node, theme, defaultColor, spans);
@@ -215,6 +215,29 @@ class CodeBlock extends StatelessWidget {
         _walkNode(child, theme, defaultColor, spans, effectiveClass);
       }
     }
+  }
+
+  static ColorScheme? _cachedColorScheme;
+  static Brightness? _cachedBrightness;
+  static Color? _cachedDefaultColor;
+  static Map<String, TextStyle>? _cachedThemeMap;
+
+  static Map<String, TextStyle> _getThemeMap(
+    ColorScheme cs,
+    Brightness brightness,
+    Color defaultColor,
+  ) {
+    if (_cachedThemeMap != null &&
+        cs == _cachedColorScheme &&
+        brightness == _cachedBrightness &&
+        defaultColor == _cachedDefaultColor) {
+      return _cachedThemeMap!;
+    }
+    _cachedColorScheme = cs;
+    _cachedBrightness = brightness;
+    _cachedDefaultColor = defaultColor;
+    _cachedThemeMap = _buildThemeMap(cs, brightness, defaultColor);
+    return _cachedThemeMap!;
   }
 
   static Map<String, TextStyle> _buildThemeMap(
