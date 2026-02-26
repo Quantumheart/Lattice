@@ -4,55 +4,68 @@ import 'package:matrix/matrix.dart';
 /// Displays "Alice is typing…" with an animated dot indicator.
 ///
 /// Placed between the message list and the compose bar in chat view.
+/// Uses a [StreamBuilder] on [room.onUpdate] so it refreshes whenever
+/// the room's ephemeral state (including typing notifications) changes.
 class TypingIndicator extends StatelessWidget {
   const TypingIndicator({
     super.key,
     required this.room,
     required this.myUserId,
+    required this.syncStream,
   });
 
   final Room room;
   final String? myUserId;
 
+  /// Stream that triggers rebuilds (typically [client.onSync.stream]).
+  final Stream<dynamic> syncStream;
+
   @override
   Widget build(BuildContext context) {
-    final typers = room.typingUsers
-        .where((u) => u.id != myUserId)
-        .toList();
+    return StreamBuilder(
+      stream: syncStream,
+      builder: (context, _) {
+        final typers = room.typingUsers
+            .where((u) => u.id != myUserId)
+            .toList();
 
-    if (typers.isEmpty) return const SizedBox.shrink();
+        if (typers.isEmpty) return const SizedBox.shrink();
 
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 200),
-      curve: Curves.easeOut,
-      alignment: Alignment.topCenter,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-        child: Row(
-          children: [
-            const _AnimatedDots(),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                _formatTypers(typers),
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurfaceVariant
-                          .withValues(alpha: 0.7),
-                      fontStyle: FontStyle.italic,
-                    ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+        final theme = Theme.of(context);
+        return AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+          alignment: Alignment.topCenter,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Row(
+              children: [
+                const _AnimatedDots(),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    formatTypers(typers),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant
+                              .withValues(alpha: 0.7),
+                          fontStyle: FontStyle.italic,
+                        ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  static String _formatTypers(List<User> typers) {
+  /// Format a list of typing users into a human-readable string.
+  ///
+  /// Exposed as a static method so it can be reused (e.g. room list preview).
+  static String formatTypers(List<User> typers) {
     final names = typers.map((u) => u.displayName ?? u.id).toList();
     return switch (names.length) {
       1 => '${names[0]} is typing',

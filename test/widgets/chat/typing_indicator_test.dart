@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
@@ -22,6 +24,7 @@ Widget _wrap(Room room, {String? myUserId}) {
       body: TypingIndicator(
         room: room,
         myUserId: myUserId ?? '@me:example.com',
+        syncStream: const Stream.empty(),
       ),
     ),
   );
@@ -92,6 +95,15 @@ void main() {
       await tester.pump();
 
       expect(find.text('Alice is typing'), findsOneWidget);
+    });
+
+    testWidgets('null displayName falls back to user ID', (tester) async {
+      final noName = _makeUser('@anon:example.com', null);
+      when(mockRoom.typingUsers).thenReturn([noName]);
+      await tester.pumpWidget(_wrap(mockRoom));
+      await tester.pump();
+
+      expect(find.text('@anon:example.com is typing'), findsOneWidget);
     });
 
     testWidgets('only own user typing renders nothing', (tester) async {

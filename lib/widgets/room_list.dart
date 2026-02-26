@@ -9,6 +9,7 @@ import '../utils/notification_filter.dart';
 import 'new_dm_dialog.dart';
 import 'new_room_dialog.dart';
 import 'chat/message_bubble.dart' show stripReplyFallback;
+import 'chat/typing_indicator.dart' show TypingIndicator;
 import 'room_avatar.dart';
 
 // ── List item types for the flat interleaved list ──────────
@@ -880,10 +881,7 @@ class _RoomTile extends StatelessWidget {
   }
 
   String _typingPreview(List<User> typers) {
-    if (typers.length == 1) {
-      return '${typers[0].displayName ?? typers[0].id} is typing...';
-    }
-    return '${typers.length} people typing...';
+    return '${TypingIndicator.formatTypers(typers)}...';
   }
 
   Color _dotColor(int index, ColorScheme cs) {
