@@ -54,8 +54,13 @@ class ReadReceiptsRow extends StatelessWidget {
   final bool isMe;
 
   static const double _avatarSize = 16;
+  static const double _borderWidth = 1.5;
+  static const double _borderedSize = _avatarSize + _borderWidth * 2;
   static const double _overlap = 4;
   static const int _maxVisible = 3;
+
+  /// Matches the sender avatar (44px) + gap (8px) in [MessageBubble].
+  static const double _senderAvatarOffset = 44 + 8;
 
   @override
   Widget build(BuildContext context) {
@@ -73,19 +78,20 @@ class ReadReceiptsRow extends StatelessWidget {
           mainAxisAlignment:
               isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
           children: [
-            if (!isMe) const SizedBox(width: 44 + 8), // avatar + gap offset
+            if (!isMe) const SizedBox(width: _senderAvatarOffset),
             SizedBox(
-              width: _avatarSize +
-                  (_overlap > 0 ? (visibleCount - 1) * (_avatarSize - _overlap) : 0) +
+              width: _borderedSize +
+                  (visibleCount - 1) * (_borderedSize - _overlap) +
                   (overflow > 0 ? 20 : 0),
-              height: _avatarSize,
+              height: _borderedSize,
               child: Stack(
                 clipBehavior: Clip.none,
                 children: [
                   for (var i = 0; i < visibleCount; i++)
                     Positioned(
-                      left: i * (_avatarSize - _overlap),
+                      left: i * (_borderedSize - _overlap),
                       child: _AvatarBorder(
+                        borderWidth: _borderWidth,
                         child: UserAvatar(
                           client: client,
                           avatarUrl: receipts[i].user.avatarUrl,
@@ -96,10 +102,10 @@ class ReadReceiptsRow extends StatelessWidget {
                     ),
                   if (overflow > 0)
                     Positioned(
-                      left: visibleCount * (_avatarSize - _overlap),
+                      left: visibleCount * (_borderedSize - _overlap),
                       top: 0,
                       child: SizedBox(
-                        height: _avatarSize,
+                        height: _borderedSize,
                         child: Center(
                           child: Text(
                             '+$overflow',
@@ -124,8 +130,9 @@ class ReadReceiptsRow extends StatelessWidget {
 /// Adds a thin background-colored border around each avatar to create
 /// the overlapping "chip" effect.
 class _AvatarBorder extends StatelessWidget {
-  const _AvatarBorder({required this.child});
+  const _AvatarBorder({required this.borderWidth, required this.child});
 
+  final double borderWidth;
   final Widget child;
 
   @override
@@ -135,7 +142,7 @@ class _AvatarBorder extends StatelessWidget {
         shape: BoxShape.circle,
         border: Border.all(
           color: Theme.of(context).scaffoldBackgroundColor,
-          width: 1.5,
+          width: borderWidth,
         ),
       ),
       child: child,
@@ -154,6 +161,7 @@ void showReadersSheet(
   showModalBottomSheet(
     context: context,
     builder: (context) {
+      final localizations = MaterialLocalizations.of(context);
       return SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -168,15 +176,15 @@ void showReadersSheet(
             const Divider(height: 1),
             Flexible(
               child: ListView.builder(
-                shrinkWrap: true,
                 itemCount: receipts.length,
                 itemBuilder: (context, i) {
                   final receipt = receipts[i];
                   final name =
                       receipt.user.displayName ?? receipt.user.id;
-                  final time = TimeOfDay.fromDateTime(receipt.time.toLocal());
+                  final timeOfDay =
+                      TimeOfDay.fromDateTime(receipt.time.toLocal());
                   final timeStr =
-                      '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+                      localizations.formatTimeOfDay(timeOfDay);
 
                   return ListTile(
                     leading: UserAvatar(
