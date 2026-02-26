@@ -39,6 +39,7 @@ void main() {
     when(mockClient.onSync).thenReturn(CachedStreamController());
     when(mockRoom.getLocalizedDisplayname()).thenReturn('Test Room');
     when(mockRoom.id).thenReturn('!room:example.com');
+    when(mockRoom.receiptState).thenReturn(LatestReceiptState.empty());
     when(mockRoom.summary).thenReturn(
       RoomSummary.fromJson({'m.joined_member_count': 3}),
     );
