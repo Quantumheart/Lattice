@@ -5,6 +5,7 @@ import 'package:mockito/mockito.dart';
 import 'package:matrix/matrix.dart';
 
 import 'package:lattice/widgets/chat/read_receipts.dart';
+import 'package:lattice/widgets/user_avatar.dart';
 
 @GenerateNiceMocks([
   MockSpec<Room>(),
@@ -176,8 +177,8 @@ void main() {
       await tester.pumpWidget(_wrapRow(receipts, mockClient));
       await tester.pump();
 
+      expect(find.byType(UserAvatar), findsNWidgets(2));
       // Should not show overflow badge
-      expect(find.text('+'), findsNothing);
       expect(find.textContaining('+'), findsNothing);
     });
 
@@ -214,8 +215,8 @@ void main() {
       expect(find.text('Read by 1'), findsOneWidget);
       // Should show the user's name
       expect(find.text('Alice'), findsOneWidget);
-      // Should show the time
-      expect(find.text('14:30'), findsOneWidget);
+      // Should show the time (locale-aware: US English default)
+      expect(find.text('2:30 PM'), findsOneWidget);
     });
 
     testWidgets('bottom sheet shows multiple readers', (tester) async {

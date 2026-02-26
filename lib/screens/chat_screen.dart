@@ -451,7 +451,7 @@ class _ChatScreenState extends State<ChatScreen> {
                         ),
                       ),
                     )
-                  : _buildMessageList(events, matrix),
+                  : _buildMessageList(events, matrix, room),
         ),
         TypingIndicator(
           room: room,
@@ -485,12 +485,10 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _buildMessageList(List<Event> events, MatrixService matrix) {
+  Widget _buildMessageList(
+      List<Event> events, MatrixService matrix, Room room) {
     final isMobile = MediaQuery.sizeOf(context).width < 720;
-    final room = matrix.client.getRoomById(widget.roomId);
-    final receiptMap = room != null
-        ? buildReceiptMap(room, matrix.client.userID)
-        : <String, List<Receipt>>{};
+    final receiptMap = buildReceiptMap(room, matrix.client.userID);
 
     return ScrollablePositionedList.builder(
       itemScrollController: _itemScrollCtrl,
