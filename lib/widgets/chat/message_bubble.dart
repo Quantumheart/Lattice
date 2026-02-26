@@ -7,6 +7,7 @@ import '../../services/preferences_service.dart';
 import '../../utils/media_auth.dart';
 import '../../utils/sender_color.dart';
 import '../user_avatar.dart';
+import 'linkable_text.dart';
 
 class MessageBubble extends StatefulWidget {
   const MessageBubble({
@@ -275,13 +276,14 @@ class _MessageBubbleState extends State<MessageBubble> {
     }
 
     // Default: text
-    return Text(
-      bodyText,
+    return LinkableText(
+      text: bodyText,
       style: tt.bodyLarge?.copyWith(
         color: widget.isMe ? cs.onPrimary : cs.onSurface,
         fontSize: metrics.bodyFontSize,
         height: metrics.bodyLineHeight,
       ),
+      isMe: widget.isMe,
     );
   }
 
