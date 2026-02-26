@@ -187,6 +187,49 @@ class _ChatScreenState extends State<ChatScreen> {
     _msgCtrl.clear();
   }
 
+  // ── Delete / Redact ────────────────────────────────────
+
+  Future<void> _deleteEvent(Event event) async {
+    final matrix = context.read<MatrixService>();
+    final isMe = event.senderId == matrix.client.userID;
+    final title = isMe ? 'Delete message?' : 'Remove message?';
+    final body = isMe
+        ? 'This message will be permanently deleted for everyone.'
+        : 'This message will be permanently removed from the room.';
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(body),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(context).colorScheme.error,
+            ),
+            child: Text(isMe ? 'Delete' : 'Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      await event.room.redactEvent(event.eventId);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete: ${MatrixService.friendlyAuthError(e)}')),
+        );
+      }
+    }
+  }
+
   // ── Attach ─────────────────────────────────────────────
 
   Future<void> _pickAndSendFile() async {
@@ -450,15 +493,18 @@ class _ChatScreenState extends State<ChatScreen> {
     final prevSender = i + 1 < events.length ? events[i + 1].senderId : null;
     final isFirst = event.senderId != prevSender;
 
+    final isRedacted = event.redacted;
+
     final bubble = MessageBubble(
       event: event,
       isMe: isMe,
       isFirst: isFirst,
       highlighted: event.eventId == _search.highlightedEventId,
       timeline: _timeline,
-      onTapReply: _navigateToEvent,
-      onReply: () => _setReplyTo(event),
-      onEdit: isMe ? () => _setEditEvent(event) : null,
+      onTapReply: isRedacted ? null : _navigateToEvent,
+      onReply: isRedacted ? null : () => _setReplyTo(event),
+      onEdit: !isRedacted && isMe ? () => _setEditEvent(event) : null,
+      onDelete: !isRedacted && event.canRedact ? () => _deleteEvent(event) : null,
     );
 
     if (isMobile) {
@@ -474,6 +520,9 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _showMobileActions(Event event, bool isMe, Rect bubbleRect) {
+    if (event.redacted) return;
+
+    final cs = Theme.of(context).colorScheme;
     final actions = <MessageAction>[
       MessageAction(
         label: 'Reply',
@@ -493,6 +542,13 @@ class _ChatScreenState extends State<ChatScreen> {
           ClipboardData(text: stripReplyFallback(event.body)),
         ),
       ),
+      if (event.canRedact)
+        MessageAction(
+          label: isMe ? 'Delete' : 'Remove',
+          icon: Icons.delete_outline_rounded,
+          onTap: () => _deleteEvent(event),
+          color: cs.error,
+        ),
     ];
 
     showMessageActionSheet(

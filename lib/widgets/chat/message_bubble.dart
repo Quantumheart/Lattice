@@ -21,6 +21,7 @@ class MessageBubble extends StatefulWidget {
     this.onTapReply,
     this.onReply,
     this.onEdit,
+    this.onDelete,
   });
 
   final Event event;
@@ -44,6 +45,9 @@ class MessageBubble extends StatefulWidget {
   /// Called to initiate editing this message (own messages only).
   final VoidCallback? onEdit;
 
+  /// Called to delete/redact this message.
+  final VoidCallback? onDelete;
+
   @override
   State<MessageBubble> createState() => _MessageBubbleState();
 }
@@ -61,11 +65,14 @@ class _MessageBubbleState extends State<MessageBubble> {
     final metrics = _DensityMetrics.of(density);
     final isDesktop = screenWidth >= 720;
 
+    final isRedacted = widget.event.redacted;
+
     // Resolve edits: use the display event for rendered content.
     final displayEvent = widget.timeline != null
         ? widget.event.getDisplayEvent(widget.timeline!)
         : widget.event;
-    final isEdited = widget.timeline != null &&
+    final isEdited = !isRedacted &&
+        widget.timeline != null &&
         widget.event.hasAggregatedEvents(
             widget.timeline!, RelationshipTypes.edit);
 
@@ -301,6 +308,17 @@ class _MessageBubbleState extends State<MessageBubble> {
             ],
           ),
         ),
+        if (widget.onDelete != null)
+          PopupMenuItem(
+            value: 'delete',
+            child: Row(
+              children: [
+                Icon(Icons.delete_outline_rounded, size: 18, color: cs.error),
+                const SizedBox(width: 8),
+                Text('Delete', style: TextStyle(color: cs.error)),
+              ],
+            ),
+          ),
       ],
     );
     if (!mounted) return;
@@ -309,12 +327,40 @@ class _MessageBubbleState extends State<MessageBubble> {
     if (value == 'copy') {
       Clipboard.setData(ClipboardData(text: stripReplyFallback(widget.event.body)));
     }
+    if (value == 'delete') widget.onDelete?.call();
   }
 
   Widget _buildBody(
       BuildContext context, _DensityMetrics metrics, String bodyText) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+
+    if (widget.event.redacted) {
+      final redactor = widget.event.redactedBecause?.senderId;
+      final isSelfRedact = redactor == widget.event.senderId;
+      String label;
+      if (widget.isMe) {
+        label = 'You deleted this message';
+      } else if (isSelfRedact) {
+        label = 'This message was deleted';
+      } else if (redactor != null) {
+        final redactorUser =
+            widget.event.room.unsafeGetUserFromMemoryOrFallback(redactor);
+        final displayName = redactorUser.displayName ?? redactor;
+        label = 'Deleted by $displayName';
+      } else {
+        label = 'This message was deleted';
+      }
+      return Text(
+        label,
+        style: tt.bodyMedium?.copyWith(
+          fontStyle: FontStyle.italic,
+          color: widget.isMe
+              ? cs.onPrimary.withValues(alpha: 0.5)
+              : cs.onSurfaceVariant.withValues(alpha: 0.5),
+        ),
+      );
+    }
 
     if (widget.event.messageType == MessageTypes.Image) {
       return _ImageBubble(event: widget.event);
@@ -445,7 +491,9 @@ class _InlineReplyPreviewState extends State<_InlineReplyPreview> {
     final tt = Theme.of(context).textTheme;
 
     final parentAvailable =
-        _parentEvent != null && _parentEvent!.type != EventTypes.Redaction;
+        _parentEvent != null &&
+        _parentEvent!.type != EventTypes.Redaction &&
+        !_parentEvent!.redacted;
     final senderName = parentAvailable
         ? (_parentEvent!.senderFromMemoryOrFallback.displayName ??
             _parentEvent!.senderId)

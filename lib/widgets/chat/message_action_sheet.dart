@@ -12,11 +12,13 @@ class MessageAction {
     required this.label,
     required this.icon,
     required this.onTap,
+    this.color,
   });
 
   final String label;
   final IconData icon;
   final VoidCallback onTap;
+  final Color? color;
 }
 
 // ── Public entry point ──────────────────────────────────
@@ -268,10 +270,10 @@ class _ActionRow extends StatelessWidget {
               Expanded(
                 child: Text(
                   action.label,
-                  style: tt.bodyMedium?.copyWith(color: cs.onSurface),
+                  style: tt.bodyMedium?.copyWith(color: action.color ?? cs.onSurface),
                 ),
               ),
-              Icon(action.icon, size: 20, color: cs.onSurfaceVariant),
+              Icon(action.icon, size: 20, color: action.color ?? cs.onSurfaceVariant),
             ],
           ),
         ),
