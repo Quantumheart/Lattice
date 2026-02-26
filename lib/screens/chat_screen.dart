@@ -368,14 +368,19 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         ValueListenableBuilder<Event?>(
           valueListenable: _replyNotifier,
-          builder: (context, replyEvent, _) => ComposeBar(
-            controller: _msgCtrl,
-            onSend: _send,
-            replyEvent: replyEvent,
-            onCancelReply: _cancelReply,
-            onAttach: _pickAndSendFile,
-            uploadNotifier: _uploadNotifier,
-          ),
+          builder: (context, replyEvent, _) {
+            final room = matrix.client.getRoomById(widget.roomId);
+            return ComposeBar(
+              controller: _msgCtrl,
+              onSend: _send,
+              replyEvent: replyEvent,
+              onCancelReply: _cancelReply,
+              onAttach: _pickAndSendFile,
+              uploadNotifier: _uploadNotifier,
+              room: room,
+              joinedRooms: matrix.rooms,
+            );
+          },
         ),
       ],
     );
