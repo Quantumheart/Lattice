@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:matrix/matrix.dart';
 
+import '../user_avatar.dart';
 import 'mention_autocomplete_controller.dart';
 
 /// Displays filtered mention suggestions above the compose bar text field.
@@ -7,9 +9,11 @@ class MentionSuggestionList extends StatelessWidget {
   const MentionSuggestionList({
     super.key,
     required this.controller,
+    required this.client,
   });
 
   final MentionAutocompleteController controller;
+  final Client client;
 
   static const _maxVisibleItems = 5;
   static const _itemHeight = 52.0;
@@ -50,6 +54,7 @@ class MentionSuggestionList extends StatelessWidget {
           return _SuggestionTile(
             suggestion: suggestion,
             isSelected: isSelected,
+            client: client,
             onTap: () => controller.selectSuggestion(suggestion),
           );
         },
@@ -62,20 +67,19 @@ class _SuggestionTile extends StatelessWidget {
   const _SuggestionTile({
     required this.suggestion,
     required this.isSelected,
+    required this.client,
     required this.onTap,
   });
 
   final MentionSuggestion suggestion;
   final bool isSelected;
+  final Client client;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-
-    final isUser = suggestion.type == MentionTriggerType.user;
-    final icon = isUser ? Icons.person_outline : Icons.tag;
 
     return Material(
       color: isSelected
@@ -87,10 +91,11 @@ class _SuggestionTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: cs.primaryContainer,
-                child: Icon(icon, size: 18, color: cs.onPrimaryContainer),
+              UserAvatar(
+                client: client,
+                avatarUrl: suggestion.avatarUrl,
+                userId: suggestion.id,
+                size: 32,
               ),
               const SizedBox(width: 10),
               Expanded(

@@ -161,7 +161,10 @@ class _ComposeBarState extends State<ComposeBar> {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (showSuggestions)
-            MentionSuggestionList(controller: _mentionController!),
+            MentionSuggestionList(
+              controller: _mentionController!,
+              client: widget.room!.client,
+            ),
           if (widget.replyEvent != null)
             ReplyPreviewBanner(
               event: widget.replyEvent!,
