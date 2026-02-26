@@ -796,15 +796,7 @@ class _RoomTile extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        _lastMessagePreview(lastEvent, matrix.client.userID),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tt.bodyMedium?.copyWith(
-                          color:
-                              cs.onSurfaceVariant.withValues(alpha: 0.7),
-                        ),
-                      ),
+                      _buildSubtitle(matrix, lastEvent, cs, tt),
                     ],
                   ),
                 ),
@@ -855,6 +847,43 @@ class _RoomTile extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildSubtitle(
+    MatrixService matrix,
+    Event? lastEvent,
+    ColorScheme cs,
+    TextTheme tt,
+  ) {
+    final typers = room.typingUsers
+        .where((u) => u.id != matrix.client.userID)
+        .toList();
+    if (typers.isNotEmpty) {
+      return Text(
+        _typingPreview(typers),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: tt.bodyMedium?.copyWith(
+          color: cs.primary,
+          fontStyle: FontStyle.italic,
+        ),
+      );
+    }
+    return Text(
+      _lastMessagePreview(lastEvent, matrix.client.userID),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: tt.bodyMedium?.copyWith(
+        color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+      ),
+    );
+  }
+
+  String _typingPreview(List<User> typers) {
+    if (typers.length == 1) {
+      return '${typers[0].displayName ?? typers[0].id} is typing...';
+    }
+    return '${typers.length} people typing...';
   }
 
   Color _dotColor(int index, ColorScheme cs) {
