@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:matrix/matrix.dart';
 
 import '../../models/upload_state.dart';
+import '../../services/typing_controller.dart';
 import 'mention_autocomplete_controller.dart';
 import 'mention_suggestion_overlay.dart';
 import 'edit_preview_banner.dart';
@@ -24,6 +25,7 @@ class ComposeBar extends StatefulWidget {
     this.uploadNotifier,
     this.room,
     this.joinedRooms,
+    this.typingController,
   });
 
   final TextEditingController controller;
@@ -41,6 +43,9 @@ class ComposeBar extends StatefulWidget {
   /// All joined rooms (needed for #-room mentions).
   final List<Room>? joinedRooms;
 
+  /// Manages outgoing typing indicators for the current room.
+  final TypingController? typingController;
+
   @override
   State<ComposeBar> createState() => _ComposeBarState();
 }
@@ -55,6 +60,8 @@ class _ComposeBarState extends State<ComposeBar> {
   void initState() {
     super.initState();
     _initMentionController();
+    widget.controller.addListener(_onTextChangedForTyping);
+    _focusNode.addListener(_onFocusChanged);
   }
 
   @override
@@ -64,6 +71,10 @@ class _ComposeBarState extends State<ComposeBar> {
       _mentionController?.removeListener(_onMentionChanged);
       _mentionController?.dispose();
       _initMentionController();
+    }
+    if (old.controller != widget.controller) {
+      old.controller.removeListener(_onTextChangedForTyping);
+      widget.controller.addListener(_onTextChangedForTyping);
     }
   }
 
@@ -84,8 +95,20 @@ class _ComposeBarState extends State<ComposeBar> {
     if (mounted) setState(() {});
   }
 
+  void _onTextChangedForTyping() {
+    widget.typingController?.onTextChanged(widget.controller.text);
+  }
+
+  void _onFocusChanged() {
+    if (!_focusNode.hasFocus) {
+      widget.typingController?.stop();
+    }
+  }
+
   @override
   void dispose() {
+    widget.controller.removeListener(_onTextChangedForTyping);
+    _focusNode.removeListener(_onFocusChanged);
     _mentionController?.removeListener(_onMentionChanged);
     _mentionController?.dispose();
     _focusNode.dispose();
@@ -100,6 +123,7 @@ class _ComposeBarState extends State<ComposeBar> {
     // Dismiss empty autocomplete so it doesn't linger after send.
     _mentionController?.dismiss();
     if (widget.controller.text.trim().isNotEmpty) {
+      widget.typingController?.stop();
       widget.onSend();
       _focusNode.requestFocus();
     }

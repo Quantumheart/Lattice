@@ -9,6 +9,8 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../models/upload_state.dart';
 import '../services/chat_search_controller.dart';
 import '../services/matrix_service.dart';
+import '../services/typing_controller.dart';
+import '../widgets/chat/typing_indicator.dart';
 import '../widgets/chat/chat_app_bar.dart';
 import '../widgets/chat/compose_bar.dart';
 import '../widgets/chat/message_action_sheet.dart';
@@ -57,6 +59,9 @@ class _ChatScreenState extends State<ChatScreen> {
   // ── Upload state ────────────────────────────────────────
   final _uploadNotifier = ValueNotifier<UploadState?>(null);
 
+  // ── Typing ─────────────────────────────────────────────
+  TypingController? _typingCtrl;
+
   // ── Search ─────────────────────────────────────────────
   late ChatSearchController _search;
   final _searchCtrl = TextEditingController();
@@ -76,6 +81,8 @@ class _ChatScreenState extends State<ChatScreen> {
     if (old.roomId != widget.roomId) {
       _timeline?.cancelSubscriptions();
       _readMarkerTimer?.cancel();
+      _typingCtrl?.dispose();
+      _typingCtrl = null;
       _replyNotifier.value = null;
       _editNotifier.value = null;
       _msgCtrl.clear();
@@ -103,6 +110,9 @@ class _ChatScreenState extends State<ChatScreen> {
     final matrix = context.read<MatrixService>();
     final room = matrix.client.getRoomById(widget.roomId);
     if (room == null) return;
+
+    _typingCtrl?.dispose();
+    _typingCtrl = TypingController(room: room);
 
     _timeline = await room.getTimeline(
       onUpdate: () {
@@ -370,6 +380,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _uploadNotifier.dispose();
     _searchCtrl.dispose();
     _searchFocusNode.dispose();
+    _typingCtrl?.dispose();
     _readMarkerTimer?.cancel();
     _search.removeListener(_onSearchChanged);
     _search.dispose();
@@ -443,6 +454,10 @@ class _ChatScreenState extends State<ChatScreen> {
                     )
                   : _buildMessageList(events, matrix),
         ),
+        TypingIndicator(
+          room: matrix.client.getRoomById(widget.roomId)!,
+          myUserId: matrix.client.userID,
+        ),
         ValueListenableBuilder<Event?>(
           valueListenable: _replyNotifier,
           builder: (context, replyEvent, _) {
@@ -461,6 +476,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   uploadNotifier: _uploadNotifier,
                   room: room,
                   joinedRooms: matrix.rooms,
+                  typingController: _typingCtrl,
                 );
               },
             );
