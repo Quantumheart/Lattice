@@ -17,7 +17,7 @@ class MentionSuggestionList extends StatelessWidget {
   final Client client;
 
   static const _maxVisibleItems = 5;
-  static const _itemHeight = 52.0;
+  static const _maxHeight = 280.0;
 
   @override
   Widget build(BuildContext context) {
@@ -26,11 +26,8 @@ class MentionSuggestionList extends StatelessWidget {
 
     if (suggestions.isEmpty) return const SizedBox.shrink();
 
-    final visibleCount = suggestions.length.clamp(1, _maxVisibleItems);
-    final height = visibleCount * _itemHeight;
-
     return Container(
-      constraints: BoxConstraints(maxHeight: height),
+      constraints: const BoxConstraints(maxHeight: _maxHeight),
       margin: const EdgeInsets.only(bottom: 4),
       decoration: BoxDecoration(
         color: cs.surfaceContainer,

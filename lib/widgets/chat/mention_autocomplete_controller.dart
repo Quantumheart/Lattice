@@ -49,6 +49,7 @@ class MentionAutocompleteController extends ChangeNotifier {
   static final _specialCharsRegex = RegExp(r'[^\w.-]');
 
   bool _isActive = false;
+  bool _disposed = false;
   MentionTriggerType? _triggerType;
   int _triggerOffset = -1;
   String _query = '';
@@ -112,10 +113,8 @@ class MentionAutocompleteController extends ChangeNotifier {
       return;
     }
 
-    // Query must not contain spaces (unless we want to support multi-word — keep simple).
+    // Query must not contain spaces.
     final queryText = text.substring(triggerPos + 1, cursorPos);
-
-    // If there's a space in the query, the trigger is probably not active.
     if (queryText.contains(' ') || queryText.contains('\n')) {
       _dismiss();
       return;
@@ -147,6 +146,7 @@ class MentionAutocompleteController extends ChangeNotifier {
       _cachedMembers = room.getParticipants();
       _loadingMembers = true;
       room.requestParticipants().then((members) {
+        if (_disposed) return;
         _cachedMembers = members;
         _loadingMembers = false;
         if (_isActive && _triggerType == MentionTriggerType.user) {
@@ -154,6 +154,7 @@ class MentionAutocompleteController extends ChangeNotifier {
           notifyListeners();
         }
       }).catchError((_) {
+        if (_disposed) return;
         _loadingMembers = false;
       });
     }
@@ -163,9 +164,12 @@ class MentionAutocompleteController extends ChangeNotifier {
 
     final lowerQuery = _query.toLowerCase();
     _suggestions = members
-        .where((u) =>
-            u.displayName != null &&
-            u.displayName!.toLowerCase().contains(lowerQuery))
+        .where((u) {
+          final name = u.displayName?.toLowerCase();
+          final id = u.id.toLowerCase();
+          return (name != null && name.contains(lowerQuery)) ||
+              id.contains(lowerQuery);
+        })
         .take(20)
         .map((u) => MentionSuggestion(
               type: MentionTriggerType.user,
@@ -269,6 +273,7 @@ class MentionAutocompleteController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
     textController.removeListener(_onTextChanged);
     super.dispose();
   }
