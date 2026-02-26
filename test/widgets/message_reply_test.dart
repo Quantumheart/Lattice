@@ -103,6 +103,9 @@ void main() {
           senderId.split(':').first.substring(1));
       when(sender.avatarUrl).thenReturn(null);
       when(event.senderFromMemoryOrFallback).thenReturn(sender);
+      when(event.getDisplayEvent(any)).thenReturn(event);
+      when(event.hasAggregatedEvents(any, any)).thenReturn(false);
+      when(event.formattedText).thenReturn('');
 
       return event;
     }
@@ -227,7 +230,9 @@ void main() {
       when(mockTimeline.events).thenReturn([event]);
       when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
-      when(mockRoom.sendTextEvent(any, inReplyTo: anyNamed('inReplyTo')))
+      when(mockRoom.sendTextEvent(any,
+              inReplyTo: anyNamed('inReplyTo'),
+              editEventId: anyNamed('editEventId')))
           .thenThrow(Exception('Network error'));
 
       await tester.pumpWidget(buildTestWidget());

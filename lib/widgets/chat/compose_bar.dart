@@ -7,6 +7,7 @@ import 'package:matrix/matrix.dart';
 import '../../models/upload_state.dart';
 import 'mention_autocomplete_controller.dart';
 import 'mention_suggestion_overlay.dart';
+import 'edit_preview_banner.dart';
 import 'reply_preview_banner.dart';
 import 'upload_progress_banner.dart';
 
@@ -17,6 +18,8 @@ class ComposeBar extends StatefulWidget {
     required this.onSend,
     this.replyEvent,
     required this.onCancelReply,
+    this.editEvent,
+    required this.onCancelEdit,
     this.onAttach,
     this.uploadNotifier,
     this.room,
@@ -27,6 +30,8 @@ class ComposeBar extends StatefulWidget {
   final VoidCallback onSend;
   final Event? replyEvent;
   final VoidCallback onCancelReply;
+  final Event? editEvent;
+  final VoidCallback onCancelEdit;
   final VoidCallback? onAttach;
   final ValueNotifier<UploadState?>? uploadNotifier;
 
@@ -167,7 +172,12 @@ class _ComposeBarState extends State<ComposeBar> {
               controller: _mentionController!,
               client: widget.room!.client,
             ),
-          if (widget.replyEvent != null)
+          if (widget.editEvent != null)
+            EditPreviewBanner(
+              event: widget.editEvent!,
+              onCancel: widget.onCancelEdit,
+            )
+          else if (widget.replyEvent != null)
             ReplyPreviewBanner(
               event: widget.replyEvent!,
               onCancel: widget.onCancelReply,
@@ -205,7 +215,9 @@ class _ComposeBarState extends State<ComposeBar> {
                         focusNode: _focusNode,
                         textInputAction: TextInputAction.newline,
                         decoration: InputDecoration(
-                          hintText: 'Type a message…',
+                          hintText: widget.editEvent != null
+                              ? 'Edit message…'
+                              : 'Type a message…',
                           isDense: true,
                           contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16, vertical: 10),
