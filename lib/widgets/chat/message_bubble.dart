@@ -7,6 +7,7 @@ import '../../services/preferences_service.dart';
 import '../../utils/media_auth.dart';
 import '../../utils/sender_color.dart';
 import '../user_avatar.dart';
+import 'html_message_text.dart';
 import 'linkable_text.dart';
 
 class MessageBubble extends StatefulWidget {
@@ -275,14 +276,28 @@ class _MessageBubbleState extends State<MessageBubble> {
       );
     }
 
-    // Default: text
+    // Check for HTML formatted body.
+    final formattedBody = widget.event.formattedText;
+    final hasHtml = formattedBody.isNotEmpty &&
+        widget.event.content['format'] == 'org.matrix.custom.html';
+
+    final textStyle = tt.bodyLarge?.copyWith(
+      color: widget.isMe ? cs.onPrimary : cs.onSurface,
+      fontSize: metrics.bodyFontSize,
+      height: metrics.bodyLineHeight,
+    );
+
+    if (hasHtml) {
+      return HtmlMessageText(
+        html: formattedBody,
+        style: textStyle,
+        isMe: widget.isMe,
+      );
+    }
+
     return LinkableText(
       text: bodyText,
-      style: tt.bodyLarge?.copyWith(
-        color: widget.isMe ? cs.onPrimary : cs.onSurface,
-        fontSize: metrics.bodyFontSize,
-        height: metrics.bodyLineHeight,
-      ),
+      style: textStyle,
       isMe: widget.isMe,
     );
   }
