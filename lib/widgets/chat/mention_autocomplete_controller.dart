@@ -14,6 +14,9 @@ class MentionSuggestion {
   /// For users: the MXID. For rooms: the canonical alias or room ID.
   final String id;
 
+  /// The mxc:// avatar URI, if available.
+  final Uri? avatarUrl;
+
   /// The Matrix [User] (for user mentions) or [Room] (for room mentions).
   final dynamic source;
 
@@ -21,6 +24,7 @@ class MentionSuggestion {
     required this.type,
     required this.displayName,
     required this.id,
+    this.avatarUrl,
     this.source,
   });
 }
@@ -159,6 +163,7 @@ class MentionAutocompleteController extends ChangeNotifier {
               type: MentionTriggerType.user,
               displayName: u.displayName ?? u.id,
               id: u.id,
+              avatarUrl: u.avatarUrl,
               source: u,
             ))
         .toList();
@@ -174,6 +179,7 @@ class MentionAutocompleteController extends ChangeNotifier {
               type: MentionTriggerType.room,
               displayName: r.getLocalizedDisplayname(),
               id: r.canonicalAlias.isNotEmpty ? r.canonicalAlias : r.id,
+              avatarUrl: r.avatar,
               source: r,
             ))
         .toList();
