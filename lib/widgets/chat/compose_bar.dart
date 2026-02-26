@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:matrix/matrix.dart';
 
 import '../../models/upload_state.dart';
@@ -34,6 +35,13 @@ class _ComposeBarState extends State<ComposeBar> {
   void dispose() {
     _focusNode.dispose();
     super.dispose();
+  }
+
+  void _handleSend() {
+    if (widget.controller.text.trim().isNotEmpty) {
+      widget.onSend();
+      _focusNode.requestFocus();
+    }
   }
 
   @override
@@ -80,29 +88,31 @@ class _ComposeBarState extends State<ComposeBar> {
               children: [
                 _buildAttachButton(cs),
                 Expanded(
-                  child: TextField(
-                    controller: widget.controller,
-                    focusNode: _focusNode,
-                    textInputAction: TextInputAction.send,
-                    onSubmitted: (_) {
-                      widget.onSend();
-                      _focusNode.requestFocus();
+                  child: CallbackShortcuts(
+                    bindings: {
+                      const SingleActivator(LogicalKeyboardKey.enter):
+                          _handleSend,
                     },
-                    decoration: InputDecoration(
-                      hintText: 'Type a message…',
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(24),
-                        borderSide: BorderSide.none,
+                    child: TextField(
+                      controller: widget.controller,
+                      focusNode: _focusNode,
+                      textInputAction: TextInputAction.newline,
+                      decoration: InputDecoration(
+                        hintText: 'Type a message…',
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: BorderSide.none,
+                        ),
+                        filled: true,
+                        fillColor:
+                            cs.surfaceContainerHighest.withValues(alpha: 0.5),
                       ),
-                      filled: true,
-                      fillColor:
-                          cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                      minLines: 1,
+                      maxLines: 5,
                     ),
-                    minLines: 1,
-                    maxLines: 5,
                   ),
                 ),
                 const SizedBox(width: 4),
