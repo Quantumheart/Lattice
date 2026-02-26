@@ -315,7 +315,7 @@ class _MessageBubbleState extends State<MessageBubble> {
               children: [
                 Icon(Icons.delete_outline_rounded, size: 18, color: cs.error),
                 const SizedBox(width: 8),
-                Text('Delete', style: TextStyle(color: cs.error)),
+                Text(widget.isMe ? 'Delete' : 'Remove', style: TextStyle(color: cs.error)),
               ],
             ),
           ),
@@ -325,7 +325,10 @@ class _MessageBubbleState extends State<MessageBubble> {
     if (value == 'reply') widget.onReply?.call();
     if (value == 'edit') widget.onEdit?.call();
     if (value == 'copy') {
-      Clipboard.setData(ClipboardData(text: stripReplyFallback(widget.event.body)));
+      final displayEvent = widget.timeline != null
+          ? widget.event.getDisplayEvent(widget.timeline!)
+          : widget.event;
+      Clipboard.setData(ClipboardData(text: stripReplyFallback(displayEvent.body)));
     }
     if (value == 'delete') widget.onDelete?.call();
   }
