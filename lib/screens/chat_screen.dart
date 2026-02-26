@@ -538,9 +538,14 @@ class _ChatScreenState extends State<ChatScreen> {
       MessageAction(
         label: 'Copy',
         icon: Icons.copy_rounded,
-        onTap: () => Clipboard.setData(
-          ClipboardData(text: stripReplyFallback(event.body)),
-        ),
+        onTap: () {
+          final displayEvent = _timeline != null
+              ? event.getDisplayEvent(_timeline!)
+              : event;
+          Clipboard.setData(
+            ClipboardData(text: stripReplyFallback(displayEvent.body)),
+          );
+        },
       ),
       if (event.canRedact)
         MessageAction(
@@ -586,13 +591,13 @@ class _LongPressWrapperState extends State<_LongPressWrapper> {
     _startPosition = event.position;
     _timer?.cancel();
     _timer = Timer(_longPressDuration, () {
+      HapticFeedback.mediumImpact();
       final box = context.findRenderObject() as RenderBox?;
       if (box != null && box.hasSize) {
         final topLeft = box.localToGlobal(Offset.zero);
         final rect = topLeft & box.size;
         widget.onLongPress(rect);
       }
-      HapticFeedback.mediumImpact();
     });
   }
 
