@@ -86,7 +86,7 @@ class _MessageBubbleState extends State<MessageBubble> {
             widget.isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // Sender avatar (only for first in group, non-me)
+          // Sender avatar (only for first in group)
           if (!widget.isMe && widget.isFirst)
             Padding(
               padding: const EdgeInsets.only(right: 8),
@@ -200,6 +200,21 @@ class _MessageBubbleState extends State<MessageBubble> {
           // Hover reply button (after bubble for non-me)
           if (isDesktop && _hovering && widget.onReply != null && !widget.isMe)
             _HoverReplyButton(cs: cs, onReply: widget.onReply!),
+
+          // Sender avatar (only for first in group, me)
+          if (widget.isMe && widget.isFirst)
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: UserAvatar(
+                client: widget.event.room.client,
+                avatarUrl:
+                    widget.event.senderFromMemoryOrFallback.avatarUrl,
+                userId: widget.event.senderId,
+                size: metrics.avatarRadius * 2,
+              ),
+            )
+          else if (widget.isMe)
+            SizedBox(width: metrics.avatarRadius * 2 + 8),
         ],
       ),
     );
