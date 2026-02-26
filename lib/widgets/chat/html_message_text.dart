@@ -4,11 +4,12 @@ import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart' as dom;
 import 'package:url_launcher/url_launcher.dart';
 
+import 'code_block.dart';
 import 'linkable_text.dart';
 
 /// Renders Matrix HTML `formatted_body` as a styled [Text.rich] widget.
 ///
-/// Supported tags: b, strong, i, em, s, del, strike, u, ins, code,
+/// Supported tags: b, strong, i, em, s, del, strike, u, ins, code, pre,
 /// br, p, h1–h6, blockquote, ol, ul, li, a[href], mx-reply (stripped).
 /// Unsupported tags degrade gracefully — text content is preserved.
 class HtmlMessageText extends StatelessWidget {
@@ -183,14 +184,48 @@ class HtmlMessageText extends StatelessWidget {
         }
         return;
 
-      case 'code':
-        final codeStyle = currentStyle.copyWith(
-          fontFamily: 'monospace',
-          backgroundColor: currentStyle.color?.withValues(alpha: 0.08),
-        );
-        for (final child in node.nodes) {
-          _buildSpans(child, codeStyle, linkColor, spans);
+      case 'pre':
+        if (spans.isNotEmpty) {
+          spans.add(const TextSpan(text: '\n'));
         }
+        String? language;
+        String codeText = node.text;
+        for (final child in node.nodes) {
+          if (child is dom.Element && child.localName == 'code') {
+            final cls = child.attributes['class'] ?? '';
+            final langMatch = RegExp(r'language-(\w+)').firstMatch(cls);
+            language = langMatch?.group(1);
+            codeText = child.text;
+            break;
+          }
+        }
+        spans.add(WidgetSpan(
+          child: CodeBlock(code: codeText, language: language, isMe: isMe),
+        ));
+        return;
+
+      case 'code':
+        final bgColor = isMe
+            ? Colors.black.withValues(alpha: 0.15)
+            : currentStyle.color?.withValues(alpha: 0.08) ??
+                Colors.grey.withValues(alpha: 0.08);
+        spans.add(WidgetSpan(
+          alignment: PlaceholderAlignment.middle,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              node.text,
+              style: currentStyle.copyWith(
+                fontFamily: 'monospace',
+                fontSize: (currentStyle.fontSize ?? 14) * 0.9,
+              ),
+            ),
+          ),
+        ));
         return;
 
       case 'a':

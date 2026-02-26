@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:lattice/widgets/chat/code_block.dart';
 import 'package:lattice/widgets/chat/html_message_text.dart';
 
 Widget _wrap(Widget child) {
@@ -323,7 +324,8 @@ void main() {
       expect(spans[2].text, ' here');
     });
 
-    testWidgets('<code> renders with monospace font', (tester) async {
+    testWidgets('inline <code> renders in a container with monospace font',
+        (tester) async {
       await tester.pumpWidget(_wrap(
         const HtmlMessageText(
           html: 'Use <code>flutter run</code> to start',
@@ -332,12 +334,107 @@ void main() {
         ),
       ));
 
-      final spans = _extractFlatSpans(tester);
-      expect(spans.length, 3);
-      expect(spans[0].text, 'Use ');
-      expect(spans[1].text, 'flutter run');
-      expect(spans[1].style?.fontFamily, 'monospace');
-      expect(spans[2].text, ' to start');
+      // Inline code now uses a WidgetSpan containing a Container > Text.
+      // Find the Text widget that contains the code content.
+      expect(find.text('flutter run'), findsOneWidget);
+
+      // Verify the text is rendered with monospace font.
+      final codeText = tester.widget<Text>(find.text('flutter run'));
+      expect(codeText.style?.fontFamily, 'monospace');
+    });
+
+    testWidgets('inline <code> has rounded background container',
+        (tester) async {
+      await tester.pumpWidget(_wrap(
+        const HtmlMessageText(
+          html: 'Run <code>pub get</code> first',
+          style: TextStyle(fontSize: 14),
+          isMe: false,
+        ),
+      ));
+
+      // Find the Container wrapping the code text.
+      final container = tester.widget<Container>(
+        find.ancestor(
+          of: find.text('pub get'),
+          matching: find.byType(Container),
+        ),
+      );
+      final decoration = container.decoration as BoxDecoration;
+      expect(decoration.borderRadius, BorderRadius.circular(4));
+      expect(decoration.color, isNotNull);
+    });
+
+    testWidgets('inline <code> font size is scaled down', (tester) async {
+      await tester.pumpWidget(_wrap(
+        const HtmlMessageText(
+          html: 'Use <code>dart</code>',
+          style: TextStyle(fontSize: 14),
+          isMe: false,
+        ),
+      ));
+
+      final codeText = tester.widget<Text>(find.text('dart'));
+      // 14 * 0.9 = 12.6
+      expect(codeText.style?.fontSize, closeTo(12.6, 0.01));
+    });
+
+    testWidgets('<pre><code> renders a CodeBlock widget', (tester) async {
+      await tester.pumpWidget(_wrap(
+        const HtmlMessageText(
+          html: '<pre><code>print("hello")</code></pre>',
+          style: TextStyle(fontSize: 14),
+          isMe: false,
+        ),
+      ));
+
+      expect(find.byType(CodeBlock), findsOneWidget);
+    });
+
+    testWidgets('<pre><code class="language-dart"> passes language to CodeBlock',
+        (tester) async {
+      await tester.pumpWidget(_wrap(
+        const HtmlMessageText(
+          html:
+              '<pre><code class="language-dart">void main() {}</code></pre>',
+          style: TextStyle(fontSize: 14),
+          isMe: false,
+        ),
+      ));
+
+      final codeBlock = tester.widget<CodeBlock>(find.byType(CodeBlock));
+      expect(codeBlock.language, 'dart');
+      expect(codeBlock.code, 'void main() {}');
+    });
+
+    testWidgets('<pre><code> without class renders CodeBlock with null language',
+        (tester) async {
+      await tester.pumpWidget(_wrap(
+        const HtmlMessageText(
+          html: '<pre><code>some code</code></pre>',
+          style: TextStyle(fontSize: 14),
+          isMe: false,
+        ),
+      ));
+
+      final codeBlock = tester.widget<CodeBlock>(find.byType(CodeBlock));
+      expect(codeBlock.language, isNull);
+      expect(codeBlock.code, 'some code');
+    });
+
+    testWidgets('<pre> without <code> child still renders CodeBlock',
+        (tester) async {
+      await tester.pumpWidget(_wrap(
+        const HtmlMessageText(
+          html: '<pre>plain preformatted</pre>',
+          style: TextStyle(fontSize: 14),
+          isMe: false,
+        ),
+      ));
+
+      final codeBlock = tester.widget<CodeBlock>(find.byType(CodeBlock));
+      expect(codeBlock.language, isNull);
+      expect(codeBlock.code, 'plain preformatted');
     });
   });
 }
