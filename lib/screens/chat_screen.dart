@@ -15,6 +15,7 @@ import '../widgets/chat/chat_app_bar.dart';
 import '../widgets/chat/compose_bar.dart';
 import '../widgets/chat/message_action_sheet.dart';
 import '../widgets/chat/message_bubble.dart' show MessageBubble, stripReplyFallback;
+import '../widgets/chat/read_receipts.dart';
 import '../widgets/chat/search_results_body.dart';
 import '../widgets/chat/swipeable_message.dart';
 
@@ -486,6 +487,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildMessageList(List<Event> events, MatrixService matrix) {
     final isMobile = MediaQuery.sizeOf(context).width < 720;
+    final room = matrix.client.getRoomById(widget.roomId);
+    final receiptMap = room != null
+        ? buildReceiptMap(room, matrix.client.userID)
+        : <String, List<Receipt>>{};
 
     return ScrollablePositionedList.builder(
       itemScrollController: _itemScrollCtrl,
@@ -494,12 +499,13 @@ class _ChatScreenState extends State<ChatScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       itemCount: events.length,
       itemBuilder: (context, i) =>
-          _buildMessageItem(events, i, matrix, isMobile),
+          _buildMessageItem(events, i, matrix, isMobile, receiptMap),
     );
   }
 
   Widget _buildMessageItem(
-      List<Event> events, int i, MatrixService matrix, bool isMobile) {
+      List<Event> events, int i, MatrixService matrix, bool isMobile,
+      Map<String, List<Receipt>> receiptMap) {
     final event = events[i];
     final isMe = event.senderId == matrix.client.userID;
 
@@ -521,16 +527,36 @@ class _ChatScreenState extends State<ChatScreen> {
       onDelete: !isRedacted && event.canRedact ? () => _deleteEvent(event) : null,
     );
 
+    final receipts = receiptMap[event.eventId];
+
+    Widget content;
+    if (receipts != null && receipts.isNotEmpty) {
+      content = Column(
+        crossAxisAlignment:
+            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          bubble,
+          ReadReceiptsRow(
+            receipts: receipts,
+            client: matrix.client,
+            isMe: isMe,
+          ),
+        ],
+      );
+    } else {
+      content = bubble;
+    }
+
     if (isMobile) {
       return SwipeableMessage(
         onReply: () => _setReplyTo(event),
         child: _LongPressWrapper(
           onLongPress: (rect) => _showMobileActions(event, isMe, rect),
-          child: bubble,
+          child: content,
         ),
       );
     }
-    return bubble;
+    return content;
   }
 
   void _showMobileActions(Event event, bool isMe, Rect bubbleRect) {
