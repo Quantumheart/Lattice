@@ -15,13 +15,13 @@ class LinkableText extends StatelessWidget {
   final TextStyle? style;
   final bool isMe;
 
-  static final _urlRegex = RegExp(
+  static final urlRegex = RegExp(
     r'https?://[^\s)<>]+',
     caseSensitive: false,
   );
 
   /// Strip common trailing punctuation that's unlikely part of the URL.
-  static String _cleanUrl(String raw) {
+  static String cleanUrl(String raw) {
     // Remove trailing punctuation that's almost never part of a URL.
     while (raw.isNotEmpty && '.,;:!?\'"'.contains(raw[raw.length - 1])) {
       raw = raw.substring(0, raw.length - 1);
@@ -33,7 +33,7 @@ class LinkableText extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    final matches = _urlRegex.allMatches(text).toList();
+    final matches = urlRegex.allMatches(text).toList();
     if (matches.isEmpty) {
       return Text(text, style: style);
     }
@@ -47,7 +47,7 @@ class LinkableText extends StatelessWidget {
 
     for (final match in matches) {
       final rawUrl = match.group(0)!;
-      final cleanedUrl = _cleanUrl(rawUrl);
+      final cleanedUrl = cleanUrl(rawUrl);
       // Adjust match end to account for stripped punctuation.
       final urlEnd = match.start + cleanedUrl.length;
 
