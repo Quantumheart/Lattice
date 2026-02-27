@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart'
     show DefaultEmojiTextStyle;
 import 'package:flutter/material.dart';
@@ -12,7 +14,7 @@ import '../user_avatar.dart';
 /// Each chip shows the emoji and its count. Chips where the current user
 /// has reacted are highlighted. Tapping toggles the reaction; long-pressing
 /// opens a bottom sheet listing who reacted.
-class ReactionChips extends StatelessWidget {
+class ReactionChips extends StatefulWidget {
   const ReactionChips({
     super.key,
     required this.event,
@@ -29,9 +31,38 @@ class ReactionChips extends StatelessWidget {
   final void Function(String emoji)? onToggle;
 
   @override
+  State<ReactionChips> createState() => _ReactionChipsState();
+}
+
+class _ReactionChipsState extends State<ReactionChips> {
+  /// Tracks emojis currently being toggled to prevent duplicate requests.
+  final _pendingToggles = <String>{};
+  final _debounceTimers = <String, Timer>{};
+
+  @override
+  void dispose() {
+    for (final timer in _debounceTimers.values) {
+      timer.cancel();
+    }
+    super.dispose();
+  }
+
+  void _handleToggle(String emoji) {
+    if (_pendingToggles.contains(emoji)) return;
+    _pendingToggles.add(emoji);
+    widget.onToggle?.call(emoji);
+    // Allow the same emoji to be toggled again after a short delay.
+    _debounceTimers[emoji]?.cancel();
+    _debounceTimers[emoji] = Timer(const Duration(milliseconds: 600), () {
+      _pendingToggles.remove(emoji);
+      _debounceTimers.remove(emoji);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final reactionEvents =
-        event.aggregatedEvents(timeline, RelationshipTypes.reaction);
+        widget.event.aggregatedEvents(widget.timeline, RelationshipTypes.reaction);
     if (reactionEvents.isEmpty) return const SizedBox.shrink();
 
     // Group by emoji key.
@@ -47,10 +78,10 @@ class ReactionChips extends StatelessWidget {
     if (grouped.isEmpty) return const SizedBox.shrink();
 
     final cs = Theme.of(context).colorScheme;
-    final myId = client.userID;
+    final myId = widget.client.userID;
 
     return Wrap(
-      alignment: isMe ? WrapAlignment.end : WrapAlignment.start,
+      alignment: widget.isMe ? WrapAlignment.end : WrapAlignment.start,
       spacing: 4,
       runSpacing: 4,
       children: grouped.entries.map((entry) {
@@ -59,12 +90,12 @@ class ReactionChips extends StatelessWidget {
         final isMine = events.any((e) => e.senderId == myId);
 
         return GestureDetector(
-          onTap: () => onToggle?.call(emoji),
+          onTap: () => _handleToggle(emoji),
           onLongPress: () => showReactorsSheet(
             context,
             emoji,
             events,
-            event.room,
+            widget.event.room,
           ),
           child: Container(
             padding:
