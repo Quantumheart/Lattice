@@ -184,7 +184,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                           Padding(
                             padding: EdgeInsets.only(
                               bottom:
-                                  widget.reactionBubble != null ? 14 : 0,
+                                  widget.reactionBubble != null ? 22 : 0,
                             ),
                             child: Container(
                               constraints:
@@ -355,27 +355,27 @@ class _MessageBubbleState extends State<MessageBubble> {
                         onQuickReactOpenChanged: (open) =>
                             setState(() => _quickReactOpen = open),
                       ),
+                    // Sender avatar (isMe, inside bubble Row to avoid
+                    // overlapping read receipts below)
+                    if (widget.isMe && widget.isFirst)
+                      Padding(
+                        padding: const EdgeInsets.only(left: 8),
+                        child: UserAvatar(
+                          client: widget.event.room.client,
+                          avatarUrl: widget.event
+                              .senderFromMemoryOrFallback.avatarUrl,
+                          userId: widget.event.senderId,
+                          size: metrics.avatarRadius * 2,
+                        ),
+                      )
+                    else if (widget.isMe)
+                      SizedBox(width: metrics.avatarRadius * 2 + 8),
                   ],
                 ),
                 if (widget.subBubble != null) widget.subBubble!,
               ],
             ),
           ),
-
-          // Sender avatar (only for first in group, me)
-          if (widget.isMe && widget.isFirst)
-            Padding(
-              padding: const EdgeInsets.only(left: 8),
-              child: UserAvatar(
-                client: widget.event.room.client,
-                avatarUrl:
-                    widget.event.senderFromMemoryOrFallback.avatarUrl,
-                userId: widget.event.senderId,
-                size: metrics.avatarRadius * 2,
-              ),
-            )
-          else if (widget.isMe)
-            SizedBox(width: metrics.avatarRadius * 2 + 8),
         ],
       ),
     );
@@ -567,7 +567,25 @@ class _MessageBubbleState extends State<MessageBubble> {
   String _formatTime(DateTime ts) {
     final h = ts.hour.toString().padLeft(2, '0');
     final m = ts.minute.toString().padLeft(2, '0');
-    return '$h:$m';
+    final time = '$h:$m';
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final msgDate = DateTime(ts.year, ts.month, ts.day);
+    final diff = today.difference(msgDate).inDays;
+
+    if (diff == 0) return time;
+    if (diff == 1) return 'Yesterday $time';
+
+    const weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+
+    if (diff < 7) return '${weekdays[ts.weekday - 1]} $time';
+    if (ts.year == now.year) return '${months[ts.month - 1]} ${ts.day}, $time';
+    return '${months[ts.month - 1]} ${ts.day}, ${ts.year}, $time';
   }
 }
 
