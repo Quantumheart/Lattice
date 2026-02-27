@@ -201,7 +201,9 @@ void main() {
         }).first;
     final decoration = chipContainer.decoration as BoxDecoration;
     expect(decoration.color, cs.surfaceContainerHighest);
-    expect(decoration.border, isNull);
+    // Non-mine chips have an outlineVariant border (not primary).
+    final border = decoration.border as Border;
+    expect(border.top.color, isNot(cs.primary.withValues(alpha: 0.5)));
   });
 
   testWidgets('tap calls onToggle with correct emoji', (tester) async {

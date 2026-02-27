@@ -505,27 +505,23 @@ class _ChatScreenState extends State<ChatScreen> {
         event.hasAggregatedEvents(_timeline!, RelationshipTypes.reaction);
     final receipts = receiptMap[event.eventId];
 
+    Widget? reactionBubble;
+    if (hasReactions) {
+      reactionBubble = ReactionChips(
+        event: event,
+        timeline: _timeline!,
+        client: matrix.client,
+        isMe: isMe,
+        onToggle: (emoji) => _toggleReaction(event, emoji),
+      );
+    }
+
     Widget? subBubble;
-    if (hasReactions || (receipts != null && receipts.isNotEmpty)) {
-      subBubble = Column(
-        crossAxisAlignment:
-            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        children: [
-          if (hasReactions)
-            ReactionChips(
-              event: event,
-              timeline: _timeline!,
-              client: matrix.client,
-              isMe: isMe,
-              onToggle: (emoji) => _toggleReaction(event, emoji),
-            ),
-          if (receipts != null && receipts.isNotEmpty)
-            ReadReceiptsRow(
-              receipts: receipts,
-              client: matrix.client,
-              isMe: isMe,
-            ),
-        ],
+    if (receipts != null && receipts.isNotEmpty) {
+      subBubble = ReadReceiptsRow(
+        receipts: receipts,
+        client: matrix.client,
+        isMe: isMe,
       );
     }
 
@@ -542,6 +538,7 @@ class _ChatScreenState extends State<ChatScreen> {
       onDelete: !isRedacted && event.canRedact ? () => confirmAndDeleteEvent(context, event) : null,
       onReact: isRedacted ? null : () => showEmojiPickerSheet(context, (emoji) => _toggleReaction(event, emoji)),
       onPin: canPin ? () => _togglePin(event) : null,
+      reactionBubble: reactionBubble,
       subBubble: subBubble,
     );
 
