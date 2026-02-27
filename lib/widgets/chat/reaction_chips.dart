@@ -19,6 +19,7 @@ class ReactionChips extends StatelessWidget {
     required this.timeline,
     required this.client,
     required this.isMe,
+    required this.senderAvatarOffset,
     this.onToggle,
   });
 
@@ -26,10 +27,8 @@ class ReactionChips extends StatelessWidget {
   final Timeline timeline;
   final Client client;
   final bool isMe;
+  final double senderAvatarOffset;
   final void Function(String emoji)? onToggle;
-
-  /// Matches the sender avatar (44px) + gap (8px) in [MessageBubble].
-  static const double _senderAvatarOffset = 44 + 8;
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +57,7 @@ class ReactionChips extends StatelessWidget {
         mainAxisAlignment:
             isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
         children: [
-          if (!isMe) const SizedBox(width: _senderAvatarOffset),
+          if (!isMe) SizedBox(width: senderAvatarOffset),
           Flexible(
             child: Wrap(
               spacing: 4,

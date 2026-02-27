@@ -47,20 +47,19 @@ class ReadReceiptsRow extends StatelessWidget {
     required this.receipts,
     required this.client,
     required this.isMe,
+    required this.senderAvatarOffset,
   });
 
   final List<Receipt> receipts;
   final Client client;
   final bool isMe;
+  final double senderAvatarOffset;
 
   static const double _avatarSize = 16;
   static const double _borderWidth = 1.5;
   static const double _borderedSize = _avatarSize + _borderWidth * 2;
   static const double _overlap = 4;
   static const int _maxVisible = 3;
-
-  /// Matches the sender avatar (44px) + gap (8px) in [MessageBubble].
-  static const double _senderAvatarOffset = 44 + 8;
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +77,7 @@ class ReadReceiptsRow extends StatelessWidget {
           mainAxisAlignment:
               isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
           children: [
-            if (!isMe) const SizedBox(width: _senderAvatarOffset),
+            if (!isMe) SizedBox(width: senderAvatarOffset),
             SizedBox(
               width: _borderedSize +
                   (visibleCount - 1) * (_borderedSize - _overlap) +
@@ -176,6 +175,7 @@ void showReadersSheet(
             const Divider(height: 1),
             Flexible(
               child: ListView.builder(
+                shrinkWrap: true,
                 itemCount: receipts.length,
                 itemBuilder: (context, i) {
                   final receipt = receipts[i];

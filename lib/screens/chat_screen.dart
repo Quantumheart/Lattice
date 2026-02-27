@@ -18,6 +18,7 @@ import '../widgets/chat/typing_indicator.dart';
 import '../widgets/chat/chat_app_bar.dart';
 import '../widgets/chat/compose_bar.dart';
 import '../widgets/chat/message_action_sheet.dart';
+import '../services/preferences_service.dart';
 import '../widgets/chat/message_bubble.dart' show MessageBubble, stripReplyFallback;
 import '../widgets/chat/reaction_chips.dart';
 import '../widgets/chat/read_receipts.dart';
@@ -55,6 +56,8 @@ class _ChatScreenState extends State<ChatScreen> {
   Timeline? _timeline;
   bool _loadingHistory = false;
   Timer? _readMarkerTimer;
+  int _initGeneration = 0;
+  List<Event>? _cachedVisibleEvents;
 
   // ── Reply state ─────────────────────────────────────────
   final _replyNotifier = ValueNotifier<Event?>(null);
@@ -90,6 +93,8 @@ class _ChatScreenState extends State<ChatScreen> {
       _replyNotifier.value = null;
       _editNotifier.value = null;
       _msgCtrl.clear();
+      _cachedVisibleEvents = null;
+      _typingCtrl?.dispose();
       _search.removeListener(_onSearchChanged);
       _search.dispose();
       _search = _createSearchController();
@@ -111,31 +116,37 @@ class _ChatScreenState extends State<ChatScreen> {
   // ── Timeline ───────────────────────────────────────────
 
   Future<void> _initTimeline() async {
+    final gen = ++_initGeneration;
     final matrix = context.read<MatrixService>();
     final room = matrix.client.getRoomById(widget.roomId);
     if (room == null) return;
 
-    _typingCtrl?.dispose();
     _typingCtrl = TypingController(room: room);
 
     _timeline = await room.getTimeline(
       onUpdate: () {
-        if (mounted) setState(() {});
+        if (mounted) {
+          _cachedVisibleEvents = null;
+          setState(() {});
+        }
         _markAsRead(room);
       },
     );
+    if (gen != _initGeneration) return;
     if (mounted) setState(() {});
     _markAsRead(room);
   }
 
   List<Event> get _visibleEvents {
+    if (_cachedVisibleEvents != null) return _cachedVisibleEvents!;
     final events = _timeline?.events;
     if (events == null) return [];
-    return events
+    _cachedVisibleEvents = events
         .where((e) =>
             (e.type == EventTypes.Message || e.type == EventTypes.Encrypted) &&
             e.relationshipType != RelationshipTypes.edit)
         .toList();
+    return _cachedVisibleEvents!;
   }
 
   void _markAsRead(Room room) {
@@ -570,6 +581,8 @@ class _ChatScreenState extends State<ChatScreen> {
       List<Event> events, MatrixService matrix, Room room) {
     final isMobile = MediaQuery.sizeOf(context).width < 720;
     final receiptMap = buildReceiptMap(room, matrix.client.userID);
+    final density = context.read<PreferencesService>().messageDensity;
+    final avatarOff = MessageBubble.avatarOffset(density);
 
     return ScrollablePositionedList.builder(
       itemScrollController: _itemScrollCtrl,
@@ -578,13 +591,13 @@ class _ChatScreenState extends State<ChatScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       itemCount: events.length,
       itemBuilder: (context, i) =>
-          _buildMessageItem(events, i, matrix, isMobile, receiptMap),
+          _buildMessageItem(events, i, matrix, isMobile, receiptMap, avatarOff),
     );
   }
 
   Widget _buildMessageItem(
       List<Event> events, int i, MatrixService matrix, bool isMobile,
-      Map<String, List<Receipt>> receiptMap) {
+      Map<String, List<Receipt>> receiptMap, double avatarOff) {
     final event = events[i];
     final isMe = event.senderId == matrix.client.userID;
 
@@ -624,6 +637,7 @@ class _ChatScreenState extends State<ChatScreen> {
               timeline: _timeline!,
               client: matrix.client,
               isMe: isMe,
+              senderAvatarOffset: avatarOff,
               onToggle: (emoji) => _toggleReaction(event, emoji),
             ),
           if (receipts != null && receipts.isNotEmpty)
@@ -631,6 +645,7 @@ class _ChatScreenState extends State<ChatScreen> {
               receipts: receipts,
               client: matrix.client,
               isMe: isMe,
+              senderAvatarOffset: avatarOff,
             ),
         ],
       );
