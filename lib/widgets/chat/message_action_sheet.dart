@@ -101,7 +101,7 @@ class _MessageActionSheetRoute extends PopupRoute<void> {
 
 // ── Overlay layout ──────────────────────────────────────
 
-class _MessageActionSheet extends StatelessWidget {
+class _MessageActionSheet extends StatefulWidget {
   const _MessageActionSheet({
     required this.event,
     required this.isMe,
@@ -122,10 +122,32 @@ class _MessageActionSheet extends StatelessWidget {
   final ThemeData capturedTheme;
   final void Function(String emoji)? onQuickReact;
 
+  @override
+  State<_MessageActionSheet> createState() => _MessageActionSheetState();
+}
+
+class _MessageActionSheetState extends State<_MessageActionSheet> {
   static const _actionListWidth = 220.0;
   static const _actionRowHeight = 48.0;
   static const _quickReactHeight = 48.0;
   static const _gap = 8.0;
+
+  late final CurvedAnimation _curved;
+
+  @override
+  void initState() {
+    super.initState();
+    _curved = CurvedAnimation(
+      parent: widget.animation,
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  @override
+  void dispose() {
+    _curved.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -135,17 +157,17 @@ class _MessageActionSheet extends StatelessWidget {
     final safeTop = mq.padding.top + 8;
     final safeBottom = mq.padding.bottom + 8;
 
-    final hasQuickReact = onQuickReact != null;
-    final actionListHeight = actions.length * _actionRowHeight;
+    final hasQuickReact = widget.onQuickReact != null;
+    final actionListHeight = widget.actions.length * _actionRowHeight;
     final quickReactSpace = hasQuickReact ? _quickReactHeight + _gap : 0.0;
 
     // Total height needed: bubble + gap + quick-react bar + gap + action list
     final totalHeight =
-        bubbleRect.height + _gap + quickReactSpace + actionListHeight;
+        widget.bubbleRect.height + _gap + quickReactSpace + actionListHeight;
 
     // Determine top position: try to keep bubble in place, but shift up if
     // the action list would overflow the screen bottom.
-    double bubbleTop = bubbleRect.top;
+    double bubbleTop = widget.bubbleRect.top;
     final bottomEdge = bubbleTop + totalHeight;
     if (bottomEdge > screenHeight - safeBottom) {
       bubbleTop = screenHeight - safeBottom - totalHeight;
@@ -154,48 +176,43 @@ class _MessageActionSheet extends StatelessWidget {
       bubbleTop = safeTop;
     }
 
-    final quickReactTop = bubbleTop + bubbleRect.height + _gap;
+    final quickReactTop = bubbleTop + widget.bubbleRect.height + _gap;
     final actionListTop = quickReactTop + quickReactSpace;
 
     // Horizontal alignment: align action list with the bubble's leading edge
     double actionListLeft;
-    if (isMe) {
+    if (widget.isMe) {
       // Right-aligned: align action list's right edge with bubble's right edge
-      actionListLeft = bubbleRect.right - _actionListWidth;
+      actionListLeft = widget.bubbleRect.right - _actionListWidth;
     } else {
-      actionListLeft = bubbleRect.left;
+      actionListLeft = widget.bubbleRect.left;
     }
     // Clamp within screen
     actionListLeft = clampDouble(actionListLeft, 8, screenWidth - _actionListWidth - 8);
-
-    final curved = CurvedAnimation(
-      parent: animation,
-      curve: Curves.easeOutCubic,
-    );
 
     return Stack(
       children: [
         // ── Bubble preview ──────────────────────────────
         Positioned(
           top: bubbleTop,
-          left: bubbleRect.left,
-          width: bubbleRect.width,
-          height: bubbleRect.height,
+          left: widget.bubbleRect.left,
+          width: widget.bubbleRect.width,
+          height: widget.bubbleRect.height,
           child: FadeTransition(
-            opacity: curved,
+            opacity: _curved,
             child: ScaleTransition(
-              scale: Tween<double>(begin: 0.95, end: 1.0).animate(curved),
+              scale: Tween<double>(begin: 0.95, end: 1.0).animate(_curved),
               child: IgnorePointer(
                 child: AbsorbPointer(
                   child: Theme(
-                    data: capturedTheme,
+                    data: widget.capturedTheme,
                     child: Material(
                       type: MaterialType.transparency,
                       child: MessageBubble(
-                        event: event,
-                        isMe: isMe,
+                        event: widget.event,
+                        isMe: widget.isMe,
                         isFirst: true,
-                        timeline: timeline,
+                        timeline: widget.timeline,
                       ),
                     ),
                   ),
@@ -212,13 +229,13 @@ class _MessageActionSheet extends StatelessWidget {
             left: actionListLeft,
             width: _actionListWidth,
             child: FadeTransition(
-              opacity: curved,
+              opacity: _curved,
               child: SlideTransition(
                 position: Tween<Offset>(
                   begin: const Offset(0, 0.08),
                   end: Offset.zero,
-                ).animate(curved),
-                child: _QuickReactBar(onQuickReact: onQuickReact!),
+                ).animate(_curved),
+                child: _QuickReactBar(onQuickReact: widget.onQuickReact!),
               ),
             ),
           ),
@@ -229,13 +246,13 @@ class _MessageActionSheet extends StatelessWidget {
           left: actionListLeft,
           width: _actionListWidth,
           child: FadeTransition(
-            opacity: curved,
+            opacity: _curved,
             child: SlideTransition(
               position: Tween<Offset>(
                 begin: const Offset(0, 0.08),
                 end: Offset.zero,
-              ).animate(curved),
-              child: _ActionList(actions: actions),
+              ).animate(_curved),
+              child: _ActionList(actions: widget.actions),
             ),
           ),
         ),
