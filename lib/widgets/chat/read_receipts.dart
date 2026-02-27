@@ -47,13 +47,11 @@ class ReadReceiptsRow extends StatelessWidget {
     required this.receipts,
     required this.client,
     required this.isMe,
-    required this.senderAvatarOffset,
   });
 
   final List<Receipt> receipts;
   final Client client;
   final bool isMe;
-  final double senderAvatarOffset;
 
   static const double _avatarSize = 16;
   static const double _borderWidth = 1.5;
@@ -77,7 +75,6 @@ class ReadReceiptsRow extends StatelessWidget {
           mainAxisAlignment:
               isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
           children: [
-            if (!isMe) SizedBox(width: senderAvatarOffset),
             SizedBox(
               width: _borderedSize +
                   (visibleCount - 1) * (_borderedSize - _overlap) +

@@ -68,7 +68,6 @@ Widget _wrapRow(List<Receipt> receipts, Client client, {bool isMe = true}) {
         receipts: receipts,
         client: client,
         isMe: isMe,
-        senderAvatarOffset: 36,
       ),
     ),
   );

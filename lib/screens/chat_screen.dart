@@ -9,7 +9,6 @@ import '../models/upload_state.dart';
 import '../services/chat_search_controller.dart';
 import '../services/matrix_service.dart';
 import '../services/typing_controller.dart';
-import '../services/preferences_service.dart';
 import '../widgets/chat/chat_app_bar.dart';
 import '../widgets/chat/compose_bar.dart';
 import '../widgets/chat/delete_event_dialog.dart';
@@ -475,9 +474,6 @@ class _ChatScreenState extends State<ChatScreen> {
       List<Event> events, MatrixService matrix, Room room) {
     final isMobile = MediaQuery.sizeOf(context).width < 720;
     final receiptMap = buildReceiptMap(room, matrix.client.userID);
-    final density = context.read<PreferencesService>().messageDensity;
-    final avatarOff = MessageBubble.avatarOffset(density);
-
     return ScrollablePositionedList.builder(
       itemScrollController: _itemScrollCtrl,
       itemPositionsListener: _itemPosListener,
@@ -485,13 +481,13 @@ class _ChatScreenState extends State<ChatScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       itemCount: events.length,
       itemBuilder: (context, i) =>
-          _buildMessageItem(events, i, matrix, isMobile, receiptMap, avatarOff),
+          _buildMessageItem(events, i, matrix, isMobile, receiptMap),
     );
   }
 
   Widget _buildMessageItem(
       List<Event> events, int i, MatrixService matrix, bool isMobile,
-      Map<String, List<Receipt>> receiptMap, double avatarOff) {
+      Map<String, List<Receipt>> receiptMap) {
     final event = events[i];
     final isMe = event.senderId == matrix.client.userID;
 
@@ -505,7 +501,35 @@ class _ChatScreenState extends State<ChatScreen> {
     final canPin = !isRedacted &&
         room.canChangeStateEvent('m.room.pinned_events');
 
-    final bubble = MessageBubble(
+    final hasReactions = _timeline != null &&
+        event.hasAggregatedEvents(_timeline!, RelationshipTypes.reaction);
+    final receipts = receiptMap[event.eventId];
+
+    Widget? subBubble;
+    if (hasReactions || (receipts != null && receipts.isNotEmpty)) {
+      subBubble = Column(
+        crossAxisAlignment:
+            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          if (hasReactions)
+            ReactionChips(
+              event: event,
+              timeline: _timeline!,
+              client: matrix.client,
+              isMe: isMe,
+              onToggle: (emoji) => _toggleReaction(event, emoji),
+            ),
+          if (receipts != null && receipts.isNotEmpty)
+            ReadReceiptsRow(
+              receipts: receipts,
+              client: matrix.client,
+              isMe: isMe,
+            ),
+        ],
+      );
+    }
+
+    Widget content = MessageBubble(
       event: event,
       isMe: isMe,
       isFirst: isFirst,
@@ -518,40 +542,8 @@ class _ChatScreenState extends State<ChatScreen> {
       onDelete: !isRedacted && event.canRedact ? () => confirmAndDeleteEvent(context, event) : null,
       onReact: isRedacted ? null : () => showEmojiPickerSheet(context, (emoji) => _toggleReaction(event, emoji)),
       onPin: canPin ? () => _togglePin(event) : null,
+      subBubble: subBubble,
     );
-
-    final hasReactions = _timeline != null &&
-        event.hasAggregatedEvents(_timeline!, RelationshipTypes.reaction);
-    final receipts = receiptMap[event.eventId];
-
-    Widget content;
-    if (hasReactions || (receipts != null && receipts.isNotEmpty)) {
-      content = Column(
-        crossAxisAlignment:
-            isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-        children: [
-          bubble,
-          if (hasReactions)
-            ReactionChips(
-              event: event,
-              timeline: _timeline!,
-              client: matrix.client,
-              isMe: isMe,
-              senderAvatarOffset: avatarOff,
-              onToggle: (emoji) => _toggleReaction(event, emoji),
-            ),
-          if (receipts != null && receipts.isNotEmpty)
-            ReadReceiptsRow(
-              receipts: receipts,
-              client: matrix.client,
-              isMe: isMe,
-              senderAvatarOffset: avatarOff,
-            ),
-        ],
-      );
-    } else {
-      content = bubble;
-    }
 
     if (isMobile) {
       return SwipeableMessage(
