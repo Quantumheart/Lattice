@@ -1,9 +1,4 @@
 import 'dart:async';
-import 'package:emoji_picker_flutter/emoji_picker_flutter.dart'
-    show EmojiPicker, Config, EmojiViewConfig, CategoryViewConfig,
-         SkinToneConfig, BottomActionBarConfig, SearchViewConfig,
-         DefaultEmojiTextStyle;
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -14,16 +9,20 @@ import '../models/upload_state.dart';
 import '../services/chat_search_controller.dart';
 import '../services/matrix_service.dart';
 import '../services/typing_controller.dart';
-import '../widgets/chat/typing_indicator.dart';
+import '../services/preferences_service.dart';
 import '../widgets/chat/chat_app_bar.dart';
 import '../widgets/chat/compose_bar.dart';
+import '../widgets/chat/delete_event_dialog.dart';
+import '../widgets/chat/emoji_picker_sheet.dart';
+import '../widgets/chat/file_send_handler.dart';
+import '../widgets/chat/long_press_wrapper.dart';
 import '../widgets/chat/message_action_sheet.dart';
-import '../services/preferences_service.dart';
 import '../widgets/chat/message_bubble.dart' show MessageBubble, stripReplyFallback;
 import '../widgets/chat/reaction_chips.dart';
 import '../widgets/chat/read_receipts.dart';
 import '../widgets/chat/search_results_body.dart';
 import '../widgets/chat/swipeable_message.dart';
+import '../widgets/chat/typing_indicator.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({
@@ -212,49 +211,6 @@ class _ChatScreenState extends State<ChatScreen> {
     _msgCtrl.clear();
   }
 
-  // ── Delete / Redact ────────────────────────────────────
-
-  Future<void> _deleteEvent(Event event) async {
-    final matrix = context.read<MatrixService>();
-    final isMe = event.senderId == matrix.client.userID;
-    final title = isMe ? 'Delete message?' : 'Remove message?';
-    final body = isMe
-        ? 'This message will be permanently deleted for everyone.'
-        : 'This message will be permanently removed from the room.';
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(body),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: TextButton.styleFrom(
-              foregroundColor: Theme.of(context).colorScheme.error,
-            ),
-            child: Text(isMe ? 'Delete' : 'Remove'),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-
-    try {
-      await event.room.redactEvent(event.eventId);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete: ${MatrixService.friendlyAuthError(e)}')),
-        );
-      }
-    }
-  }
-
   // ── Reactions ──────────────────────────────────────
 
   Future<void> _toggleReaction(Event event, String emoji) async {
@@ -287,95 +243,6 @@ class _ChatScreenState extends State<ChatScreen> {
                   'Failed to react: ${MatrixService.friendlyAuthError(e)}')),
         );
       }
-    }
-  }
-
-  void _showEmojiPicker(Event event) {
-    final cs = Theme.of(context).colorScheme;
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return SizedBox(
-          height: 300,
-          child: EmojiPicker(
-            onEmojiSelected: (category, emoji) {
-              Navigator.of(context).pop();
-              _toggleReaction(event, emoji.emoji);
-            },
-            config: Config(
-              emojiTextStyle: DefaultEmojiTextStyle,
-              emojiViewConfig: EmojiViewConfig(
-                columns: 7,
-                emojiSizeMax: 28,
-                backgroundColor: cs.surface,
-              ),
-              categoryViewConfig: CategoryViewConfig(
-                indicatorColor: cs.primary,
-                iconColorSelected: cs.primary,
-              ),
-              skinToneConfig: SkinToneConfig(
-                dialogBackgroundColor: cs.surfaceContainerHighest,
-                indicatorColor: cs.primary,
-              ),
-              bottomActionBarConfig: BottomActionBarConfig(
-                backgroundColor: cs.surface,
-                buttonColor: cs.primary,
-              ),
-              searchViewConfig: SearchViewConfig(
-                backgroundColor: cs.surface,
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  // ── Attach ─────────────────────────────────────────────
-
-  Future<void> _pickAndSendFile() async {
-    final scaffold = ScaffoldMessenger.of(context);
-    final matrix = context.read<MatrixService>();
-
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.any,
-      withData: true,
-    );
-    if (result == null || result.files.isEmpty) return;
-
-    final picked = result.files.first;
-    final bytes = picked.bytes;
-    final name = picked.name;
-    if (bytes == null) return;
-
-    _uploadNotifier.value = UploadState(
-      status: UploadStatus.uploading,
-      fileName: name,
-    );
-    final room = matrix.client.getRoomById(widget.roomId);
-    if (room == null) {
-      _uploadNotifier.value = null;
-      return;
-    }
-
-    try {
-      final file = MatrixFile.fromMimeType(bytes: bytes, name: name);
-      await room.sendFileEvent(file);
-      _uploadNotifier.value = null;
-    } on FileTooBigMatrixException {
-      _uploadNotifier.value = null;
-      scaffold.showSnackBar(
-        const SnackBar(content: Text('File too large for this server')),
-      );
-    } catch (e) {
-      _uploadNotifier.value = UploadState(
-        status: UploadStatus.error,
-        fileName: name,
-        error: e.toString(),
-      );
-      scaffold.showSnackBar(
-        SnackBar(content: Text('Upload failed: ${MatrixService.friendlyAuthError(e)}')),
-      );
     }
   }
 
@@ -563,7 +430,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   onCancelReply: _cancelReply,
                   editEvent: editEvent,
                   onCancelEdit: _cancelEdit,
-                  onAttach: _pickAndSendFile,
+                  onAttach: () => pickAndSendFile(context, widget.roomId, _uploadNotifier),
                   uploadNotifier: _uploadNotifier,
                   room: room,
                   joinedRooms: matrix.rooms,
@@ -616,8 +483,8 @@ class _ChatScreenState extends State<ChatScreen> {
       onTapReply: isRedacted ? null : _navigateToEvent,
       onReply: isRedacted ? null : () => _setReplyTo(event),
       onEdit: !isRedacted && isMe ? () => _setEditEvent(event) : null,
-      onDelete: !isRedacted && event.canRedact ? () => _deleteEvent(event) : null,
-      onReact: isRedacted ? null : () => _showEmojiPicker(event),
+      onDelete: !isRedacted && event.canRedact ? () => confirmAndDeleteEvent(context, event) : null,
+      onReact: isRedacted ? null : () => showEmojiPickerSheet(context, (emoji) => _toggleReaction(event, emoji)),
     );
 
     final hasReactions = _timeline != null &&
@@ -656,7 +523,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (isMobile) {
       return SwipeableMessage(
         onReply: () => _setReplyTo(event),
-        child: _LongPressWrapper(
+        child: LongPressWrapper(
           onLongPress: (rect) => _showMobileActions(event, isMe, rect),
           child: content,
         ),
@@ -684,7 +551,7 @@ class _ChatScreenState extends State<ChatScreen> {
       MessageAction(
         label: 'React',
         icon: Icons.add_reaction_outlined,
-        onTap: () => _showEmojiPicker(event),
+        onTap: () => showEmojiPickerSheet(context, (emoji) => _toggleReaction(event, emoji)),
       ),
       MessageAction(
         label: 'Copy',
@@ -702,7 +569,7 @@ class _ChatScreenState extends State<ChatScreen> {
         MessageAction(
           label: isMe ? 'Delete' : 'Remove',
           icon: Icons.delete_outline_rounded,
-          onTap: () => _deleteEvent(event),
+          onTap: () => confirmAndDeleteEvent(context, event),
           color: cs.error,
         ),
     ];
@@ -715,76 +582,6 @@ class _ChatScreenState extends State<ChatScreen> {
       actions: actions,
       timeline: _timeline,
       onQuickReact: (emoji) => _toggleReaction(event, emoji),
-    );
-  }
-}
-
-/// Detects long press using raw pointer events so it does not participate in
-/// the gesture arena and therefore does not interfere with the horizontal drag
-/// recogniser in [SwipeableMessage].
-class _LongPressWrapper extends StatefulWidget {
-  const _LongPressWrapper({required this.onLongPress, required this.child});
-
-  final void Function(Rect bubbleRect) onLongPress;
-  final Widget child;
-
-  @override
-  State<_LongPressWrapper> createState() => _LongPressWrapperState();
-}
-
-class _LongPressWrapperState extends State<_LongPressWrapper> {
-  static const _longPressDuration = Duration(milliseconds: 500);
-  static const _touchSlop = 18.0;
-
-  Timer? _timer;
-  Offset? _startPosition;
-
-  void _onPointerDown(PointerDownEvent event) {
-    _startPosition = event.position;
-    _timer?.cancel();
-    _timer = Timer(_longPressDuration, () {
-      HapticFeedback.mediumImpact();
-      final box = context.findRenderObject() as RenderBox?;
-      if (box != null && box.hasSize) {
-        final topLeft = box.localToGlobal(Offset.zero);
-        final rect = topLeft & box.size;
-        widget.onLongPress(rect);
-      }
-    });
-  }
-
-  void _onPointerMove(PointerMoveEvent event) {
-    if (_startPosition != null &&
-        (event.position - _startPosition!).distance > _touchSlop) {
-      _timer?.cancel();
-      _timer = null;
-    }
-  }
-
-  void _onPointerUp(PointerUpEvent event) {
-    _timer?.cancel();
-    _timer = null;
-  }
-
-  void _onPointerCancel(PointerCancelEvent event) {
-    _timer?.cancel();
-    _timer = null;
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Listener(
-      onPointerDown: _onPointerDown,
-      onPointerMove: _onPointerMove,
-      onPointerUp: _onPointerUp,
-      onPointerCancel: _onPointerCancel,
-      child: widget.child,
     );
   }
 }
