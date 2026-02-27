@@ -19,7 +19,6 @@ class ReactionChips extends StatelessWidget {
     required this.timeline,
     required this.client,
     required this.isMe,
-    required this.senderAvatarOffset,
     this.onToggle,
   });
 
@@ -27,7 +26,6 @@ class ReactionChips extends StatelessWidget {
   final Timeline timeline;
   final Client client;
   final bool isMe;
-  final double senderAvatarOffset;
   final void Function(String emoji)? onToggle;
 
   @override
@@ -53,68 +51,59 @@ class ReactionChips extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(top: 4, bottom: 2),
-      child: Row(
-        mainAxisAlignment:
-            isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-        children: [
-          if (!isMe) SizedBox(width: senderAvatarOffset),
-          Flexible(
-            child: Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: grouped.entries.map((entry) {
-                final emoji = entry.key;
-                final events = entry.value;
-                final isMine =
-                    events.any((e) => e.senderId == myId);
+      child: Wrap(
+        alignment: isMe ? WrapAlignment.end : WrapAlignment.start,
+        spacing: 4,
+        runSpacing: 4,
+        children: grouped.entries.map((entry) {
+          final emoji = entry.key;
+          final events = entry.value;
+          final isMine = events.any((e) => e.senderId == myId);
 
-                return GestureDetector(
-                  onTap: () => onToggle?.call(emoji),
-                  onLongPress: () => showReactorsSheet(
-                    context,
-                    emoji,
-                    events,
-                    event.room,
-                  ),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: isMine
-                          ? cs.primaryContainer
-                          : cs.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(12),
-                      border: isMine
-                          ? Border.all(color: cs.primary, width: 1)
-                          : null,
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          emoji,
-                          style: DefaultEmojiTextStyle.copyWith(fontSize: 16),
-                        ),
-                        if (events.length > 1) ...[
-                          const SizedBox(width: 4),
-                          Text(
-                            '${events.length}',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: isMine
-                                  ? cs.primary
-                                  : cs.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
+          return GestureDetector(
+            onTap: () => onToggle?.call(emoji),
+            onLongPress: () => showReactorsSheet(
+              context,
+              emoji,
+              events,
+              event.room,
             ),
-          ),
-        ],
+            child: Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: isMine
+                    ? cs.primaryContainer
+                    : cs.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+                border: isMine
+                    ? Border.all(color: cs.primary, width: 1)
+                    : null,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    emoji,
+                    style: DefaultEmojiTextStyle.copyWith(fontSize: 16),
+                  ),
+                  if (events.length > 1) ...[
+                    const SizedBox(width: 4),
+                    Text(
+                      '${events.length}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: isMine
+                            ? cs.primary
+                            : cs.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        }).toList(),
       ),
     );
   }

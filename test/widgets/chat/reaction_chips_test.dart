@@ -59,7 +59,6 @@ Widget _wrapChips({
         timeline: timeline,
         client: client,
         isMe: isMe,
-        senderAvatarOffset: 36,
         onToggle: onToggle,
       ),
     ),
