@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../services/preferences_service.dart';
 import '../../utils/media_auth.dart';
 import '../../utils/sender_color.dart';
+import '../full_image_view.dart';
 import '../user_avatar.dart';
 import 'html_message_text.dart';
 import 'linkable_text.dart';
@@ -51,6 +52,12 @@ class MessageBubble extends StatefulWidget {
 
   /// Called to open the emoji picker for reacting to this message.
   final VoidCallback? onReact;
+
+  /// Returns the total horizontal offset of the sender avatar area
+  /// (avatar diameter + gap), for use by external widgets like
+  /// [ReactionChips] and [ReadReceiptsRow].
+  static double avatarOffset(MessageDensity density) =>
+      _DensityMetrics.of(density).avatarRadius * 2 + 8;
 
   @override
   State<MessageBubble> createState() => _MessageBubbleState();
@@ -704,6 +711,7 @@ class _DensityMetrics {
         MessageDensity.defaultDensity => _default,
         MessageDensity.comfortable => _comfortable,
       };
+
 }
 
 // ── File bubble (video / audio / generic file) ───────────────
@@ -797,6 +805,17 @@ class _ImageBubbleState extends State<_ImageBubble> {
     _loadImage();
   }
 
+  @override
+  void didUpdateWidget(_ImageBubble old) {
+    super.didUpdateWidget(old);
+    if (old.event.eventId != widget.event.eventId) {
+      _imageBytes = null;
+      _imageUrl = null;
+      _loading = true;
+      _loadImage();
+    }
+  }
+
   Future<void> _loadImage() async {
     try {
       if (widget.event.isAttachmentEncrypted) {
@@ -833,43 +852,46 @@ class _ImageBubbleState extends State<_ImageBubble> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxHeight: 260, maxWidth: 280),
-        child: _loading
-            ? Container(
-                height: 80,
-                color: cs.surfaceContainerHighest,
-                child: const Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-              )
-            : _imageBytes != null
-                ? Image.memory(_imageBytes!, fit: BoxFit.cover)
-                : _imageUrl != null
-                    ? Image.network(
-                        _imageUrl!,
-                        fit: BoxFit.cover,
-                        headers: mediaAuthHeaders(
-                          widget.event.room.client,
+    return GestureDetector(
+      onTap: () => showFullImageDialog(context, widget.event),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 260, maxWidth: 280),
+          child: _loading
+              ? Container(
+                  height: 80,
+                  color: cs.surfaceContainerHighest,
+                  child: const Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              : _imageBytes != null
+                  ? Image.memory(_imageBytes!, fit: BoxFit.cover)
+                  : _imageUrl != null
+                      ? Image.network(
                           _imageUrl!,
-                        ),
-                        errorBuilder: (_, __, ___) => Container(
+                          fit: BoxFit.cover,
+                          headers: mediaAuthHeaders(
+                            widget.event.room.client,
+                            _imageUrl!,
+                          ),
+                          errorBuilder: (_, __, ___) => Container(
+                            height: 80,
+                            color: cs.surfaceContainerHighest,
+                            child: const Center(
+                              child: Icon(Icons.broken_image_outlined),
+                            ),
+                          ),
+                        )
+                      : Container(
                           height: 80,
                           color: cs.surfaceContainerHighest,
                           child: const Center(
                             child: Icon(Icons.broken_image_outlined),
                           ),
                         ),
-                      )
-                    : Container(
-                        height: 80,
-                        color: cs.surfaceContainerHighest,
-                        child: const Center(
-                          child: Icon(Icons.broken_image_outlined),
-                        ),
-                      ),
+        ),
       ),
     );
   }
