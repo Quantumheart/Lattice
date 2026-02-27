@@ -537,6 +537,7 @@ class _ChatScreenState extends State<ChatScreen> {
       onEdit: !isRedacted && isMe ? () => _setEditEvent(event) : null,
       onDelete: !isRedacted && event.canRedact ? () => confirmAndDeleteEvent(context, event) : null,
       onReact: isRedacted ? null : () => showEmojiPickerSheet(context, (emoji) => _toggleReaction(event, emoji)),
+      onQuickReact: isRedacted ? null : (emoji) => _toggleReaction(event, emoji),
       onPin: canPin ? () => _togglePin(event) : null,
       reactionBubble: reactionBubble,
       subBubble: subBubble,
