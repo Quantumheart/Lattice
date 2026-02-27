@@ -25,6 +25,7 @@ class MessageBubble extends StatefulWidget {
     this.onEdit,
     this.onDelete,
     this.onReact,
+    this.onQuickReact,
     this.onPin,
     this.reactionBubble,
     this.subBubble,
@@ -59,6 +60,9 @@ class MessageBubble extends StatefulWidget {
 
   /// Called to open the emoji picker for reacting to this message.
   final VoidCallback? onReact;
+
+  /// Called with a specific emoji for quick-reacting to this message.
+  final void Function(String emoji)? onQuickReact;
 
   /// Called to pin or unpin this message.
   final VoidCallback? onPin;
@@ -152,9 +156,15 @@ class _MessageBubbleState extends State<MessageBubble> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Hover reply button (before bubble for isMe)
-                    if (isDesktop && _hovering && widget.onReply != null && widget.isMe)
-                      _HoverReplyButton(cs: cs, onReply: widget.onReply!),
+                    // Hover action bar (before bubble for isMe)
+                    if (isDesktop && _hovering && widget.isMe)
+                      _HoverActionBar(
+                        cs: cs,
+                        onReact: widget.onReact,
+                        onQuickReact: widget.onQuickReact,
+                        onReply: widget.onReply,
+                        onMore: (pos) => _showContextMenu(context, pos),
+                      ),
                     Flexible(
                       child: Stack(
                         clipBehavior: Clip.none,
@@ -325,12 +335,15 @@ class _MessageBubbleState extends State<MessageBubble> {
                         ],
                       ),
                     ),
-                    // Hover reply button (after bubble for non-me)
-                    if (isDesktop &&
-                        _hovering &&
-                        widget.onReply != null &&
-                        !widget.isMe)
-                      _HoverReplyButton(cs: cs, onReply: widget.onReply!),
+                    // Hover action bar (after bubble for non-me)
+                    if (isDesktop && _hovering && !widget.isMe)
+                      _HoverActionBar(
+                        cs: cs,
+                        onReact: widget.onReact,
+                        onQuickReact: widget.onQuickReact,
+                        onReply: widget.onReply,
+                        onMore: (pos) => _showContextMenu(context, pos),
+                      ),
                   ],
                 ),
                 if (widget.subBubble != null) widget.subBubble!,
@@ -694,33 +707,212 @@ class _InlineReplyPreviewState extends State<_InlineReplyPreview> {
 
 // ── Hover reply button ────────────────────────────────────────
 
-class _HoverReplyButton extends StatelessWidget {
-  const _HoverReplyButton({required this.cs, required this.onReply});
+class _HoverActionBar extends StatelessWidget {
+  const _HoverActionBar({
+    required this.cs,
+    this.onReact,
+    this.onQuickReact,
+    this.onReply,
+    required this.onMore,
+  });
 
   final ColorScheme cs;
-  final VoidCallback onReply;
+  final VoidCallback? onReact;
+  final void Function(String emoji)? onQuickReact;
+  final VoidCallback? onReply;
+  final void Function(Offset position) onMore;
+
+  void _showQuickReactPopup(BuildContext context) {
+    final overlay = Overlay.of(context);
+    final box = context.findRenderObject() as RenderBox;
+    final barRect = box.localToGlobal(Offset.zero) & box.size;
+
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (ctx) => _QuickReactOverlay(
+        anchor: barRect,
+        cs: cs,
+        onQuickReact: (emoji) {
+          entry.remove();
+          onQuickReact?.call(emoji);
+        },
+        onMore: () {
+          entry.remove();
+          onReact?.call();
+        },
+        onDismiss: () => entry.remove(),
+      ),
+    );
+    overlay.insert(entry);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final hasReact = onReact != null || onQuickReact != null;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 4),
       child: Material(
         elevation: 2,
         borderRadius: BorderRadius.circular(16),
         color: cs.surfaceContainerHighest,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: onReply,
-          child: Padding(
-            padding: const EdgeInsets.all(6),
-            child: Icon(
-              Icons.reply_rounded,
-              size: 16,
-              color: cs.onSurfaceVariant,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (hasReact)
+              _ActionIcon(
+                icon: Icons.add_reaction_outlined,
+                onTap: () => _showQuickReactPopup(context),
+                cs: cs,
+                borderRadius: const BorderRadius.horizontal(
+                  left: Radius.circular(16),
+                ),
+              ),
+            if (onReply != null)
+              _ActionIcon(
+                icon: Icons.reply_rounded,
+                onTap: onReply!,
+                cs: cs,
+              ),
+            _ActionIcon(
+              icon: Icons.more_horiz_rounded,
+              onTap: () {
+                final box = context.findRenderObject() as RenderBox;
+                final pos = box.localToGlobal(
+                  Offset(box.size.width, box.size.height / 2),
+                );
+                onMore(pos);
+              },
+              cs: cs,
+              borderRadius: const BorderRadius.horizontal(
+                right: Radius.circular(16),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ActionIcon extends StatelessWidget {
+  const _ActionIcon({
+    required this.icon,
+    required this.onTap,
+    required this.cs,
+    this.borderRadius,
+  });
+
+  final IconData icon;
+  final VoidCallback onTap;
+  final ColorScheme cs;
+  final BorderRadius? borderRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: borderRadius ?? BorderRadius.zero,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Icon(icon, size: 16, color: cs.onSurfaceVariant),
+      ),
+    );
+  }
+}
+
+// ── Quick-react overlay ─────────────────────────────────────
+
+class _QuickReactOverlay extends StatelessWidget {
+  const _QuickReactOverlay({
+    required this.anchor,
+    required this.cs,
+    required this.onQuickReact,
+    required this.onMore,
+    required this.onDismiss,
+  });
+
+  final Rect anchor;
+  final ColorScheme cs;
+  final void Function(String emoji) onQuickReact;
+  final VoidCallback onMore;
+  final VoidCallback onDismiss;
+
+  static const _quickEmojis = [
+    '\u{2764}\u{FE0F}', // ❤️
+    '\u{1F44D}', // 👍
+    '\u{1F44E}', // 👎
+    '\u{1F602}', // 😂
+    '\u{1F622}', // 😢
+    '\u{1F62E}', // 😮
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    // Position the bar above the action bar, centered horizontally.
+    const barHeight = 40.0;
+    const gap = 4.0;
+    final top = anchor.top - barHeight - gap;
+    final center = anchor.center.dx;
+
+    return Stack(
+      children: [
+        // Dismiss scrim
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: onDismiss,
+          ),
+        ),
+        // Quick-react bar
+        Positioned(
+          top: top,
+          left: 0,
+          right: 0,
+          child: Center(
+            widthFactor: 0,
+            child: UnconstrainedBox(
+              child: Transform.translate(
+                offset: Offset(center - MediaQuery.of(context).size.width / 2, 0),
+                child: Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(20),
+                  color: cs.surfaceContainerHighest,
+                  clipBehavior: Clip.antiAlias,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (final emoji in _quickEmojis)
+                          InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () => onQuickReact(emoji),
+                            child: Padding(
+                              padding: const EdgeInsets.all(6),
+                              child: Text(emoji, style: const TextStyle(fontSize: 22)),
+                            ),
+                          ),
+                        InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap: onMore,
+                          child: Padding(
+                            padding: const EdgeInsets.all(6),
+                            child: Icon(
+                              Icons.more_horiz_rounded,
+                              size: 22,
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
