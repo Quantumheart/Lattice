@@ -1,5 +1,7 @@
 import 'dart:ui';
 
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart'
+    show DefaultEmojiTextStyle;
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
@@ -30,6 +32,7 @@ void showMessageActionSheet({
   required Rect bubbleRect,
   required List<MessageAction> actions,
   required Timeline? timeline,
+  void Function(String emoji)? onQuickReact,
 }) {
   Navigator.of(context).push(
     _MessageActionSheetRoute(
@@ -39,6 +42,7 @@ void showMessageActionSheet({
       actions: actions,
       timeline: timeline,
       capturedTheme: Theme.of(context),
+      onQuickReact: onQuickReact,
     ),
   );
 }
@@ -53,6 +57,7 @@ class _MessageActionSheetRoute extends PopupRoute<void> {
     required this.actions,
     required this.timeline,
     required this.capturedTheme,
+    this.onQuickReact,
   });
 
   final Event event;
@@ -61,6 +66,7 @@ class _MessageActionSheetRoute extends PopupRoute<void> {
   final List<MessageAction> actions;
   final Timeline? timeline;
   final ThemeData capturedTheme;
+  final void Function(String emoji)? onQuickReact;
 
   @override
   Color? get barrierColor => Colors.black54;
@@ -88,6 +94,7 @@ class _MessageActionSheetRoute extends PopupRoute<void> {
       timeline: timeline,
       animation: animation,
       capturedTheme: capturedTheme,
+      onQuickReact: onQuickReact,
     );
   }
 }
@@ -103,6 +110,7 @@ class _MessageActionSheet extends StatelessWidget {
     required this.timeline,
     required this.animation,
     required this.capturedTheme,
+    this.onQuickReact,
   });
 
   final Event event;
@@ -112,9 +120,11 @@ class _MessageActionSheet extends StatelessWidget {
   final Timeline? timeline;
   final Animation<double> animation;
   final ThemeData capturedTheme;
+  final void Function(String emoji)? onQuickReact;
 
   static const _actionListWidth = 220.0;
   static const _actionRowHeight = 48.0;
+  static const _quickReactHeight = 48.0;
   static const _gap = 8.0;
 
   @override
@@ -125,10 +135,13 @@ class _MessageActionSheet extends StatelessWidget {
     final safeTop = mq.padding.top + 8;
     final safeBottom = mq.padding.bottom + 8;
 
+    final hasQuickReact = onQuickReact != null;
     final actionListHeight = actions.length * _actionRowHeight;
+    final quickReactSpace = hasQuickReact ? _quickReactHeight + _gap : 0.0;
 
-    // Total height needed: bubble + gap + action list
-    final totalHeight = bubbleRect.height + _gap + actionListHeight;
+    // Total height needed: bubble + gap + quick-react bar + gap + action list
+    final totalHeight =
+        bubbleRect.height + _gap + quickReactSpace + actionListHeight;
 
     // Determine top position: try to keep bubble in place, but shift up if
     // the action list would overflow the screen bottom.
@@ -141,7 +154,8 @@ class _MessageActionSheet extends StatelessWidget {
       bubbleTop = safeTop;
     }
 
-    final actionListTop = bubbleTop + bubbleRect.height + _gap;
+    final quickReactTop = bubbleTop + bubbleRect.height + _gap;
+    final actionListTop = quickReactTop + quickReactSpace;
 
     // Horizontal alignment: align action list with the bubble's leading edge
     double actionListLeft;
@@ -190,6 +204,24 @@ class _MessageActionSheet extends StatelessWidget {
             ),
           ),
         ),
+
+        // ── Quick-reaction bar ────────────────────────
+        if (hasQuickReact)
+          Positioned(
+            top: quickReactTop,
+            left: actionListLeft,
+            width: _actionListWidth,
+            child: FadeTransition(
+              opacity: curved,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.08),
+                  end: Offset.zero,
+                ).animate(curved),
+                child: _QuickReactBar(onQuickReact: onQuickReact!),
+              ),
+            ),
+          ),
 
         // ── Action list ─────────────────────────────────
         Positioned(
@@ -241,6 +273,50 @@ class _ActionList extends StatelessWidget {
             _ActionRow(action: actions[i]),
           ],
         ],
+      ),
+    );
+  }
+}
+
+// ── Quick-reaction bar ──────────────────────────────────
+
+class _QuickReactBar extends StatelessWidget {
+  const _QuickReactBar({required this.onQuickReact});
+
+  final void Function(String emoji) onQuickReact;
+
+  static const _quickEmojis = ['\u{1F44D}', '\u{2764}\u{FE0F}', '\u{1F602}', '\u{1F62E}', '\u{1F622}', '\u{1F64F}'];
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    return Material(
+      elevation: 4,
+      borderRadius: BorderRadius.circular(12),
+      color: cs.surfaceContainerHighest,
+      clipBehavior: Clip.antiAlias,
+      child: SizedBox(
+        height: 48,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: _quickEmojis.map((emoji) {
+            return InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () {
+                Navigator.of(context).pop();
+                onQuickReact(emoji);
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: Text(
+                  emoji,
+                  style: DefaultEmojiTextStyle.copyWith(fontSize: 22),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
