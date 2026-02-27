@@ -62,17 +62,19 @@ class _PinnedMessagesPopupRoute extends PopupRoute<void> {
     Animation<double> animation,
     Animation<double> secondaryAnimation,
   ) {
-    return CustomSingleChildLayout(
-      delegate: _PopupLayoutDelegate(
-        anchor: anchor,
-        overlaySize: overlaySize,
-      ),
-      child: FadeTransition(
-        opacity: animation,
-        child: _PinnedMessagesPanel(
-          room: room,
-          onTap: onTap,
-          onClose: () => Navigator.of(context).pop(),
+    return LayoutBuilder(
+      builder: (context, constraints) => CustomSingleChildLayout(
+        delegate: _PopupLayoutDelegate(
+          anchor: anchor,
+          containerSize: constraints.biggest,
+        ),
+        child: FadeTransition(
+          opacity: animation,
+          child: _PinnedMessagesPanel(
+            room: room,
+            onTap: onTap,
+            onClose: () => Navigator.of(context).pop(),
+          ),
         ),
       ),
     );
@@ -82,10 +84,10 @@ class _PinnedMessagesPopupRoute extends PopupRoute<void> {
 // ── Popup positioning ──────────────────────────────────────────────
 
 class _PopupLayoutDelegate extends SingleChildLayoutDelegate {
-  _PopupLayoutDelegate({required this.anchor, required this.overlaySize});
+  _PopupLayoutDelegate({required this.anchor, required this.containerSize});
 
   final Rect anchor;
-  final Size overlaySize;
+  final Size containerSize;
 
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
@@ -113,7 +115,7 @@ class _PopupLayoutDelegate extends SingleChildLayoutDelegate {
   @override
   bool shouldRelayout(_PopupLayoutDelegate oldDelegate) {
     return anchor != oldDelegate.anchor ||
-        overlaySize != oldDelegate.overlaySize;
+        containerSize != oldDelegate.containerSize;
   }
 }
 
@@ -146,18 +148,15 @@ class _PinnedMessagesPanelState extends State<_PinnedMessagesPanel> {
 
   Future<void> _loadPinnedEvents() async {
     final ids = widget.room.pinnedEventIds;
-    final events = <Event>[];
-    for (final id in ids) {
-      try {
-        final event = await widget.room.getEventById(id);
-        if (event != null) events.add(event);
-      } catch (e) {
-        debugPrint('[Lattice] Failed to load pinned event $id: $e');
-      }
-    }
+    final results = await Future.wait(
+      ids.map((id) => widget.room.getEventById(id).catchError((e) {
+            debugPrint('[Lattice] Failed to load pinned event $id: $e');
+            return null;
+          })),
+    );
     if (mounted) {
       setState(() {
-        _pinnedEvents = events;
+        _pinnedEvents = results.whereType<Event>().toList();
         _loading = false;
       });
     }
@@ -319,10 +318,14 @@ class _PinnedMessageTile extends StatelessWidget {
                   size: 24,
                 ),
                 const SizedBox(width: 8),
-                Text(
-                  displayName,
-                  style: tt.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
+                Flexible(
+                  child: Text(
+                    displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: tt.labelMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 6),
@@ -399,9 +402,11 @@ class _ActionChip extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    return Material(
-      color: cs.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(6),
+    return Ink(
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(6),
+      ),
       child: InkWell(
         borderRadius: BorderRadius.circular(6),
         onTap: onTap,

@@ -3,7 +3,7 @@ import 'package:matrix/matrix.dart';
 
 import '../room_avatar.dart';
 import '../room_details_panel.dart';
-import 'pinned_messages_sheet.dart';
+import 'pinned_messages_popup.dart';
 
 /// Default app bar for the chat screen showing room name, avatar, and actions.
 class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
