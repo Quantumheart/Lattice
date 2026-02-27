@@ -140,6 +140,9 @@ class _PinnedMessagesPanelState extends State<_PinnedMessagesPanel> {
   List<Event>? _pinnedEvents;
   bool _loading = true;
 
+  // Pinned events are loaded once when the panel opens and are not updated
+  // reactively. Since the popup is short-lived this is acceptable; external
+  // pin/unpin changes made while the popup is open won't be reflected.
   @override
   void initState() {
     super.initState();
@@ -149,10 +152,14 @@ class _PinnedMessagesPanelState extends State<_PinnedMessagesPanel> {
   Future<void> _loadPinnedEvents() async {
     final ids = widget.room.pinnedEventIds;
     final results = await Future.wait(
-      ids.map((id) => widget.room.getEventById(id).catchError((e) {
-            debugPrint('[Lattice] Failed to load pinned event $id: $e');
-            return null;
-          })),
+      ids.map((id) async {
+        try {
+          return await widget.room.getEventById(id);
+        } catch (e) {
+          debugPrint('[Lattice] Failed to load pinned event $id: $e');
+          return null;
+        }
+      }),
     );
     if (mounted) {
       setState(() {
@@ -387,6 +394,7 @@ class _PinnedMessageTile extends StatelessWidget {
     if (isToday) return '$h:$m';
     final d = ts.day.toString().padLeft(2, '0');
     final mo = ts.month.toString().padLeft(2, '0');
+    if (ts.year != now.year) return '$d/$mo/${ts.year} $h:$m';
     return '$d/$mo $h:$m';
   }
 }
@@ -402,22 +410,20 @@ class _ActionChip extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    return Ink(
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(6),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-          child: Text(
-            label,
-            style: tt.labelSmall?.copyWith(
-              color: cs.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
-            ),
+    return InkWell(
+      borderRadius: BorderRadius.circular(6),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          label,
+          style: tt.labelSmall?.copyWith(
+            color: cs.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),

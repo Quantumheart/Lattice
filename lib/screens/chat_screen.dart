@@ -561,6 +561,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (event.redacted) return;
 
     final cs = Theme.of(context).colorScheme;
+    final isPinned = event.room.pinnedEventIds.contains(event.eventId);
     final actions = <MessageAction>[
       MessageAction(
         label: 'Reply',
@@ -579,17 +580,13 @@ class _ChatScreenState extends State<ChatScreen> {
         onTap: () => showEmojiPickerSheet(context, (emoji) => _toggleReaction(event, emoji)),
       ),
       if (event.room.canChangeStateEvent('m.room.pinned_events'))
-        () {
-          final isPinned =
-              event.room.pinnedEventIds.contains(event.eventId);
-          return MessageAction(
-            label: isPinned ? 'Unpin' : 'Pin',
-            icon: isPinned
-                ? Icons.push_pin_rounded
-                : Icons.push_pin_outlined,
-            onTap: () => _togglePin(event),
-          );
-        }(),
+        MessageAction(
+          label: isPinned ? 'Unpin' : 'Pin',
+          icon: isPinned
+              ? Icons.push_pin_rounded
+              : Icons.push_pin_outlined,
+          onTap: () => _togglePin(event),
+        ),
       MessageAction(
         label: 'Copy',
         icon: Icons.copy_rounded,
