@@ -2,6 +2,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../utils/emoji_spans.dart';
+
 /// A text widget that detects URLs and renders them as tappable, styled links.
 class LinkableText extends StatelessWidget {
   const LinkableText({
@@ -35,7 +37,7 @@ class LinkableText extends StatelessWidget {
 
     final matches = urlRegex.allMatches(text).toList();
     if (matches.isEmpty) {
-      return Text(text, style: style);
+      return Text.rich(TextSpan(children: buildEmojiSpans(text, style)));
     }
 
     final linkColor = isMe
@@ -53,10 +55,8 @@ class LinkableText extends StatelessWidget {
 
       // Plain text before this URL.
       if (match.start > lastEnd) {
-        spans.add(TextSpan(
-          text: text.substring(lastEnd, match.start),
-          style: style,
-        ));
+        spans.addAll(
+            buildEmojiSpans(text.substring(lastEnd, match.start), style));
       }
 
       // URL span.
@@ -81,10 +81,7 @@ class LinkableText extends StatelessWidget {
 
     // Remaining plain text after the last URL.
     if (lastEnd < text.length) {
-      spans.add(TextSpan(
-        text: text.substring(lastEnd),
-        style: style,
-      ));
+      spans.addAll(buildEmojiSpans(text.substring(lastEnd), style));
     }
 
     return Text.rich(TextSpan(children: spans));
