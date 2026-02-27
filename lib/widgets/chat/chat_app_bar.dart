@@ -3,6 +3,7 @@ import 'package:matrix/matrix.dart';
 
 import '../room_avatar.dart';
 import '../room_details_panel.dart';
+import 'pinned_messages_sheet.dart';
 
 /// Default app bar for the chat screen showing room name, avatar, and actions.
 class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -12,14 +13,14 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onBack,
     this.onShowDetails,
     required this.onSearch,
-    this.onPinnedTap,
+    this.onPinnedEvent,
   });
 
   final Room room;
   final VoidCallback? onBack;
   final VoidCallback? onShowDetails;
   final VoidCallback onSearch;
-  final VoidCallback? onPinnedTap;
+  final void Function(Event event)? onPinnedEvent;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -61,14 +62,20 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       actions: [
-        if (room.pinnedEventIds.isNotEmpty && onPinnedTap != null)
-          IconButton(
-            icon: Badge.count(
-              count: room.pinnedEventIds.length,
-              child: const Icon(Icons.push_pin_rounded),
+        if (room.pinnedEventIds.isNotEmpty && onPinnedEvent != null)
+          Builder(
+            builder: (buttonContext) => IconButton(
+              icon: Badge.count(
+                count: room.pinnedEventIds.length,
+                child: const Icon(Icons.push_pin_rounded),
+              ),
+              tooltip: 'Pinned messages',
+              onPressed: () => showPinnedMessagesPopup(
+                buttonContext,
+                room,
+                onTap: onPinnedEvent!,
+              ),
             ),
-            tooltip: 'Pinned messages',
-            onPressed: onPinnedTap,
           ),
         IconButton(
           icon: const Icon(Icons.search_rounded),

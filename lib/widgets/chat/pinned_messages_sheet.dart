@@ -4,30 +4,137 @@ import 'package:matrix/matrix.dart';
 import '../user_avatar.dart';
 import 'message_bubble.dart' show stripReplyFallback;
 
-/// Shows a modal bottom sheet listing all pinned messages in a room.
-void showPinnedMessagesSheet(
+/// Shows a popup panel anchored below the pin icon listing pinned messages.
+void showPinnedMessagesPopup(
   BuildContext context,
   Room room, {
   required void Function(Event event) onTap,
 }) {
-  showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    builder: (context) => _PinnedMessagesSheet(room: room, onTap: onTap),
+  final button = context.findRenderObject() as RenderBox;
+  final overlay =
+      Overlay.of(context).context.findRenderObject() as RenderBox;
+  final buttonPos = button.localToGlobal(Offset.zero, ancestor: overlay);
+  final anchor = Rect.fromLTWH(
+    buttonPos.dx,
+    buttonPos.dy,
+    button.size.width,
+    button.size.height,
+  );
+
+  Navigator.of(context).push(
+    _PinnedMessagesPopupRoute(
+      anchor: anchor,
+      overlaySize: overlay.size,
+      room: room,
+      onTap: onTap,
+    ),
   );
 }
 
-class _PinnedMessagesSheet extends StatefulWidget {
-  const _PinnedMessagesSheet({required this.room, required this.onTap});
+class _PinnedMessagesPopupRoute extends PopupRoute<void> {
+  _PinnedMessagesPopupRoute({
+    required this.anchor,
+    required this.overlaySize,
+    required this.room,
+    required this.onTap,
+  });
 
+  final Rect anchor;
+  final Size overlaySize;
   final Room room;
   final void Function(Event event) onTap;
 
   @override
-  State<_PinnedMessagesSheet> createState() => _PinnedMessagesSheetState();
+  Color? get barrierColor => Colors.black26;
+
+  @override
+  bool get barrierDismissible => true;
+
+  @override
+  String? get barrierLabel => 'Dismiss pinned messages';
+
+  @override
+  Duration get transitionDuration => const Duration(milliseconds: 200);
+
+  @override
+  Widget buildPage(
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+  ) {
+    return CustomSingleChildLayout(
+      delegate: _PopupLayoutDelegate(
+        anchor: anchor,
+        overlaySize: overlaySize,
+      ),
+      child: FadeTransition(
+        opacity: animation,
+        child: _PinnedMessagesPanel(
+          room: room,
+          onTap: onTap,
+          onClose: () => Navigator.of(context).pop(),
+        ),
+      ),
+    );
+  }
 }
 
-class _PinnedMessagesSheetState extends State<_PinnedMessagesSheet> {
+// ── Popup positioning ──────────────────────────────────────────────
+
+class _PopupLayoutDelegate extends SingleChildLayoutDelegate {
+  _PopupLayoutDelegate({required this.anchor, required this.overlaySize});
+
+  final Rect anchor;
+  final Size overlaySize;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+    return BoxConstraints(
+      maxWidth: 420.0.clamp(0, constraints.maxWidth - 16),
+      maxHeight: 400.0.clamp(0, constraints.maxHeight - 16),
+    );
+  }
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) {
+    // Right-align with the button's right edge
+    var dx = anchor.right - childSize.width;
+    dx = dx.clamp(8.0, size.width - childSize.width - 8);
+
+    // Place below the button
+    var dy = anchor.bottom + 4;
+    if (dy + childSize.height > size.height - 8) {
+      dy = size.height - childSize.height - 8;
+    }
+
+    return Offset(dx, dy);
+  }
+
+  @override
+  bool shouldRelayout(_PopupLayoutDelegate oldDelegate) {
+    return anchor != oldDelegate.anchor ||
+        overlaySize != oldDelegate.overlaySize;
+  }
+}
+
+// ── Panel content ──────────────────────────────────────────────────
+
+class _PinnedMessagesPanel extends StatefulWidget {
+  const _PinnedMessagesPanel({
+    required this.room,
+    required this.onTap,
+    required this.onClose,
+  });
+
+  final Room room;
+  final void Function(Event event) onTap;
+  final VoidCallback onClose;
+
+  @override
+  State<_PinnedMessagesPanel> createState() => _PinnedMessagesPanelState();
+}
+
+class _PinnedMessagesPanelState extends State<_PinnedMessagesPanel> {
   List<Event>? _pinnedEvents;
   bool _loading = true;
 
@@ -65,6 +172,7 @@ class _PinnedMessagesSheetState extends State<_PinnedMessagesSheet> {
         setState(() {
           _pinnedEvents?.removeWhere((e) => e.eventId == eventId);
         });
+        if (_pinnedEvents?.isEmpty ?? true) widget.onClose();
       }
     } catch (e) {
       if (mounted) {
@@ -82,92 +190,107 @@ class _PinnedMessagesSheetState extends State<_PinnedMessagesSheet> {
     final canPin =
         widget.room.canChangeStateEvent('m.room.pinned_events');
 
-    return DraggableScrollableSheet(
-      initialChildSize: 0.5,
-      minChildSize: 0.3,
-      maxChildSize: 0.85,
-      expand: false,
-      builder: (context, scrollController) {
-        return Column(
-          children: [
-            // Handle bar
-            Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 8),
-              child: Container(
-                width: 32,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: cs.onSurfaceVariant.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(2),
+    return Material(
+      elevation: 8,
+      borderRadius: BorderRadius.circular(12),
+      color: cs.surfaceContainer,
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header
+          Padding(
+            padding:
+                const EdgeInsets.only(left: 16, right: 4, top: 4, bottom: 4),
+            child: Row(
+              children: [
+                Text(
+                  'Pinned Messages',
+                  style: tt.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const Spacer(),
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 18),
+                  onPressed: widget.onClose,
+                  visualDensity: VisualDensity.compact,
+                  tooltip: 'Close',
+                ),
+              ],
+            ),
+          ),
+          Divider(
+            height: 1,
+            color: cs.outlineVariant.withValues(alpha: 0.3),
+          ),
+          // Content
+          if (_loading)
+            const Padding(
+              padding: EdgeInsets.all(24),
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
                 ),
               ),
-            ),
-            // Title
+            )
+          else if (_pinnedEvents == null || _pinnedEvents!.isEmpty)
             Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  Icon(Icons.push_pin_rounded,
-                      size: 20, color: cs.onSurfaceVariant),
-                  const SizedBox(width: 8),
-                  Text('Pinned Messages', style: tt.titleMedium),
-                ],
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'No pinned messages',
+                style: tt.bodyMedium?.copyWith(
+                  color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                ),
+              ),
+            )
+          else
+            Flexible(
+              child: ListView.separated(
+                shrinkWrap: true,
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                itemCount: _pinnedEvents!.length,
+                separatorBuilder: (_, __) => Divider(
+                  height: 1,
+                  indent: 12,
+                  endIndent: 12,
+                  color: cs.outlineVariant.withValues(alpha: 0.2),
+                ),
+                itemBuilder: (context, i) {
+                  final event = _pinnedEvents![i];
+                  return _PinnedMessageTile(
+                    event: event,
+                    canUnpin: canPin,
+                    onOpen: () {
+                      widget.onClose();
+                      widget.onTap(event);
+                    },
+                    onUnpin: () => _unpin(event.eventId),
+                  );
+                },
               ),
             ),
-            const Divider(height: 1),
-            // Content
-            Expanded(
-              child: _loading
-                  ? const Center(child: CircularProgressIndicator())
-                  : _pinnedEvents == null || _pinnedEvents!.isEmpty
-                      ? Center(
-                          child: Text(
-                            'No pinned messages',
-                            style: tt.bodyMedium?.copyWith(
-                              color: cs.onSurfaceVariant
-                                  .withValues(alpha: 0.5),
-                            ),
-                          ),
-                        )
-                      : ListView.separated(
-                          controller: scrollController,
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          itemCount: _pinnedEvents!.length,
-                          separatorBuilder: (_, __) =>
-                              const Divider(height: 1, indent: 64),
-                          itemBuilder: (context, i) {
-                            final event = _pinnedEvents![i];
-                            return _PinnedMessageTile(
-                              event: event,
-                              canUnpin: canPin,
-                              onTap: () {
-                                Navigator.of(context).pop();
-                                widget.onTap(event);
-                              },
-                              onUnpin: () => _unpin(event.eventId),
-                            );
-                          },
-                        ),
-            ),
-          ],
-        );
-      },
+        ],
+      ),
     );
   }
 }
+
+// ── Individual pinned message tile ─────────────────────────────────
 
 class _PinnedMessageTile extends StatelessWidget {
   const _PinnedMessageTile({
     required this.event,
     required this.canUnpin,
-    required this.onTap,
+    required this.onOpen,
     required this.onUnpin,
   });
 
   final Event event;
   final bool canUnpin;
-  final VoidCallback onTap;
+  final VoidCallback onOpen;
   final VoidCallback onUnpin;
 
   @override
@@ -179,46 +302,75 @@ class _PinnedMessageTile extends StatelessWidget {
     final body = stripReplyFallback(event.body);
     final time = _formatDateTime(event.originServerTs);
 
-    return ListTile(
-      leading: UserAvatar(
-        client: event.room.client,
-        avatarUrl: sender.avatarUrl,
-        userId: event.senderId,
-        size: 36,
-      ),
-      title: Row(
-        children: [
-          Expanded(
-            child: Text(
-              displayName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: tt.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+    return InkWell(
+      onTap: onOpen,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top row: avatar, name, time, actions
+            Row(
+              children: [
+                UserAvatar(
+                  client: event.room.client,
+                  avatarUrl: sender.avatarUrl,
+                  userId: event.senderId,
+                  size: 24,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  displayName,
+                  style: tt.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  time,
+                  style: tt.labelSmall?.copyWith(
+                    color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                  ),
+                ),
+                const Spacer(),
+                _ActionChip(
+                  label: 'Open',
+                  onTap: onOpen,
+                ),
+                if (canUnpin) ...[
+                  const SizedBox(width: 4),
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      icon: Icon(
+                        Icons.close_rounded,
+                        size: 14,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                      ),
+                      onPressed: onUnpin,
+                      tooltip: 'Unpin',
+                    ),
+                  ),
+                ],
+              ],
             ),
-          ),
-          Text(
-            time,
-            style: tt.bodySmall?.copyWith(
-              color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+            // Body text
+            Padding(
+              padding: const EdgeInsets.only(left: 32, top: 2),
+              child: Text(
+                body,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: tt.bodySmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-      subtitle: Text(
-        body,
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
-      ),
-      trailing: canUnpin
-          ? IconButton(
-              icon: Icon(Icons.push_pin_rounded,
-                  size: 18, color: cs.onSurfaceVariant),
-              tooltip: 'Unpin',
-              onPressed: onUnpin,
-            )
-          : null,
-      onTap: onTap,
     );
   }
 
@@ -233,5 +385,37 @@ class _PinnedMessageTile extends StatelessWidget {
     final d = ts.day.toString().padLeft(2, '0');
     final mo = ts.month.toString().padLeft(2, '0');
     return '$d/$mo $h:$m';
+  }
+}
+
+class _ActionChip extends StatelessWidget {
+  const _ActionChip({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Material(
+      color: cs.surfaceContainerHighest,
+      borderRadius: BorderRadius.circular(6),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(6),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          child: Text(
+            label,
+            style: tt.labelSmall?.copyWith(
+              color: cs.onSurfaceVariant,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
