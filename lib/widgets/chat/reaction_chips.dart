@@ -49,62 +49,70 @@ class ReactionChips extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final myId = client.userID;
 
-    return Padding(
-      padding: const EdgeInsets.only(top: 4, bottom: 2),
-      child: Wrap(
-        alignment: isMe ? WrapAlignment.end : WrapAlignment.start,
-        spacing: 4,
-        runSpacing: 4,
-        children: grouped.entries.map((entry) {
-          final emoji = entry.key;
-          final events = entry.value;
-          final isMine = events.any((e) => e.senderId == myId);
+    return Wrap(
+      alignment: isMe ? WrapAlignment.end : WrapAlignment.start,
+      spacing: 4,
+      runSpacing: 4,
+      children: grouped.entries.map((entry) {
+        final emoji = entry.key;
+        final events = entry.value;
+        final isMine = events.any((e) => e.senderId == myId);
 
-          return GestureDetector(
-            onTap: () => onToggle?.call(emoji),
-            onLongPress: () => showReactorsSheet(
-              context,
-              emoji,
-              events,
-              event.room,
-            ),
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
+        return GestureDetector(
+          onTap: () => onToggle?.call(emoji),
+          onLongPress: () => showReactorsSheet(
+            context,
+            emoji,
+            events,
+            event.room,
+          ),
+          child: Container(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: isMine
+                  ? cs.primaryContainer
+                  : cs.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
                 color: isMine
-                    ? cs.primaryContainer
-                    : cs.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
-                border: isMine
-                    ? Border.all(color: cs.primary, width: 1)
-                    : null,
+                    ? cs.primary.withValues(alpha: 0.5)
+                    : cs.outlineVariant.withValues(alpha: 0.5),
+                width: 1,
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    emoji,
-                    style: DefaultEmojiTextStyle.copyWith(fontSize: 16),
-                  ),
-                  if (events.length > 1) ...[
-                    const SizedBox(width: 4),
-                    Text(
-                      '${events.length}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: isMine
-                            ? cs.primary
-                            : cs.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
+              boxShadow: [
+                BoxShadow(
+                  color: cs.shadow.withValues(alpha: 0.08),
+                  blurRadius: 3,
+                  offset: const Offset(0, 1),
+                ),
+              ],
             ),
-          );
-        }).toList(),
-      ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  emoji,
+                  style: DefaultEmojiTextStyle.copyWith(fontSize: 14),
+                ),
+                if (events.length > 1) ...[
+                  const SizedBox(width: 3),
+                  Text(
+                    '${events.length}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: isMine
+                          ? cs.primary
+                          : cs.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }
