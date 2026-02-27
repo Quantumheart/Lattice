@@ -881,7 +881,7 @@ class _RoomTile extends StatelessWidget {
   }
 
   String _typingPreview(List<User> typers) {
-    return '${TypingIndicator.formatTypers(typers)}...';
+    return TypingIndicator.formatTypers(typers);
   }
 
   Color _dotColor(int index, ColorScheme cs) {
