@@ -44,7 +44,7 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  static const _historyLoadThreshold = 3;
+  static const _historyLoadThreshold = 15;
   static const _scrollAnimationDuration = Duration(milliseconds: 400);
   static const _readMarkerDelay = Duration(seconds: 1);
 
@@ -175,11 +175,11 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_timeline == null || !_timeline!.canRequestHistory || _loadingHistory) {
       return;
     }
-    _loadingHistory = true;
+    setState(() => _loadingHistory = true);
     try {
       await _timeline!.requestHistory();
     } finally {
-      _loadingHistory = false;
+      if (mounted) setState(() => _loadingHistory = false);
     }
   }
 
@@ -474,14 +474,23 @@ class _ChatScreenState extends State<ChatScreen> {
       List<Event> events, MatrixService matrix, Room room) {
     final isMobile = MediaQuery.sizeOf(context).width < 720;
     final receiptMap = buildReceiptMap(room, matrix.client.userID);
+    final hasLoadingIndicator = _loadingHistory;
+    final totalCount = events.length + (hasLoadingIndicator ? 1 : 0);
     return ScrollablePositionedList.builder(
       itemScrollController: _itemScrollCtrl,
       itemPositionsListener: _itemPosListener,
       reverse: true,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      itemCount: events.length,
-      itemBuilder: (context, i) =>
-          _buildMessageItem(events, i, matrix, isMobile, receiptMap),
+      itemCount: totalCount,
+      itemBuilder: (context, i) {
+        if (hasLoadingIndicator && i == totalCount - 1) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+          );
+        }
+        return _buildMessageItem(events, i, matrix, isMobile, receiptMap);
+      },
     );
   }
 
