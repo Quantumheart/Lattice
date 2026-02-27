@@ -23,6 +23,8 @@ class HtmlMessageText extends StatefulWidget {
     required this.style,
     required this.isMe,
     this.room,
+    this.maxLines,
+    this.overflow,
   });
 
   final String html;
@@ -31,6 +33,12 @@ class HtmlMessageText extends StatefulWidget {
 
   /// The room this message belongs to, used for resolving mention display names.
   final Room? room;
+
+  /// Optional maximum number of lines before truncating.
+  final int? maxLines;
+
+  /// How to handle text overflow (defaults to clip).
+  final TextOverflow? overflow;
 
   @override
   State<HtmlMessageText> createState() => _HtmlMessageTextState();
@@ -87,7 +95,11 @@ class _HtmlMessageTextState extends State<HtmlMessageText> {
     // Trim leading/trailing newlines.
     _trimNewlines(spans);
 
-    return Text.rich(TextSpan(children: spans));
+    return Text.rich(
+      TextSpan(children: spans),
+      maxLines: widget.maxLines,
+      overflow: widget.overflow ?? TextOverflow.clip,
+    );
   }
 
   void _buildSpans(

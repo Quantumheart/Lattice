@@ -11,11 +11,19 @@ class LinkableText extends StatelessWidget {
     required this.text,
     required this.style,
     required this.isMe,
+    this.maxLines,
+    this.overflow,
   });
 
   final String text;
   final TextStyle? style;
   final bool isMe;
+
+  /// Optional maximum number of lines before truncating.
+  final int? maxLines;
+
+  /// How to handle text overflow (defaults to clip).
+  final TextOverflow? overflow;
 
   static final urlRegex = RegExp(
     r'https?://[^\s)<>]+',
@@ -37,7 +45,11 @@ class LinkableText extends StatelessWidget {
 
     final matches = urlRegex.allMatches(text).toList();
     if (matches.isEmpty) {
-      return Text.rich(TextSpan(children: buildEmojiSpans(text, style)));
+      return Text.rich(
+        TextSpan(children: buildEmojiSpans(text, style)),
+        maxLines: maxLines,
+        overflow: overflow ?? TextOverflow.clip,
+      );
     }
 
     final linkColor = isMe
@@ -84,6 +96,10 @@ class LinkableText extends StatelessWidget {
       spans.addAll(buildEmojiSpans(text.substring(lastEnd), style));
     }
 
-    return Text.rich(TextSpan(children: spans));
+    return Text.rich(
+      TextSpan(children: spans),
+      maxLines: maxLines,
+      overflow: overflow ?? TextOverflow.clip,
+    );
   }
 }

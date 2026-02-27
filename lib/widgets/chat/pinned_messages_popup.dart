@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
 import '../user_avatar.dart';
+import 'html_message_text.dart';
+import 'linkable_text.dart';
 import 'message_bubble.dart' show stripReplyFallback;
 
 /// Shows a popup panel anchored below the pin icon listing pinned messages.
@@ -305,44 +307,62 @@ class _PinnedMessageTile extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     final sender = event.senderFromMemoryOrFallback;
     final displayName = sender.displayName ?? event.senderId;
-    final body = stripReplyFallback(event.body);
     final time = _formatDateTime(event.originServerTs);
 
     return InkWell(
       onTap: onOpen,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Top row: avatar, name, time, actions
+            // Left: message content
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Sender row: avatar, name, time
+                  Row(
+                    children: [
+                      UserAvatar(
+                        client: event.room.client,
+                        avatarUrl: sender.avatarUrl,
+                        userId: event.senderId,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          displayName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tt.labelMedium?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        time,
+                        style: tt.labelSmall?.copyWith(
+                          color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Body text
+                  Padding(
+                    padding: const EdgeInsets.only(left: 32, top: 2),
+                    child: _buildBody(event, tt, cs),
+                  ),
+                ],
+              ),
+            ),
+            // Right: actions (fixed position)
+            const SizedBox(width: 8),
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                UserAvatar(
-                  client: event.room.client,
-                  avatarUrl: sender.avatarUrl,
-                  userId: event.senderId,
-                  size: 24,
-                ),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    displayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: tt.labelMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  time,
-                  style: tt.labelSmall?.copyWith(
-                    color: cs.onSurfaceVariant.withValues(alpha: 0.5),
-                  ),
-                ),
-                const Spacer(),
                 _ActionChip(
                   label: 'Open',
                   onTap: onOpen,
@@ -366,21 +386,35 @@ class _PinnedMessageTile extends StatelessWidget {
                 ],
               ],
             ),
-            // Body text
-            Padding(
-              padding: const EdgeInsets.only(left: 32, top: 2),
-              child: Text(
-                body,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: tt.bodySmall?.copyWith(
-                  color: cs.onSurfaceVariant,
-                ),
-              ),
-            ),
           ],
         ),
       ),
+    );
+  }
+
+  static Widget _buildBody(Event event, TextTheme tt, ColorScheme cs) {
+    final bodyStyle = tt.bodySmall?.copyWith(color: cs.onSurfaceVariant);
+    final formattedBody = event.formattedText;
+    final hasHtml = formattedBody.isNotEmpty &&
+        event.content['format'] == 'org.matrix.custom.html';
+
+    if (hasHtml) {
+      return HtmlMessageText(
+        html: formattedBody,
+        style: bodyStyle,
+        isMe: false,
+        room: event.room,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      );
+    }
+
+    return LinkableText(
+      text: stripReplyFallback(event.body),
+      style: bodyStyle,
+      isMe: false,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
     );
   }
 
