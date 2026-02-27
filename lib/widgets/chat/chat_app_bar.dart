@@ -12,12 +12,14 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.onBack,
     this.onShowDetails,
     required this.onSearch,
+    this.onPinnedTap,
   });
 
   final Room room;
   final VoidCallback? onBack;
   final VoidCallback? onShowDetails;
   final VoidCallback onSearch;
+  final VoidCallback? onPinnedTap;
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
@@ -59,6 +61,15 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
         ],
       ),
       actions: [
+        if (room.pinnedEventIds.isNotEmpty && onPinnedTap != null)
+          IconButton(
+            icon: Badge.count(
+              count: room.pinnedEventIds.length,
+              child: const Icon(Icons.push_pin_rounded),
+            ),
+            tooltip: 'Pinned messages',
+            onPressed: onPinnedTap,
+          ),
         IconButton(
           icon: const Icon(Icons.search_rounded),
           onPressed: onSearch,

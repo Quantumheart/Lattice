@@ -18,12 +18,14 @@ class MessageBubble extends StatefulWidget {
     required this.isMe,
     required this.isFirst,
     this.highlighted = false,
+    this.isPinned = false,
     this.timeline,
     this.onTapReply,
     this.onReply,
     this.onEdit,
     this.onDelete,
     this.onReact,
+    this.onPin,
   });
 
   final Event event;
@@ -34,6 +36,9 @@ class MessageBubble extends StatefulWidget {
 
   /// Whether this message should be visually highlighted (e.g. from search).
   final bool highlighted;
+
+  /// Whether this message is pinned in the room.
+  final bool isPinned;
 
   /// Timeline for resolving reply parent events.
   final Timeline? timeline;
@@ -52,6 +57,9 @@ class MessageBubble extends StatefulWidget {
 
   /// Called to open the emoji picker for reacting to this message.
   final VoidCallback? onReact;
+
+  /// Called to pin or unpin this message.
+  final VoidCallback? onPin;
 
   /// Returns the total horizontal offset of the sender avatar area
   /// (avatar diameter + gap), for use by external widgets like
@@ -199,6 +207,18 @@ class _MessageBubbleState extends State<MessageBubble> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        if (widget.isPinned)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: Icon(
+                              Icons.push_pin_rounded,
+                              size: metrics.timestampFontSize + 2,
+                              color: widget.isMe
+                                  ? cs.onPrimary.withValues(alpha: 0.6)
+                                  : cs.onSurfaceVariant
+                                      .withValues(alpha: 0.5),
+                            ),
+                          ),
                         if (isEdited)
                           Padding(
                             padding: const EdgeInsets.only(right: 4),
@@ -330,6 +350,22 @@ class _MessageBubbleState extends State<MessageBubble> {
             ],
           ),
         ),
+        if (widget.onPin != null)
+          PopupMenuItem(
+            value: 'pin',
+            child: Row(
+              children: [
+                Icon(
+                  widget.isPinned
+                      ? Icons.push_pin_rounded
+                      : Icons.push_pin_outlined,
+                  size: 18,
+                ),
+                const SizedBox(width: 8),
+                Text(widget.isPinned ? 'Unpin' : 'Pin'),
+              ],
+            ),
+          ),
         if (widget.onDelete != null)
           PopupMenuItem(
             value: 'delete',
@@ -347,6 +383,7 @@ class _MessageBubbleState extends State<MessageBubble> {
     if (value == 'reply') widget.onReply?.call();
     if (value == 'react') widget.onReact?.call();
     if (value == 'edit') widget.onEdit?.call();
+    if (value == 'pin') widget.onPin?.call();
     if (value == 'copy') {
       final displayEvent = widget.timeline != null
           ? widget.event.getDisplayEvent(widget.timeline!)

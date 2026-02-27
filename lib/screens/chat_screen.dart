@@ -18,6 +18,7 @@ import '../widgets/chat/file_send_handler.dart';
 import '../widgets/chat/long_press_wrapper.dart';
 import '../widgets/chat/message_action_sheet.dart';
 import '../widgets/chat/message_bubble.dart' show MessageBubble, stripReplyFallback;
+import '../widgets/chat/pinned_messages_sheet.dart';
 import '../widgets/chat/reaction_chips.dart';
 import '../widgets/chat/read_receipts.dart';
 import '../widgets/chat/search_results_body.dart';
@@ -246,6 +247,31 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  // ── Pin ──────────────────────────────────────────────
+
+  Future<void> _togglePin(Event event) async {
+    try {
+      final room = event.room;
+      final pinned = List<String>.from(room.pinnedEventIds);
+      if (pinned.contains(event.eventId)) {
+        pinned.remove(event.eventId);
+      } else {
+        pinned.add(event.eventId);
+      }
+      await room.setPinnedEvents(pinned);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Failed to pin message')),
+        );
+      }
+    }
+  }
+
+  void _showPinnedMessages(Room room) {
+    showPinnedMessagesSheet(context, room, onTap: _navigateToEvent);
+  }
+
   // ── Send ───────────────────────────────────────────────
 
   Future<void> _send() async {
@@ -374,6 +400,7 @@ class _ChatScreenState extends State<ChatScreen> {
         onBack: widget.onBack,
         onShowDetails: widget.onShowDetails,
         onSearch: _openSearch,
+        onPinnedTap: () => _showPinnedMessages(room),
       );
     }
 
@@ -474,17 +501,23 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final isRedacted = event.redacted;
 
+    final room = event.room;
+    final canPin = !isRedacted &&
+        room.canChangeStateEvent('m.room.pinned_events');
+
     final bubble = MessageBubble(
       event: event,
       isMe: isMe,
       isFirst: isFirst,
       highlighted: event.eventId == _search.highlightedEventId,
+      isPinned: room.pinnedEventIds.contains(event.eventId),
       timeline: _timeline,
       onTapReply: isRedacted ? null : _navigateToEvent,
       onReply: isRedacted ? null : () => _setReplyTo(event),
       onEdit: !isRedacted && isMe ? () => _setEditEvent(event) : null,
       onDelete: !isRedacted && event.canRedact ? () => confirmAndDeleteEvent(context, event) : null,
       onReact: isRedacted ? null : () => showEmojiPickerSheet(context, (emoji) => _toggleReaction(event, emoji)),
+      onPin: canPin ? () => _togglePin(event) : null,
     );
 
     final hasReactions = _timeline != null &&
@@ -553,6 +586,16 @@ class _ChatScreenState extends State<ChatScreen> {
         icon: Icons.add_reaction_outlined,
         onTap: () => showEmojiPickerSheet(context, (emoji) => _toggleReaction(event, emoji)),
       ),
+      if (event.room.canChangeStateEvent('m.room.pinned_events'))
+        MessageAction(
+          label: event.room.pinnedEventIds.contains(event.eventId)
+              ? 'Unpin'
+              : 'Pin',
+          icon: event.room.pinnedEventIds.contains(event.eventId)
+              ? Icons.push_pin_rounded
+              : Icons.push_pin_outlined,
+          onTap: () => _togglePin(event),
+        ),
       MessageAction(
         label: 'Copy',
         icon: Icons.copy_rounded,
