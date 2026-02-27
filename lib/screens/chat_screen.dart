@@ -1,4 +1,8 @@
 import 'dart:async';
+import 'package:emoji_picker_flutter/emoji_picker_flutter.dart'
+    show EmojiPicker, Config, EmojiViewConfig, CategoryViewConfig,
+         SkinToneConfig, BottomActionBarConfig, SearchViewConfig,
+         DefaultEmojiTextStyle;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -15,6 +19,7 @@ import '../widgets/chat/chat_app_bar.dart';
 import '../widgets/chat/compose_bar.dart';
 import '../widgets/chat/message_action_sheet.dart';
 import '../widgets/chat/message_bubble.dart' show MessageBubble, stripReplyFallback;
+import '../widgets/chat/reaction_chips.dart';
 import '../widgets/chat/read_receipts.dart';
 import '../widgets/chat/search_results_body.dart';
 import '../widgets/chat/swipeable_message.dart';
@@ -237,6 +242,82 @@ class _ChatScreenState extends State<ChatScreen> {
         );
       }
     }
+  }
+
+  // ── Reactions ──────────────────────────────────────
+
+  Future<void> _toggleReaction(Event event, String emoji) async {
+    if (_timeline == null) return;
+    final matrix = context.read<MatrixService>();
+    final myId = matrix.client.userID;
+
+    // Find user's existing reaction for this emoji.
+    final existing = event
+        .aggregatedEvents(_timeline!, RelationshipTypes.reaction)
+        .where((e) =>
+            e.senderId == myId &&
+            e.content
+                    .tryGetMap<String, Object?>('m.relates_to')
+                    ?.tryGet<String>('key') ==
+                emoji)
+        .firstOrNull;
+
+    try {
+      if (existing != null) {
+        await existing.redactEvent();
+      } else {
+        await event.room.sendReaction(event.eventId, emoji);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text(
+                  'Failed to react: ${MatrixService.friendlyAuthError(e)}')),
+        );
+      }
+    }
+  }
+
+  void _showEmojiPicker(Event event) {
+    final cs = Theme.of(context).colorScheme;
+    showModalBottomSheet(
+      context: context,
+      builder: (context) {
+        return SizedBox(
+          height: 300,
+          child: EmojiPicker(
+            onEmojiSelected: (category, emoji) {
+              Navigator.of(context).pop();
+              _toggleReaction(event, emoji.emoji);
+            },
+            config: Config(
+              emojiTextStyle: DefaultEmojiTextStyle,
+              emojiViewConfig: EmojiViewConfig(
+                columns: 7,
+                emojiSizeMax: 28,
+                backgroundColor: cs.surface,
+              ),
+              categoryViewConfig: CategoryViewConfig(
+                indicatorColor: cs.primary,
+                iconColorSelected: cs.primary,
+              ),
+              skinToneConfig: SkinToneConfig(
+                dialogBackgroundColor: cs.surfaceContainerHighest,
+                indicatorColor: cs.primary,
+              ),
+              bottomActionBarConfig: BottomActionBarConfig(
+                backgroundColor: cs.surface,
+                buttonColor: cs.primary,
+              ),
+              searchViewConfig: SearchViewConfig(
+                backgroundColor: cs.surface,
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   // ── Attach ─────────────────────────────────────────────
@@ -523,22 +604,34 @@ class _ChatScreenState extends State<ChatScreen> {
       onReply: isRedacted ? null : () => _setReplyTo(event),
       onEdit: !isRedacted && isMe ? () => _setEditEvent(event) : null,
       onDelete: !isRedacted && event.canRedact ? () => _deleteEvent(event) : null,
+      onReact: isRedacted ? null : () => _showEmojiPicker(event),
     );
 
+    final hasReactions = _timeline != null &&
+        event.hasAggregatedEvents(_timeline!, RelationshipTypes.reaction);
     final receipts = receiptMap[event.eventId];
 
     Widget content;
-    if (receipts != null && receipts.isNotEmpty) {
+    if (hasReactions || (receipts != null && receipts.isNotEmpty)) {
       content = Column(
         crossAxisAlignment:
             isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           bubble,
-          ReadReceiptsRow(
-            receipts: receipts,
-            client: matrix.client,
-            isMe: isMe,
-          ),
+          if (hasReactions)
+            ReactionChips(
+              event: event,
+              timeline: _timeline!,
+              client: matrix.client,
+              isMe: isMe,
+              onToggle: (emoji) => _toggleReaction(event, emoji),
+            ),
+          if (receipts != null && receipts.isNotEmpty)
+            ReadReceiptsRow(
+              receipts: receipts,
+              client: matrix.client,
+              isMe: isMe,
+            ),
         ],
       );
     } else {
@@ -574,6 +667,11 @@ class _ChatScreenState extends State<ChatScreen> {
           onTap: () => _setEditEvent(event),
         ),
       MessageAction(
+        label: 'React',
+        icon: Icons.add_reaction_outlined,
+        onTap: () => _showEmojiPicker(event),
+      ),
+      MessageAction(
         label: 'Copy',
         icon: Icons.copy_rounded,
         onTap: () {
@@ -601,6 +699,7 @@ class _ChatScreenState extends State<ChatScreen> {
       bubbleRect: bubbleRect,
       actions: actions,
       timeline: _timeline,
+      onQuickReact: (emoji) => _toggleReaction(event, emoji),
     );
   }
 }

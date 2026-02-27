@@ -22,6 +22,7 @@ class MessageBubble extends StatefulWidget {
     this.onReply,
     this.onEdit,
     this.onDelete,
+    this.onReact,
   });
 
   final Event event;
@@ -47,6 +48,9 @@ class MessageBubble extends StatefulWidget {
 
   /// Called to delete/redact this message.
   final VoidCallback? onDelete;
+
+  /// Called to open the emoji picker for reacting to this message.
+  final VoidCallback? onReact;
 
   @override
   State<MessageBubble> createState() => _MessageBubbleState();
@@ -298,6 +302,17 @@ class _MessageBubbleState extends State<MessageBubble> {
               ],
             ),
           ),
+        if (widget.onReact != null)
+          const PopupMenuItem(
+            value: 'react',
+            child: Row(
+              children: [
+                Icon(Icons.add_reaction_outlined, size: 18),
+                SizedBox(width: 8),
+                Text('React'),
+              ],
+            ),
+          ),
         const PopupMenuItem(
           value: 'copy',
           child: Row(
@@ -323,6 +338,7 @@ class _MessageBubbleState extends State<MessageBubble> {
     );
     if (!mounted) return;
     if (value == 'reply') widget.onReply?.call();
+    if (value == 'react') widget.onReact?.call();
     if (value == 'edit') widget.onEdit?.call();
     if (value == 'copy') {
       final displayEvent = widget.timeline != null
