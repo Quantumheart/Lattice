@@ -26,6 +26,7 @@ class _LongPressWrapperState extends State<LongPressWrapper> {
     _startPosition = event.position;
     _timer?.cancel();
     _timer = Timer(_longPressDuration, () {
+      if (!mounted) return;
       HapticFeedback.mediumImpact();
       final box = context.findRenderObject() as RenderBox?;
       if (box != null && box.hasSize) {
