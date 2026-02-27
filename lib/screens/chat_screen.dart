@@ -18,7 +18,6 @@ import '../widgets/chat/file_send_handler.dart';
 import '../widgets/chat/long_press_wrapper.dart';
 import '../widgets/chat/message_action_sheet.dart';
 import '../widgets/chat/message_bubble.dart' show MessageBubble, stripReplyFallback;
-import '../widgets/chat/pinned_messages_sheet.dart';
 import '../widgets/chat/reaction_chips.dart';
 import '../widgets/chat/read_receipts.dart';
 import '../widgets/chat/search_results_body.dart';
@@ -268,10 +267,6 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
-  void _showPinnedMessages(Room room) {
-    showPinnedMessagesSheet(context, room, onTap: _navigateToEvent);
-  }
-
   // ── Send ───────────────────────────────────────────────
 
   Future<void> _send() async {
@@ -400,7 +395,7 @@ class _ChatScreenState extends State<ChatScreen> {
         onBack: widget.onBack,
         onShowDetails: widget.onShowDetails,
         onSearch: _openSearch,
-        onPinnedTap: () => _showPinnedMessages(room),
+        onPinnedEvent: _navigateToEvent,
       );
     }
 
