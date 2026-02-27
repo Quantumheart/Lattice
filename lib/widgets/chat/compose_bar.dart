@@ -1,5 +1,4 @@
-import 'dart:io' show Platform;
-
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:matrix/matrix.dart';
@@ -51,7 +50,7 @@ class ComposeBar extends StatefulWidget {
 }
 
 class _ComposeBarState extends State<ComposeBar> {
-  static final bool _isMacOS = Platform.isMacOS;
+  static final bool _isMacOS = defaultTargetPlatform == TargetPlatform.macOS;
   final _focusNode = FocusNode();
 
   MentionAutocompleteController? _mentionController;

@@ -16,7 +16,6 @@ class MentionSuggestionList extends StatelessWidget {
   final MentionAutocompleteController controller;
   final Client client;
 
-  static const _maxVisibleItems = 5;
   static const _maxHeight = 280.0;
 
   @override
@@ -44,7 +43,7 @@ class MentionSuggestionList extends StatelessWidget {
       child: ListView.builder(
         padding: EdgeInsets.zero,
         shrinkWrap: true,
-        itemCount: suggestions.length.clamp(0, _maxVisibleItems),
+        itemCount: suggestions.length,
         itemBuilder: (context, index) {
           final suggestion = suggestions[index];
           final isSelected = index == controller.selectedIndex;
