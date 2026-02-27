@@ -1,12 +1,15 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
 /// Displays "Alice is typing…" with an animated dot indicator.
 ///
 /// Placed between the message list and the compose bar in chat view.
-/// Uses a [StreamBuilder] on [room.onUpdate] so it refreshes whenever
-/// the room's ephemeral state (including typing notifications) changes.
-class TypingIndicator extends StatelessWidget {
+/// Listens to [syncStream] manually and only rebuilds when the set of
+/// typing user IDs actually changes.
+class TypingIndicator extends StatefulWidget {
   const TypingIndicator({
     super.key,
     required this.room,
@@ -17,50 +20,11 @@ class TypingIndicator extends StatelessWidget {
   final Room room;
   final String? myUserId;
 
-  /// Stream that triggers rebuilds (typically [client.onSync.stream]).
+  /// Stream that triggers checks (typically [client.onSync.stream]).
   final Stream<dynamic> syncStream;
 
   @override
-  Widget build(BuildContext context) {
-    return StreamBuilder(
-      stream: syncStream,
-      builder: (context, _) {
-        final typers = room.typingUsers
-            .where((u) => u.id != myUserId)
-            .toList();
-
-        if (typers.isEmpty) return const SizedBox.shrink();
-
-        final theme = Theme.of(context);
-        return AnimatedSize(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-          alignment: Alignment.topCenter,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Row(
-              children: [
-                const _AnimatedDots(),
-                const SizedBox(width: 8),
-                Flexible(
-                  child: Text(
-                    formatTypers(typers),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant
-                              .withValues(alpha: 0.7),
-                          fontStyle: FontStyle.italic,
-                        ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+  State<TypingIndicator> createState() => _TypingIndicatorState();
 
   /// Format a list of typing users into a human-readable string.
   ///
@@ -73,6 +37,83 @@ class TypingIndicator extends StatelessWidget {
       3 => '${names[0]}, ${names[1]}, and ${names[2]} are typing',
       _ => '${names[0]}, ${names[1]}, and ${names.length - 2} others are typing',
     };
+  }
+}
+
+class _TypingIndicatorState extends State<TypingIndicator> {
+  StreamSubscription<dynamic>? _sub;
+  List<String> _typerIds = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _sub = widget.syncStream.listen((_) => _checkTypers());
+    _checkTypers();
+  }
+
+  @override
+  void didUpdateWidget(TypingIndicator old) {
+    super.didUpdateWidget(old);
+    if (old.syncStream != widget.syncStream) {
+      _sub?.cancel();
+      _sub = widget.syncStream.listen((_) => _checkTypers());
+    }
+    if (old.room != widget.room || old.myUserId != widget.myUserId) {
+      _checkTypers();
+    }
+  }
+
+  void _checkTypers() {
+    final ids = widget.room.typingUsers
+        .where((u) => u.id != widget.myUserId)
+        .map((u) => u.id)
+        .toList();
+    if (!listEquals(ids, _typerIds)) {
+      setState(() => _typerIds = ids);
+    }
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final typers = widget.room.typingUsers
+        .where((u) => u.id != widget.myUserId)
+        .toList();
+
+    if (typers.isEmpty) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+      alignment: Alignment.topCenter,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Row(
+          children: [
+            const _AnimatedDots(),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                TypingIndicator.formatTypers(typers),
+                style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant
+                          .withValues(alpha: 0.7),
+                      fontStyle: FontStyle.italic,
+                    ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
