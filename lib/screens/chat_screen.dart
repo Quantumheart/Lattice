@@ -249,19 +249,24 @@ class _ChatScreenState extends State<ChatScreen> {
   // ── Pin ──────────────────────────────────────────────
 
   Future<void> _togglePin(Event event) async {
+    final room = event.room;
+    final pinned = List<String>.from(room.pinnedEventIds);
+    final wasPinned = pinned.contains(event.eventId);
+    if (wasPinned) {
+      pinned.remove(event.eventId);
+    } else {
+      pinned.add(event.eventId);
+    }
     try {
-      final room = event.room;
-      final pinned = List<String>.from(room.pinnedEventIds);
-      if (pinned.contains(event.eventId)) {
-        pinned.remove(event.eventId);
-      } else {
-        pinned.add(event.eventId);
-      }
       await room.setPinnedEvents(pinned);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Failed to pin message')),
+          SnackBar(
+            content: Text(wasPinned
+                ? 'Failed to unpin message'
+                : 'Failed to pin message'),
+          ),
         );
       }
     }
@@ -582,15 +587,17 @@ class _ChatScreenState extends State<ChatScreen> {
         onTap: () => showEmojiPickerSheet(context, (emoji) => _toggleReaction(event, emoji)),
       ),
       if (event.room.canChangeStateEvent('m.room.pinned_events'))
-        MessageAction(
-          label: event.room.pinnedEventIds.contains(event.eventId)
-              ? 'Unpin'
-              : 'Pin',
-          icon: event.room.pinnedEventIds.contains(event.eventId)
-              ? Icons.push_pin_rounded
-              : Icons.push_pin_outlined,
-          onTap: () => _togglePin(event),
-        ),
+        () {
+          final isPinned =
+              event.room.pinnedEventIds.contains(event.eventId);
+          return MessageAction(
+            label: isPinned ? 'Unpin' : 'Pin',
+            icon: isPinned
+                ? Icons.push_pin_rounded
+                : Icons.push_pin_outlined,
+            onTap: () => _togglePin(event),
+          );
+        }(),
       MessageAction(
         label: 'Copy',
         icon: Icons.copy_rounded,
