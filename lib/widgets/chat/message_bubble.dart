@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart'
-    show DefaultEmojiTextStyle;
+    show DefaultEmojiTextStyle, EmojiPicker, Config, EmojiViewConfig,
+         CategoryViewConfig, SkinToneConfig, BottomActionBarConfig,
+         SearchViewConfig;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:matrix/matrix.dart';
@@ -770,15 +772,9 @@ class _HoverActionBarState extends State<_HoverActionBar> {
         anchorSize: box.size,
         cs: widget.cs,
         hasMore: widget.onReact != null,
-        onQuickReact: (emoji) {
+        onEmojiSelected: (emoji) {
           _removeOverlay();
           widget.onQuickReact?.call(emoji);
-        },
-        onMore: () {
-          _removeOverlay();
-          // Defer to next microtask so overlay cleanup completes
-          // before the dialog opens, preventing stale context issues.
-          Future.microtask(() => widget.onReact?.call());
         },
         onDismiss: _removeOverlay,
       ),
@@ -866,14 +862,13 @@ class _ActionIcon extends StatelessWidget {
 
 // ── Quick-react overlay ─────────────────────────────────────
 
-class _QuickReactOverlay extends StatelessWidget {
+class _QuickReactOverlay extends StatefulWidget {
   const _QuickReactOverlay({
     required this.link,
     required this.anchorSize,
     required this.cs,
     required this.hasMore,
-    required this.onQuickReact,
-    required this.onMore,
+    required this.onEmojiSelected,
     required this.onDismiss,
   });
 
@@ -883,9 +878,15 @@ class _QuickReactOverlay extends StatelessWidget {
 
   /// Whether to show the "..." button (only when a full emoji picker is available).
   final bool hasMore;
-  final void Function(String emoji) onQuickReact;
-  final VoidCallback onMore;
+  final void Function(String emoji) onEmojiSelected;
   final VoidCallback onDismiss;
+
+  @override
+  State<_QuickReactOverlay> createState() => _QuickReactOverlayState();
+}
+
+class _QuickReactOverlayState extends State<_QuickReactOverlay> {
+  bool _showPicker = false;
 
   static const _quickEmojis = [
     '\u{2764}\u{FE0F}', // ❤️
@@ -898,6 +899,7 @@ class _QuickReactOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = widget.cs;
     const gap = 4.0;
 
     return Stack(
@@ -906,54 +908,108 @@ class _QuickReactOverlay extends StatelessWidget {
         Positioned.fill(
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
-            onTap: onDismiss,
+            onTap: widget.onDismiss,
           ),
         ),
-        // Quick-react bar anchored to the action bar via LayerLink
         CompositedTransformFollower(
-          link: link,
+          link: widget.link,
           targetAnchor: Alignment.topCenter,
           followerAnchor: Alignment.bottomCenter,
           offset: const Offset(0, -gap),
           child: UnconstrainedBox(
-            child: Material(
-              elevation: 4,
-              borderRadius: BorderRadius.circular(20),
-              color: cs.surfaceContainerHighest,
-              clipBehavior: Clip.antiAlias,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final emoji in _quickEmojis)
-                      InkWell(
-                        borderRadius: BorderRadius.circular(20),
-                        onTap: () => onQuickReact(emoji),
-                        child: Padding(
-                          padding: const EdgeInsets.all(6),
-                          child: Text(
-                            emoji,
-                            style: DefaultEmojiTextStyle.copyWith(fontSize: 22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Full emoji picker (above the quick-react bar)
+                if (_showPicker)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: gap),
+                    child: Material(
+                      elevation: 4,
+                      borderRadius: BorderRadius.circular(16),
+                      color: cs.surfaceContainer,
+                      clipBehavior: Clip.antiAlias,
+                      child: SizedBox(
+                        width: 350,
+                        height: 400,
+                        child: EmojiPicker(
+                          onEmojiSelected: (category, emoji) {
+                            widget.onEmojiSelected(emoji.emoji);
+                          },
+                          config: Config(
+                            emojiTextStyle: DefaultEmojiTextStyle,
+                            emojiViewConfig: EmojiViewConfig(
+                              columns: 8,
+                              emojiSizeMax: 28,
+                              backgroundColor: cs.surfaceContainer,
+                            ),
+                            categoryViewConfig: CategoryViewConfig(
+                              backgroundColor: cs.surfaceContainer,
+                              indicatorColor: cs.primary,
+                              iconColorSelected: cs.primary,
+                              iconColor: cs.onSurfaceVariant,
+                            ),
+                            skinToneConfig: SkinToneConfig(
+                              dialogBackgroundColor:
+                                  cs.surfaceContainerHighest,
+                              indicatorColor: cs.primary,
+                            ),
+                            bottomActionBarConfig: BottomActionBarConfig(
+                              backgroundColor: cs.surfaceContainer,
+                              buttonColor: cs.primary,
+                            ),
+                            searchViewConfig: SearchViewConfig(
+                              backgroundColor: cs.surfaceContainer,
+                              buttonIconColor: cs.onSurfaceVariant,
+                            ),
                           ),
                         ),
                       ),
-                    if (hasMore)
-                      InkWell(
-                        borderRadius: BorderRadius.circular(20),
-                        onTap: onMore,
-                        child: Padding(
-                          padding: const EdgeInsets.all(6),
-                          child: Icon(
-                            Icons.more_horiz_rounded,
-                            size: 22,
-                            color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                // Quick-react bar
+                Material(
+                  elevation: 4,
+                  borderRadius: BorderRadius.circular(20),
+                  color: cs.surfaceContainerHighest,
+                  clipBehavior: Clip.antiAlias,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        for (final emoji in _quickEmojis)
+                          InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () => widget.onEmojiSelected(emoji),
+                            child: Padding(
+                              padding: const EdgeInsets.all(6),
+                              child: Text(
+                                emoji,
+                                style: DefaultEmojiTextStyle.copyWith(
+                                    fontSize: 22),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                  ],
+                        if (widget.hasMore)
+                          InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () =>
+                                setState(() => _showPicker = !_showPicker),
+                            child: Padding(
+                              padding: const EdgeInsets.all(6),
+                              child: Icon(
+                                Icons.more_horiz_rounded,
+                                size: 22,
+                                color: cs.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ),
