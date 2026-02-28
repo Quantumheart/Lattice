@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -41,6 +42,9 @@ class OpenGraphService {
 
   /// Reusable HTTP client for connection pooling.
   final _client = http.Client();
+
+  /// Close the underlying HTTP client. Call when the service is disposed.
+  void dispose() => _client.close();
 
   /// Fetch OpenGraph metadata for the given [url].
   ///
@@ -115,49 +119,89 @@ class OpenGraphService {
     return false;
   }
 
+  /// Validates that a URI resolves only to public IPs. Returns `false` if
+  /// any resolved address is private (SSRF protection).
+  Future<bool> _resolvedToPublicIp(Uri uri) async {
+    final addresses = await InternetAddress.lookup(uri.host)
+        .timeout(_fetchTimeout);
+    if (addresses.isEmpty) return false;
+    if (addresses.any((a) => _isPrivateAddress(a))) {
+      debugPrint('[Lattice] OpenGraph blocked private IP for $uri');
+      return false;
+    }
+    return true;
+  }
+
   Future<OpenGraphData?> _doFetch(String url) async {
     try {
       final uri = Uri.parse(url);
 
       // DNS lookup to prevent SSRF via attacker-controlled hostnames
       // that resolve to private IPs.
-      final addresses = await InternetAddress.lookup(uri.host)
-          .timeout(_fetchTimeout);
-      if (addresses.isEmpty) return null;
-      if (addresses.any((a) => _isPrivateAddress(a))) {
-        debugPrint('[Lattice] OpenGraph blocked private IP for $url');
-        return null;
-      }
+      if (!await _resolvedToPublicIp(uri)) return null;
 
       final request = http.Request('GET', uri)
-        ..headers['User-Agent'] = 'Lattice/1.0 (Flutter Matrix client)';
+        ..headers['User-Agent'] = 'Lattice/1.0 (Flutter Matrix client)'
+        ..followRedirects = false;
 
       final streamed =
           await _client.send(request).timeout(_fetchTimeout);
 
-      if (streamed.statusCode < 200 || streamed.statusCode >= 300) {
-        return null;
+      // Handle redirects manually to validate each hop against SSRF.
+      if (streamed.statusCode >= 300 && streamed.statusCode < 400) {
+        final location = streamed.headers['location'];
+        if (location == null) return null;
+        final redirectUri = uri.resolve(location);
+        if (redirectUri.scheme != 'http' && redirectUri.scheme != 'https') {
+          return null;
+        }
+        if (_isPrivateHost(redirectUri.host)) return null;
+        if (!await _resolvedToPublicIp(redirectUri)) return null;
+        // Follow the single redirect.
+        final redirectRequest = http.Request('GET', redirectUri)
+          ..headers['User-Agent'] = 'Lattice/1.0 (Flutter Matrix client)'
+          ..followRedirects = false;
+        final redirected =
+            await _client.send(redirectRequest).timeout(_fetchTimeout);
+        return _readResponse(redirected, url);
       }
 
-      // Read only the first ~50 KB to avoid downloading huge pages.
-      final bytes = <int>[];
-      final subscription = streamed.stream.listen((chunk) {
-        bytes.addAll(chunk);
-      });
-      await subscription.asFuture<void>().timeout(
-        _fetchTimeout,
-        onTimeout: () => subscription.cancel(),
-      );
-      // If we exceeded the limit, we still use what we got.
-      final truncated =
-          bytes.length > _maxBytes ? bytes.sublist(0, _maxBytes) : bytes;
-
-      final body = utf8.decode(truncated, allowMalformed: true);
-      return _parse(body, url);
+      return _readResponse(streamed, url);
     } catch (e) {
       debugPrint('[Lattice] OpenGraph fetch failed for $url: $e');
       return null;
     }
+  }
+
+  Future<OpenGraphData?> _readResponse(
+      http.StreamedResponse response, String url) async {
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      return null;
+    }
+
+    // Only parse HTML responses.
+    final contentType = response.headers['content-type'] ?? '';
+    if (!contentType.contains('text/html') &&
+        !contentType.contains('application/xhtml')) {
+      return null;
+    }
+
+    // Read only the first ~50 KB to avoid downloading huge pages.
+    final bytes = <int>[];
+    late final StreamSubscription<List<int>> subscription;
+    subscription = response.stream.listen((chunk) {
+      bytes.addAll(chunk);
+      if (bytes.length >= _maxBytes) subscription.cancel();
+    });
+    await subscription.asFuture<void>().timeout(
+      _fetchTimeout,
+      onTimeout: () => subscription.cancel(),
+    );
+    final truncated =
+        bytes.length > _maxBytes ? bytes.sublist(0, _maxBytes) : bytes;
+
+    final body = utf8.decode(truncated, allowMalformed: true);
+    return _parse(body, url);
   }
 
   OpenGraphData? _parse(String html, String url) {
