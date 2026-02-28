@@ -40,6 +40,19 @@ class _LinkPreviewCardState extends State<LinkPreviewCard>
     _fetch();
   }
 
+  @override
+  void didUpdateWidget(LinkPreviewCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.url != widget.url) {
+      _fadeController.reset();
+      setState(() {
+        _data = null;
+        _loading = true;
+      });
+      _fetch();
+    }
+  }
+
   Future<void> _fetch() async {
     final service = context.read<OpenGraphService>();
     final data = await service.fetch(widget.url);
@@ -119,8 +132,15 @@ class _LinkPreviewCardState extends State<LinkPreviewCard>
                           width: 60,
                           height: 60,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              const SizedBox.shrink(),
+                          errorBuilder: (_, __, ___) => SizedBox(
+                            width: 60,
+                            height: 60,
+                            child: Icon(
+                              Icons.link_rounded,
+                              size: 24,
+                              color: subtitleColor,
+                            ),
+                          ),
                         ),
                       ),
 
