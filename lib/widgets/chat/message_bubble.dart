@@ -261,7 +261,7 @@ class _MessageBubbleState extends State<MessageBubble> {
 
                                   // Link preview
                                   if (_isTextMessage &&
-                                      context.watch<PreferencesService>().showLinkPreviews)
+                                      context.select<PreferencesService, bool>((p) => p.showLinkPreviews))
                                     _buildLinkPreview(bodyText),
 
                                   // Timestamp
