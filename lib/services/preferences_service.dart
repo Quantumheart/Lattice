@@ -227,6 +227,20 @@ class PreferencesService extends ChangeNotifier {
     await setNotificationKeywords(current);
   }
 
+  // ── Link previews ─────────────────────────────────────────────
+
+  static const _showLinkPreviewsKey = 'show_link_previews';
+
+  bool get showLinkPreviews =>
+      _prefs?.getBool(_showLinkPreviewsKey) ?? true;
+
+  Future<void> setShowLinkPreviews(bool value) async {
+    await _prefs?.setBool(_showLinkPreviewsKey, value);
+    debugPrint(
+        '[Lattice] Link previews ${value ? "enabled" : "disabled"}');
+    notifyListeners();
+  }
+
   // ── OS notification toggles ──────────────────────────────────
 
   static const _osNotificationsEnabledKey = 'os_notifications_enabled';

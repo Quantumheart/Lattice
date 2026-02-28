@@ -6,6 +6,7 @@ import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'services/client_manager.dart';
 import 'services/matrix_service.dart';
 import 'services/notification_service.dart';
+import 'services/opengraph_service.dart';
 import 'services/preferences_service.dart';
 import 'theme/lattice_theme.dart';
 import 'screens/homeserver_screen.dart';
@@ -30,6 +31,7 @@ class LatticeApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider<ClientManager>.value(value: clientManager),
         ChangeNotifierProvider(create: (_) => PreferencesService()..init()),
+        Provider(create: (_) => OpenGraphService()),
       ],
       child: DynamicColorBuilder(
         builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {

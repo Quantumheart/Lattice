@@ -28,6 +28,7 @@ dependencies:
   emoji_picker_flutter: ^4.3.0
   highlight: ^0.7.0
   html: ^0.15.4
+  http: ^1.2.0
   clock: ^1.1.1
   scrollable_positioned_list: ^0.3.8
   flutter_local_notifications: ^18.0.1
