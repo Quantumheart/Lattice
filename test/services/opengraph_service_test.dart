@@ -1,7 +1,40 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:lattice/services/opengraph_service.dart';
+
+/// A public IPv4 address used for DNS override in tests.
+final _publicIp = InternetAddress('93.184.216.34');
+
+/// Creates an [OpenGraphService] with a mock HTTP client and fake DNS.
+/// The [handler] receives every HTTP request and returns a response.
+OpenGraphService _createTestService(
+  http.Response Function(http.Request) handler,
+) {
+  final mockClient = MockClient((request) async => handler(request));
+  final service = OpenGraphService(client: mockClient)
+    ..dnsResolver = (_) async => [_publicIp];
+  return service;
+}
+
+/// Builds a minimal HTML page with the given OG meta tags.
+String _ogHtml({String? title, String? description, String? image}) {
+  final buf = StringBuffer('<html><head>');
+  if (title != null) {
+    buf.write('<meta property="og:title" content="$title">');
+  }
+  if (description != null) {
+    buf.write('<meta property="og:description" content="$description">');
+  }
+  if (image != null) {
+    buf.write('<meta property="og:image" content="$image">');
+  }
+  buf.write('</head><body></body></html>');
+  return buf.toString();
+}
 
 void main() {
   late OpenGraphService service;
@@ -265,6 +298,206 @@ void main() {
     test('isEmpty returns false when title is set', () {
       final data = OpenGraphData(url: 'https://example.com', title: 'T');
       expect(data.isEmpty, isFalse);
+    });
+  });
+
+  // ── Network fetch path ─────────────────────────────────────
+
+  group('fetch (mock HTTP)', () {
+    test('returns parsed OG data for a valid HTML response', () async {
+      final svc = _createTestService((_) => http.Response(
+            _ogHtml(title: 'Hello', description: 'World'),
+            200,
+            headers: {'content-type': 'text/html; charset=utf-8'},
+          ));
+      addTearDown(svc.dispose);
+
+      final data = await svc.fetch('https://example.com/page');
+      expect(data, isNotNull);
+      expect(data!.title, 'Hello');
+      expect(data.description, 'World');
+    });
+
+    test('returns null for non-HTML content-type', () async {
+      final svc = _createTestService((_) => http.Response(
+            '{"key": "value"}',
+            200,
+            headers: {'content-type': 'application/json'},
+          ));
+      addTearDown(svc.dispose);
+
+      final data = await svc.fetch('https://example.com/api');
+      expect(data, isNull);
+    });
+
+    test('returns null for non-2xx status codes', () async {
+      final svc = _createTestService((_) => http.Response('Not found', 404,
+          headers: {'content-type': 'text/html'}));
+      addTearDown(svc.dispose);
+
+      final data = await svc.fetch('https://example.com/missing');
+      expect(data, isNull);
+    });
+
+    test('follows redirects up to the limit', () async {
+      var callCount = 0;
+      final svc = _createTestService((request) {
+        callCount++;
+        if (callCount < 3) {
+          return http.Response('', 302, headers: {
+            'location': 'https://example.com/step$callCount',
+          });
+        }
+        return http.Response(
+          _ogHtml(title: 'Final'),
+          200,
+          headers: {'content-type': 'text/html'},
+        );
+      });
+      addTearDown(svc.dispose);
+
+      final data = await svc.fetch('https://example.com/start');
+      expect(data, isNotNull);
+      expect(data!.title, 'Final');
+      expect(callCount, 3);
+    });
+
+    test('returns null when redirect target is a private host', () async {
+      final svc = _createTestService((_) => http.Response('', 302, headers: {
+            'location': 'http://localhost:8080/internal',
+          }));
+      addTearDown(svc.dispose);
+
+      final data = await svc.fetch('https://example.com/redirect');
+      expect(data, isNull);
+    });
+
+    test('returns null when redirect has no location header', () async {
+      final svc =
+          _createTestService((_) => http.Response('', 301, headers: {}));
+      addTearDown(svc.dispose);
+
+      final data = await svc.fetch('https://example.com/redirect');
+      expect(data, isNull);
+    });
+
+    test('returns null when DNS resolves to private IP', () async {
+      final mockClient = MockClient((_) async => http.Response(
+            _ogHtml(title: 'Should not reach'),
+            200,
+            headers: {'content-type': 'text/html'},
+          ));
+      final svc = OpenGraphService(client: mockClient)
+        ..dnsResolver = (_) async => [InternetAddress('10.0.0.1')];
+      addTearDown(svc.dispose);
+
+      final data = await svc.fetch('https://example.com');
+      expect(data, isNull);
+    });
+
+    test('caches results and returns cached data on second call', () async {
+      var callCount = 0;
+      final svc = _createTestService((_) {
+        callCount++;
+        return http.Response(
+          _ogHtml(title: 'Cached'),
+          200,
+          headers: {'content-type': 'text/html'},
+        );
+      });
+      addTearDown(svc.dispose);
+
+      final first = await svc.fetch('https://example.com');
+      final second = await svc.fetch('https://example.com');
+      expect(first!.title, 'Cached');
+      expect(second!.title, 'Cached');
+      expect(callCount, 1);
+    });
+
+    test('caches negative results and does not re-fetch', () async {
+      var callCount = 0;
+      final svc = _createTestService((_) {
+        callCount++;
+        return http.Response('Not found', 404,
+            headers: {'content-type': 'text/html'});
+      });
+      addTearDown(svc.dispose);
+
+      final first = await svc.fetch('https://example.com/missing');
+      final second = await svc.fetch('https://example.com/missing');
+      expect(first, isNull);
+      expect(second, isNull);
+      expect(callCount, 1);
+    });
+
+    test('truncates response body at 50 KB', () async {
+      // Build HTML where OG tags are within the first 50 KB.
+      final padding = 'x' * (60 * 1024); // 60 KB of padding after tags.
+      final html = _ogHtml(title: 'Big Page') + padding;
+      final svc = _createTestService((_) => http.Response(
+            html,
+            200,
+            headers: {'content-type': 'text/html'},
+          ));
+      addTearDown(svc.dispose);
+
+      final data = await svc.fetch('https://example.com/big');
+      expect(data, isNotNull);
+      expect(data!.title, 'Big Page');
+    });
+
+    test('returns null for unsupported URL schemes', () async {
+      final svc = _createTestService((_) => http.Response('', 200));
+      addTearDown(svc.dispose);
+
+      expect(await svc.fetch('ftp://example.com'), isNull);
+      expect(await svc.fetch('file:///etc/passwd'), isNull);
+    });
+
+    test('strips og:image when image host resolves to private IP', () async {
+      var requestCount = 0;
+      final svc = _createTestService((_) => http.Response(
+            _ogHtml(
+                title: 'Title',
+                image: 'https://evil-cdn.example.com/img.png'),
+            200,
+            headers: {'content-type': 'text/html'},
+          ));
+      // First DNS call (page host) returns public, second (image host) returns private.
+      var dnsCallCount = 0;
+      svc.dnsResolver = (host) async {
+        dnsCallCount++;
+        if (dnsCallCount == 1) return [_publicIp];
+        // Image host resolves to a private IP.
+        return [InternetAddress('10.0.0.1')];
+      };
+      addTearDown(svc.dispose);
+
+      final data = await svc.fetch('https://example.com');
+      expect(data, isNotNull);
+      expect(data!.title, 'Title');
+      expect(data.imageUrl, isNull);
+    });
+
+    test('deduplicates concurrent fetches for the same URL', () async {
+      var callCount = 0;
+      final svc = _createTestService((_) {
+        callCount++;
+        return http.Response(
+          _ogHtml(title: 'Dedup'),
+          200,
+          headers: {'content-type': 'text/html'},
+        );
+      });
+      addTearDown(svc.dispose);
+
+      final results = await Future.wait([
+        svc.fetch('https://example.com'),
+        svc.fetch('https://example.com'),
+        svc.fetch('https://example.com'),
+      ]);
+      expect(results.every((r) => r!.title == 'Dedup'), isTrue);
+      expect(callCount, 1);
     });
   });
 }

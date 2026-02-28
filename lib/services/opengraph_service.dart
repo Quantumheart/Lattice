@@ -28,6 +28,14 @@ class OpenGraphData {
   bool get isEmpty => title == null && description == null && imageUrl == null;
 }
 
+// ── Cache entry wrapper ──────────────────────────────────────
+
+class _CacheEntry {
+  _CacheEntry(this.data) : cachedAt = DateTime.now();
+  final OpenGraphData? data;
+  final DateTime cachedAt;
+}
+
 // ── OpenGraph fetching service ───────────────────────────────
 
 class OpenGraphService {
@@ -39,8 +47,8 @@ class OpenGraphService {
   static const _maxRedirects = 5;
   static const _cacheTtl = Duration(minutes: 30);
 
-  /// LRU cache: URL → fetched data (null = failed/no data).
-  final _cache = <String, OpenGraphData?>{};
+  /// LRU cache: URL → cache entry (wraps both positive and negative results).
+  final _cache = <String, _CacheEntry>{};
   // Use as LinkedHashMap (Dart default) for LRU key ordering.
 
   /// In-flight requests to deduplicate concurrent fetches.
@@ -60,14 +68,13 @@ class OpenGraphService {
 
     // Cache hit — move to end for LRU behaviour.
     if (_cache.containsKey(url)) {
-      final cached = _cache.remove(url);
-      // Evict stale entries.
-      if (cached != null &&
-          DateTime.now().difference(cached.fetchedAt) > _cacheTtl) {
+      final entry = _cache.remove(url)!;
+      // Evict stale entries (applies to both positive and negative results).
+      if (DateTime.now().difference(entry.cachedAt) > _cacheTtl) {
         // Fall through to re-fetch.
       } else {
-        _cache[url] = cached;
-        return cached;
+        _cache[url] = entry;
+        return entry.data;
       }
     }
 
@@ -141,11 +148,16 @@ class OpenGraphService {
     return false;
   }
 
+  /// Override DNS resolution for testing. When set, replaces
+  /// [InternetAddress.lookup] in [_resolvePublicAddresses].
+  @visibleForTesting
+  Future<List<InternetAddress>> Function(String host)? dnsResolver;
+
   /// Resolves [host] and returns the list of public addresses.
   /// Returns `null` if any resolved address is private (SSRF protection).
   Future<List<InternetAddress>?> _resolvePublicAddresses(String host) async {
-    final addresses =
-        await InternetAddress.lookup(host).timeout(_fetchTimeout);
+    final resolve = dnsResolver ?? InternetAddress.lookup;
+    final addresses = await resolve(host).timeout(_fetchTimeout);
     if (addresses.isEmpty) return null;
     if (addresses.any((a) => _isPrivateAddress(a))) {
       debugPrint('[Lattice] OpenGraph blocked private IP for $host');
@@ -188,7 +200,8 @@ class OpenGraphService {
           continue;
         }
 
-        return _readResponse(streamed, url);
+        final result = await _readResponse(streamed, url);
+        return await _validateImageUrl(result);
       }
 
       return null;
@@ -299,11 +312,41 @@ class OpenGraphService {
     return data.isEmpty ? null : data;
   }
 
+  /// DNS-resolve the og:image host and strip it if it points to a private IP.
+  Future<OpenGraphData?> _validateImageUrl(OpenGraphData? data) async {
+    if (data?.imageUrl == null) return data;
+    final imageUri = Uri.tryParse(data!.imageUrl!);
+    if (imageUri == null || imageUri.host.isEmpty) return data;
+    try {
+      final addresses = await _resolvePublicAddresses(imageUri.host);
+      if (addresses == null) {
+        return OpenGraphData(
+          title: data.title,
+          description: data.description,
+          imageUrl: null,
+          siteName: data.siteName,
+          url: data.url,
+          fetchedAt: data.fetchedAt,
+        );
+      }
+    } catch (_) {
+      return OpenGraphData(
+        title: data.title,
+        description: data.description,
+        imageUrl: null,
+        siteName: data.siteName,
+        url: data.url,
+        fetchedAt: data.fetchedAt,
+      );
+    }
+    return data;
+  }
+
   void _putCache(String url, OpenGraphData? data) {
     // Evict oldest entry if at capacity.
     if (_cache.length >= _maxCacheSize) {
       _cache.remove(_cache.keys.first);
     }
-    _cache[url] = data;
+    _cache[url] = _CacheEntry(data);
   }
 }
