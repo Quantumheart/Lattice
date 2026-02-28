@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -455,7 +454,6 @@ void main() {
     });
 
     test('strips og:image when image host resolves to private IP', () async {
-      var requestCount = 0;
       final svc = _createTestService((_) => http.Response(
             _ogHtml(
                 title: 'Title',
