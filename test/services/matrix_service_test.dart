@@ -218,6 +218,11 @@ void main() {
 
       expect(result, isTrue);
       expect(service.isLoggedIn, isTrue);
+
+      // Let background sync + session backup complete.
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
       // Verify namespaced storage keys.
       verify(mockStorage.write(
               key: 'lattice_test_access_token', value: 'token123'))
@@ -371,6 +376,10 @@ void main() {
         username: 'user',
         password: 'pass',
       );
+
+      // Let background sync + session backup complete before adding listener.
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
 
       var notifyCount = 0;
       service.addListener(() => notifyCount++);

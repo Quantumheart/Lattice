@@ -432,6 +432,10 @@ void main() {
         deviceId: 'REG_DEV',
       ));
 
+      // Let background sync + session backup complete.
+      await Future.delayed(Duration.zero);
+      await Future.delayed(Duration.zero);
+
       verify(mockStorage.write(
         key: 'lattice_session_backup_test',
         value: anyNamed('value'),
