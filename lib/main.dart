@@ -31,7 +31,10 @@ class LatticeApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider<ClientManager>.value(value: clientManager),
         ChangeNotifierProvider(create: (_) => PreferencesService()..init()),
-        Provider(create: (_) => OpenGraphService()),
+        Provider(
+          create: (_) => OpenGraphService(),
+          dispose: (_, service) => service.dispose(),
+        ),
       ],
       child: DynamicColorBuilder(
         builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {

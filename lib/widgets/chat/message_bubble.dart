@@ -88,6 +88,7 @@ class _MessageBubbleState extends State<MessageBubble> {
   bool _hovering = false;
   bool _quickReactOpen = false;
   String? _cachedPreviewUrl;
+  String? _previewUrlBody;
 
   @override
   Widget build(BuildContext context) {
@@ -587,8 +588,6 @@ class _MessageBubbleState extends State<MessageBubble> {
     }
     return null;
   }
-
-  String? _previewUrlBody;
 
   Widget _buildLinkPreview(String bodyText) {
     // Cache the extracted URL to avoid re-running the regex on every build.

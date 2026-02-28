@@ -67,14 +67,15 @@ class _LinkPreviewCardState extends State<LinkPreviewCard>
     final tt = Theme.of(context).textTheme;
 
     final cardColor = widget.isMe
-        ? cs.primary.withValues(alpha: 0.15)
+        ? cs.primaryContainer
         : cs.surfaceContainerHighest;
-    final textColor = widget.isMe ? cs.onPrimary : cs.onSurface;
+    final textColor =
+        widget.isMe ? cs.onPrimaryContainer : cs.onSurface;
     final subtitleColor = widget.isMe
-        ? cs.onPrimary.withValues(alpha: 0.7)
+        ? cs.onPrimaryContainer.withValues(alpha: 0.7)
         : cs.onSurfaceVariant;
     final borderColor = widget.isMe
-        ? cs.onPrimary.withValues(alpha: 0.15)
+        ? cs.onPrimaryContainer.withValues(alpha: 0.15)
         : cs.outlineVariant.withValues(alpha: 0.5);
 
     final data = _data!;
