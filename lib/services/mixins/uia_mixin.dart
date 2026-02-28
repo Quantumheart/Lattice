@@ -67,9 +67,11 @@ mixin UiaMixin on ChangeNotifier {
   }
 
   /// Complete a UIA request with the user's password.
+  /// Also caches the password so subsequent UIA stages auto-complete.
   void completeUiaWithPassword(UiaRequest request, String password) {
     final userId = client.userID;
     if (userId == null) return;
+    setCachedPassword(password);
     request.completeStage(
       AuthenticationPassword(
         session: request.session,

@@ -46,9 +46,8 @@ class BootstrapController extends ChangeNotifier {
   bool _verifying = false;
   String? _recoveryKeyError;
   OpenSSSS? _unlockedSsssKey;
-  StreamSubscription? _secretStoredSub;
-
   bool _isDisposed = false;
+  bool _onDoneRunning = false;
 
   // ── Public getters ────────────────────────────────────────────
 
@@ -363,17 +362,6 @@ class BootstrapController extends ChangeNotifier {
     _notify();
   }
 
-  /// Called by the dialog after a successful device verification to try
-  /// continuing the bootstrap with the now-cached secrets.
-  void onSecretStoredSub(StreamSubscription sub) {
-    _secretStoredSub = sub;
-  }
-
-  void cancelSecretStoredSub() {
-    _secretStoredSub?.cancel();
-    _secretStoredSub = null;
-  }
-
   void retry() {
     _resetState();
     startBootstrap();
@@ -392,12 +380,16 @@ class BootstrapController extends ChangeNotifier {
     _generatingKey = false;
     _awaitingKeyAck = false;
     _keyCopied = false;
+    _verifying = false;
     _recoveryKeyError = null;
     _unlockedSsssKey = null;
+    _onDoneRunning = false;
     _notify();
   }
 
   Future<void> onDone() async {
+    if (_onDoneRunning) return;
+    _onDoneRunning = true;
     if (_saveToDevice && _newRecoveryKey != null) {
       await matrixService.storeRecoveryKey(_newRecoveryKey!);
     }
@@ -546,7 +538,6 @@ class BootstrapController extends ChangeNotifier {
     _newRecoveryKey = null;
     _storedRecoveryKey = null;
     _unlockedSsssKey = null;
-    _secretStoredSub?.cancel();
     super.dispose();
   }
 }
