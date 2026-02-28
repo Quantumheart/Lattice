@@ -44,6 +44,7 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
   late final BootstrapController _controller;
   final _recoveryKeyController = TextEditingController();
   StreamSubscription? _uiaSub;
+  bool _uiaPromptShowing = false;
 
   @override
   void initState() {
@@ -70,7 +71,8 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
   }
 
   Future<void> _showUiaPasswordPrompt(UiaRequest request) async {
-    if (!mounted) return;
+    if (!mounted || _uiaPromptShowing) return;
+    _uiaPromptShowing = true;
     final passwordController = TextEditingController();
     final password = await showDialog<String>(
       context: context,
@@ -100,6 +102,7 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
       ),
     );
     passwordController.dispose();
+    _uiaPromptShowing = false;
     if (password != null && password.isNotEmpty) {
       widget.matrixService.completeUiaWithPassword(request, password);
     } else {
@@ -211,6 +214,7 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
     // Poll every second for up to 5 seconds. This avoids a long spinner
     // while still giving the other device a reasonable window to respond.
     for (var i = 0; i < 5; i++) {
+      if (!mounted) return false;
       final cached = await encryption.keyManager.isCached() &&
           await encryption.crossSigning.isCached();
       if (cached) return true;
