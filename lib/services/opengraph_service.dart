@@ -9,19 +9,21 @@ import 'package:http/http.dart' as http;
 // ── OpenGraph data model ─────────────────────────────────────
 
 class OpenGraphData {
-  const OpenGraphData({
+  OpenGraphData({
     this.title,
     this.description,
     this.imageUrl,
     this.siteName,
     required this.url,
-  });
+    DateTime? fetchedAt,
+  }) : fetchedAt = fetchedAt ?? DateTime.now();
 
   final String? title;
   final String? description;
   final String? imageUrl;
   final String? siteName;
   final String url;
+  final DateTime fetchedAt;
 
   bool get isEmpty => title == null && description == null && imageUrl == null;
 }
@@ -29,9 +31,13 @@ class OpenGraphData {
 // ── OpenGraph fetching service ───────────────────────────────
 
 class OpenGraphService {
+  OpenGraphService({http.Client? client}) : _client = client ?? http.Client();
+
   static const _maxCacheSize = 200;
   static const _fetchTimeout = Duration(seconds: 5);
   static const _maxBytes = 50 * 1024; // 50 KB
+  static const _maxRedirects = 5;
+  static const _cacheTtl = Duration(minutes: 30);
 
   /// LRU cache: URL → fetched data (null = failed/no data).
   final _cache = <String, OpenGraphData?>{};
@@ -41,7 +47,7 @@ class OpenGraphService {
   final _inFlight = <String, Future<OpenGraphData?>>{};
 
   /// Reusable HTTP client for connection pooling.
-  final _client = http.Client();
+  final http.Client _client;
 
   /// Close the underlying HTTP client. Call when the service is disposed.
   void dispose() => _client.close();
@@ -55,8 +61,14 @@ class OpenGraphService {
     // Cache hit — move to end for LRU behaviour.
     if (_cache.containsKey(url)) {
       final cached = _cache.remove(url);
-      _cache[url] = cached;
-      return cached;
+      // Evict stale entries.
+      if (cached != null &&
+          DateTime.now().difference(cached.fetchedAt) > _cacheTtl) {
+        // Fall through to re-fetch.
+      } else {
+        _cache[url] = cached;
+        return cached;
+      }
     }
 
     // Deduplicate concurrent fetches for the same URL.
@@ -75,7 +87,10 @@ class OpenGraphService {
 
   // ── Internal helpers ───────────────────────────────────────
 
-  bool _isSupported(String url) {
+  @visibleForTesting
+  static bool isSupported(String url) => _isSupported(url);
+
+  static bool _isSupported(String url) {
     final uri = Uri.tryParse(url);
     if (uri == null) return false;
     if (uri.scheme != 'http' && uri.scheme != 'https') return false;
@@ -88,6 +103,9 @@ class OpenGraphService {
   }
 
   /// Returns `true` if [host] is a known private or loopback hostname.
+  @visibleForTesting
+  static bool isPrivateHost(String host) => _isPrivateHost(host);
+
   static bool _isPrivateHost(String host) {
     if (host == 'localhost') return true;
     final ip = InternetAddress.tryParse(host);
@@ -96,6 +114,10 @@ class OpenGraphService {
   }
 
   /// Returns `true` if [address] is loopback, link-local, or RFC 1918 private.
+  @visibleForTesting
+  static bool isPrivateAddress(InternetAddress address) =>
+      _isPrivateAddress(address);
+
   static bool _isPrivateAddress(InternetAddress address) {
     if (address.isLoopback || address.isLinkLocal) return true;
     if (address.type == InternetAddressType.IPv4) {
@@ -119,54 +141,57 @@ class OpenGraphService {
     return false;
   }
 
-  /// Validates that a URI resolves only to public IPs. Returns `false` if
-  /// any resolved address is private (SSRF protection).
-  Future<bool> _resolvedToPublicIp(Uri uri) async {
-    final addresses = await InternetAddress.lookup(uri.host)
-        .timeout(_fetchTimeout);
-    if (addresses.isEmpty) return false;
+  /// Resolves [host] and returns the list of public addresses.
+  /// Returns `null` if any resolved address is private (SSRF protection).
+  Future<List<InternetAddress>?> _resolvePublicAddresses(String host) async {
+    final addresses =
+        await InternetAddress.lookup(host).timeout(_fetchTimeout);
+    if (addresses.isEmpty) return null;
     if (addresses.any((a) => _isPrivateAddress(a))) {
-      debugPrint('[Lattice] OpenGraph blocked private IP for $uri');
-      return false;
+      debugPrint('[Lattice] OpenGraph blocked private IP for $host');
+      return null;
     }
-    return true;
+    return addresses;
+  }
+
+  /// Sends a GET request to [uri], connecting via [pinnedAddress] to prevent
+  /// DNS rebinding attacks. The Host header is set to the original hostname.
+  Future<http.StreamedResponse> _sendPinned(
+      Uri uri, InternetAddress pinnedAddress) async {
+    // Rewrite the URI to connect to the pinned IP directly.
+    final pinnedUri = uri.replace(host: pinnedAddress.address);
+    final request = http.Request('GET', pinnedUri)
+      ..headers['User-Agent'] = 'Lattice/1.0 (Flutter Matrix client)'
+      ..headers['Host'] = uri.host
+      ..followRedirects = false;
+    return _client.send(request).timeout(_fetchTimeout);
   }
 
   Future<OpenGraphData?> _doFetch(String url) async {
     try {
-      final uri = Uri.parse(url);
+      var uri = Uri.parse(url);
 
-      // DNS lookup to prevent SSRF via attacker-controlled hostnames
-      // that resolve to private IPs.
-      if (!await _resolvedToPublicIp(uri)) return null;
+      for (var i = 0; i <= _maxRedirects; i++) {
+        // DNS lookup to prevent SSRF — pin the resolved IP for the request.
+        final addresses = await _resolvePublicAddresses(uri.host);
+        if (addresses == null) return null;
 
-      final request = http.Request('GET', uri)
-        ..headers['User-Agent'] = 'Lattice/1.0 (Flutter Matrix client)'
-        ..followRedirects = false;
+        final streamed = await _sendPinned(uri, addresses.first);
 
-      final streamed =
-          await _client.send(request).timeout(_fetchTimeout);
-
-      // Handle redirects manually to validate each hop against SSRF.
-      if (streamed.statusCode >= 300 && streamed.statusCode < 400) {
-        final location = streamed.headers['location'];
-        if (location == null) return null;
-        final redirectUri = uri.resolve(location);
-        if (redirectUri.scheme != 'http' && redirectUri.scheme != 'https') {
-          return null;
+        if (streamed.statusCode >= 300 && streamed.statusCode < 400) {
+          if (i == _maxRedirects) return null; // Too many redirects.
+          final location = streamed.headers['location'];
+          if (location == null) return null;
+          uri = uri.resolve(location);
+          if (uri.scheme != 'http' && uri.scheme != 'https') return null;
+          if (_isPrivateHost(uri.host)) return null;
+          continue;
         }
-        if (_isPrivateHost(redirectUri.host)) return null;
-        if (!await _resolvedToPublicIp(redirectUri)) return null;
-        // Follow the single redirect.
-        final redirectRequest = http.Request('GET', redirectUri)
-          ..headers['User-Agent'] = 'Lattice/1.0 (Flutter Matrix client)'
-          ..followRedirects = false;
-        final redirected =
-            await _client.send(redirectRequest).timeout(_fetchTimeout);
-        return _readResponse(redirected, url);
+
+        return _readResponse(streamed, url);
       }
 
-      return _readResponse(streamed, url);
+      return null;
     } catch (e) {
       debugPrint('[Lattice] OpenGraph fetch failed for $url: $e');
       return null;
@@ -188,21 +213,29 @@ class OpenGraphService {
 
     // Read only the first ~50 KB to avoid downloading huge pages.
     final bytes = <int>[];
-    late final StreamSubscription<List<int>> subscription;
-    subscription = response.stream.listen((chunk) {
-      bytes.addAll(chunk);
-      if (bytes.length >= _maxBytes) subscription.cancel();
-    });
-    await subscription.asFuture<void>().timeout(
-      _fetchTimeout,
-      onTimeout: () => subscription.cancel(),
-    );
+    try {
+      late final StreamSubscription<List<int>> subscription;
+      subscription = response.stream.listen((chunk) {
+        bytes.addAll(chunk);
+        if (bytes.length >= _maxBytes) subscription.cancel();
+      });
+      await subscription.asFuture<void>().timeout(
+        _fetchTimeout,
+        onTimeout: () => subscription.cancel(),
+      );
+    } catch (_) {
+      // Stream cancelled or timed out — parse whatever we have.
+    }
     final truncated =
         bytes.length > _maxBytes ? bytes.sublist(0, _maxBytes) : bytes;
+    if (truncated.isEmpty) return null;
 
     final body = utf8.decode(truncated, allowMalformed: true);
     return _parse(body, url);
   }
+
+  @visibleForTesting
+  OpenGraphData? parse(String html, String url) => _parse(html, url);
 
   OpenGraphData? _parse(String html, String url) {
     final document = html_parser.parse(html);
@@ -248,6 +281,11 @@ class OpenGraphService {
           ogImage = base.resolve(ogImage).toString();
         }
       }
+    }
+
+    // Validate og:image URL — reject private/non-http(s) schemes.
+    if (ogImage != null && !_isSupported(ogImage)) {
+      ogImage = null;
     }
 
     final data = OpenGraphData(
