@@ -6,7 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:provider/provider.dart';
 
+import 'package:lattice/services/preferences_service.dart';
 import 'package:lattice/widgets/chat/compose_bar.dart';
 import 'package:lattice/widgets/chat/mention_suggestion_overlay.dart';
 
@@ -22,16 +24,20 @@ Widget _wrap({
   required VoidCallback onSend,
   Room? room,
   List<Room>? joinedRooms,
+  PreferencesService? prefs,
 }) {
-  return MaterialApp(
-    home: Scaffold(
-      body: ComposeBar(
-        controller: controller,
-        onSend: onSend,
-        onCancelReply: () {},
-        onCancelEdit: () {},
-        room: room,
-        joinedRooms: joinedRooms,
+  return ChangeNotifierProvider<PreferencesService>.value(
+    value: prefs ?? PreferencesService(),
+    child: MaterialApp(
+      home: Scaffold(
+        body: ComposeBar(
+          controller: controller,
+          onSend: onSend,
+          onCancelReply: () {},
+          onCancelEdit: () {},
+          room: room,
+          joinedRooms: joinedRooms,
+        ),
       ),
     ),
   );

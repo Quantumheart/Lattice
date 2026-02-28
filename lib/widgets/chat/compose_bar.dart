@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:matrix/matrix.dart';
 
+import 'package:provider/provider.dart';
+
 import '../../models/upload_state.dart';
+import '../../services/preferences_service.dart';
 import '../../services/typing_controller.dart';
 import 'mention_autocomplete_controller.dart';
 import 'mention_suggestion_overlay.dart';
@@ -95,11 +98,13 @@ class _ComposeBarState extends State<ComposeBar> {
   }
 
   void _onTextChangedForTyping() {
+    if (!context.read<PreferencesService>().typingIndicators) return;
     widget.typingController?.onTextChanged(widget.controller.text);
   }
 
   void _onFocusChanged() {
     if (!_focusNode.hasFocus) {
+      if (!context.read<PreferencesService>().typingIndicators) return;
       widget.typingController?.stop();
     }
   }

@@ -799,7 +799,7 @@ class _RoomTile extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 2),
-                      _buildSubtitle(matrix, lastEvent, cs, tt),
+                      _buildSubtitle(matrix, prefs, lastEvent, cs, tt),
                     ],
                   ),
                 ),
@@ -854,6 +854,7 @@ class _RoomTile extends StatelessWidget {
 
   Widget _buildSubtitle(
     MatrixService matrix,
+    PreferencesService prefs,
     Event? lastEvent,
     ColorScheme cs,
     TextTheme tt,
@@ -861,7 +862,7 @@ class _RoomTile extends StatelessWidget {
     final typers = room.typingUsers
         .where((u) => u.id != matrix.client.userID)
         .toList();
-    if (typers.isNotEmpty) {
+    if (typers.isNotEmpty && prefs.typingIndicators) {
       return Text(
         _typingPreview(typers),
         maxLines: 1,

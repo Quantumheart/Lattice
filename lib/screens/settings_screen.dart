@@ -360,6 +360,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   value: prefs.showLinkPreviews,
                   onChanged: (v) => prefs.setShowLinkPreviews(v),
                 ),
+                const Divider(height: 1, indent: 56),
+                SwitchListTile(
+                  secondary: const Icon(Icons.keyboard_rounded),
+                  title: const Text('Typing indicators'),
+                  subtitle:
+                      const Text('Send and show typing notifications'),
+                  value: prefs.typingIndicators,
+                  onChanged: (v) => prefs.setTypingIndicators(v),
+                ),
               ],
             ),
           ),

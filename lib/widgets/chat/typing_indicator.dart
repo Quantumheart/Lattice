@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
+import 'package:provider/provider.dart';
+
+import '../../services/preferences_service.dart';
 
 /// Displays "Alice is typing…" with an animated dot indicator.
 ///
@@ -81,6 +84,9 @@ class _TypingIndicatorState extends State<TypingIndicator> {
 
   @override
   Widget build(BuildContext context) {
+    final enabled = context.watch<PreferencesService>().typingIndicators;
+    if (!enabled) return const SizedBox.shrink();
+
     final typers = widget.room.typingUsers
         .where((u) => u.id != widget.myUserId)
         .toList();

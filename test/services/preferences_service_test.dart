@@ -92,6 +92,24 @@ void main() {
     });
   });
 
+  group('typing indicators', () {
+    test('typingIndicators defaults to true', () {
+      expect(prefs.typingIndicators, isTrue);
+    });
+
+    test('typingIndicators round-trips false', () async {
+      await prefs.setTypingIndicators(false);
+      expect(prefs.typingIndicators, isFalse);
+    });
+
+    test('typingIndicators notifies listeners', () async {
+      var notified = false;
+      prefs.addListener(() => notified = true);
+      await prefs.setTypingIndicators(false);
+      expect(notified, isTrue);
+    });
+  });
+
   group('OS notification toggles', () {
     test('osNotificationsEnabled defaults to true', () {
       expect(prefs.osNotificationsEnabled, isTrue);

@@ -5,7 +5,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:matrix/matrix.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:lattice/services/preferences_service.dart';
 import 'package:lattice/widgets/chat/typing_indicator.dart';
 
 @GenerateNiceMocks([MockSpec<Room>(), MockSpec<User>()])
@@ -18,13 +21,16 @@ MockUser _makeUser(String id, String? displayName) {
   return user;
 }
 
-Widget _wrap(Room room, {String? myUserId}) {
-  return MaterialApp(
-    home: Scaffold(
-      body: TypingIndicator(
-        room: room,
-        myUserId: myUserId ?? '@me:example.com',
-        syncStream: const Stream.empty(),
+Widget _wrap(Room room, {String? myUserId, PreferencesService? prefs}) {
+  return ChangeNotifierProvider<PreferencesService>.value(
+    value: prefs ?? PreferencesService(),
+    child: MaterialApp(
+      home: Scaffold(
+        body: TypingIndicator(
+          room: room,
+          myUserId: myUserId ?? '@me:example.com',
+          syncStream: const Stream.empty(),
+        ),
       ),
     ),
   );
@@ -110,6 +116,20 @@ void main() {
       final me = _makeUser('@me:example.com', 'Me');
       when(mockRoom.typingUsers).thenReturn([me]);
       await tester.pumpWidget(_wrap(mockRoom, myUserId: '@me:example.com'));
+      await tester.pump();
+
+      expect(find.textContaining('typing'), findsNothing);
+    });
+
+    testWidgets('hidden when typingIndicators preference is disabled',
+        (tester) async {
+      SharedPreferences.setMockInitialValues({'typing_indicators': false});
+      final sp = await SharedPreferences.getInstance();
+      final prefs = PreferencesService(prefs: sp);
+
+      final alice = _makeUser('@alice:example.com', 'Alice');
+      when(mockRoom.typingUsers).thenReturn([alice]);
+      await tester.pumpWidget(_wrap(mockRoom, prefs: prefs));
       await tester.pump();
 
       expect(find.textContaining('typing'), findsNothing);

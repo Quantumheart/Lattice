@@ -241,6 +241,20 @@ class PreferencesService extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ── Typing indicators ─────────────────────────────────────────
+
+  static const _typingIndicatorsKey = 'typing_indicators';
+
+  bool get typingIndicators =>
+      _prefs?.getBool(_typingIndicatorsKey) ?? true;
+
+  Future<void> setTypingIndicators(bool value) async {
+    await _prefs?.setBool(_typingIndicatorsKey, value);
+    debugPrint(
+        '[Lattice] Typing indicators ${value ? "enabled" : "disabled"}');
+    notifyListeners();
+  }
+
   // ── OS notification toggles ──────────────────────────────────
 
   static const _osNotificationsEnabledKey = 'os_notifications_enabled';
