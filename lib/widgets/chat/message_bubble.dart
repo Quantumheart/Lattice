@@ -87,6 +87,7 @@ class MessageBubble extends StatefulWidget {
 class _MessageBubbleState extends State<MessageBubble> {
   bool _hovering = false;
   bool _quickReactOpen = false;
+  String? _cachedPreviewUrl;
 
   @override
   Widget build(BuildContext context) {
@@ -587,8 +588,15 @@ class _MessageBubbleState extends State<MessageBubble> {
     return null;
   }
 
+  String? _previewUrlBody;
+
   Widget _buildLinkPreview(String bodyText) {
-    final url = _extractFirstUrl(bodyText);
+    // Cache the extracted URL to avoid re-running the regex on every build.
+    if (_previewUrlBody != bodyText) {
+      _previewUrlBody = bodyText;
+      _cachedPreviewUrl = _extractFirstUrl(bodyText);
+    }
+    final url = _cachedPreviewUrl;
     if (url == null) return const SizedBox.shrink();
     return LinkPreviewCard(url: url, isMe: widget.isMe);
   }
