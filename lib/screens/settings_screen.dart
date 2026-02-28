@@ -357,6 +357,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle: prefs.messageDensity.label,
                   onTap: () => DensityPickerDialog.show(context),
                 ),
+                const Divider(height: 1, indent: 56),
+                SwitchListTile(
+                  secondary: const Icon(Icons.link_rounded),
+                  title: const Text('Link previews'),
+                  subtitle:
+                      const Text('Show previews for URLs in messages'),
+                  value: prefs.showLinkPreviews,
+                  onChanged: (v) => prefs.setShowLinkPreviews(v),
+                ),
               ],
             ),
           ),

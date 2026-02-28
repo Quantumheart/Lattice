@@ -15,6 +15,7 @@ import '../../utils/sender_color.dart';
 import '../full_image_view.dart';
 import '../user_avatar.dart';
 import 'html_message_text.dart';
+import 'link_preview_card.dart';
 import 'linkable_text.dart';
 
 class MessageBubble extends StatefulWidget {
@@ -255,6 +256,11 @@ class _MessageBubbleState extends State<MessageBubble> {
 
                                   // Body
                                   _buildBody(context, metrics, bodyText),
+
+                                  // Link preview
+                                  if (_isTextMessage &&
+                                      context.watch<PreferencesService>().showLinkPreviews)
+                                    _buildLinkPreview(bodyText),
 
                                   // Timestamp
                                   Padding(
@@ -562,6 +568,29 @@ class _MessageBubbleState extends State<MessageBubble> {
       style: textStyle,
       isMe: widget.isMe,
     );
+  }
+
+  /// Whether the event is a plain text or notice message (not image/file/etc).
+  bool get _isTextMessage {
+    final type = widget.event.messageType;
+    return !widget.event.redacted &&
+        (type == MessageTypes.Text || type == MessageTypes.Notice);
+  }
+
+  /// Extract the first http(s) URL from [body], skipping matrix.to links.
+  static String? _extractFirstUrl(String body) {
+    for (final match in LinkableText.urlRegex.allMatches(body)) {
+      final url = LinkableText.cleanUrl(match.group(0)!);
+      final uri = Uri.tryParse(url);
+      if (uri != null && uri.host != 'matrix.to') return url;
+    }
+    return null;
+  }
+
+  Widget _buildLinkPreview(String bodyText) {
+    final url = _extractFirstUrl(bodyText);
+    if (url == null) return const SizedBox.shrink();
+    return LinkPreviewCard(url: url, isMe: widget.isMe);
   }
 
   String _formatTime(DateTime ts) {
