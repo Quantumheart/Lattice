@@ -532,6 +532,55 @@ class _MessageBubbleState extends State<MessageBubble> {
       );
     }
 
+    if (widget.event.messageType == MessageTypes.BadEncrypted) {
+      final color = widget.isMe
+          ? cs.onPrimary.withValues(alpha: 0.5)
+          : cs.onSurfaceVariant.withValues(alpha: 0.5);
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.lock_outline, size: metrics.bodyFontSize, color: color),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              'Unable to decrypt this message',
+              style: tt.bodyMedium?.copyWith(
+                fontStyle: FontStyle.italic,
+                color: color,
+              ),
+            ),
+          ),
+          if (widget.event.content['can_request_session'] == true)
+            Padding(
+              padding: const EdgeInsets.only(left: 4),
+              child: GestureDetector(
+                onTap: () {
+                  final client = widget.event.room.client;
+                  final sessionId =
+                      widget.event.content.tryGet<String>('session_id');
+                  final senderKey =
+                      widget.event.content.tryGet<String>('sender_key');
+                  if (sessionId != null && senderKey != null) {
+                    client.encryption?.keyManager.maybeAutoRequest(
+                      widget.event.room.id,
+                      sessionId,
+                      senderKey,
+                    );
+                  }
+                },
+                child: Text(
+                  'Retry',
+                  style: tt.bodySmall?.copyWith(
+                    color: widget.isMe ? cs.onPrimary : cs.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      );
+    }
+
     if (widget.event.messageType == MessageTypes.Image) {
       return _ImageBubble(event: widget.event);
     }
