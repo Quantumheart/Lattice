@@ -80,11 +80,6 @@ class NotificationService {
       android: androidSettings,
       iOS: darwinSettings,
       macOS: darwinSettings,
-      windows: WindowsInitializationSettings(
-        appName: 'Lattice',
-        appUserModelId: 'com.example.lattice',
-        guid: 'd3b0a4a0-7b1c-4e5a-9c8f-2d6e4f8a1b3c',
-      ),
     );
 
     await _plugin.initialize(
