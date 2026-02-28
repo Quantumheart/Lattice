@@ -1,6 +1,6 @@
 # Discord vs Lattice: Feature Gap Analysis
 
-_Generated: 2026-02-25_
+_Generated: 2026-02-28 (updated to reflect current master)_
 
 This document compares Discord's feature set against Lattice's current implementation, identifies features Discord users have long requested but Discord hasn't delivered, and highlights Lattice's unique advantages as a Matrix-based client.
 
@@ -35,20 +35,26 @@ This document compares Discord's feature set against Lattice's current implement
 
 | Discord Feature | Description | Lattice Status |
 |----------------|-------------|----------------|
-| Reactions | Emoji reactions on messages | SDK supports, **no UI** |
-| Message editing | Edit sent messages | SDK supports, **no UI** |
-| Message deletion | Delete/redact messages | SDK supports, **no UI** |
-| Typing indicators | "User is typing..." | SDK supports, **no UI** |
-| Read receipts | See who has read a message | SDK supports, **no UI** |
-| Threads | Branching conversations off a message | Matrix supports, **no UI** |
+| Reactions | Emoji reactions on messages | **Implemented** — reaction chips, emoji picker, quick-react bar |
+| Message editing | Edit sent messages | **Implemented** — edit banner, "(edited)" indicator |
+| Message deletion | Delete/redact messages | **Implemented** — confirmation dialog, redaction display |
+| Typing indicators | "User is typing..." | **Implemented** — animated dots, sync-stream updates |
+| Read receipts | See who has read a message | **Implemented** — overlapping avatars, "+N" overflow, long-press detail |
+| Replies | Reply to a specific message with preview | **Implemented** — reply banner, inline preview, swipe-to-reply (mobile) |
+| Mentions | @user and #room mention autocomplete | **Implemented** — autocomplete overlay, inline mention pills |
+| Markdown / HTML rendering | Bold, italic, code blocks, headers, lists, blockquotes | **Implemented** — HtmlMessageText with full tag support |
+| Code blocks | Syntax-highlighted code with language label | **Implemented** — 20+ languages, copy button, scrollable |
+| Clickable URLs | Tap to open links | **Implemented** — LinkableText auto-detection, url_launcher |
+| Pinned messages | Pin important messages with a pins panel | **Implemented** — anchored popup panel, pin/unpin actions |
+| Image enlargement | Tap to view full-size images | **Implemented** — InteractiveViewer with pinch-zoom/pan |
+| Context menu | Long-press / right-click message actions | **Implemented** — Signal-style overlay with reply, edit, react, copy, pin, delete |
+| Custom emoji | Server-specific emoji packs | **Partial** — renders `<img data-mx-emoticon>` tags; no emoji pack management UI |
+| Threads | Branching conversations off a message | No (Matrix MSC3440 exists, no UI) |
 | Forum channels | Structured Q&A with tags, list/gallery view | No equivalent |
 | Polls | Native polling with up to 10 choices | No |
 | Rich link previews | URL preview cards with images/descriptions | No |
-| Markdown rendering | Bold, italic, code blocks, spoilers, headers, lists | No (plaintext only) |
-| Custom emoji & stickers | Server-specific emoji packs | No |
 | GIF picker | Integrated Tenor/GIPHY search | No |
 | Slash commands | `/command` interface for bots and built-in actions | No |
-| Pinned messages | Pin important messages with a pins panel | No UI |
 | Voice messages | Record and send audio clips | No |
 | Message components | Buttons, select menus, modals | No |
 | Embeds | Rich embeds with titles, fields, images, footers | No |
@@ -159,6 +165,8 @@ Privacy-conscious users want the ability to run their own server and own their d
 ### Rank 4: Read Receipts for DMs
 One of the most debated requests. Users want to see when DMs have been read, similar to iMessage, WhatsApp, and Telegram. Proposals suggest making it opt-in. Discord has not implemented this despite years of requests.
 
+**Lattice advantage: Read receipts fully implemented with overlapping avatars, overflow badges, and long-press to view full list with timestamps.**
+
 ### Rank 5: Message Scheduling
 No built-in way to schedule messages for later delivery. Users rely on third-party bots. Competitors like Slack and Teams have had native message scheduling for years.
 
@@ -219,44 +227,58 @@ Intensified after the October 2025 breach exposing ~70,000 government ID photos 
 
 ## 4. Strategic Recommendations
 
-### High Priority — Close the table-stakes gap
-These features are expected in any modern chat client. The Matrix SDK already supports them; they only need UI implementation.
+### Already Implemented (table-stakes gap closed)
+These core rich messaging features have been built and shipped:
 
-1. **Reactions** — emoji reactions on messages (SDK ready)
-2. **Message editing** — edit sent messages with history (SDK ready)
-3. **Message deletion/redaction** — delete messages (SDK ready)
-4. **Typing indicators** — "User is typing..." display (SDK ready)
-5. **Markdown rendering** — bold, italic, code blocks, spoiler tags
-6. **Rich link previews** — URL preview cards with image/description
-7. **Read receipts** — optional, toggleable (SDK ready)
+- ~~Reactions~~ — emoji reaction chips, quick-react bar, emoji picker dialog
+- ~~Message editing~~ — edit banner, "(edited)" indicator, history tracking
+- ~~Message deletion/redaction~~ — confirmation dialog, contextual labels
+- ~~Typing indicators~~ — animated dots below compose bar
+- ~~Markdown / HTML rendering~~ — full tag support including headers, lists, blockquotes
+- ~~Code blocks~~ — syntax highlighting for 20+ languages with copy button
+- ~~Read receipts~~ — overlapping avatars with overflow and detail view
+- ~~Pinned messages~~ — anchored popup panel with pin/unpin actions
+- ~~Mentions~~ — @user and #room autocomplete with inline pills
+- ~~Clickable URLs~~ — auto-detection with url_launcher
+- ~~Replies~~ — reply banner, inline preview, swipe-to-reply on mobile
+- ~~Image enlargement~~ — InteractiveViewer with pinch-zoom/pan
+- ~~Context menu~~ — Signal-style overlay with full action set
 
-### Medium Priority — Differentiate and delight
-These features would make Lattice competitive with Discord for daily-driver use.
+### High Priority — Next features to build
+These features are the most impactful remaining gaps for daily-driver use.
 
-8. **Threads** — Matrix MSC3440 threading support
-9. **Pinned messages** — pin panel in room details
-10. **Voice/video calls** — Matrix VoIP via WebRTC (large effort)
-11. **GIF picker** — Tenor/GIPHY integration
-12. **Custom emoji** — Matrix custom emoji support
-13. **User profiles** — richer profiles with bio, status, badges
-14. **Custom status** — set a status message with emoji
+1. **Rich link previews** — URL preview cards with image/description (OG metadata)
+2. **GIF picker** — Tenor/GIPHY integration in compose bar
+3. **Threads** — Matrix MSC3440 threading support
+4. **Voice/video calls** — Matrix VoIP via WebRTC (large effort)
+5. **Custom emoji management** — upload/manage emoji packs (rendering already works)
+6. **User profiles** — richer profiles with bio, status, badges
+7. **Custom status** — set a status message with emoji
 
-### Lower Priority — Power features
-These features would appeal to power users and community administrators.
+### Medium Priority — Community management
+These features would appeal to server admins and community managers.
 
-15. **Moderation tools** — ban/kick/timeout UI using Matrix power levels
-16. **AutoMod equivalent** — keyword filtering via Matrix bots or client-side
-17. **Room directory / discovery** — browse public rooms on homeserver
-18. **Audit log** — display Matrix room state history
-19. **Scheduled events** — calendar events in rooms
-20. **Bot/integration UI** — manage Matrix bots and webhooks
+8. **Moderation tools** — ban/kick/timeout UI using Matrix power levels
+9. **Room directory / discovery** — browse public rooms on homeserver
+10. **Audit log** — display Matrix room state history
+11. **AutoMod equivalent** — keyword filtering via Matrix bots or client-side
+12. **Scheduled events** — calendar events in rooms
+13. **Bot/integration UI** — manage Matrix bots and webhooks
+
+### Lower Priority — Nice-to-have
+14. **Polls** — native polling in rooms
+15. **Voice messages** — record and send audio clips
+16. **Slash commands** — `/command` interface for built-in actions
+17. **Message components** — buttons, select menus for bot interactions
 
 ### Lean Into Your Strengths
 Lattice should loudly market these advantages that Discord users have begged for but can't get:
 
 - **E2EE for text** — Discord's #1 most-requested missing feature; Lattice has it
+- **Read receipts** — Discord's #4 request; Lattice ships it with avatars and timestamps
 - **Self-hosting & federation** — growing demand from privacy-conscious users
 - **Data sovereignty** — especially relevant post-Discord data breaches
 - **No monetization bloat** — no Nitro upsells, no Quests, no feature gating
 - **Open protocol** — no vendor lock-in, interoperable with all Matrix clients
 - **Material You theming** — richer visual customization than Discord's 4 fixed themes
+- **Rich messaging** — reactions, editing, deletion, mentions, code blocks, pinned messages all shipped
