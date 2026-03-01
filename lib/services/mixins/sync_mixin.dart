@@ -19,6 +19,12 @@ mixin SyncMixin on ChangeNotifier {
   bool _syncing = false;
   bool get syncing => _syncing;
 
+  String? _autoUnlockError;
+
+  /// Non-null when the background E2EE auto-unlock failed.
+  /// UI can observe this to hint that messages may be undecryptable.
+  String? get autoUnlockError => _autoUnlockError;
+
   StreamSubscription? _syncSub;
 
   @protected
@@ -49,12 +55,15 @@ mixin SyncMixin on ChangeNotifier {
     }
 
     // Run E2EE auto-unlock in background — don't block sync return.
+    _autoUnlockError = null;
     checkChatBackupStatus().then((_) {
       if (chatBackupNeeded == true) {
         return tryAutoUnlockBackup();
       }
     }).catchError((Object e) {
       debugPrint('[Lattice] Background E2EE auto-unlock error: $e');
+      _autoUnlockError = e.toString();
+      notifyListeners();
     });
   }
 

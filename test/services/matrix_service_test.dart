@@ -219,9 +219,8 @@ void main() {
       expect(result, isTrue);
       expect(service.isLoggedIn, isTrue);
 
-      // Let background sync + session backup complete.
-      await Future.delayed(Duration.zero);
-      await Future.delayed(Duration.zero);
+      // Wait for background sync + session backup to complete.
+      await service.postLoginSyncFuture;
 
       // Verify namespaced storage keys.
       verify(mockStorage.write(
@@ -377,9 +376,8 @@ void main() {
         password: 'pass',
       );
 
-      // Let background sync + session backup complete before adding listener.
-      await Future.delayed(Duration.zero);
-      await Future.delayed(Duration.zero);
+      // Wait for background sync + session backup to complete before adding listener.
+      await service.postLoginSyncFuture;
 
       var notifyCount = 0;
       service.addListener(() => notifyCount++);

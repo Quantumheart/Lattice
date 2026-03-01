@@ -280,18 +280,38 @@ mixin AuthMixin on ChangeNotifier {
 
   Future<void>? _postLoginSyncFuture;
 
+  /// Exposed for tests so they can await background work reliably.
+  @visibleForTesting
+  Future<void>? get postLoginSyncFuture => _postLoginSyncFuture;
+
+  String? _postLoginSyncError;
+
+  /// Non-null when the background sync after login failed.
+  /// UI can observe this to show a retry prompt.
+  String? get postLoginSyncError => _postLoginSyncError;
+
   /// Starts sync and saves session backup in background.
-  /// Errors are logged but don't affect login state.
+  /// Sets [postLoginSyncError] on failure so the UI can react.
   /// Guards against writing session data after a concurrent logout.
   void _postLoginSync() {
-    _postLoginSyncFuture = startSync(timeout: const Duration(minutes: 5)).then((_) async {
+    _postLoginSyncError = null;
+    _postLoginSyncFuture = _runPostLoginSync();
+  }
+
+  Future<void> _runPostLoginSync() async {
+    try {
+      await startSync(timeout: const Duration(minutes: 5));
       if (!isLoggedIn) return;
       await saveSessionBackup();
-    }).catchError((Object e) {
+    } catch (e) {
       debugPrint('[Lattice] Post-login sync error: $e');
-    }).whenComplete(() {
+      if (isLoggedIn) {
+        _postLoginSyncError = e.toString();
+        notifyListeners();
+      }
+    } finally {
       _postLoginSyncFuture = null;
-    });
+    }
   }
 
   // ── Credential Persistence ──────────────────────────────────
@@ -401,11 +421,13 @@ mixin AuthMixin on ChangeNotifier {
 
   @protected
   Future<void> clearSessionKeys() async {
-    await storage.delete(key: latticeKey(clientName, 'access_token'));
-    await storage.delete(key: latticeKey(clientName, 'user_id'));
-    await storage.delete(key: latticeKey(clientName, 'homeserver'));
-    await storage.delete(key: latticeKey(clientName, 'device_id'));
-    await storage.delete(key: latticeKey(clientName, 'olm_account'));
+    await Future.wait([
+      storage.delete(key: latticeKey(clientName, 'access_token')),
+      storage.delete(key: latticeKey(clientName, 'user_id')),
+      storage.delete(key: latticeKey(clientName, 'homeserver')),
+      storage.delete(key: latticeKey(clientName, 'device_id')),
+      storage.delete(key: latticeKey(clientName, 'olm_account')),
+    ]);
   }
 
   // ── Storage Key Migration ─────────────────────────────────────

@@ -432,9 +432,8 @@ void main() {
         deviceId: 'REG_DEV',
       ));
 
-      // Let background sync + session backup complete.
-      await Future.delayed(Duration.zero);
-      await Future.delayed(Duration.zero);
+      // Wait for background sync + session backup to complete.
+      await service.postLoginSyncFuture;
 
       verify(mockStorage.write(
         key: 'lattice_session_backup_test',
