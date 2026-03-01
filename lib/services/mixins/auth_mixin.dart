@@ -183,13 +183,12 @@ mixin AuthMixin on ChangeNotifier {
       setCachedPassword(password);
       listenForUia();
       listenForLoginState();
-      await startSync(timeout: const Duration(minutes: 5));
       isLoggedIn = true;
-
-      // Write session backup after successful login + first sync.
-      await saveSessionBackup();
-
       notifyListeners();
+
+      // Start sync + session backup in background — don't block login UI.
+      _postLoginSync();
+
       return true;
     } catch (e, s) {
       debugPrint('[Lattice] Login failed: $e');
@@ -232,12 +231,12 @@ mixin AuthMixin on ChangeNotifier {
       await _persistCredentials();
       listenForUia();
       listenForLoginState();
-      await startSync(timeout: const Duration(minutes: 5));
       isLoggedIn = true;
-
-      await saveSessionBackup();
-
       notifyListeners();
+
+      // Start sync + session backup in background — don't block login UI.
+      _postLoginSync();
+
       return true;
     } catch (e, s) {
       debugPrint('[Lattice] SSO login failed: $e');
@@ -270,31 +269,55 @@ mixin AuthMixin on ChangeNotifier {
     if (password != null) setCachedPassword(password);
     listenForUia();
     listenForLoginState();
-    await startSync(timeout: const Duration(minutes: 5));
     isLoggedIn = true;
-
-    await saveSessionBackup();
-
     notifyListeners();
+
+    // Start sync + session backup in background — don't block registration UI.
+    _postLoginSync();
+  }
+
+  // ── Post-login Background Sync ──────────────────────────────
+
+  Future<void>? _postLoginSyncFuture;
+
+  /// Starts sync and saves session backup in background.
+  /// Errors are logged but don't affect login state.
+  /// Guards against writing session data after a concurrent logout.
+  void _postLoginSync() {
+    _postLoginSyncFuture = startSync(timeout: const Duration(minutes: 5)).then((_) async {
+      if (!isLoggedIn) return;
+      await saveSessionBackup();
+    }).catchError((Object e) {
+      debugPrint('[Lattice] Post-login sync error: $e');
+    }).whenComplete(() {
+      _postLoginSyncFuture = null;
+    });
   }
 
   // ── Credential Persistence ──────────────────────────────────
 
   Future<void> _persistCredentials() async {
-    await storage.write(
-        key: latticeKey(clientName, 'access_token'),
-        value: client.accessToken);
-    await storage.write(
-        key: latticeKey(clientName, 'user_id'), value: client.userID);
-    await storage.write(
-        key: latticeKey(clientName, 'homeserver'),
-        value: client.homeserver.toString());
-    await storage.write(
-        key: latticeKey(clientName, 'device_id'), value: client.deviceID);
+    await Future.wait([
+      storage.write(
+          key: latticeKey(clientName, 'access_token'),
+          value: client.accessToken),
+      storage.write(
+          key: latticeKey(clientName, 'user_id'), value: client.userID),
+      storage.write(
+          key: latticeKey(clientName, 'homeserver'),
+          value: client.homeserver.toString()),
+      storage.write(
+          key: latticeKey(clientName, 'device_id'), value: client.deviceID),
+    ]);
   }
 
   // ── Logout ───────────────────────────────────────────────────
   Future<void> logout() async {
+    // Cancel login state first so the background sync guard sees
+    // isLoggedIn == false, then wait for it to settle.
+    isLoggedIn = false;
+    await _postLoginSyncFuture;
+
     try {
       if (client.homeserver != null && client.accessToken != null) {
         await client.logout();

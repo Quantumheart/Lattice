@@ -48,10 +48,14 @@ mixin SyncMixin on ChangeNotifier {
       await firstSync.future;
     }
 
-    await checkChatBackupStatus();
-    if (chatBackupNeeded == true) {
-      await tryAutoUnlockBackup();
-    }
+    // Run E2EE auto-unlock in background — don't block sync return.
+    checkChatBackupStatus().then((_) {
+      if (chatBackupNeeded == true) {
+        return tryAutoUnlockBackup();
+      }
+    }).catchError((Object e) {
+      debugPrint('[Lattice] Background E2EE auto-unlock error: $e');
+    });
   }
 
   /// Cancel sync subscription (e.g. on dispose).
