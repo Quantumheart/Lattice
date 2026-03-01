@@ -591,6 +591,190 @@ void main() {
     });
   });
 
+  group('auto-unlock', () {
+    late MockEncryption mockEncryption;
+    late MockCrossSigning mockCrossSigning;
+    late MockKeyManager mockKeyManager;
+
+    setUp(() {
+      mockEncryption = MockEncryption();
+      mockCrossSigning = MockCrossSigning();
+      mockKeyManager = MockKeyManager();
+      when(mockEncryption.crossSigning).thenReturn(mockCrossSigning);
+      when(mockEncryption.keyManager).thenReturn(mockKeyManager);
+    });
+
+    test('tryAutoUnlockBackup is a no-op when no stored recovery key',
+        () async {
+      when(mockClient.userID).thenReturn('@user:example.com');
+      when(mockStorage.read(key: 'ssss_recovery_key_@user:example.com'))
+          .thenAnswer((_) async => null);
+
+      await service.tryAutoUnlockBackup();
+
+      // Should not attempt to restore identity.
+      verifyNever(mockClient.encryption);
+    });
+
+    test('tryAutoUnlockBackup skips restore when already connected',
+        () async {
+      when(mockClient.userID).thenReturn('@user:example.com');
+      when(mockStorage.read(key: 'ssss_recovery_key_@user:example.com'))
+          .thenAnswer((_) async => 'recovery-key');
+      when(mockClient.encryption).thenReturn(mockEncryption);
+      when(mockCrossSigning.enabled).thenReturn(true);
+      when(mockKeyManager.enabled).thenReturn(true);
+      when(mockCrossSigning.isCached()).thenAnswer((_) async => true);
+      when(mockKeyManager.isCached()).thenAnswer((_) async => true);
+
+      await service.tryAutoUnlockBackup();
+
+      // Should check status but not call restoreCryptoIdentity
+      // (the getCryptoIdentityState call returns connected=true).
+      expect(service.chatBackupNeeded, isFalse);
+    });
+
+    test('tryAutoUnlockBackup handles errors silently', () async {
+      when(mockClient.userID).thenReturn('@user:example.com');
+      when(mockStorage.read(key: 'ssss_recovery_key_@user:example.com'))
+          .thenAnswer((_) async => 'bad-key');
+      when(mockClient.encryption).thenReturn(mockEncryption);
+      when(mockCrossSigning.enabled).thenReturn(false);
+      when(mockKeyManager.enabled).thenReturn(false);
+      when(mockCrossSigning.isCached()).thenAnswer((_) async => false);
+      when(mockKeyManager.isCached()).thenAnswer((_) async => false);
+
+      // restoreCryptoIdentity is an extension method that will throw
+      // because crypto identity is not initialized.
+      await service.tryAutoUnlockBackup();
+
+      // Should still complete — error is silently caught.
+      // chatBackupNeeded reflects the status check at the end.
+      expect(service.chatBackupNeeded, isTrue);
+    });
+  });
+
+  group('requestMissingRoomKeys', () {
+    late MockEncryption mockEncryption;
+    late MockKeyManager mockKeyManager;
+
+    setUp(() {
+      mockEncryption = MockEncryption();
+      mockKeyManager = MockKeyManager();
+      when(mockEncryption.keyManager).thenReturn(mockKeyManager);
+      when(mockEncryption.crossSigning).thenReturn(MockCrossSigning());
+    });
+
+    test('is a no-op when encryption is null', () {
+      when(mockClient.encryption).thenReturn(null);
+
+      service.requestMissingRoomKeys();
+
+      verifyNever(mockClient.rooms);
+    });
+
+    test('requests session keys for undecryptable last events', () {
+      when(mockClient.encryption).thenReturn(mockEncryption);
+
+      final room = MockRoom();
+      when(room.id).thenReturn('!room:example.com');
+      when(room.lastEvent).thenReturn(Event(
+        type: EventTypes.Encrypted,
+        content: {
+          'msgtype': MessageTypes.BadEncrypted,
+          'can_request_session': true,
+          'session_id': 'sess123',
+          'sender_key': 'key456',
+        },
+        eventId: '\$evt1',
+        senderId: '@alice:example.com',
+        originServerTs: DateTime.now(),
+        room: room,
+      ));
+
+      when(mockClient.rooms).thenReturn([room]);
+
+      service.requestMissingRoomKeys();
+
+      verify(mockKeyManager.maybeAutoRequest(
+        '!room:example.com',
+        'sess123',
+        'key456',
+      )).called(1);
+    });
+
+    test('skips rooms with decryptable last events', () {
+      when(mockClient.encryption).thenReturn(mockEncryption);
+
+      final room = MockRoom();
+      when(room.id).thenReturn('!room:example.com');
+      when(room.lastEvent).thenReturn(Event(
+        type: EventTypes.Message,
+        content: {'body': 'hello', 'msgtype': 'm.text'},
+        eventId: '\$evt1',
+        senderId: '@alice:example.com',
+        originServerTs: DateTime.now(),
+        room: room,
+      ));
+
+      when(mockClient.rooms).thenReturn([room]);
+
+      service.requestMissingRoomKeys();
+
+      verifyNever(mockKeyManager.maybeAutoRequest(any, any, any));
+    });
+
+    test('skips events without can_request_session', () {
+      when(mockClient.encryption).thenReturn(mockEncryption);
+
+      final room = MockRoom();
+      when(room.id).thenReturn('!room:example.com');
+      when(room.lastEvent).thenReturn(Event(
+        type: EventTypes.Encrypted,
+        content: {
+          'msgtype': MessageTypes.BadEncrypted,
+          'session_id': 'sess123',
+          'sender_key': 'key456',
+        },
+        eventId: '\$evt1',
+        senderId: '@alice:example.com',
+        originServerTs: DateTime.now(),
+        room: room,
+      ));
+
+      when(mockClient.rooms).thenReturn([room]);
+
+      service.requestMissingRoomKeys();
+
+      verifyNever(mockKeyManager.maybeAutoRequest(any, any, any));
+    });
+
+    test('skips events missing session_id or sender_key', () {
+      when(mockClient.encryption).thenReturn(mockEncryption);
+
+      final room = MockRoom();
+      when(room.id).thenReturn('!room:example.com');
+      when(room.lastEvent).thenReturn(Event(
+        type: EventTypes.Encrypted,
+        content: {
+          'msgtype': MessageTypes.BadEncrypted,
+          'can_request_session': true,
+          // Missing session_id and sender_key
+        },
+        eventId: '\$evt1',
+        senderId: '@alice:example.com',
+        originServerTs: DateTime.now(),
+        room: room,
+      ));
+
+      when(mockClient.rooms).thenReturn([room]);
+
+      service.requestMissingRoomKeys();
+
+      verifyNever(mockKeyManager.maybeAutoRequest(any, any, any));
+    });
+  });
+
   group('clientName', () {
     test('defaults to "default"', () {
       final defaultService = MatrixService(

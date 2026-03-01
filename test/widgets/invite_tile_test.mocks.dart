@@ -1138,6 +1138,15 @@ class MockMatrixService extends _i1.Mock implements _i4.MatrixService {
       ) as _i7.Future<void>);
 
   @override
+  void requestMissingRoomKeys() => super.noSuchMethod(
+        Invocation.method(
+          #requestMissingRoomKeys,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
   _i7.Future<String?> getStoredRecoveryKey() => (super.noSuchMethod(
         Invocation.method(
           #getStoredRecoveryKey,

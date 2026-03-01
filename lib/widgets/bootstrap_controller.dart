@@ -426,9 +426,10 @@ class BootstrapController extends ChangeNotifier {
       debugPrint('[Bootstrap] Room keys restored from online backup');
     } catch (e) {
       debugPrint('[Bootstrap] Failed to load keys from backup: $e');
-      // Fall back to requesting keys from other devices.
-      _requestMissingKeys();
     }
+
+    // Request session keys for any rooms still showing undecryptable events.
+    matrixService.requestMissingRoomKeys();
 
     await matrixService.checkChatBackupStatus();
     matrixService.clearCachedPassword();
@@ -504,27 +505,6 @@ class BootstrapController extends ChangeNotifier {
   }
 
   // ── Internals ─────────────────────────────────────────────────
-
-  void _requestMissingKeys() {
-    final client = matrixService.client;
-    for (final room in client.rooms) {
-      final event = room.lastEvent;
-      if (event != null &&
-          event.type == EventTypes.Encrypted &&
-          event.messageType == MessageTypes.BadEncrypted &&
-          event.content['can_request_session'] == true) {
-        final sessionId = event.content.tryGet<String>('session_id');
-        final senderKey = event.content.tryGet<String>('sender_key');
-        if (sessionId != null && senderKey != null) {
-          client.encryption?.keyManager.maybeAutoRequest(
-            room.id,
-            sessionId,
-            senderKey,
-          );
-        }
-      }
-    }
-  }
 
   void _notify() {
     if (!_isDisposed) {

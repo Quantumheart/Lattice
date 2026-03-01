@@ -79,7 +79,14 @@ mixin ChatBackupMixin on ChangeNotifier {
       debugPrint('[AutoUnlock] Failed to load keys from backup: $e');
     }
 
-    // Request session keys for rooms that are still encrypted.
+    requestMissingRoomKeys();
+  }
+
+  /// Requests session keys for rooms whose last event is still undecryptable.
+  void requestMissingRoomKeys() {
+    final encryption = client.encryption;
+    if (encryption == null) return;
+
     for (final room in client.rooms) {
       final event = room.lastEvent;
       if (event != null &&

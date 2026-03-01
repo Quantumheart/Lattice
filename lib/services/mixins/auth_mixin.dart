@@ -394,6 +394,7 @@ mixin AuthMixin on ChangeNotifier {
       if (state == LoginState.loggedOut && isLoggedIn) {
         debugPrint('[Lattice] Server-side logout detected');
         isLoggedIn = false;
+        clearCachedPassword();
         resetSelection();
         resetChatBackupState();
         clearSessionKeys();
