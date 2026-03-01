@@ -3,7 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:matrix/matrix.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:lattice/services/preferences_service.dart';
 import 'package:lattice/widgets/chat/read_receipts.dart';
 import 'package:lattice/widgets/user_avatar.dart';
 
@@ -240,6 +243,46 @@ void main() {
       expect(find.text('Read by 2'), findsOneWidget);
       expect(find.text('Alice'), findsOneWidget);
       expect(find.text('Bob'), findsOneWidget);
+    });
+
+    testWidgets('hidden when readReceipts preference is disabled',
+        (tester) async {
+      SharedPreferences.setMockInitialValues({'read_receipts': false});
+      final sp = await SharedPreferences.getInstance();
+      final prefs = PreferencesService(prefs: sp);
+
+      final receipts = [
+        Receipt(
+          _makeUser('@alice:example.com', 'Alice'),
+          DateTime(2024, 1, 1, 14, 30),
+        ),
+      ];
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<PreferencesService>.value(
+          value: prefs,
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) {
+                  final show =
+                      context.watch<PreferencesService>().readReceipts;
+                  if (!show) return const SizedBox.shrink();
+                  return ReadReceiptsRow(
+                    receipts: receipts,
+                    client: mockClient,
+                    isMe: true,
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+
+      // ReadReceiptsRow should not be rendered
+      expect(find.byType(ReadReceiptsRow), findsNothing);
+      expect(find.byType(UserAvatar), findsNothing);
     });
 
     testWidgets('falls back to user ID when displayName is null',

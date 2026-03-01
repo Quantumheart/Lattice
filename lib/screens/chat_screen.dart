@@ -8,6 +8,7 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import '../models/upload_state.dart';
 import '../services/chat_search_controller.dart';
 import '../services/matrix_service.dart';
+import '../services/preferences_service.dart';
 import '../services/typing_controller.dart';
 import '../widgets/chat/chat_app_bar.dart';
 import '../widgets/chat/compose_bar.dart';
@@ -154,7 +155,11 @@ class _ChatScreenState extends State<ChatScreen> {
       final lastEvent = room.lastEvent;
       if (lastEvent != null && room.notificationCount > 0) {
         try {
-          await room.setReadMarker(lastEvent.eventId, mRead: lastEvent.eventId);
+          final sendPublic = context.read<PreferencesService>().readReceipts;
+          await room.setReadMarker(
+            lastEvent.eventId,
+            mRead: sendPublic ? lastEvent.eventId : null,
+          );
         } catch (e) {
           debugPrint('[Lattice] Failed to mark as read: $e');
         }
@@ -487,7 +492,10 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget _buildMessageList(
       List<Event> events, MatrixService matrix, Room room) {
     final isMobile = MediaQuery.sizeOf(context).width < 720;
-    final receiptMap = buildReceiptMap(room, matrix.client.userID);
+    final showReceipts = context.watch<PreferencesService>().readReceipts;
+    final receiptMap = showReceipts
+        ? buildReceiptMap(room, matrix.client.userID)
+        : <String, List<Receipt>>{};
     final hasLoadingIndicator = _loadingHistory;
     final totalCount = events.length + (hasLoadingIndicator ? 1 : 0);
     return ScrollablePositionedList.builder(
