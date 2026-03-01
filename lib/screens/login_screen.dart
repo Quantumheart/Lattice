@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../services/client_manager.dart';
@@ -62,7 +63,9 @@ class _LoginScreenState extends State<LoginScreen>
   void _onControllerChanged() {
     if (!mounted) return;
     if (_controller.state == LoginState.done) {
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      // The router's redirect will automatically send us to '/'
+      // once MatrixService.isLoggedIn becomes true.
+      context.go('/');
       return;
     }
     setState(() {});
@@ -103,7 +106,7 @@ class _LoginScreenState extends State<LoginScreen>
                     avatar: Icon(Icons.dns_outlined, size: 18,
                         color: cs.onSurfaceVariant),
                     label: Text(widget.homeserver),
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: () => context.pop(),
                   ),
                   const SizedBox(height: 8),
                   Text(

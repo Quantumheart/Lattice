@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../services/matrix_service.dart';
@@ -78,9 +79,9 @@ class _RegistrationScreenState extends State<RegistrationScreen>
   void _onControllerChanged() {
     if (!mounted) return;
     if (_controller.state == RegistrationState.done) {
-      // Registration complete — pop back so the root MaterialApp
-      // rebuilds with HomeShell (isLoggedIn is now true).
-      Navigator.of(context).popUntil((route) => route.isFirst);
+      // Registration complete — the router's redirect will send us
+      // to '/' once MatrixService.isLoggedIn becomes true.
+      context.go('/');
       return;
     }
     setState(() {});
@@ -309,7 +310,7 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                   ),
                   const SizedBox(height: 16),
                   TextButton(
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () => context.pop(),
                     child: Text(
                       'Already have an account? Sign in',
                       style: TextStyle(color: cs.primary),
