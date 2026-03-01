@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../services/client_manager.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
+import '../widgets/account_switcher.dart';
 import '../widgets/backup_info_dialog.dart';
 import '../widgets/bootstrap_dialog.dart';
 import '../widgets/density_picker_dialog.dart';
@@ -276,36 +277,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // ── Account Switcher ──
           if (manager.hasMultipleAccounts) ...[
             const SizedBox(height: 16),
-            const SectionHeader(label: 'ACCOUNTS'),
-            Card(
-              child: Column(
-                children: [
-                  for (var i = 0; i < manager.services.length; i++) ...[
-                    if (i > 0) const Divider(height: 1, indent: 56),
-                    ListTile(
-                      leading: UserAvatar(
-                        client: manager.services[i].client,
-                        userId: manager.services[i].client.userID,
-                        size: 36,
-                      ),
-                      title: Text(
-                        manager.services[i].client.userID ?? 'Unknown',
-                        style: i == manager.activeIndex
-                            ? tt.bodyLarge?.copyWith(fontWeight: FontWeight.w600)
-                            : null,
-                      ),
-                      trailing: i == manager.activeIndex
-                          ? Icon(Icons.check, color: cs.primary)
-                          : null,
-                      mouseCursor: SystemMouseCursors.click,
-                      onTap: () {
-                        manager.setActiveAccount(i);
-                        Navigator.pop(context);
-                      },
-                    ),
-                  ],
-                ],
-              ),
+            AccountSwitcher(
+              services: manager.services,
+              activeIndex: manager.activeIndex,
+              onAccountTapped: (i) {
+                manager.setActiveAccount(i);
+                Navigator.pop(context);
+              },
             ),
           ],
 
