@@ -104,7 +104,6 @@ class _ComposeBarState extends State<ComposeBar> {
 
   void _onFocusChanged() {
     if (!_focusNode.hasFocus) {
-      if (!context.read<PreferencesService>().typingIndicators) return;
       widget.typingController?.stop();
     }
   }

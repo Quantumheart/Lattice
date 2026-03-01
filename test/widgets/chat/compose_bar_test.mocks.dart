@@ -7,6 +7,7 @@ import 'dart:async' as _i5;
 import 'dart:typed_data' as _i11;
 
 import 'package:http/http.dart' as _i4;
+import 'package:lattice/services/typing_controller.dart' as _i12;
 import 'package:matrix/encryption.dart' as _i10;
 import 'package:matrix/matrix.dart' as _i2;
 import 'package:matrix/matrix_api_lite/generated/fixed_model.dart' as _i6;
@@ -9662,4 +9663,49 @@ class MockClient extends _i1.Mock implements _i2.Client {
         returnValueForMissingStub:
             _i5.Future<Map<String, Object?>>.value(<String, Object?>{}),
       ) as _i5.Future<Map<String, Object?>>);
+}
+
+/// A class which mocks [TypingController].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockTypingController extends _i1.Mock implements _i12.TypingController {
+  @override
+  _i2.Room get room => (super.noSuchMethod(
+        Invocation.getter(#room),
+        returnValue: _FakeRoom_9(
+          this,
+          Invocation.getter(#room),
+        ),
+        returnValueForMissingStub: _FakeRoom_9(
+          this,
+          Invocation.getter(#room),
+        ),
+      ) as _i2.Room);
+
+  @override
+  void onTextChanged(String? text) => super.noSuchMethod(
+        Invocation.method(
+          #onTextChanged,
+          [text],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void stop() => super.noSuchMethod(
+        Invocation.method(
+          #stop,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void dispose() => super.noSuchMethod(
+        Invocation.method(
+          #dispose,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
 }

@@ -3,12 +3,14 @@ import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
 
 import 'package:lattice/services/preferences_service.dart';
+import 'package:lattice/services/typing_controller.dart';
 import 'package:lattice/widgets/chat/compose_bar.dart';
 import 'package:lattice/widgets/chat/mention_suggestion_overlay.dart';
 
@@ -16,6 +18,7 @@ import 'package:lattice/widgets/chat/mention_suggestion_overlay.dart';
   MockSpec<Room>(),
   MockSpec<User>(),
   MockSpec<Client>(),
+  MockSpec<TypingController>(),
 ])
 import 'compose_bar_test.mocks.dart';
 
@@ -25,6 +28,7 @@ Widget _wrap({
   Room? room,
   List<Room>? joinedRooms,
   PreferencesService? prefs,
+  TypingController? typingController,
 }) {
   return ChangeNotifierProvider<PreferencesService>.value(
     value: prefs ?? PreferencesService(),
@@ -37,6 +41,7 @@ Widget _wrap({
           onCancelEdit: () {},
           room: room,
           joinedRooms: joinedRooms,
+          typingController: typingController,
         ),
       ),
     ),
@@ -224,6 +229,26 @@ void main() {
 
       final textField = tester.widget<TextField>(find.byType(TextField));
       expect(textField.textInputAction, TextInputAction.newline);
+    });
+
+    testWidgets('typing indicator not sent when preference is disabled',
+        (tester) async {
+      SharedPreferences.setMockInitialValues({'typing_indicators': false});
+      final sp = await SharedPreferences.getInstance();
+      final prefs = PreferencesService(prefs: sp);
+      final mockTyping = MockTypingController();
+
+      await tester.pumpWidget(_wrap(
+        controller: controller,
+        onSend: () {},
+        prefs: prefs,
+        typingController: mockTyping,
+      ));
+
+      await tester.enterText(find.byType(TextField), 'hello');
+      await tester.pump();
+
+      verifyNever(mockTyping.onTextChanged(any));
     });
   });
 
