@@ -177,7 +177,21 @@ class _ChatScreenState extends State<ChatScreen> {
     }
     setState(() => _loadingHistory = true);
     try {
-      await _timeline!.requestHistory();
+      // Load batches in a loop: a single server batch may contain mostly
+      // state events that are filtered out of _visibleEvents, so keep
+      // fetching until we have enough visible messages past the viewport
+      // or the server has no more history.
+      while (mounted && _timeline!.canRequestHistory) {
+        await _timeline!.requestHistory();
+        _cachedVisibleEvents = null;
+        final positions = _itemPosListener.itemPositions.value;
+        if (positions.isEmpty) break;
+        final maxIndex =
+            positions.map((p) => p.index).reduce((a, b) => a > b ? a : b);
+        if (maxIndex < _visibleEvents.length - _historyLoadThreshold) break;
+      }
+    } catch (e) {
+      debugPrint('[Lattice] Failed to load history: $e');
     } finally {
       if (mounted) setState(() => _loadingHistory = false);
     }
