@@ -84,14 +84,14 @@ class _TypingIndicatorState extends State<TypingIndicator> {
 
   @override
   Widget build(BuildContext context) {
-    final enabled = context.watch<PreferencesService>().typingIndicators;
-    if (!enabled) return const SizedBox.shrink();
-
     final typers = widget.room.typingUsers
         .where((u) => u.id != widget.myUserId)
         .toList();
 
     if (typers.isEmpty) return const SizedBox.shrink();
+
+    final enabled = context.watch<PreferencesService>().typingIndicators;
+    if (!enabled) return const SizedBox.shrink();
 
     final theme = Theme.of(context);
     return AnimatedSize(
