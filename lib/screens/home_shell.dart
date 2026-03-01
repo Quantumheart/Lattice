@@ -46,7 +46,7 @@ class _HomeShellState extends State<HomeShell> {
   // ── Route → MatrixService sync ──────────────────────────────
 
   String? get _routeRoomId => widget.routerState.pathParameters['roomId'];
-  String? get _routeName => widget.routerState.name;
+  String? get _routeName => widget.routerState.topRoute?.name;
 
   void _syncRoomSelection() {
     if (_syncScheduled) return;
