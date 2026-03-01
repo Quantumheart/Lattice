@@ -909,9 +909,7 @@ class _RoomTile extends StatelessWidget {
     if (event.messageType == MessageTypes.Video) return '🎬 Video';
     if (event.messageType == MessageTypes.File) return '📎 File';
     if (event.messageType == MessageTypes.Audio) return '🎵 Audio';
-    if (event.messageType == MessageTypes.BadEncrypted) {
-      return '🔒 Unable to decrypt';
-    }
+    if (event.messageType == MessageTypes.BadEncrypted) return '🔒 Unable to decrypt';
     return body;
   }
 

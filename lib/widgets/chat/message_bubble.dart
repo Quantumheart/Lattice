@@ -553,26 +553,29 @@ class _MessageBubbleState extends State<MessageBubble> {
           if (widget.event.content['can_request_session'] == true)
             Padding(
               padding: const EdgeInsets.only(left: 4),
-              child: GestureDetector(
-                onTap: () {
-                  final client = widget.event.room.client;
-                  final sessionId =
-                      widget.event.content.tryGet<String>('session_id');
-                  final senderKey =
-                      widget.event.content.tryGet<String>('sender_key');
-                  if (sessionId != null && senderKey != null) {
-                    client.encryption?.keyManager.maybeAutoRequest(
-                      widget.event.room.id,
-                      sessionId,
-                      senderKey,
-                    );
-                  }
-                },
-                child: Text(
-                  'Retry',
-                  style: tt.bodySmall?.copyWith(
-                    color: widget.isMe ? cs.onPrimary : cs.primary,
-                    fontWeight: FontWeight.w600,
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () {
+                    final client = widget.event.room.client;
+                    final sessionId =
+                        widget.event.content.tryGet<String>('session_id');
+                    final senderKey =
+                        widget.event.content.tryGet<String>('sender_key');
+                    if (sessionId != null && senderKey != null) {
+                      client.encryption?.keyManager.maybeAutoRequest(
+                        widget.event.room.id,
+                        sessionId,
+                        senderKey,
+                      );
+                    }
+                  },
+                  child: Text(
+                    'Retry',
+                    style: tt.bodySmall?.copyWith(
+                      color: widget.isMe ? cs.onPrimary : cs.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
