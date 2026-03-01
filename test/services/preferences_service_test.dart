@@ -110,6 +110,24 @@ void main() {
     });
   });
 
+  group('read receipts', () {
+    test('readReceipts defaults to true', () {
+      expect(prefs.readReceipts, isTrue);
+    });
+
+    test('readReceipts round-trips false', () async {
+      await prefs.setReadReceipts(false);
+      expect(prefs.readReceipts, isFalse);
+    });
+
+    test('readReceipts notifies listeners', () async {
+      var notified = false;
+      prefs.addListener(() => notified = true);
+      await prefs.setReadReceipts(false);
+      expect(notified, isTrue);
+    });
+  });
+
   group('OS notification toggles', () {
     test('osNotificationsEnabled defaults to true', () {
       expect(prefs.osNotificationsEnabled, isTrue);

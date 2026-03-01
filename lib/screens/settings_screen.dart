@@ -369,6 +369,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   value: prefs.typingIndicators,
                   onChanged: (v) => prefs.setTypingIndicators(v),
                 ),
+                const Divider(height: 1, indent: 56),
+                SwitchListTile(
+                  secondary: const Icon(Icons.done_all_rounded),
+                  title: const Text('Read receipts'),
+                  subtitle:
+                      const Text('Send and show read receipts'),
+                  value: prefs.readReceipts,
+                  onChanged: (v) => prefs.setReadReceipts(v),
+                ),
               ],
             ),
           ),

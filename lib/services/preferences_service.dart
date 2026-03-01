@@ -255,6 +255,19 @@ class PreferencesService extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ── Read receipts ───────────────────────────────────────────────
+
+  static const _readReceiptsKey = 'read_receipts';
+
+  bool get readReceipts => _prefs?.getBool(_readReceiptsKey) ?? true;
+
+  Future<void> setReadReceipts(bool value) async {
+    await _prefs?.setBool(_readReceiptsKey, value);
+    debugPrint(
+        '[Lattice] Read receipts ${value ? "enabled" : "disabled"}');
+    notifyListeners();
+  }
+
   // ── OS notification toggles ──────────────────────────────────
 
   static const _osNotificationsEnabledKey = 'os_notifications_enabled';
