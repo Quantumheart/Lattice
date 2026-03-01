@@ -7682,6 +7682,13 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
       ) as bool);
 
   @override
+  bool get disposed => (super.noSuchMethod(
+        Invocation.getter(#disposed),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
   set isLoggedIn(bool? value) => super.noSuchMethod(
         Invocation.setter(
           #isLoggedIn,

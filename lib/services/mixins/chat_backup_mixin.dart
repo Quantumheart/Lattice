@@ -53,6 +53,9 @@ mixin ChatBackupMixin on ChangeNotifier {
         debugPrint('[AutoUnlock] Skip: already connected');
       } else {
         await client.restoreCryptoIdentity(storedKey);
+        // Restore room keys from the online backup so that messages
+        // received before auto-unlock can be decrypted.
+        await _restoreRoomKeys();
       }
     } catch (e) {
       debugPrint('[AutoUnlock] Failed: $e');
@@ -61,6 +64,39 @@ mixin ChatBackupMixin on ChangeNotifier {
 
     await checkChatBackupStatus();
     debugPrint('[AutoUnlock] Complete, chatBackupNeeded=$_chatBackupNeeded');
+  }
+
+  /// Loads room keys from the online backup and requests missing session
+  /// keys for any rooms whose last event is still encrypted.
+  Future<void> _restoreRoomKeys() async {
+    final encryption = client.encryption;
+    if (encryption == null) return;
+
+    try {
+      await encryption.keyManager.loadAllKeys();
+      debugPrint('[AutoUnlock] Room keys restored from online backup');
+    } catch (e) {
+      debugPrint('[AutoUnlock] Failed to load keys from backup: $e');
+    }
+
+    // Request session keys for rooms that are still encrypted.
+    for (final room in client.rooms) {
+      final event = room.lastEvent;
+      if (event != null &&
+          event.type == EventTypes.Encrypted &&
+          event.messageType == MessageTypes.BadEncrypted &&
+          event.content['can_request_session'] == true) {
+        final sessionId = event.content.tryGet<String>('session_id');
+        final senderKey = event.content.tryGet<String>('sender_key');
+        if (sessionId != null && senderKey != null) {
+          encryption.keyManager.maybeAutoRequest(
+            room.id,
+            sessionId,
+            senderKey,
+          );
+        }
+      }
+    }
   }
 
   // ── Recovery Key Storage ──────────────────────────────────────
