@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 
+import 'routing/app_router.dart';
 import 'services/client_manager.dart';
 import 'services/matrix_service.dart';
 import 'services/notification_service.dart';
 import 'services/opengraph_service.dart';
 import 'services/preferences_service.dart';
 import 'theme/lattice_theme.dart';
-import 'screens/homeserver_screen.dart';
-import 'screens/home_shell.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,16 +20,42 @@ void main() async {
   runApp(LatticeApp(clientManager: clientManager));
 }
 
-class LatticeApp extends StatelessWidget {
+class LatticeApp extends StatefulWidget {
   const LatticeApp({super.key, required this.clientManager});
 
   final ClientManager clientManager;
 
   @override
+  State<LatticeApp> createState() => _LatticeAppState();
+}
+
+class _LatticeAppState extends State<LatticeApp> {
+  GoRouter? _router;
+  MatrixService? _routerService;
+
+  /// Rebuild the router when the active [MatrixService] changes (account
+  /// switch) so that `refreshListenable` points at the right instance.
+  GoRouter _ensureRouter(MatrixService matrix) {
+    if (_routerService != matrix) {
+      _router?.dispose();
+      _router = buildRouter(matrix);
+      _routerService = matrix;
+    }
+    return _router!;
+  }
+
+  @override
+  void dispose() {
+    _router?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider<ClientManager>.value(value: clientManager),
+        ChangeNotifierProvider<ClientManager>.value(
+            value: widget.clientManager),
         ChangeNotifierProvider(create: (_) => PreferencesService()..init()),
         Provider(
           create: (_) => OpenGraphService(),
@@ -40,25 +66,26 @@ class LatticeApp extends StatelessWidget {
         builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
           return Consumer2<ClientManager, PreferencesService>(
             builder: (context, manager, prefs, _) {
+              final matrix = manager.activeService;
+              final router = _ensureRouter(matrix);
+
               return _NotificationServiceHolder(
-                matrixService: manager.activeService,
+                matrixService: matrix,
                 preferencesService: prefs,
                 child: ChangeNotifierProvider<MatrixService>.value(
-                  value: manager.activeService,
-                  child: Consumer<MatrixService>(
-                    builder: (context, matrix, _) {
+                  value: matrix,
+                  child: Builder(
+                    builder: (context) {
                       final theme = LatticeTheme.light(lightDynamic);
                       final darkTheme = LatticeTheme.dark(darkDynamic);
 
-                      return MaterialApp(
+                      return MaterialApp.router(
                         title: 'Lattice',
                         debugShowCheckedModeBanner: false,
                         theme: theme,
                         darkTheme: darkTheme,
                         themeMode: prefs.themeMode,
-                        home: matrix.isLoggedIn
-                            ? const HomeShell()
-                            : HomeserverScreen(key: ObjectKey(matrix)),
+                        routerConfig: router,
                       );
                     },
                   ),

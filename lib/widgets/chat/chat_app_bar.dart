@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart';
 
+import '../../routing/route_names.dart';
 import '../room_avatar.dart';
-import '../room_details_panel.dart';
 import 'pinned_messages_popup.dart';
 
 /// Default app bar for the chat screen showing room name, avatar, and actions.
@@ -87,13 +88,9 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
             if (onShowDetails != null) {
               onShowDetails!();
             } else {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => RoomDetailsPanel(
-                    roomId: room.id,
-                    isFullPage: true,
-                  ),
-                ),
+              context.goNamed(
+                Routes.roomDetails,
+                pathParameters: {'roomId': room.id},
               );
             }
           },

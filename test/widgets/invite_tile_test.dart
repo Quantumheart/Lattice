@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:matrix/matrix.dart';
@@ -57,14 +58,40 @@ void main() {
     when(mockMatrix.spaces).thenReturn([]);
   });
 
+  late GoRouter testRouter;
+  String? lastNavigatedRoom;
+
   Widget buildTestWidget() {
+    lastNavigatedRoom = null;
+    testRouter = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => const Scaffold(body: RoomList()),
+          routes: [
+            GoRoute(
+              path: 'rooms/:roomId',
+              name: 'room',
+              builder: (context, state) {
+                lastNavigatedRoom = state.pathParameters['roomId'];
+                return Scaffold(
+                  body: Text('Room ${state.pathParameters['roomId']}'),
+                );
+              },
+            ),
+          ],
+        ),
+      ],
+    );
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<MatrixService>.value(value: mockMatrix),
         ChangeNotifierProvider<PreferencesService>.value(value: prefs),
       ],
-      child: const MaterialApp(
-        home: Scaffold(body: RoomList()),
+      child: MaterialApp.router(
+        routerConfig: testRouter,
       ),
     );
   }
@@ -97,7 +124,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(mockInvitedRoom.join()).called(1);
-      verify(mockMatrix.selectRoom('!invited:example.com')).called(1);
+      expect(lastNavigatedRoom, '!invited:example.com');
     });
 
     testWidgets('accept shows snackbar on failure', (tester) async {

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../routing/route_names.dart';
 import '../services/client_manager.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
@@ -13,8 +15,6 @@ import '../widgets/density_picker_dialog.dart';
 import '../widgets/section_header.dart';
 import '../widgets/theme_picker_dialog.dart';
 import '../widgets/user_avatar.dart';
-import 'devices_screen.dart';
-import 'notification_settings_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -342,13 +342,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Icons.notifications_outlined,
                   title: 'Notifications',
                   subtitle: prefs.notificationLevelLabel,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const NotificationSettingsScreen(),
-                      ),
-                    );
-                  },
+                  onTap: () => context.goNamed(Routes.settingsNotifications),
                 ),
                 const Divider(height: 1, indent: 56),
                 _SettingsTile(
@@ -402,13 +396,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   icon: Icons.devices_rounded,
                   title: 'Devices',
                   subtitle: 'Manage your devices',
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const DevicesScreen(),
-                      ),
-                    );
-                  },
+                  onTap: () => context.goNamed(Routes.settingsDevices),
                 ),
               ],
             ),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:matrix/matrix.dart';
 
 import '../models/space_node.dart';
+import '../routing/route_names.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
 import '../utils/notification_filter.dart';
@@ -583,7 +585,7 @@ class _InviteTileState extends State<_InviteTile> {
       // Timeout is fine — the join already succeeded server-side.
     }
     if (mounted) {
-      matrix.selectRoom(widget.room.id);
+      context.goNamed(Routes.room, pathParameters: {'roomId': widget.room.id});
       setState(() => _isJoining = false);
     }
   }
@@ -746,7 +748,7 @@ class _RoomTile extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
           mouseCursor: SystemMouseCursors.click,
-          onTap: () => matrix.selectRoom(room.id),
+          onTap: () => context.goNamed(Routes.room, pathParameters: {'roomId': room.id}),
           child: Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 10),

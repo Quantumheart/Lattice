@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../routing/route_names.dart';
 import '../services/matrix_service.dart' show MatrixService;
 import '../widgets/app_logo_header.dart';
 import '../widgets/homeserver_controller.dart';
-import 'login_screen.dart';
-import 'registration_screen.dart';
 
 class HomeserverScreen extends StatefulWidget {
   const HomeserverScreen({super.key});
@@ -58,24 +58,18 @@ class _HomeserverScreenState extends State<HomeserverScreen>
     if (text.isEmpty) return;
     final caps = await _controller.checkServer(text);
     if (!mounted || caps == null) return;
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => LoginScreen(
-          homeserver: text,
-          capabilities: caps,
-        ),
-      ),
+    context.goNamed(
+      Routes.loginServer,
+      pathParameters: {'homeserver': text},
+      extra: caps,
     );
   }
 
   void _openRegistration() {
     if (!mounted) return;
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => RegistrationScreen(
-          initialHomeserver: _homeserverCtrl.text.trim(),
-        ),
-      ),
+    context.goNamed(
+      Routes.register,
+      extra: _homeserverCtrl.text.trim(),
     );
   }
 

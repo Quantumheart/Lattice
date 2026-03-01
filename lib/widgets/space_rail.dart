@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../screens/settings_screen.dart';
+import '../routing/route_names.dart';
 import '../services/client_manager.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
@@ -380,9 +381,7 @@ class _AccountButtonState extends State<_AccountButton> {
       onSelected: (action) {
         switch (action) {
           case _AccountAction.settings:
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => const SettingsScreen()),
-            );
+            context.goNamed(Routes.settings);
           case _AccountAction.switchAccount:
             // Handled inline via index-based items.
             break;

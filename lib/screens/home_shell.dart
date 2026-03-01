@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../models/space_node.dart';
+import '../routing/route_names.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
 import '../widgets/invite_dialog.dart';
@@ -15,15 +17,24 @@ import 'settings_screen.dart';
 /// The root layout shell. On wide screens it shows the three-column
 /// Lattice layout (rail + room list + chat). On narrow screens it uses
 /// a bottom navigation bar with stack navigation.
+///
+/// Receives the [routerChild] and [routerState] from the [ShellRoute]
+/// so it can display the matched route's content in the appropriate pane.
 class HomeShell extends StatefulWidget {
-  const HomeShell({super.key});
+  const HomeShell({
+    super.key,
+    required this.routerChild,
+    required this.routerState,
+  });
+
+  final Widget routerChild;
+  final GoRouterState routerState;
 
   @override
   State<HomeShell> createState() => _HomeShellState();
 }
 
 class _HomeShellState extends State<HomeShell> {
-  int _mobileTab = 0; // 0: chats, 1: spaces, 2: settings
   double? _dragPanelWidth; // local state during divider drag
   bool _showRoomDetails = false;
   String? _detailsPanelRoomId;
@@ -32,16 +43,61 @@ class _HomeShellState extends State<HomeShell> {
   static const double _extraWideBreakpoint = 1100;
   static const double _collapseThreshold = PreferencesService.collapseThreshold;
 
+  // ── Route → MatrixService sync ──────────────────────────────
+
+  String? get _routeRoomId => widget.routerState.pathParameters['roomId'];
+
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void didUpdateWidget(covariant HomeShell old) {
+    super.didUpdateWidget(old);
+    final newRoomId = _routeRoomId;
     final matrix = context.read<MatrixService>();
-    // Close details panel when the selected room changes.
-    if (_detailsPanelRoomId != null &&
-        _detailsPanelRoomId != matrix.selectedRoomId) {
-      setState(() => _showRoomDetails = false);
+
+    // Sync route → MatrixService so NotificationService and other
+    // non-widget consumers stay up to date.
+    if (matrix.selectedRoomId != newRoomId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) matrix.selectRoom(newRoomId);
+      });
     }
-    _detailsPanelRoomId = matrix.selectedRoomId;
+
+    // Close details panel when the selected room changes.
+    if (_detailsPanelRoomId != null && _detailsPanelRoomId != newRoomId) {
+      _showRoomDetails = false;
+    }
+    _detailsPanelRoomId = newRoomId;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Initial sync on first build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final matrix = context.read<MatrixService>();
+      final roomId = _routeRoomId;
+      if (matrix.selectedRoomId != roomId) {
+        matrix.selectRoom(roomId);
+      }
+    });
+  }
+
+  // ── Route helpers ─────────────────────────────────────────────
+
+  String get _location => widget.routerState.matchedLocation;
+
+  /// Whether the current route is a full-screen view on mobile
+  /// (no bottom nav bar).
+  bool get _isFullScreenRoute =>
+      _location.startsWith('/rooms/') ||
+      _location == '/settings/notifications' ||
+      _location == '/settings/devices';
+
+  /// Derive the mobile tab index from the current route.
+  int get _mobileTab {
+    if (_location.startsWith('/settings')) return 2;
+    if (_location == '/spaces') return 1;
+    return 0;
   }
 
   @override
@@ -51,7 +107,9 @@ class _HomeShellState extends State<HomeShell> {
 
     final matrix = context.watch<MatrixService>();
 
-    final child = isWide ? _buildWideLayout(width, matrix) : _buildNarrowLayout(matrix);
+    final child = isWide
+        ? _buildWideLayout(width, matrix)
+        : _buildNarrowLayout(matrix);
 
     return CallbackShortcuts(
       bindings: _buildKeyBindings(matrix),
@@ -163,24 +221,37 @@ class _HomeShellState extends State<HomeShell> {
               VerticalDivider(width: 1, color: cs.outlineVariant.withValues(alpha: 0.3)),
           ],
 
-          // Chat pane (or placeholder) + optional details panel
+          // Content pane (chat, settings, or placeholder) + optional details
           Expanded(
-            child: _buildChatAndDetails(matrix, cs),
+            child: _buildContentPane(cs),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildChatAndDetails(MatrixService matrix, ColorScheme cs) {
-    if (matrix.selectedRoomId == null) return _buildEmptyChat();
+  /// Builds the main content pane for the wide layout.
+  ///
+  /// For room routes, shows ChatScreen with an optional details side panel.
+  /// For other routes (settings, etc.), shows the router child directly.
+  Widget _buildContentPane(ColorScheme cs) {
+    final roomId = _routeRoomId;
 
+    // Non-room routes: show the router child (settings, etc.)
+    if (_location.startsWith('/settings')) {
+      return widget.routerChild;
+    }
+
+    // No room selected: show placeholder.
+    if (roomId == null) return _buildEmptyChat();
+
+    // Room selected: show chat + optional details panel.
     return Row(
       children: [
         Expanded(
           child: ChatScreen(
-            roomId: matrix.selectedRoomId!,
-            key: ValueKey(matrix.selectedRoomId),
+            roomId: roomId,
+            key: ValueKey(roomId),
             onShowDetails: () => setState(() => _showRoomDetails = !_showRoomDetails),
           ),
         ),
@@ -189,8 +260,8 @@ class _HomeShellState extends State<HomeShell> {
           SizedBox(
             width: 320,
             child: RoomDetailsPanel(
-              roomId: matrix.selectedRoomId!,
-              key: ValueKey('details-${matrix.selectedRoomId}'),
+              roomId: roomId,
+              key: ValueKey('details-$roomId'),
             ),
           ),
         ],
@@ -223,15 +294,21 @@ class _HomeShellState extends State<HomeShell> {
   // ── Narrow: bottom nav ───────────────────────────────────────
   Widget _buildNarrowLayout(MatrixService matrix) {
 
-    // If a room is selected on mobile, push the chat screen.
-    if (matrix.selectedRoomId != null && _mobileTab == 0) {
-      return ChatScreen(
-        roomId: matrix.selectedRoomId!,
-        key: ValueKey(matrix.selectedRoomId),
-        onBack: () => matrix.selectRoom(null),
-      );
+    // Full-screen routes (no bottom nav): room chat, room details,
+    // notification settings, device settings.
+    if (_isFullScreenRoute) {
+      // For room routes, add the onBack callback to navigate home.
+      if (_routeRoomId != null && _location.startsWith('/rooms/') && !_location.endsWith('/details')) {
+        return ChatScreen(
+          roomId: _routeRoomId!,
+          key: ValueKey(_routeRoomId),
+          onBack: () => context.goNamed(Routes.home),
+        );
+      }
+      return widget.routerChild;
     }
 
+    // Tabbed view with bottom nav.
     Widget body;
     switch (_mobileTab) {
       case 0:
@@ -239,7 +316,7 @@ class _HomeShellState extends State<HomeShell> {
         break;
       case 1:
         body = _SpaceListMobile(
-          onSpaceSelected: () => setState(() => _mobileTab = 0),
+          onSpaceSelected: () => context.goNamed(Routes.home),
         );
         break;
       case 2:
@@ -256,7 +333,16 @@ class _HomeShellState extends State<HomeShell> {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _mobileTab,
-        onDestinationSelected: (i) => setState(() => _mobileTab = i),
+        onDestinationSelected: (i) {
+          switch (i) {
+            case 0:
+              context.goNamed(Routes.home);
+            case 1:
+              context.goNamed(Routes.spaces);
+            case 2:
+              context.goNamed(Routes.settings);
+          }
+        },
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.chat_outlined),
