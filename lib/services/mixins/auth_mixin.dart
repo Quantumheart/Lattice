@@ -178,15 +178,13 @@ mixin AuthMixin on ChangeNotifier {
           'encryption=${client.encryption != null ? "available" : "null"}, '
           'encryptionEnabled=${client.encryptionEnabled}');
 
-      await _persistCredentials();
-
       setCachedPassword(password);
       listenForUia();
       listenForLoginState();
       isLoggedIn = true;
       notifyListeners();
 
-      // Start sync + session backup in background — don't block login UI.
+      // Persist credentials, sync, and session backup in background.
       _postLoginSync();
 
       return true;
@@ -228,13 +226,12 @@ mixin AuthMixin on ChangeNotifier {
           'deviceId=${client.deviceID}, '
           'userId=${client.userID}');
 
-      await _persistCredentials();
       listenForUia();
       listenForLoginState();
       isLoggedIn = true;
       notifyListeners();
 
-      // Start sync + session backup in background — don't block login UI.
+      // Persist credentials, sync, and session backup in background.
       _postLoginSync();
 
       return true;
@@ -265,14 +262,13 @@ mixin AuthMixin on ChangeNotifier {
           'accessToken=${client.accessToken}, userID=${client.userID}');
     }
 
-    await _persistCredentials();
     if (password != null) setCachedPassword(password);
     listenForUia();
     listenForLoginState();
     isLoggedIn = true;
     notifyListeners();
 
-    // Start sync + session backup in background — don't block registration UI.
+    // Persist credentials, sync, and session backup in background.
     _postLoginSync();
   }
 
@@ -300,6 +296,10 @@ mixin AuthMixin on ChangeNotifier {
 
   Future<void> _runPostLoginSync() async {
     try {
+      // Persist credentials first so the session survives a crash,
+      // then start sync and save session backup.
+      await _persistCredentials();
+      if (!isLoggedIn) return;
       await startSync(timeout: const Duration(minutes: 5));
       if (!isLoggedIn) return;
       await saveSessionBackup();

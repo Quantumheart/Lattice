@@ -366,8 +366,15 @@ class MatrixService extends ChangeNotifier
     }
   }
 
+  bool _disposed = false;
+
+  /// Whether this service has been disposed.
+  bool get disposed => _disposed;
+
   @override
   void dispose() {
+    _disposed = true;
+    _isLoggedIn = false;
     cancelSyncSub();
     cancelUiaSub();
     cancelLoginStateSub();

@@ -77,7 +77,8 @@ class LoginController extends ChangeNotifier {
 
     if (success) {
       if (!clientManager.services.contains(matrixService)) {
-        await clientManager.addService(matrixService);
+        // Don't await — persist account list in background.
+        clientManager.addService(matrixService);
       }
       _state = LoginState.done;
       _notify();
@@ -147,7 +148,8 @@ class LoginController extends ChangeNotifier {
 
       if (success) {
         if (!clientManager.services.contains(matrixService)) {
-          await clientManager.addService(matrixService);
+          // Don't await — persist account list in background.
+          clientManager.addService(matrixService);
         }
         _state = LoginState.done;
       } else {
