@@ -278,13 +278,19 @@ mixin AuthMixin on ChangeNotifier {
 
   // ── Post-login Background Sync ──────────────────────────────
 
+  Future<void>? _postLoginSyncFuture;
+
   /// Starts sync and saves session backup in background.
   /// Errors are logged but don't affect login state.
+  /// Guards against writing session data after a concurrent logout.
   void _postLoginSync() {
-    startSync(timeout: const Duration(minutes: 5)).then((_) {
-      return saveSessionBackup();
+    _postLoginSyncFuture = startSync(timeout: const Duration(minutes: 5)).then((_) async {
+      if (!isLoggedIn) return;
+      await saveSessionBackup();
     }).catchError((Object e) {
       debugPrint('[Lattice] Post-login sync error: $e');
+    }).whenComplete(() {
+      _postLoginSyncFuture = null;
     });
   }
 
@@ -307,6 +313,11 @@ mixin AuthMixin on ChangeNotifier {
 
   // ── Logout ───────────────────────────────────────────────────
   Future<void> logout() async {
+    // Cancel login state first so the background sync guard sees
+    // isLoggedIn == false, then wait for it to settle.
+    isLoggedIn = false;
+    await _postLoginSyncFuture;
+
     try {
       if (client.homeserver != null && client.accessToken != null) {
         await client.logout();
