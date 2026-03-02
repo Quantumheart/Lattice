@@ -96,11 +96,15 @@ mixin ChatBackupMixin on ChangeNotifier {
         final sessionId = event.content.tryGet<String>('session_id');
         final senderKey = event.content.tryGet<String>('sender_key');
         if (sessionId != null && senderKey != null) {
-          encryption.keyManager.maybeAutoRequest(
-            room.id,
-            sessionId,
-            senderKey,
-          );
+          try {
+            encryption.keyManager.maybeAutoRequest(
+              room.id,
+              sessionId,
+              senderKey,
+            );
+          } catch (e) {
+            debugPrint('[AutoUnlock] Key request failed for ${room.id}: $e');
+          }
         }
       }
     }
