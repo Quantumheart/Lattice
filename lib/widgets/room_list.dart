@@ -7,7 +7,10 @@ import '../models/space_node.dart';
 import '../routing/route_names.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
+import '../services/room_list_search_controller.dart';
 import '../utils/notification_filter.dart';
+import '../utils/text_highlight.dart';
+import '../utils/time_format.dart';
 import 'new_dm_dialog.dart';
 import 'new_room_dialog.dart';
 import 'chat/message_bubble.dart' show stripReplyFallback;
@@ -45,6 +48,28 @@ class _InviteItem extends _ListItem {
 
 class _FilterBarItem extends _ListItem {}
 
+class _MessageSearchHeaderItem extends _ListItem {
+  final int? resultCount;
+  final bool isLoading;
+  final String? error;
+
+  _MessageSearchHeaderItem({
+    this.resultCount,
+    required this.isLoading,
+    this.error,
+  });
+}
+
+class _MessageSearchResultItem extends _ListItem {
+  final MessageSearchResult result;
+  _MessageSearchResultItem({required this.result});
+}
+
+class _LoadMoreMessagesItem extends _ListItem {
+  final bool isLoading;
+  _LoadMoreMessagesItem({required this.isLoading});
+}
+
 class RoomList extends StatefulWidget {
   const RoomList({super.key});
 
@@ -53,16 +78,33 @@ class RoomList extends StatefulWidget {
 }
 
 class _RoomListState extends State<RoomList>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   final _searchCtrl = TextEditingController();
+  final _searchFocus = FocusNode();
   String _query = '';
+  bool _searchOpen = false;
+  late final AnimationController _searchAnimCtrl;
+  late final Animation<double> _searchAnimation;
   late final AnimationController _fabAnimCtrl;
   late final Animation<double> _fabAnimation;
   bool _fabOpen = false;
+  late final RoomListSearchController _messageSearch;
 
   @override
   void initState() {
     super.initState();
+    _messageSearch = RoomListSearchController(
+      getClient: () => context.read<MatrixService>().client,
+    );
+    _messageSearch.addListener(_onMessageSearchChanged);
+    _searchAnimCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _searchAnimation = CurvedAnimation(
+      parent: _searchAnimCtrl,
+      curve: Curves.easeOut,
+    );
     _fabAnimCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 200),
@@ -73,11 +115,44 @@ class _RoomListState extends State<RoomList>
     );
   }
 
+  void _onMessageSearchChanged() {
+    setState(() {});
+  }
+
   @override
   void dispose() {
+    _messageSearch.removeListener(_onMessageSearchChanged);
+    _messageSearch.dispose();
     _searchCtrl.dispose();
+    _searchFocus.dispose();
+    _searchAnimCtrl.dispose();
     _fabAnimCtrl.dispose();
     super.dispose();
+  }
+
+  void _toggleSearch() {
+    setState(() => _searchOpen = !_searchOpen);
+    if (_searchOpen) {
+      _searchAnimCtrl.forward();
+      _searchFocus.requestFocus();
+    } else {
+      _searchAnimCtrl.reverse();
+      _searchCtrl.clear();
+      _query = '';
+      _messageSearch.clear();
+    }
+  }
+
+  void _closeSearch() {
+    if (_searchOpen) {
+      setState(() {
+        _searchOpen = false;
+        _searchCtrl.clear();
+        _query = '';
+      });
+      _searchAnimCtrl.reverse();
+      _messageSearch.clear();
+    }
   }
 
   void _toggleFab() {
@@ -96,6 +171,25 @@ class _RoomListState extends State<RoomList>
     }
   }
 
+  bool _roomMatchesQuery(Room r, String q) {
+    // Room display name
+    if (r.getLocalizedDisplayname().toLowerCase().contains(q)) return true;
+
+    // Room alias / canonical alias
+    final alias = r.canonicalAlias;
+    if (alias.isNotEmpty && alias.toLowerCase().contains(q)) return true;
+
+    // Member display names (from local cache only)
+    final participants = r.getParticipants();
+    for (final user in participants) {
+      final name = user.displayName;
+      if (name != null && name.toLowerCase().contains(q)) return true;
+      if (user.id.toLowerCase().contains(q)) return true;
+    }
+
+    return false;
+  }
+
   List<Room> _applyFilters(
     List<Room> rooms,
     RoomCategory filter,
@@ -104,10 +198,7 @@ class _RoomListState extends State<RoomList>
   }) {
     if (_query.isNotEmpty) {
       final q = _query.toLowerCase();
-      rooms = rooms
-          .where(
-              (r) => r.getLocalizedDisplayname().toLowerCase().contains(q))
-          .toList();
+      rooms = rooms.where((r) => _roomMatchesQuery(r, q)).toList();
     }
     return switch (filter) {
       RoomCategory.all => rooms,
@@ -240,39 +331,92 @@ class _RoomListState extends State<RoomList>
 
     final items = _buildSectionItems(matrix, prefs);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_appBarTitle(matrix)),
-      ),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              // ── Search bar ──
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                child: TextField(
-                  controller: _searchCtrl,
-                  onChanged: (v) => setState(() => _query = v),
-                  decoration: InputDecoration(
-                    hintText: 'Search everything\u2026',
-                    prefixIcon:
-                        Icon(Icons.search, color: cs.onSurfaceVariant),
-                    suffixIcon: _query.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.close),
-                            onPressed: () {
-                              _searchCtrl.clear();
-                              setState(() => _query = '');
-                            },
-                          )
-                        : null,
-                    isDense: true,
-                  ),
-                ),
-              ),
+    // Append message search items when query is long enough
+    if (_query.trim().length >= RoomListSearchController.minQueryLength) {
+      items.add(_MessageSearchHeaderItem(
+        resultCount: _messageSearch.totalCount,
+        isLoading: _messageSearch.isLoading,
+        error: _messageSearch.error,
+      ));
+      for (final result in _messageSearch.results) {
+        items.add(_MessageSearchResultItem(result: result));
+      }
+      if (_messageSearch.nextBatch != null && !_messageSearch.isLoading) {
+        items.add(_LoadMoreMessagesItem(isLoading: false));
+      }
+    }
 
+    // Determine if the list is truly empty (no rooms AND no message results)
+    final hasRoomItems = items.any((i) =>
+        i is _RoomItem || i is _InviteItem || i is _HeaderItem);
+    final hasMessageResults = _messageSearch.results.isNotEmpty;
+    final isMessageSearchActive = _messageSearch.isLoading;
+    final isEmpty = !hasRoomItems && !hasMessageResults && !isMessageSearchActive;
+
+    return PopScope(
+      canPop: !_searchOpen,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _closeSearch();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: _searchOpen
+                ? SizeTransition(
+                    sizeFactor: _searchAnimation,
+                    axis: Axis.horizontal,
+                    axisAlignment: -1,
+                    child: TextField(
+                      key: const ValueKey('search'),
+                      controller: _searchCtrl,
+                      focusNode: _searchFocus,
+                      onChanged: (v) {
+                        setState(() => _query = v);
+                        _messageSearch.onQueryChanged(v);
+                      },
+                      decoration: InputDecoration(
+                        hintText: 'Search\u2026',
+                        border: InputBorder.none,
+                        isDense: true,
+                        suffixIcon: _query.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.close, size: 20),
+                                onPressed: () {
+                                  _searchCtrl.clear();
+                                  setState(() => _query = '');
+                                  _messageSearch.clear();
+                                },
+                              )
+                            : null,
+                      ),
+                    ),
+                  )
+                : Text(
+                    _appBarTitle(matrix),
+                    key: const ValueKey('title'),
+                  ),
+          ),
+          leading: _searchOpen
+              ? IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: _closeSearch,
+                )
+              : null,
+          actions: _searchOpen
+              ? null
+              : [
+                  IconButton(
+                    icon: const Icon(Icons.search),
+                    tooltip: 'Search',
+                    onPressed: _toggleSearch,
+                  ),
+                ],
+        ),
+        body: Stack(
+          children: [
+            Column(
+              children: [
               // ── Filter chips ──
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -296,11 +440,11 @@ class _RoomListState extends State<RoomList>
 
               // ── Sectioned room list ──
               Expanded(
-                child: items.isEmpty
+                child: isEmpty && items.isEmpty
                     ? Center(
                         child: Text(
                           _query.isNotEmpty
-                              ? 'No rooms match "$_query"'
+                              ? 'No results for "$_query"'
                               : prefs.roomFilter == RoomCategory.all
                                   ? 'No rooms yet'
                                   : 'No ${prefs.roomFilter.label.toLowerCase()}',
@@ -332,6 +476,19 @@ class _RoomListState extends State<RoomList>
                                 padding: EdgeInsets.only(
                                     left: item.depth * 16.0),
                                 child: _RoomTile(room: item.room),
+                              ),
+                            _MessageSearchHeaderItem() =>
+                              _MessageSearchHeader(item: item),
+                            _MessageSearchResultItem() =>
+                              _MessageSearchResultTile(
+                                result: item.result,
+                                query: _query,
+                              ),
+                            _LoadMoreMessagesItem() =>
+                              _LoadMoreButton(
+                                isLoading: item.isLoading,
+                                onPressed: () => _messageSearch.performSearch(
+                                    loadMore: true),
                               ),
                           };
                         },
@@ -404,7 +561,8 @@ class _RoomListState extends State<RoomList>
               ],
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -716,6 +874,190 @@ class _InviteTileState extends State<_InviteTile> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── Message search header ────────────────────────────────────
+class _MessageSearchHeader extends StatelessWidget {
+  const _MessageSearchHeader({required this.item});
+  final _MessageSearchHeaderItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 14, right: 14, top: 12, bottom: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  item.resultCount != null
+                      ? 'MESSAGES (${item.resultCount})'
+                      : 'MESSAGES',
+                  style: tt.labelSmall?.copyWith(
+                    color: cs.onSurfaceVariant,
+                    letterSpacing: 1.2,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              if (item.isLoading)
+                SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
+          if (item.error != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                item.error!,
+                style: tt.bodySmall?.copyWith(color: cs.error),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Message search result tile ───────────────────────────────
+class _MessageSearchResultTile extends StatelessWidget {
+  const _MessageSearchResultTile({
+    required this.result,
+    required this.query,
+  });
+
+  final MessageSearchResult result;
+  final String query;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final spans = highlightSpans(result.body, query.trim());
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(14),
+          mouseCursor: SystemMouseCursors.click,
+          onTap: () => context.goNamed(
+            Routes.room,
+            pathParameters: {'roomId': result.roomId},
+          ),
+          child: Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Room name
+                Text(
+                  result.roomName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tt.labelMedium?.copyWith(
+                    color: cs.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                // Sender + timestamp
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        result.senderName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tt.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      formatRelativeTimestamp(result.originServerTs),
+                      style: tt.bodySmall?.copyWith(
+                        fontSize: 11,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                // Body with highlights
+                RichText(
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  text: TextSpan(
+                    children: spans.map((s) {
+                      return TextSpan(
+                        text: s.text,
+                        style: tt.bodyMedium?.copyWith(
+                          color: cs.onSurface,
+                          backgroundColor: s.isMatch
+                              ? cs.primaryContainer
+                              : null,
+                          fontWeight:
+                              s.isMatch ? FontWeight.w600 : null,
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Load more button ─────────────────────────────────────────
+class _LoadMoreButton extends StatelessWidget {
+  const _LoadMoreButton({
+    required this.isLoading,
+    required this.onPressed,
+  });
+
+  final bool isLoading;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Center(
+        child: isLoading
+            ? const Padding(
+                padding: EdgeInsets.all(8),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            : TextButton(
+                onPressed: onPressed,
+                child: const Text('Load more messages'),
+              ),
       ),
     );
   }

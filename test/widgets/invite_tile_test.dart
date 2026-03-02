@@ -217,7 +217,10 @@ void main() {
 
       // Decline button should be disabled during join.
       final iconButton = tester.widget<IconButton>(
-        find.byType(IconButton),
+        find.ancestor(
+          of: find.byTooltip('Decline invite'),
+          matching: find.byType(IconButton),
+        ),
       );
       expect(iconButton.onPressed, isNull);
 
