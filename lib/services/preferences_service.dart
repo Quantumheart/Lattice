@@ -1,31 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Which subset of rooms to show in the room list.
-enum RoomCategory {
-  all,
-  directMessages,
-  groups,
-  unread,
-  favourites;
-
-  String get label => switch (this) {
-        RoomCategory.all => 'All',
-        RoomCategory.directMessages => 'DMs',
-        RoomCategory.groups => 'Groups',
-        RoomCategory.unread => 'Unread',
-        RoomCategory.favourites => 'Favourites',
-      };
-
-  IconData get icon => switch (this) {
-        RoomCategory.all => Icons.chat_bubble_outline_rounded,
-        RoomCategory.directMessages => Icons.person_outline_rounded,
-        RoomCategory.groups => Icons.group_outlined,
-        RoomCategory.unread => Icons.mark_chat_unread_outlined,
-        RoomCategory.favourites => Icons.star_outline_rounded,
-      };
-}
-
 /// Controls how compact or spacious message bubbles appear.
 enum MessageDensity {
   compact,
@@ -108,30 +83,17 @@ class PreferencesService extends ChangeNotifier {
     notifyListeners();
   }
 
-  // ── Room filter ─────────────────────────────────────────────
-
-  static const _roomFilterKey = 'room_filter';
-
-  RoomCategory get roomFilter {
-    final stored = _prefs?.getString(_roomFilterKey);
-    if (stored == null) return RoomCategory.all;
-    return RoomCategory.values.firstWhere(
-      (f) => f.name == stored,
-      orElse: () => RoomCategory.all,
-    );
-  }
-
-  Future<void> setRoomCategory(RoomCategory filter) async {
-    await _prefs?.setString(_roomFilterKey, filter.name);
-    debugPrint('[Lattice] Room filter set to ${filter.label}');
-    notifyListeners();
-  }
-
   // ── Collapsed space sections ─────────────────────────────
   static const _collapsedSectionsKey = 'collapsed_space_sections';
 
   /// Sentinel key used for the "Unsorted" section (rooms not in any space).
   static const unsortedSectionKey = '__unsorted__';
+
+  /// Sentinel key used for the "Direct Messages" section.
+  static const dmSectionKey = '__direct_messages__';
+
+  /// Sentinel key used for the "Pinned" section (favourited rooms).
+  static const pinnedSectionKey = '__pinned__';
 
   Set<String> get collapsedSpaceSections {
     final list = _prefs?.getStringList(_collapsedSectionsKey);

@@ -231,6 +231,11 @@ mixin SelectionMixin on ChangeNotifier {
         .where((r) => !r.isSpace && r.membership == Membership.join)
         .toList()
       ..sort((a, b) {
+        // Unread rooms first
+        final aUnread = a.notificationCount > 0;
+        final bUnread = b.notificationCount > 0;
+        if (aUnread != bUnread) return aUnread ? -1 : 1;
+        // Then by recency
         final aTs = a.lastEvent?.originServerTs ?? DateTime(1970);
         final bTs = b.lastEvent?.originServerTs ?? DateTime(1970);
         return bTs.compareTo(aTs);
