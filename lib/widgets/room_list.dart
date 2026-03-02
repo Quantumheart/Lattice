@@ -275,7 +275,7 @@ class _RoomListState extends State<RoomList>
           .toList();
       if (orphans.isNotEmpty) {
         items.add(_HeaderItem(
-          name: 'Unsorted',
+          name: 'Rooms',
           sectionKey: PreferencesService.unsortedSectionKey,
           depth: 0,
           roomCount: orphans.length,
