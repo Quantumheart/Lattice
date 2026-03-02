@@ -43,7 +43,7 @@ class InboxController extends ChangeNotifier {
 
   int get unreadCount {
     var count = 0;
-    for (final group in grouped) {
+    for (final group in _grouped) {
       count += group.notifications.where((n) => !n.read).length;
     }
     return count;
@@ -136,8 +136,25 @@ class InboxController extends ChangeNotifier {
         limit: 30,
         only: _filter == InboxFilter.mentions ? 'highlight' : null,
       );
-      _nextToken = response.nextToken;
-      _grouped = _groupByRoom(response.notifications);
+
+      // Merge polled notifications into existing groups so we don't
+      // discard results the user loaded via loadMore().
+      final all = <matrix_sdk.Notification>[];
+      final existingIds = <String>{};
+      for (final group in _grouped) {
+        all.addAll(group.notifications);
+        for (final n in group.notifications) {
+          existingIds.add(n.event.eventId);
+        }
+      }
+      for (final n in response.notifications) {
+        if (!existingIds.contains(n.event.eventId)) {
+          all.add(n);
+        }
+      }
+      _grouped = _groupByRoom(all);
+      // Only update nextToken if we didn't already paginate further.
+      _nextToken ??= response.nextToken;
       notifyListeners();
     } catch (e) {
       debugPrint('[Lattice] Inbox poll error: $e');
@@ -154,7 +171,7 @@ class InboxController extends ChangeNotifier {
     // inbox screen) over room.lastEvent which may be null when the
     // room timeline hasn't been loaded.
     String? eventId;
-    for (final group in grouped) {
+    for (final group in _grouped) {
       if (group.roomId == roomId && group.notifications.isNotEmpty) {
         eventId = group.notifications.first.event.eventId;
         break;

@@ -149,6 +149,7 @@ class _RoomListState extends State<RoomList>
         _searchCtrl.clear();
         _query = '';
       });
+      _searchFocus.unfocus();
       _searchAnimCtrl.reverse();
       _messageSearch.clear();
     }

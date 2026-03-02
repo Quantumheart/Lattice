@@ -322,6 +322,7 @@ class _RailIcon extends StatefulWidget {
 class _RailIconState extends State<_RailIcon> {
   String? _resolvedUrl;
   Uri? _lastAvatarUri;
+  int _resolveGeneration = 0;
 
   @override
   void initState() {
@@ -342,13 +343,16 @@ class _RailIconState extends State<_RailIcon> {
     final avatarUri = widget.room?.avatar;
     _lastAvatarUri = avatarUri;
     if (avatarUri == null) return;
+    final generation = ++_resolveGeneration;
     try {
       final uri = await avatarUri.getThumbnailUri(
         widget.room!.client,
         width: 96,
         height: 96,
       );
-      if (mounted) setState(() => _resolvedUrl = uri.toString());
+      if (mounted && generation == _resolveGeneration) {
+        setState(() => _resolvedUrl = uri.toString());
+      }
     } catch (e) {
       debugPrint('[Lattice] Failed to resolve space avatar thumbnail: $e');
     }
@@ -398,44 +402,44 @@ class _RailIconState extends State<_RailIcon> {
     Widget icon = GestureDetector(
       onSecondaryTapUp: widget.onSecondaryTapUp,
       child: Tooltip(
-      message: widget.tooltip,
-      preferBelow: false,
-      child: Center(
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
-          width: size,
-          height: size,
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(
-            color: widget.outlined
-                ? Colors.transparent
-                : _resolvedUrl != null
-                    ? null
-                    : widget.isSelected
-                        ? widget.color
-                        : cs.surfaceContainerHigh,
-            borderRadius: BorderRadius.circular(radius),
-            border: widget.outlined
-                ? Border.all(
-                    color: cs.outlineVariant,
-                    width: 1.5,
-                    strokeAlign: BorderSide.strokeAlignInside,
-                  )
-                : null,
-          ),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
+        message: widget.tooltip,
+        preferBelow: false,
+        child: Center(
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutCubic,
+            width: size,
+            height: size,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              color: widget.outlined
+                  ? Colors.transparent
+                  : _resolvedUrl != null
+                      ? null
+                      : widget.isSelected
+                          ? widget.color
+                          : cs.surfaceContainerHigh,
               borderRadius: BorderRadius.circular(radius),
-              mouseCursor: SystemMouseCursors.click,
-              onTap: widget.onTap,
-              onLongPress: widget.onLongPress,
-              child: iconContent,
+              border: widget.outlined
+                  ? Border.all(
+                      color: cs.outlineVariant,
+                      width: 1.5,
+                      strokeAlign: BorderSide.strokeAlignInside,
+                    )
+                  : null,
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(radius),
+                mouseCursor: SystemMouseCursors.click,
+                onTap: widget.onTap,
+                onLongPress: widget.onLongPress,
+                child: iconContent,
+              ),
             ),
           ),
         ),
-      ),
       ),
     );
 

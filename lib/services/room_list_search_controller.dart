@@ -223,39 +223,49 @@ class RoomListSearchController extends ChangeNotifier {
       '[Lattice] Searching ${encryptedRooms.length} encrypted rooms locally',
     );
 
-    final futures = encryptedRooms.map((room) async {
-      try {
-        final result = await room.searchEvents(
-          searchTerm: query,
-          limit: _searchBatchLimit,
-        );
-        return result.events
-            .where((event) =>
-                event.type == EventTypes.Message &&
-                (event.content.tryGet<String>('body')?.isNotEmpty ?? false))
-            .map((event) => MessageSearchResult(
-                  roomId: room.id,
-                  roomName: room.getLocalizedDisplayname(),
-                  senderName: room
-                      .unsafeGetUserFromMemoryOrFallback(event.senderId)
-                      .displayName ?? event.senderId,
-                  senderId: event.senderId,
-                  body: stripReplyFallback(
-                      event.content.tryGet<String>('body')!),
-                  eventId: event.eventId,
-                  originServerTs: event.originServerTs,
-                ))
-            .toList();
-      } catch (e) {
-        debugPrint(
-          '[Lattice] Local search failed for ${room.id}: $e',
-        );
-        return <MessageSearchResult>[];
-      }
-    });
-
-    final allResults = await Future.wait(futures.toList());
-    return allResults.expand<MessageSearchResult>((list) => list).toList();
+    // Search rooms in batches to avoid excessive concurrent DB queries.
+    const batchSize = 5;
+    final allResults = <MessageSearchResult>[];
+    for (var i = 0; i < encryptedRooms.length; i += batchSize) {
+      final batch = encryptedRooms.sublist(
+        i,
+        i + batchSize > encryptedRooms.length
+            ? encryptedRooms.length
+            : i + batchSize,
+      );
+      final batchResults = await Future.wait(batch.map((room) async {
+        try {
+          final result = await room.searchEvents(
+            searchTerm: query,
+            limit: _searchBatchLimit,
+          );
+          return result.events
+              .where((event) =>
+                  event.type == EventTypes.Message &&
+                  (event.content.tryGet<String>('body')?.isNotEmpty ?? false))
+              .map((event) => MessageSearchResult(
+                    roomId: room.id,
+                    roomName: room.getLocalizedDisplayname(),
+                    senderName: room
+                        .unsafeGetUserFromMemoryOrFallback(event.senderId)
+                        .displayName ?? event.senderId,
+                    senderId: event.senderId,
+                    body: stripReplyFallback(
+                        event.content.tryGet<String>('body')!),
+                    eventId: event.eventId,
+                    originServerTs: event.originServerTs,
+                  ))
+              .toList();
+        } catch (e) {
+          debugPrint(
+            '[Lattice] Local search failed for ${room.id}: $e',
+          );
+          return <MessageSearchResult>[];
+        }
+      }));
+      allResults.addAll(batchResults.expand((list) => list));
+    }
+    return allResults;
   }
 
   void clear() {

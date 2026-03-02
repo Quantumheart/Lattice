@@ -61,14 +61,6 @@ class _AddExistingRoomsDialogState extends State<AddExistingRoomsDialog> {
           .compareTo(b.getLocalizedDisplayname().toLowerCase()));
   }
 
-  List<Room> get _filteredRooms {
-    if (_query.isEmpty) return _eligibleRooms;
-    final q = _query.toLowerCase();
-    return _eligibleRooms
-        .where((r) => r.getLocalizedDisplayname().toLowerCase().contains(q))
-        .toList();
-  }
-
   Future<void> _submit() async {
     if (_selected.isEmpty) return;
 
@@ -100,7 +92,14 @@ class _AddExistingRoomsDialogState extends State<AddExistingRoomsDialog> {
   @override
   Widget build(BuildContext context) {
     final eligible = _eligibleRooms;
-    final filtered = _filteredRooms;
+    final filtered = _query.isEmpty
+        ? eligible
+        : eligible
+            .where((r) => r
+                .getLocalizedDisplayname()
+                .toLowerCase()
+                .contains(_query.toLowerCase()))
+            .toList();
 
     return AlertDialog(
       title: const Text('Add existing rooms'),
