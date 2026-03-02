@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:lattice/services/matrix_service.dart';
 import 'package:lattice/services/preferences_service.dart';
 import 'package:lattice/screens/chat_screen.dart';
-import 'package:lattice/widgets/chat/message_bubble.dart';
+import 'package:lattice/utils/reply_fallback.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),

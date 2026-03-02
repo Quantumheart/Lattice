@@ -4,6 +4,7 @@ import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
 import '../../services/preferences_service.dart';
+import '../../utils/reply_fallback.dart';
 import '../../utils/sender_color.dart';
 import '../user_avatar.dart';
 import 'density_metrics.dart';
@@ -622,17 +623,4 @@ class _MessageBubbleState extends State<MessageBubble> {
     if (ts.year == now.year) return '${months[ts.month - 1]} ${ts.day}, $time';
     return '${months[ts.month - 1]} ${ts.day}, ${ts.year}, $time';
   }
-}
-
-/// Strip the `> ` reply fallback lines from a Matrix message body.
-/// Handles both `> text` and bare `>` lines per the Matrix spec.
-String stripReplyFallback(String body) {
-  final lines = body.split('\n');
-  int i = 0;
-  while (i < lines.length && (lines[i].startsWith('> ') || lines[i] == '>')) {
-    i++;
-  }
-  // Skip the blank line after the fallback block.
-  if (i < lines.length && lines[i].isEmpty) i++;
-  return lines.sublist(i).join('\n');
 }

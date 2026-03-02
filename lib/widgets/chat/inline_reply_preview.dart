@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
 import '../../utils/sender_color.dart';
-import 'message_bubble.dart' show stripReplyFallback;
+import '../../utils/reply_fallback.dart';
 
 // ── Inline reply preview ──────────────────────────────────────
 

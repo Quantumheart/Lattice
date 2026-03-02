@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
-import 'message_bubble.dart' show stripReplyFallback;
+import '../../utils/reply_fallback.dart';
 
 class EditPreviewBanner extends StatelessWidget {
   const EditPreviewBanner({

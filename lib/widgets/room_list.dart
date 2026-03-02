@@ -13,7 +13,7 @@ import '../utils/text_highlight.dart';
 import '../utils/time_format.dart';
 import 'new_dm_dialog.dart';
 import 'new_room_dialog.dart';
-import 'chat/message_bubble.dart' show stripReplyFallback;
+import '../utils/reply_fallback.dart';
 import 'chat/typing_indicator.dart' show TypingIndicator;
 import 'room_avatar.dart';
 

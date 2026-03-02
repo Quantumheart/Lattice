@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:matrix/matrix.dart';
 
+import '../utils/reply_fallback.dart';
+
 // ── Data class ──────────────────────────────────────────────
 class MessageSearchResult {
   const MessageSearchResult({
@@ -150,8 +152,8 @@ class RoomListSearchController extends ChangeNotifier {
           final roomId = event.roomId;
           if (roomId == null) continue;
 
-          final body = event.content.tryGet<String>('body');
-          if (body == null || body.isEmpty) continue;
+          final rawBody = event.content.tryGet<String>('body');
+          if (rawBody == null || rawBody.isEmpty) continue;
 
           final room = client.getRoomById(roomId);
           final roomName =
@@ -166,7 +168,7 @@ class RoomListSearchController extends ChangeNotifier {
             roomName: roomName,
             senderName: senderName,
             senderId: event.senderId,
-            body: body,
+            body: stripReplyFallback(rawBody),
             eventId: event.eventId,
             originServerTs: event.originServerTs,
           ));
@@ -238,7 +240,8 @@ class RoomListSearchController extends ChangeNotifier {
                       .unsafeGetUserFromMemoryOrFallback(event.senderId)
                       .displayName ?? event.senderId,
                   senderId: event.senderId,
-                  body: event.content.tryGet<String>('body')!,
+                  body: stripReplyFallback(
+                      event.content.tryGet<String>('body')!),
                   eventId: event.eventId,
                   originServerTs: event.originServerTs,
                 ))

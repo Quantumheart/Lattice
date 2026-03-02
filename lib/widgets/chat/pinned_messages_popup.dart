@@ -4,7 +4,7 @@ import 'package:matrix/matrix.dart';
 import '../user_avatar.dart';
 import 'html_message_text.dart';
 import 'linkable_text.dart';
-import 'message_bubble.dart' show stripReplyFallback;
+import '../../utils/reply_fallback.dart';
 
 /// Shows a popup panel anchored below the pin icon listing pinned messages.
 void showPinnedMessagesPopup(
