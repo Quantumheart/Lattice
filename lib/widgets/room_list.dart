@@ -179,15 +179,28 @@ class _RoomListState extends State<RoomList>
     final alias = r.canonicalAlias;
     if (alias.isNotEmpty && alias.toLowerCase().contains(q)) return true;
 
-    // Member display names (from local cache only)
-    final participants = r.getParticipants();
-    for (final user in participants) {
-      final name = user.displayName;
-      if (name != null && name.toLowerCase().contains(q)) return true;
-      if (user.id.toLowerCase().contains(q)) return true;
-    }
+    // For DMs, check the partner's Matrix ID
+    final dmPartner = r.directChatMatrixID;
+    if (dmPartner != null && dmPartner.toLowerCase().contains(q)) return true;
 
     return false;
+  }
+
+  Set<String>? _spaceRoomIds(MatrixService matrix) {
+    final selectedIds = matrix.selectedSpaceIds;
+    if (selectedIds.isEmpty) return null;
+
+    final ids = <String>{};
+    void collect(SpaceNode node) {
+      ids.addAll(node.directChildRoomIds);
+      for (final sub in node.subspaces) {
+        collect(sub);
+      }
+    }
+    for (final node in matrix.spaceTree) {
+      if (selectedIds.contains(node.room.id)) collect(node);
+    }
+    return ids;
   }
 
   List<Room> _applyFilters(
@@ -373,7 +386,8 @@ class _RoomListState extends State<RoomList>
                       focusNode: _searchFocus,
                       onChanged: (v) {
                         setState(() => _query = v);
-                        _messageSearch.onQueryChanged(v);
+                        _messageSearch.onQueryChanged(v,
+                            scopeRoomIds: _spaceRoomIds(matrix));
                       },
                       decoration: InputDecoration(
                         hintText: 'Search\u2026',
