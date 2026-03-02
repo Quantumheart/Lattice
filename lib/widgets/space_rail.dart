@@ -46,10 +46,12 @@ class _SpaceRailState extends State<SpaceRail> {
 
     return Container(
       width: 64,
-      color: cs.surfaceContainerLow,
+      color: Theme.of(context).brightness == Brightness.light
+          ? cs.surfaceContainerLow
+          : cs.surfaceContainerHigh,
       child: Column(
         children: [
-          const SizedBox(height: 12),
+          SizedBox(height: MediaQuery.paddingOf(context).top + 12),
 
           // Home (all rooms)
           _RailIcon(

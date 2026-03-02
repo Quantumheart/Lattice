@@ -58,7 +58,7 @@ class LatticeTheme {
 
       // Navigation rail (the space icon rail)
       navigationRailTheme: NavigationRailThemeData(
-        backgroundColor: isLight ? cs.surfaceContainerLow : cs.surfaceContainer,
+        backgroundColor: isLight ? cs.surfaceContainerLow : cs.surfaceContainerHigh,
         indicatorColor: cs.primaryContainer,
         selectedIconTheme: IconThemeData(color: cs.onPrimaryContainer),
         unselectedIconTheme: IconThemeData(color: cs.onSurfaceVariant),
