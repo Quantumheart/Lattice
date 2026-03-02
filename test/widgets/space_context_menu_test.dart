@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/space_child.dart';
 import 'package:provider/provider.dart';
 
 import 'package:lattice/services/matrix_service.dart';
@@ -122,7 +123,8 @@ void main() {
       verify(mockSpace.setReadMarker('\$last:example.com')).called(1);
     });
 
-    testWidgets('Leave shows confirmation dialog', (tester) async {
+    testWidgets('Leave shows confirmation dialog with checkbox',
+        (tester) async {
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Open Menu'));
       await tester.pumpAndSettle();
@@ -133,6 +135,10 @@ void main() {
       expect(find.text('Leave space?'), findsOneWidget);
       expect(
         find.text('You will leave "Test Space".'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Also leave all rooms in this space'),
         findsOneWidget,
       );
       expect(find.text('Cancel'), findsOneWidget);
@@ -170,6 +176,81 @@ void main() {
       await tester.pumpAndSettle();
 
       verifyNever(mockSpace.leave());
+    });
+
+    testWidgets('Leave with checkbox leaves child rooms too',
+        (tester) async {
+      // Set up child rooms
+      final mockChildRoom = MockRoom();
+      when(mockChildRoom.id).thenReturn('!child:example.com');
+      when(mockChildRoom.isSpace).thenReturn(false);
+      when(mockChildRoom.membership).thenReturn(Membership.join);
+      when(mockChildRoom.leave()).thenAnswer((_) async {});
+
+      when(mockClient.getRoomById('!child:example.com'))
+          .thenReturn(mockChildRoom);
+      when(mockSpace.spaceChildren).thenReturn([
+        SpaceChild.fromState(StrippedStateEvent(
+          type: EventTypes.SpaceChild,
+          content: {'via': ['example.com']},
+          stateKey: '!child:example.com',
+          senderId: '@admin:example.com',
+        )),
+      ]);
+      when(mockSpace.leave()).thenAnswer((_) async {});
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.tap(find.text('Open Menu'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Leave space'));
+      await tester.pumpAndSettle();
+
+      // Check the checkbox
+      await tester.tap(find.byType(CheckboxListTile));
+      await tester.pumpAndSettle();
+
+      // Confirm leave
+      await tester.tap(find.widgetWithText(FilledButton, 'Leave'));
+      await tester.pumpAndSettle();
+
+      verify(mockSpace.leave()).called(1);
+      verify(mockChildRoom.leave()).called(1);
+      verify(mockMatrixService.clearSpaceSelection()).called(1);
+    });
+
+    testWidgets('Leave without checkbox keeps child rooms',
+        (tester) async {
+      final mockChildRoom = MockRoom();
+      when(mockChildRoom.id).thenReturn('!child:example.com');
+      when(mockChildRoom.isSpace).thenReturn(false);
+      when(mockChildRoom.membership).thenReturn(Membership.join);
+
+      when(mockClient.getRoomById('!child:example.com'))
+          .thenReturn(mockChildRoom);
+      when(mockSpace.spaceChildren).thenReturn([
+        SpaceChild.fromState(StrippedStateEvent(
+          type: EventTypes.SpaceChild,
+          content: {'via': ['example.com']},
+          stateKey: '!child:example.com',
+          senderId: '@admin:example.com',
+        )),
+      ]);
+      when(mockSpace.leave()).thenAnswer((_) async {});
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.tap(find.text('Open Menu'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Leave space'));
+      await tester.pumpAndSettle();
+
+      // Don't check the checkbox, just confirm
+      await tester.tap(find.widgetWithText(FilledButton, 'Leave'));
+      await tester.pumpAndSettle();
+
+      verify(mockSpace.leave()).called(1);
+      verifyNever(mockChildRoom.leave());
     });
 
     testWidgets('Coming soon snackbar for unimplemented actions',

@@ -185,40 +185,103 @@ Future<void> _handleInvite(BuildContext context, Room space) async {
 
 Future<void> _handleLeave(BuildContext context, Room space) async {
   final cs = Theme.of(context).colorScheme;
-  final confirmed = await showDialog<bool>(
+  final result = await showDialog<({bool confirmed, bool leaveChildren})>(
     context: context,
-    builder: (ctx) => AlertDialog(
-      title: const Text('Leave space?'),
-      content:
-          Text('You will leave "${space.getLocalizedDisplayname()}".'),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(ctx, false),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: cs.error,
-            foregroundColor: cs.onError,
+    builder: (ctx) {
+      var leaveChildren = false;
+      return StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('Leave space?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('You will leave "${space.getLocalizedDisplayname()}".'),
+              const SizedBox(height: 12),
+              CheckboxListTile(
+                value: leaveChildren,
+                onChanged: (v) => setState(() => leaveChildren = v ?? false),
+                title: const Text('Also leave all rooms in this space'),
+                subtitle: const Text(
+                  'Rooms you stay in will move to your general room list.',
+                ),
+                contentPadding: EdgeInsets.zero,
+                dense: true,
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+            ],
           ),
-          onPressed: () => Navigator.pop(ctx, true),
-          child: const Text('Leave'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: cs.error,
+                foregroundColor: cs.onError,
+              ),
+              onPressed: () => Navigator.pop(
+                ctx,
+                (confirmed: true, leaveChildren: leaveChildren),
+              ),
+              child: const Text('Leave'),
+            ),
+          ],
         ),
-      ],
-    ),
+      );
+    },
   );
 
-  if (confirmed != true || !context.mounted) return;
+  if (result == null || !result.confirmed || !context.mounted) return;
 
   try {
     final matrix = context.read<MatrixService>();
+
+    // Collect child room IDs before leaving (recursive through subspaces).
+    final childRoomIds = <String>{};
+    if (result.leaveChildren) {
+      _collectDescendantRooms(space, childRoomIds, matrix.client);
+    }
+
     await space.leave();
     matrix.clearSpaceSelection();
+
+    // Leave child rooms if requested.
+    var failCount = 0;
+    for (final roomId in childRoomIds) {
+      final room = matrix.client.getRoomById(roomId);
+      if (room == null || room.membership != Membership.join) continue;
+      try {
+        await room.leave();
+      } catch (_) {
+        failCount++;
+      }
+    }
+    if (failCount > 0 && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to leave $failCount room(s)')),
+      );
+    }
   } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to leave space: $e')),
       );
+    }
+  }
+}
+
+void _collectDescendantRooms(Room space, Set<String> ids, Client client) {
+  for (final child in space.spaceChildren) {
+    final childId = child.roomId;
+    if (childId == null) continue;
+    final childRoom = client.getRoomById(childId);
+    if (childRoom == null || childRoom.membership != Membership.join) continue;
+    if (childRoom.isSpace) {
+      _collectDescendantRooms(childRoom, ids, client);
+    } else {
+      ids.add(childId);
     }
   }
 }
