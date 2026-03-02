@@ -39,28 +39,35 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
           : null,
       automaticallyImplyLeading: false,
       titleSpacing: onBack != null ? 0 : 16,
-      title: Row(
-        children: [
-          RoomAvatarWidget(room: room, size: 34),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  room.getLocalizedDisplayname(),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tt.titleMedium,
-                ),
-                Text(
-                  _memberCountLabel(room),
-                  style: tt.bodyMedium?.copyWith(fontSize: 11),
-                ),
+      title: LayoutBuilder(
+        builder: (context, constraints) {
+          final showAvatar = constraints.maxWidth > 100;
+          return Row(
+            children: [
+              if (showAvatar) ...[
+                RoomAvatarWidget(room: room, size: 34),
+                const SizedBox(width: 12),
               ],
-            ),
-          ),
-        ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      room.getLocalizedDisplayname(),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tt.titleMedium,
+                    ),
+                    Text(
+                      _memberCountLabel(room),
+                      style: tt.bodyMedium?.copyWith(fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
       actions: [
         if (room.pinnedEventIds.isNotEmpty && onPinnedEvent != null)

@@ -62,8 +62,7 @@ class _InboxScreenState extends State<InboxScreen> {
                 FilterChip(
                   label: const Text('Mentions'),
                   selected: controller.filter == InboxFilter.mentions,
-                  onSelected: (_) =>
-                      controller.setFilter(InboxFilter.mentions),
+                  onSelected: (_) => controller.setFilter(InboxFilter.mentions),
                 ),
               ],
             ),
@@ -192,8 +191,7 @@ class _NotificationGroupTile extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.done_all_rounded, size: 20),
                     tooltip: 'Mark as read',
-                    onPressed: () =>
-                        controller.markRoomAsRead(group.roomId),
+                    onPressed: () => controller.markRoomAsRead(group.roomId),
                     visualDensity: VisualDensity.compact,
                   ),
                   IconButton(
@@ -240,10 +238,9 @@ class _NotificationTile extends StatelessWidget {
 
     final senderId = event.senderId;
     final room = client.getRoomById(notification.roomId);
-    final senderName = room
-            ?.unsafeGetUserFromMemoryOrFallback(senderId)
-            .calcDisplayname() ??
-        senderId;
+    final senderName =
+        room?.unsafeGetUserFromMemoryOrFallback(senderId).calcDisplayname() ??
+            senderId;
 
     final body = _extractBody(event);
     final ts = DateTime.fromMillisecondsSinceEpoch(notification.ts);

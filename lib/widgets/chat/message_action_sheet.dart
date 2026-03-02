@@ -127,7 +127,7 @@ class _MessageActionSheet extends StatefulWidget {
 }
 
 class _MessageActionSheetState extends State<_MessageActionSheet> {
-  static const _actionListWidth = 220.0;
+  static const _actionListWidth = 240.0;
   static const _actionRowHeight = 48.0;
   static const _quickReactHeight = 48.0;
   static const _gap = 8.0;
