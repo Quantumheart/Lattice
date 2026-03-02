@@ -12,6 +12,7 @@ import '../screens/settings_screen.dart';
 import '../services/matrix_service.dart';
 import '../widgets/inbox_screen.dart';
 import '../widgets/room_details_panel.dart';
+import '../widgets/space_details_panel.dart';
 import 'route_names.dart';
 
 /// Creates the app router with auth-aware redirects.
@@ -102,6 +103,18 @@ GoRouter buildRouter(MatrixService matrixService) {
                 path: 'spaces',
                 name: Routes.spaces,
                 builder: (context, state) => const SizedBox.shrink(),
+              ),
+              GoRoute(
+                path: 'spaces/:spaceId/details',
+                name: Routes.spaceDetails,
+                builder: (context, state) {
+                  final spaceId = state.pathParameters['spaceId']!;
+                  return SpaceDetailsPanel(
+                    spaceId: spaceId,
+                    isFullPage: true,
+                    key: ValueKey('space-details-$spaceId'),
+                  );
+                },
               ),
               GoRoute(
                 path: 'inbox',

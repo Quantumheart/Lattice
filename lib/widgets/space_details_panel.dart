@@ -1,0 +1,303 @@
+import 'package:flutter/material.dart';
+import 'package:matrix/matrix.dart' hide Visibility;
+import 'package:provider/provider.dart';
+
+import '../services/matrix_service.dart';
+import 'admin_settings_section.dart';
+import 'room_avatar.dart';
+import 'room_members_section.dart';
+import 'space_context_menu.dart';
+
+/// Displays space details: header, actions, members, and admin controls.
+///
+/// When [isFullPage] is true, wraps itself in a Scaffold with an AppBar
+/// (for mobile/tablet push route). Otherwise renders as a bare panel
+/// (for the desktop content pane).
+class SpaceDetailsPanel extends StatefulWidget {
+  const SpaceDetailsPanel({
+    super.key,
+    required this.spaceId,
+    this.isFullPage = false,
+  });
+
+  final String spaceId;
+  final bool isFullPage;
+
+  @override
+  State<SpaceDetailsPanel> createState() => _SpaceDetailsPanelState();
+}
+
+class _SpaceDetailsPanelState extends State<SpaceDetailsPanel> {
+  final Set<String> _inFlight = {};
+  String? _error;
+
+  bool get _loading => _inFlight.isNotEmpty;
+  bool _busy(String action) => _inFlight.contains(action);
+
+  // ── Actions ────────────────────────────────────────────────
+
+  Future<void> _run(String action, Future<void> Function() task) async {
+    setState(() { _inFlight.add(action); _error = null; });
+    try {
+      await task();
+    } catch (e) {
+      debugPrint('[Lattice] $action failed: $e');
+      if (mounted) setState(() => _error = MatrixService.friendlyAuthError(e));
+    } finally {
+      if (mounted) setState(() => _inFlight.remove(action));
+    }
+  }
+
+  Future<void> _showInviteDialog(Room space) async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => _InviteUserDialog(room: space, controller: controller),
+    );
+    controller.dispose();
+    if (result == null || !mounted) return;
+
+    final scaffold = ScaffoldMessenger.of(context);
+    await _run('invite', () async {
+      await space.invite(result);
+      scaffold.showSnackBar(
+        SnackBar(content: Text('Invited $result')),
+      );
+    });
+  }
+
+  Future<void> _confirmLeave(Room space) async {
+    if (!mounted) return;
+    await handleLeaveSpace(context, space);
+  }
+
+  // ── Build ──────────────────────────────────────────────────
+
+  @override
+  Widget build(BuildContext context) {
+    final matrix = context.watch<MatrixService>();
+    final space = matrix.client.getRoomById(widget.spaceId);
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    if (space == null) {
+      final body = Center(child: Text('Space not found', style: tt.bodyLarge));
+      return widget.isFullPage ? Scaffold(appBar: AppBar(), body: body) : body;
+    }
+
+    final content = _buildContent(space, cs, tt);
+
+    if (widget.isFullPage) {
+      return Scaffold(
+        appBar: AppBar(
+          title: Text(space.getLocalizedDisplayname()),
+        ),
+        body: content,
+      );
+    }
+
+    return Container(
+      color: cs.surface,
+      child: content,
+    );
+  }
+
+  Widget _buildContent(Room space, ColorScheme cs, TextTheme tt) {
+    return ListView(
+      padding: const EdgeInsets.only(bottom: 32),
+      children: [
+        if (_loading) const LinearProgressIndicator(),
+        _buildHeader(space, cs, tt),
+        const Divider(),
+        _buildActionsRow(space, cs),
+        if (_error != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: Text(_error!, style: TextStyle(color: cs.error, fontSize: 13)),
+          ),
+        const Divider(),
+        RoomMembersSection(room: space),
+        if (space.canChangeStateEvent(EventTypes.RoomName) ||
+            space.canChangeStateEvent(EventTypes.RoomTopic) ||
+            space.canChangePowerLevel) ...[
+          const Divider(),
+          AdminSettingsSection(room: space),
+        ],
+      ],
+    );
+  }
+
+  // ── Header ─────────────────────────────────────────────────
+
+  Widget _buildHeader(Room space, ColorScheme cs, TextTheme tt) {
+    final memberCount = space.summary.mJoinedMemberCount ?? 0;
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          RoomAvatarWidget(room: space, size: 72),
+          const SizedBox(height: 12),
+          Text(
+            space.getLocalizedDisplayname(),
+            style: tt.titleLarge,
+            textAlign: TextAlign.center,
+          ),
+          if (space.topic.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              space.topic,
+              style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+              textAlign: TextAlign.center,
+              maxLines: 4,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          const SizedBox(height: 4),
+          Text(
+            memberCount == 1 ? '1 member' : '$memberCount members',
+            style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Actions row ────────────────────────────────────────────
+
+  Widget _buildActionsRow(Room space, ColorScheme cs) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          if (space.canInvite)
+            _ActionButton(
+              icon: Icons.person_add_outlined,
+              label: 'Invite',
+              onTap: _busy('invite') ? null : () => _showInviteDialog(space),
+            ),
+          _ActionButton(
+            icon: Icons.exit_to_app_rounded,
+            label: 'Leave',
+            color: cs.error,
+            onTap: _busy('leave') ? null : () => _confirmLeave(space),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Action button ──────────────────────────────────────────────
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    required this.icon,
+    required this.label,
+    this.color,
+    this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color? color;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final effectiveColor = color ?? cs.onSurfaceVariant;
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: onTap != null ? effectiveColor : effectiveColor.withValues(alpha: 0.4)),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: onTap != null ? effectiveColor : effectiveColor.withValues(alpha: 0.4),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Invite dialog ──────────────────────────────────────────────
+
+class _InviteUserDialog extends StatefulWidget {
+  const _InviteUserDialog({required this.room, required this.controller});
+
+  final Room room;
+  final TextEditingController controller;
+
+  @override
+  State<_InviteUserDialog> createState() => _InviteUserDialogState();
+}
+
+class _InviteUserDialogState extends State<_InviteUserDialog> {
+  static final _mxidRegex = RegExp(r'^@[^:]+:.+$');
+  String? _error;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return AlertDialog(
+      title: const Text('Invite user'),
+      content: SizedBox(
+        width: 400,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: widget.controller,
+              autofocus: true,
+              decoration: const InputDecoration(
+                labelText: 'Matrix ID',
+                hintText: '@user:server.com',
+                border: OutlineInputBorder(),
+              ),
+              onSubmitted: (_) => _submit(),
+            ),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(_error!, style: TextStyle(color: cs.error, fontSize: 13)),
+              ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: _submit,
+          child: const Text('Invite'),
+        ),
+      ],
+    );
+  }
+
+  void _submit() {
+    final mxid = widget.controller.text.trim();
+    if (mxid.isEmpty) {
+      setState(() => _error = 'Please enter a Matrix ID');
+      return;
+    }
+    if (!_mxidRegex.hasMatch(mxid)) {
+      setState(() => _error = 'Invalid Matrix ID (use @user:server)');
+      return;
+    }
+    Navigator.pop(context, mxid);
+  }
+}

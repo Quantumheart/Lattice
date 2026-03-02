@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:matrix/matrix.dart' hide Visibility;
 import 'package:provider/provider.dart';
 
+import '../routing/route_names.dart';
 import '../services/matrix_service.dart';
 import 'add_existing_rooms_dialog.dart';
 import 'new_room_dialog.dart';
@@ -148,6 +150,12 @@ Future<void> showSpaceContextMenu(
         await NewRoomDialog.show(context, matrixService: matrix);
       }
     case SpaceContextAction.spaceSettings:
+      if (context.mounted) {
+        context.goNamed(
+          Routes.spaceDetails,
+          pathParameters: {'spaceId': space.id},
+        );
+      }
     case SpaceContextAction.createSubspace:
     case SpaceContextAction.notifications:
       if (context.mounted) {
@@ -159,6 +167,11 @@ Future<void> showSpaceContextMenu(
 }
 
 // ── Action Handlers ─────────────────────────────────────────────────
+
+/// Shows a leave-space confirmation dialog with an option to also leave
+/// all child rooms. Reused by [SpaceDetailsPanel].
+Future<void> handleLeaveSpace(BuildContext context, Room space) =>
+    _handleLeave(context, space);
 
 Future<void> _handleMarkAsRead(Room space) async {
   try {

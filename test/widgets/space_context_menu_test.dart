@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:matrix/matrix.dart';
@@ -253,13 +254,61 @@ void main() {
       verifyNever(mockChildRoom.leave());
     });
 
+    testWidgets('Space settings navigates to space details route',
+        (tester) async {
+      // Use a GoRouter-based test widget to verify navigation
+      final router = GoRouter(
+        initialLocation: '/',
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => ChangeNotifierProvider<MatrixService>.value(
+              value: mockMatrixService,
+              child: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    onPressed: () {
+                      showSpaceContextMenu(
+                        context,
+                        const RelativeRect.fromLTRB(100, 100, 100, 100),
+                        mockSpace,
+                      );
+                    },
+                    child: const Text('Open Menu'),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          GoRoute(
+            path: '/spaces/:spaceId/details',
+            name: 'space-details',
+            builder: (context, state) => Scaffold(
+              body: Text('Space details for ${state.pathParameters['spaceId']}'),
+            ),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(MaterialApp.router(routerConfig: router));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Open Menu'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Space settings'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Space details for !space:example.com'), findsOneWidget);
+    });
+
     testWidgets('Coming soon snackbar for unimplemented actions',
         (tester) async {
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Open Menu'));
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Space settings'));
+      await tester.tap(find.text('Notifications'));
       await tester.pumpAndSettle();
 
       expect(find.text('Coming soon'), findsOneWidget);
