@@ -75,8 +75,14 @@ class _LatticeAppState extends State<LatticeApp> {
                 preferencesService: prefs,
                 child: ChangeNotifierProvider<MatrixService>.value(
                   value: matrix,
-                  child: ChangeNotifierProvider<InboxController>(
-                    create: (_) => InboxController(client: matrix.client),
+                  child: ChangeNotifierProxyProvider<MatrixService, InboxController>(
+                    create: (ctx) => InboxController(
+                      client: ctx.read<MatrixService>().client,
+                    ),
+                    update: (_, matrix, previous) {
+                      previous!.updateClient(matrix.client);
+                      return previous;
+                    },
                     child: Builder(
                       builder: (context) {
                         final theme = LatticeTheme.light(lightDynamic);

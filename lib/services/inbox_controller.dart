@@ -27,11 +27,15 @@ class InboxController extends ChangeNotifier {
   Client _client;
   Client get client => _client;
 
-  List<NotificationGroup> grouped = [];
-  bool isLoading = false;
-  String? error;
+  List<NotificationGroup> _grouped = [];
+  List<NotificationGroup> get grouped => _grouped;
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+  String? _error;
+  String? get error => _error;
   String? _nextToken;
-  InboxFilter filter = InboxFilter.all;
+  InboxFilter _filter = InboxFilter.all;
+  InboxFilter get filter => _filter;
 
   Timer? _pollTimer;
 
@@ -40,8 +44,7 @@ class InboxController extends ChangeNotifier {
   int get unreadCount {
     var count = 0;
     for (final group in grouped) {
-      count +=
-          group.notifications.where((n) => !n.read).length;
+      count += group.notifications.where((n) => !n.read).length;
     }
     return count;
   }
@@ -51,52 +54,52 @@ class InboxController extends ChangeNotifier {
   // ── Fetch ──────────────────────────────────────────────────
 
   Future<void> fetch() async {
-    isLoading = true;
-    error = null;
+    _isLoading = true;
+    _error = null;
     notifyListeners();
 
     try {
       final response = await _client.getNotifications(
         limit: 30,
-        only: filter == InboxFilter.mentions ? 'highlight' : null,
+        only: _filter == InboxFilter.mentions ? 'highlight' : null,
       );
       _nextToken = response.nextToken;
-      grouped = _groupByRoom(response.notifications);
+      _grouped = _groupByRoom(response.notifications);
     } catch (e) {
-      error = e.toString();
+      _error = e.toString();
       debugPrint('[Lattice] Inbox fetch error: $e');
     } finally {
-      isLoading = false;
+      _isLoading = false;
       notifyListeners();
     }
   }
 
   Future<void> loadMore() async {
-    if (_nextToken == null || isLoading) return;
+    if (_nextToken == null || _isLoading) return;
 
-    isLoading = true;
+    _isLoading = true;
     notifyListeners();
 
     try {
       final response = await _client.getNotifications(
         limit: 30,
         from: _nextToken,
-        only: filter == InboxFilter.mentions ? 'highlight' : null,
+        only: _filter == InboxFilter.mentions ? 'highlight' : null,
       );
       _nextToken = response.nextToken;
 
       // Merge new notifications into existing groups
       final all = <matrix_sdk.Notification>[];
-      for (final group in grouped) {
+      for (final group in _grouped) {
         all.addAll(group.notifications);
       }
       all.addAll(response.notifications);
-      grouped = _groupByRoom(all);
+      _grouped = _groupByRoom(all);
     } catch (e) {
-      error = e.toString();
+      _error = e.toString();
       debugPrint('[Lattice] Inbox loadMore error: $e');
     } finally {
-      isLoading = false;
+      _isLoading = false;
       notifyListeners();
     }
   }
@@ -104,9 +107,9 @@ class InboxController extends ChangeNotifier {
   // ── Filter ─────────────────────────────────────────────────
 
   void setFilter(InboxFilter newFilter) {
-    if (filter == newFilter) return;
-    filter = newFilter;
-    grouped = [];
+    if (_filter == newFilter) return;
+    _filter = newFilter;
+    _grouped = [];
     _nextToken = null;
     notifyListeners();
     fetch();
@@ -131,10 +134,10 @@ class InboxController extends ChangeNotifier {
     try {
       final response = await _client.getNotifications(
         limit: 30,
-        only: filter == InboxFilter.mentions ? 'highlight' : null,
+        only: _filter == InboxFilter.mentions ? 'highlight' : null,
       );
       _nextToken = response.nextToken;
-      grouped = _groupByRoom(response.notifications);
+      _grouped = _groupByRoom(response.notifications);
       notifyListeners();
     } catch (e) {
       debugPrint('[Lattice] Inbox poll error: $e');
@@ -147,11 +150,21 @@ class InboxController extends ChangeNotifier {
     final room = _client.getRoomById(roomId);
     if (room == null) return;
 
-    final lastEvent = room.lastEvent;
-    if (lastEvent == null) return;
+    // Prefer the latest notification event ID (always available on the
+    // inbox screen) over room.lastEvent which may be null when the
+    // room timeline hasn't been loaded.
+    String? eventId;
+    for (final group in grouped) {
+      if (group.roomId == roomId && group.notifications.isNotEmpty) {
+        eventId = group.notifications.first.event.eventId;
+        break;
+      }
+    }
+    eventId ??= room.lastEvent?.eventId;
+    if (eventId == null) return;
 
     try {
-      await room.setReadMarker(lastEvent.eventId);
+      await room.setReadMarker(eventId);
       // Re-fetch to update state
       await fetch();
     } catch (e) {
@@ -162,10 +175,11 @@ class InboxController extends ChangeNotifier {
   // ── Account switching ──────────────────────────────────────
 
   void updateClient(Client newClient) {
+    if (identical(_client, newClient)) return;
     _client = newClient;
-    grouped = [];
+    _grouped = [];
     _nextToken = null;
-    error = null;
+    _error = null;
     notifyListeners();
   }
 
