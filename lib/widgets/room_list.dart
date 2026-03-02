@@ -17,6 +17,7 @@ import 'new_room_dialog.dart';
 import '../utils/reply_fallback.dart';
 import 'chat/typing_indicator.dart' show TypingIndicator;
 import 'room_avatar.dart';
+import 'room_context_menu.dart';
 
 // ── List item types for the flat interleaved list ──────────
 sealed class _ListItem {}
@@ -1052,6 +1053,20 @@ class _RoomTile extends StatelessWidget {
 
   final Room room;
 
+  bool _hasContextMenu(MatrixService matrix) {
+    final selectedIds = matrix.selectedSpaceIds;
+    if (selectedIds.isEmpty) return false;
+    final space = matrix.client.getRoomById(selectedIds.first);
+    if (space == null) return false;
+    return space.canChangeStateEvent('m.space.child');
+  }
+
+  void _openContextMenu(BuildContext context, RelativeRect position) {
+    final matrix = context.read<MatrixService>();
+    if (!_hasContextMenu(matrix)) return;
+    showRoomContextMenu(context, position, room);
+  }
+
   @override
   Widget build(BuildContext context) {
     final matrix = context.watch<MatrixService>();
@@ -1062,6 +1077,7 @@ class _RoomTile extends StatelessWidget {
     final unread = effectiveUnreadCount(room, prefs);
     final lastEvent = room.lastEvent;
     final memberships = matrix.spaceMemberships(room.id);
+    final hasMenu = _hasContextMenu(matrix);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
@@ -1074,6 +1090,37 @@ class _RoomTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           mouseCursor: SystemMouseCursors.click,
           onTap: () => context.goNamed(Routes.room, pathParameters: {'roomId': room.id}),
+          onSecondaryTapUp: hasMenu
+              ? (details) {
+                  final overlay = Overlay.of(context).context
+                      .findRenderObject()! as RenderBox;
+                  _openContextMenu(
+                    context,
+                    RelativeRect.fromSize(
+                      details.globalPosition & Size.zero,
+                      overlay.size,
+                    ),
+                  );
+                }
+              : null,
+          onLongPress: hasMenu
+              ? () {
+                  final box = context.findRenderObject()! as RenderBox;
+                  final overlay = Overlay.of(context).context
+                      .findRenderObject()! as RenderBox;
+                  final position = box.localToGlobal(
+                    Offset(box.size.width / 2, box.size.height / 2),
+                    ancestor: overlay,
+                  );
+                  _openContextMenu(
+                    context,
+                    RelativeRect.fromSize(
+                      position & Size.zero,
+                      overlay.size,
+                    ),
+                  );
+                }
+              : null,
           child: Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
