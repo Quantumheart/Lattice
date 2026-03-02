@@ -5,7 +5,6 @@ import 'package:matrix/matrix.dart';
 
 import '../models/space_node.dart';
 import '../routing/route_names.dart';
-import '../services/inbox_controller.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
 import '../services/room_list_search_controller.dart';
@@ -437,26 +436,6 @@ class _RoomListState extends State<RoomList>
                     tooltip: 'Search',
                     onPressed: _toggleSearch,
                   ),
-                  // Show inbox bell on mobile (< 720px where rail is hidden)
-                  if (MediaQuery.sizeOf(context).width < 720)
-                    Builder(builder: (context) {
-                      final inbox = context.watch<InboxController>();
-                      final unread = inbox.unreadCount;
-                      return IconButton(
-                        icon: Badge(
-                          isLabelVisible: unread > 0,
-                          label: Text(
-                            unread > 99 ? '99+' : '$unread',
-                            style: const TextStyle(fontSize: 10),
-                          ),
-                          child: const Icon(
-                              Icons.notifications_outlined),
-                        ),
-                        tooltip: 'Inbox',
-                        onPressed: () =>
-                            context.goNamed(Routes.inbox),
-                      );
-                    }),
                 ],
         ),
         body: Stack(

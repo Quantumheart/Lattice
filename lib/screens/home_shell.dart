@@ -3,11 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../models/space_node.dart';
 import '../routing/route_names.dart';
 import '../services/matrix_service.dart';
 import '../services/preferences_service.dart';
-import '../widgets/invite_dialog.dart';
 import '../widgets/space_rail.dart';
 import '../widgets/room_list.dart';
 import '../widgets/room_details_panel.dart';
@@ -15,8 +13,8 @@ import 'chat_screen.dart';
 import 'settings_screen.dart';
 
 /// The root layout shell. On wide screens it shows the three-column
-/// Lattice layout (rail + room list + chat). On narrow screens it uses
-/// a bottom navigation bar with stack navigation.
+/// Lattice layout (rail + room list + chat). On narrow screens it shows
+/// the space rail + room list, with full-screen push for chat.
 ///
 /// Receives the [routerChild] and [routerState] from the [ShellRoute]
 /// so it can display the matched route's content in the appropriate pane.
@@ -86,31 +84,6 @@ class _HomeShellState extends State<HomeShell> {
 
   // ── Route helpers ─────────────────────────────────────────────
 
-  /// Whether the current route is a full-screen view on mobile
-  /// (no bottom nav bar).
-  bool get _isFullScreenRoute {
-    final name = _routeName;
-    return name == Routes.room ||
-        name == Routes.roomDetails ||
-        name == Routes.settingsNotifications ||
-        name == Routes.settingsDevices ||
-        name == Routes.inbox ||
-        name == Routes.spaceDetails;
-  }
-
-  /// Derive the mobile tab index from the current route.
-  int get _mobileTab {
-    final name = _routeName;
-    if (name == Routes.settings ||
-        name == Routes.settingsNotifications ||
-        name == Routes.settingsDevices) {
-      return 2;
-    }
-    if (name == Routes.spaces) {
-      return 1;
-    }
-    return 0;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -309,397 +282,36 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
-  // ── Narrow: bottom nav ───────────────────────────────────────
+  // ── Narrow: space rail + content ─────────────────────────────
   Widget _buildNarrowLayout(MatrixService matrix) {
 
-    // Full-screen routes (no bottom nav): room chat, room details,
-    // notification settings, device settings.
-    if (_isFullScreenRoute) {
-      // For room routes, add the onBack callback to navigate home.
-      if (_routeName == Routes.room && _routeRoomId != null) {
-        return ChatScreen(
-          roomId: _routeRoomId!,
-          key: ValueKey(_routeRoomId),
-          onBack: () => context.goNamed(Routes.home),
-        );
-      }
-      return widget.routerChild;
-    }
-
-    // Tabbed view with bottom nav.
-    Widget body;
-    switch (_mobileTab) {
-      case 0:
-        body = const RoomList();
-        break;
-      case 1:
-        body = _SpaceListMobile(
-          onSpaceSelected: () => context.goNamed(Routes.home),
-        );
-        break;
-      case 2:
-        body = const SettingsScreen();
-        break;
-      default:
-        body = const RoomList();
+    // Determine the content pane next to the rail.
+    final Widget content;
+    final name = _routeName;
+    if (name == Routes.room && _routeRoomId != null) {
+      content = ChatScreen(
+        roomId: _routeRoomId!,
+        key: ValueKey(_routeRoomId),
+        onBack: () => context.goNamed(Routes.home),
+      );
+    } else if (name == Routes.settings) {
+      content = const SettingsScreen();
+    } else if (name == Routes.home || name == null) {
+      content = const RoomList();
+    } else {
+      // roomDetails, settingsNotifications, settingsDevices,
+      // spaceDetails, inbox, etc.
+      content = widget.routerChild;
     }
 
     return Scaffold(
-      body: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 250),
-        child: body,
-      ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _mobileTab,
-        onDestinationSelected: (i) {
-          switch (i) {
-            case 0:
-              context.goNamed(Routes.home);
-            case 1:
-              context.goNamed(Routes.spaces);
-            case 2:
-              context.goNamed(Routes.settings);
-          }
-        },
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.chat_outlined),
-            selectedIcon: Icon(Icons.chat_rounded),
-            label: 'Chats',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.workspaces_outlined),
-            selectedIcon: Icon(Icons.workspaces_rounded),
-            label: 'Spaces',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings_rounded),
-            label: 'Settings',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Mobile space list with search, unread badges, subspace nesting.
-class _SpaceListMobile extends StatefulWidget {
-  const _SpaceListMobile({required this.onSpaceSelected});
-
-  final VoidCallback onSpaceSelected;
-
-  @override
-  State<_SpaceListMobile> createState() => _SpaceListMobileState();
-}
-
-class _SpaceListMobileState extends State<_SpaceListMobile> {
-  final _searchCtrl = TextEditingController();
-  String _query = '';
-
-  @override
-  void initState() {
-    super.initState();
-    final matrix = context.read<MatrixService>();
-    final prefs = context.read<PreferencesService>();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) matrix.updateSpaceOrder(prefs.spaceOrder);
-    });
-  }
-
-  @override
-  void dispose() {
-    _searchCtrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final matrix = context.watch<MatrixService>();
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final tree = matrix.spaceTree;
-
-    // Filter by search query
-    final isSearching = _query.isNotEmpty;
-    List<SpaceNode> filteredTree = tree;
-    if (isSearching) {
-      final q = _query.toLowerCase();
-      filteredTree = _filterTree(tree, q);
-    }
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Spaces')),
-      body: Column(
+      body: Row(
         children: [
-          // Search field
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            child: TextField(
-              controller: _searchCtrl,
-              onChanged: (v) => setState(() => _query = v),
-              decoration: InputDecoration(
-                hintText: 'Search spaces\u2026',
-                prefixIcon:
-                    Icon(Icons.search, color: cs.onSurfaceVariant),
-                suffixIcon: _query.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () {
-                          _searchCtrl.clear();
-                          setState(() => _query = '');
-                        },
-                      )
-                    : null,
-                isDense: true,
-              ),
-            ),
-          ),
-
-          // Invited spaces
-          Builder(
-            builder: (context) {
-              var invited = matrix.invitedSpaces;
-              if (isSearching) {
-                final q = _query.toLowerCase();
-                invited = invited
-                    .where((r) => r.getLocalizedDisplayname()
-                        .toLowerCase()
-                        .contains(q))
-                    .toList();
-              }
-              if (invited.isEmpty) return const SizedBox.shrink();
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final space in invited)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: cs.tertiaryContainer,
-                          child: Text(
-                            space.getLocalizedDisplayname().isNotEmpty
-                                ? space.getLocalizedDisplayname()[0]
-                                    .toUpperCase()
-                                : '?',
-                            style: TextStyle(
-                                color: cs.onTertiaryContainer),
-                          ),
-                        ),
-                        title: Text(space.getLocalizedDisplayname()),
-                        subtitle: Builder(builder: (_) {
-                          final inviter = matrix.inviterDisplayName(space);
-                          return Text(
-                            inviter != null
-                                ? 'Invited by $inviter'
-                                : 'Pending invite',
-                            style: tt.bodyMedium,
-                          );
-                        }),
-                        tileColor: cs.tertiaryContainer
-                            .withValues(alpha: 0.3),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        mouseCursor: SystemMouseCursors.click,
-                        onTap: () async {
-                          final result = await InviteDialog.show(
-                            context,
-                            room: space,
-                          );
-                          if (result == true && mounted) {
-                            matrix.selectSpace(space.id);
-                            widget.onSpaceSelected();
-                          }
-                        },
-                      ),
-                    ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 4),
-                    child: Divider(height: 1, color: cs.outlineVariant),
-                  ),
-                ],
-              );
-            },
-          ),
-
-          // Space list
-          Expanded(
-            child: filteredTree.isEmpty
-                ? Center(
-                    child: Text(
-                      isSearching
-                          ? 'No spaces match "$_query"'
-                          : 'No spaces yet',
-                      style: tt.bodyMedium?.copyWith(
-                        color: cs.onSurfaceVariant
-                            .withValues(alpha: 0.6),
-                      ),
-                    ),
-                  )
-                : isSearching
-                    // Plain list when searching (reordering a filtered
-                    // subset doesn't make sense).
-                    ? ListView.builder(
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        itemCount: filteredTree.length,
-                        itemBuilder: (context, i) {
-                          return _buildTopLevelItem(
-                            context, matrix, filteredTree[i],
-                            key: ValueKey(filteredTree[i].room.id),
-                          );
-                        },
-                      )
-                    : ReorderableListView.builder(
-                        buildDefaultDragHandles: false,
-                        padding: const EdgeInsets.symmetric(vertical: 4),
-                        itemCount: filteredTree.length,
-                        onReorder: (oldIndex, newIndex) {
-                          if (newIndex > oldIndex) newIndex--;
-                          final ids = filteredTree
-                              .map((n) => n.room.id)
-                              .toList();
-                          final id = ids.removeAt(oldIndex);
-                          ids.insert(newIndex, id);
-                          context.read<PreferencesService>().setSpaceOrder(ids);
-                          matrix.updateSpaceOrder(ids);
-                        },
-                        proxyDecorator: (child, index, animation) {
-                          return AnimatedBuilder(
-                            animation: animation,
-                            builder: (context, child) => Material(
-                              color: Colors.transparent,
-                              elevation: 4,
-                              child: child,
-                            ),
-                            child: child,
-                          );
-                        },
-                        itemBuilder: (context, i) {
-                          return ReorderableDragStartListener(
-                            key: ValueKey(filteredTree[i].room.id),
-                            index: i,
-                            child: _buildTopLevelItem(
-                              context, matrix, filteredTree[i],
-                              key: ValueKey('inner-${filteredTree[i].room.id}'),
-                            ),
-                          );
-                        },
-                      ),
-          ),
+          const SpaceRail(),
+          Expanded(child: content),
         ],
       ),
     );
   }
-
-  /// Builds a single top-level space item (with its subspaces) for
-  /// both the reorderable and plain list views.
-  Widget _buildTopLevelItem(
-    BuildContext context,
-    MatrixService matrix,
-    SpaceNode node, {
-    required Key key,
-  }) {
-    return Column(
-      key: key,
-      mainAxisSize: MainAxisSize.min,
-      children: _buildSpaceItems(context, matrix, node, 0),
-    );
-  }
-
-  List<Widget> _buildSpaceItems(
-    BuildContext context,
-    MatrixService matrix,
-    SpaceNode node,
-    int depth,
-  ) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final selected = matrix.selectedSpaceIds.contains(node.room.id);
-    final unread = matrix.unreadCountForSpace(node.room.id);
-    final widgets = <Widget>[];
-
-    widgets.add(
-      Padding(
-        padding: EdgeInsets.only(left: depth * 16.0),
-        child: ListTile(
-          leading: CircleAvatar(
-            backgroundColor: cs.primaryContainer,
-            child: Text(
-              node.room.getLocalizedDisplayname().isNotEmpty
-                  ? node.room.getLocalizedDisplayname()[0].toUpperCase()
-                  : '?',
-              style: TextStyle(color: cs.onPrimaryContainer),
-            ),
-          ),
-          title: Text(node.room.getLocalizedDisplayname()),
-          subtitle: Text(
-            '${node.directChildRoomIds.length} rooms',
-            style: tt.bodyMedium,
-          ),
-          trailing: unread > 0
-              ? Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: cs.error,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Text(
-                    unread > 99 ? '99+' : '$unread',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: cs.onError,
-                    ),
-                  ),
-                )
-              : null,
-          selected: selected,
-          selectedTileColor:
-              cs.primaryContainer.withValues(alpha: 0.3),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          mouseCursor: SystemMouseCursors.click,
-          onTap: () {
-            matrix.selectSpace(node.room.id);
-            widget.onSpaceSelected();
-          },
-          onLongPress: () {
-            matrix.toggleSpaceSelection(node.room.id);
-            widget.onSpaceSelected();
-          },
-        ),
-      ),
-    );
-
-    for (final sub in node.subspaces) {
-      widgets.addAll(
-          _buildSpaceItems(context, matrix, sub, depth + 1));
-    }
-
-    return widgets;
-  }
-
-  /// Filter tree to nodes matching the query (or having matching children).
-  List<SpaceNode> _filterTree(List<SpaceNode> nodes, String q) {
-    final result = <SpaceNode>[];
-    for (final node in nodes) {
-      final nameMatches =
-          node.room.getLocalizedDisplayname().toLowerCase().contains(q);
-      final filteredSubs = _filterTree(node.subspaces, q);
-      if (nameMatches || filteredSubs.isNotEmpty) {
-        result.add(SpaceNode(
-          room: node.room,
-          subspaces: nameMatches ? node.subspaces : filteredSubs,
-          directChildRoomIds: node.directChildRoomIds,
-        ));
-      }
-    }
-    return result;
-  }
 }
+
