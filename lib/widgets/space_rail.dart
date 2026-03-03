@@ -365,37 +365,6 @@ class _RailIconState extends State<_RailIcon> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    _resolveThumbnail();
-  }
-
-  @override
-  void didUpdateWidget(_RailIcon oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.room?.avatar != _lastAvatarUri) {
-      _resolvedUrl = null;
-      _resolveThumbnail();
-    }
-  }
-
-  Future<void> _resolveThumbnail() async {
-    final avatarUri = widget.room?.avatar;
-    _lastAvatarUri = avatarUri;
-    if (avatarUri == null) return;
-    try {
-      final uri = await avatarUri.getThumbnailUri(
-        widget.room!.client,
-        width: 96,
-        height: 96,
-      );
-      if (mounted) setState(() => _resolvedUrl = uri.toString());
-    } catch (e) {
-      debugPrint('[Lattice] Failed to resolve space avatar thumbnail: $e');
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final radius = widget.isSelected ? 14.0 : 22.0;
