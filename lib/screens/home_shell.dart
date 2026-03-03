@@ -82,15 +82,17 @@ class _HomeShellState extends State<HomeShell> {
     _syncRoomSelection();
   }
 
-  // ── Route helpers ─────────────────────────────────────────────
-
-
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.sizeOf(context).width;
     final isWide = width >= _wideBreakpoint;
 
-    final matrix = context.watch<MatrixService>();
+    // Only rebuild when spaces change (for keyboard bindings).
+    final matrix = context.read<MatrixService>();
+    context.select<MatrixService, int>((m) => m.spaces.length);
+
+    // Reset details panel when switching from wide to narrow.
+    if (!isWide) _showRoomDetails = false;
 
     final child = isWide
         ? _buildWideLayout(width, matrix)
@@ -186,13 +188,14 @@ class _HomeShellState extends State<HomeShell> {
                     _dragPanelWidth = prefs.panelWidth;
                   },
                   onHorizontalDragUpdate: (details) {
+                    final current = _dragPanelWidth ?? prefs.panelWidth;
                     setState(() {
-                      _dragPanelWidth = (_dragPanelWidth! + details.delta.dx)
-                          .clamp(0.0, PreferencesService.maxPanelWidth);
+                      _dragPanelWidth = (current + details.delta.dx)
+                          .clamp(_collapseThreshold * 0.5, PreferencesService.maxPanelWidth);
                     });
                   },
                   onHorizontalDragEnd: (_) {
-                    final w = _dragPanelWidth!;
+                    final w = _dragPanelWidth ?? prefs.panelWidth;
                     setState(() => _dragPanelWidth = null);
                     prefs.setPanelWidth(w < _collapseThreshold ? 0 : w);
                   },
