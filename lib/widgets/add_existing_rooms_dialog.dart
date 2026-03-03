@@ -39,6 +39,13 @@ class _AddExistingRoomsDialogState extends State<AddExistingRoomsDialog> {
   final Set<String> _selected = {};
   bool _loading = false;
   String _query = '';
+  late List<Room> _eligibleRooms;
+
+  @override
+  void initState() {
+    super.initState();
+    _eligibleRooms = _computeEligibleRooms();
+  }
 
   @override
   void dispose() {
@@ -46,7 +53,7 @@ class _AddExistingRoomsDialogState extends State<AddExistingRoomsDialog> {
     super.dispose();
   }
 
-  List<Room> get _eligibleRooms {
+  List<Room> _computeEligibleRooms() {
     final existingChildIds =
         widget.space.spaceChildren.map((c) => c.roomId).toSet();
     return widget.matrixService.client.rooms
@@ -91,10 +98,9 @@ class _AddExistingRoomsDialogState extends State<AddExistingRoomsDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final eligible = _eligibleRooms;
     final filtered = _query.isEmpty
-        ? eligible
-        : eligible
+        ? _eligibleRooms
+        : _eligibleRooms
             .where((r) => r
                 .getLocalizedDisplayname()
                 .toLowerCase()
@@ -106,7 +112,7 @@ class _AddExistingRoomsDialogState extends State<AddExistingRoomsDialog> {
       content: SizedBox(
         width: 400,
         height: 400,
-        child: eligible.isEmpty
+        child: _eligibleRooms.isEmpty
             ? const Center(
                 child: Text('All your rooms are already in this space.'))
             : Column(
@@ -160,7 +166,7 @@ class _AddExistingRoomsDialogState extends State<AddExistingRoomsDialog> {
           onPressed: _loading ? null : () => Navigator.pop(context),
           child: const Text('Cancel'),
         ),
-        if (eligible.isNotEmpty)
+        if (_eligibleRooms.isNotEmpty)
           FilledButton(
             onPressed: _loading || _selected.isEmpty ? null : _submit,
             child: _loading

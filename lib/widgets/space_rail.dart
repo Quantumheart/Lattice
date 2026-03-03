@@ -26,14 +26,19 @@ class SpaceRail extends StatefulWidget {
 }
 
 class _SpaceRailState extends State<SpaceRail> {
+  bool _orderSynced = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final matrix = context.read<MatrixService>();
-    final prefs = context.read<PreferencesService>();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) matrix.updateSpaceOrder(prefs.spaceOrder);
-    });
+    if (!_orderSynced) {
+      _orderSynced = true;
+      final matrix = context.read<MatrixService>();
+      final prefs = context.read<PreferencesService>();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) matrix.updateSpaceOrder(prefs.spaceOrder);
+      });
+    }
   }
 
   @override
@@ -102,12 +107,14 @@ class _SpaceRailState extends State<SpaceRail> {
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 6),
                     child: Builder(
-                      builder: (iconContext) => _RailIcon(
-                        label: space.getLocalizedDisplayname().isNotEmpty
-                            ? space.getLocalizedDisplayname()[0].toUpperCase()
+                      builder: (iconContext) {
+                        final displayName = space.getLocalizedDisplayname();
+                        return _RailIcon(
+                        label: displayName.isNotEmpty
+                            ? displayName[0].toUpperCase()
                             : '?',
                         tooltip:
-                            '${space.getLocalizedDisplayname()} \u00b7 $childCount rooms',
+                            '$displayName \u00b7 $childCount rooms',
                         isSelected:
                             matrix.selectedSpaceIds.contains(space.id),
                         room: space,
@@ -157,7 +164,8 @@ class _SpaceRailState extends State<SpaceRail> {
                             space,
                           );
                         },
-                      ),
+                      );
+                      },
                     ),
                   ),
                 );
@@ -211,20 +219,17 @@ class _SpaceRailState extends State<SpaceRail> {
                       padding: EdgeInsets.zero,
                       children: [
                         for (final space in invited)
-                          Padding(
+                          Builder(builder: (_) {
+                            final name = space.getLocalizedDisplayname();
+                            return Padding(
                             padding: const EdgeInsets.only(bottom: 6),
                             child: Opacity(
                               opacity: 0.7,
                               child: _RailIcon(
-                                label: space
-                                        .getLocalizedDisplayname()
-                                        .isNotEmpty
-                                    ? space
-                                        .getLocalizedDisplayname()[0]
-                                        .toUpperCase()
+                                label: name.isNotEmpty
+                                    ? name[0].toUpperCase()
                                     : '?',
-                                tooltip:
-                                    'Invited: ${space.getLocalizedDisplayname()}',
+                                tooltip: 'Invited: $name',
                                 isSelected: false,
                                 color: cs.outlineVariant,
                                 outlined: true,
@@ -239,7 +244,8 @@ class _SpaceRailState extends State<SpaceRail> {
                                 },
                               ),
                             ),
-                          ),
+                          );
+                          }),
                       ],
                     ),
                   ),

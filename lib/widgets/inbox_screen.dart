@@ -17,22 +17,21 @@ class InboxScreen extends StatefulWidget {
 }
 
 class _InboxScreenState extends State<InboxScreen> {
+  late final InboxController _controller;
+
   @override
   void initState() {
     super.initState();
-    final controller = context.read<InboxController>();
-    if (controller.grouped.isEmpty && !controller.isLoading) {
-      controller.fetch();
+    _controller = context.read<InboxController>();
+    if (_controller.grouped.isEmpty && !_controller.isLoading) {
+      _controller.fetch();
     }
-    controller.startPolling();
+    _controller.startPolling();
   }
 
   @override
   void dispose() {
-    // Only stop polling if context is still accessible
-    try {
-      context.read<InboxController>().stopPolling();
-    } catch (_) {}
+    _controller.stopPolling();
     super.dispose();
   }
 
@@ -115,23 +114,26 @@ class _InboxScreenState extends State<InboxScreen> {
                               ],
                             ),
                           )
-                        : ListView.builder(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            itemCount: controller.grouped.length +
-                                (controller.hasMore ? 1 : 0),
-                            itemBuilder: (context, i) {
-                              if (i == controller.grouped.length) {
-                                return _LoadMoreButton(
-                                  isLoading: controller.isLoading,
-                                  onPressed: controller.loadMore,
+                        : RefreshIndicator(
+                            onRefresh: controller.fetch,
+                            child: ListView.builder(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
+                              itemCount: controller.grouped.length +
+                                  (controller.hasMore ? 1 : 0),
+                              itemBuilder: (context, i) {
+                                if (i == controller.grouped.length) {
+                                  return _LoadMoreButton(
+                                    isLoading: controller.isLoading,
+                                    onPressed: controller.loadMore,
+                                  );
+                                }
+                                return _NotificationGroupTile(
+                                  group: controller.grouped[i],
+                                  controller: controller,
                                 );
-                              }
-                              return _NotificationGroupTile(
-                                group: controller.grouped[i],
-                                controller: controller,
-                              );
-                            },
+                              },
+                            ),
                           ),
           ),
         ],
@@ -154,7 +156,7 @@ class _NotificationGroupTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final client = context.read<InboxController>().client;
+    final client = controller.client;
     final room = client.getRoomById(group.roomId);
 
     return Padding(
@@ -314,14 +316,16 @@ class _NotificationTile extends StatelessWidget {
 
   String _extractBody(matrix_sdk.MatrixEvent event) {
     final content = event.content;
+    final msgtype = content['msgtype'];
+
+    // Check media types first — their body is just a filename.
+    if (msgtype == matrix_sdk.MessageTypes.Image) return '📷 Image';
+    if (msgtype == matrix_sdk.MessageTypes.Video) return '🎥 Video';
+    if (msgtype == matrix_sdk.MessageTypes.Audio) return '🎵 Audio';
+    if (msgtype == matrix_sdk.MessageTypes.File) return '📎 File';
+
     final body = content['body'];
     if (body is String) return stripReplyFallback(body);
-
-    final msgtype = content['msgtype'];
-    if (msgtype == 'm.image') return '📷 Image';
-    if (msgtype == 'm.video') return '🎥 Video';
-    if (msgtype == 'm.audio') return '🎵 Audio';
-    if (msgtype == 'm.file') return '📎 File';
 
     // Fallback for state events, etc.
     return '';

@@ -89,8 +89,8 @@ class _AddRoomToSpaceDialogState extends State<AddRoomToSpaceDialog> {
 
     return AlertDialog(
       title: const Text('Add to space'),
-      content: SizedBox(
-        width: 400,
+      content: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400, maxHeight: 400),
         child: eligible.isEmpty
             ? const Text('This room is already in all your spaces.')
             : ListView.builder(

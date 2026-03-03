@@ -1036,8 +1036,8 @@ class _RoomTile extends StatelessWidget {
   bool _hasContextMenu(MatrixService matrix) {
     // "Remove from space" — when viewing a space with permission.
     final selectedIds = matrix.selectedSpaceIds;
-    if (selectedIds.isNotEmpty) {
-      final space = matrix.client.getRoomById(selectedIds.first);
+    for (final spaceId in selectedIds) {
+      final space = matrix.client.getRoomById(spaceId);
       if (space != null && space.canChangeStateEvent('m.space.child')) {
         return true;
       }
@@ -1277,12 +1277,13 @@ class _RoomTile extends StatelessWidget {
 
   String _formatTime(DateTime? ts) {
     if (ts == null) return '';
+    final local = ts.toLocal();
     final now = DateTime.now();
-    final diff = now.difference(ts);
+    final diff = now.difference(local);
     if (diff.inMinutes < 1) return 'now';
     if (diff.inMinutes < 60) return '${diff.inMinutes}m';
     if (diff.inHours < 24) return '${diff.inHours}h';
     if (diff.inDays < 7) return '${diff.inDays}d';
-    return '${ts.day.toString().padLeft(2, '0')}/${ts.month.toString().padLeft(2, '0')}';
+    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}';
   }
 }

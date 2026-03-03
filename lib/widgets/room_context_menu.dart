@@ -7,6 +7,8 @@ import 'add_room_to_space_dialog.dart';
 
 // ── Room Context Menu ───────────────────────────────────────────────
 
+enum _RoomContextAction { addToSpace, removeFromSpace }
+
 Future<void> showRoomContextMenu(
   BuildContext context,
   RelativeRect position,
@@ -19,14 +21,15 @@ Future<void> showRoomContextMenu(
   final selectedIds = matrix.selectedSpaceIds;
   final memberships = matrix.spaceMemberships(room.id);
 
-  // "Remove from space" — only when a space is selected and user has permission.
+  // "Remove from space" — when any selected space has permission.
   Room? activeSpace;
   bool canRemove = false;
-  if (selectedIds.isNotEmpty) {
-    activeSpace = matrix.client.getRoomById(selectedIds.first);
-    if (activeSpace != null &&
-        activeSpace.canChangeStateEvent('m.space.child')) {
+  for (final spaceId in selectedIds) {
+    final space = matrix.client.getRoomById(spaceId);
+    if (space != null && space.canChangeStateEvent('m.space.child')) {
+      activeSpace = space;
       canRemove = true;
+      break;
     }
   }
 
@@ -37,7 +40,7 @@ Future<void> showRoomContextMenu(
 
   if (!canAdd && !canRemove) return;
 
-  final action = await showMenu<String>(
+  final action = await showMenu<_RoomContextAction>(
     context: context,
     position: position,
     color: cs.surfaceContainer,
@@ -45,7 +48,7 @@ Future<void> showRoomContextMenu(
     items: [
       if (canAdd)
         const PopupMenuItem(
-          value: 'add_to_space',
+          value: _RoomContextAction.addToSpace,
           child: Row(
             children: [
               Icon(Icons.add_link_rounded, size: 18),
@@ -56,7 +59,7 @@ Future<void> showRoomContextMenu(
         ),
       if (canRemove)
         PopupMenuItem(
-          value: 'remove_from_space',
+          value: _RoomContextAction.removeFromSpace,
           child: Row(
             children: [
               Icon(Icons.link_off_rounded, size: 18, color: cs.error),
@@ -71,13 +74,13 @@ Future<void> showRoomContextMenu(
   if (action == null || !context.mounted) return;
 
   switch (action) {
-    case 'add_to_space':
+    case _RoomContextAction.addToSpace:
       await AddRoomToSpaceDialog.show(
         context,
         room: room,
         matrixService: matrix,
       );
-    case 'remove_from_space':
+    case _RoomContextAction.removeFromSpace:
       if (activeSpace != null) {
         await _handleRemoveFromSpace(context, activeSpace, room);
       }

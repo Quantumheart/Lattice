@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../routing/route_names.dart';
 import '../services/matrix_service.dart';
 import 'add_existing_rooms_dialog.dart';
+import 'invite_user_dialog.dart';
 import 'new_room_dialog.dart';
 
 // ── Space Context Menu ──────────────────────────────────────────────
@@ -174,23 +175,17 @@ Future<void> handleLeaveSpace(BuildContext context, Room space) =>
     _handleLeave(context, space);
 
 Future<void> _handleMarkAsRead(Room space) async {
+  final eventId = space.lastEvent?.eventId;
+  if (eventId == null) return;
   try {
-    await space.setReadMarker(space.lastEvent?.eventId ?? '');
+    await space.setReadMarker(eventId);
   } catch (e) {
     debugPrint('[Lattice] Failed to mark space as read: $e');
   }
 }
 
 Future<void> _handleInvite(BuildContext context, Room space) async {
-  final controller = TextEditingController();
-  final mxid = await showDialog<String>(
-    context: context,
-    builder: (ctx) => _InviteToSpaceDialog(
-      room: space,
-      controller: controller,
-    ),
-  );
-  controller.dispose();
+  final mxid = await InviteUserDialog.show(context, room: space);
 
   if (mxid == null || !context.mounted) return;
 
@@ -305,87 +300,10 @@ void _collectDescendantRooms(Room space, Set<String> ids, Client client) {
     if (childId == null) continue;
     final childRoom = client.getRoomById(childId);
     if (childRoom == null || childRoom.membership != Membership.join) continue;
+    ids.add(childId);
     if (childRoom.isSpace) {
       _collectDescendantRooms(childRoom, ids, client);
-    } else {
-      ids.add(childId);
     }
   }
 }
 
-// ── Invite Dialog ───────────────────────────────────────────────────
-
-class _InviteToSpaceDialog extends StatefulWidget {
-  const _InviteToSpaceDialog({
-    required this.room,
-    required this.controller,
-  });
-
-  final Room room;
-  final TextEditingController controller;
-
-  @override
-  State<_InviteToSpaceDialog> createState() => _InviteToSpaceDialogState();
-}
-
-class _InviteToSpaceDialogState extends State<_InviteToSpaceDialog> {
-  static final _mxidRegex = RegExp(r'^@[^:]+:.+$');
-  String? _error;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return AlertDialog(
-      title: const Text('Invite user'),
-      content: SizedBox(
-        width: 400,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: widget.controller,
-              autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Matrix ID',
-                hintText: '@user:server.com',
-                border: OutlineInputBorder(),
-              ),
-              onSubmitted: (_) => _submit(),
-            ),
-            if (_error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  _error!,
-                  style: TextStyle(color: cs.error, fontSize: 13),
-                ),
-              ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _submit,
-          child: const Text('Invite'),
-        ),
-      ],
-    );
-  }
-
-  void _submit() {
-    final mxid = widget.controller.text.trim();
-    if (mxid.isEmpty) {
-      setState(() => _error = 'Please enter a Matrix ID');
-      return;
-    }
-    if (!_mxidRegex.hasMatch(mxid)) {
-      setState(() => _error = 'Invalid Matrix ID');
-      return;
-    }
-    Navigator.pop(context, mxid);
-  }
-}

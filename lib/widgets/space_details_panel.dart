@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../services/matrix_service.dart';
 import 'admin_settings_section.dart';
+import 'invite_user_dialog.dart';
 import 'room_avatar.dart';
 import 'room_members_section.dart';
 import 'space_context_menu.dart';
@@ -49,20 +50,16 @@ class _SpaceDetailsPanelState extends State<SpaceDetailsPanel> {
   }
 
   Future<void> _showInviteDialog(Room space) async {
-    final controller = TextEditingController();
-    final result = await showDialog<String>(
-      context: context,
-      builder: (ctx) => _InviteUserDialog(room: space, controller: controller),
-    );
-    controller.dispose();
+    final result = await InviteUserDialog.show(context, room: space);
     if (result == null || !mounted) return;
 
-    final scaffold = ScaffoldMessenger.of(context);
     await _run('invite', () async {
       await space.invite(result);
-      scaffold.showSnackBar(
-        SnackBar(content: Text('Invited $result')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Invited $result')),
+        );
+      }
     });
   }
 
@@ -231,73 +228,3 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-// ── Invite dialog ──────────────────────────────────────────────
-
-class _InviteUserDialog extends StatefulWidget {
-  const _InviteUserDialog({required this.room, required this.controller});
-
-  final Room room;
-  final TextEditingController controller;
-
-  @override
-  State<_InviteUserDialog> createState() => _InviteUserDialogState();
-}
-
-class _InviteUserDialogState extends State<_InviteUserDialog> {
-  static final _mxidRegex = RegExp(r'^@[^:]+:.+$');
-  String? _error;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return AlertDialog(
-      title: const Text('Invite user'),
-      content: SizedBox(
-        width: 400,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: widget.controller,
-              autofocus: true,
-              decoration: const InputDecoration(
-                labelText: 'Matrix ID',
-                hintText: '@user:server.com',
-                border: OutlineInputBorder(),
-              ),
-              onSubmitted: (_) => _submit(),
-            ),
-            if (_error != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(_error!, style: TextStyle(color: cs.error, fontSize: 13)),
-              ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _submit,
-          child: const Text('Invite'),
-        ),
-      ],
-    );
-  }
-
-  void _submit() {
-    final mxid = widget.controller.text.trim();
-    if (mxid.isEmpty) {
-      setState(() => _error = 'Please enter a Matrix ID');
-      return;
-    }
-    if (!_mxidRegex.hasMatch(mxid)) {
-      setState(() => _error = 'Invalid Matrix ID (use @user:server)');
-      return;
-    }
-    Navigator.pop(context, mxid);
-  }
-}
