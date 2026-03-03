@@ -146,6 +146,9 @@ class MatrixService extends ChangeNotifier
   @override
   set isLoggedIn(bool value) => _isLoggedIn = value;
 
+  @override
+  String Function(Object e) get friendlyError => friendlyAuthError;
+
   /// Sets the logged-in state directly. Only for testing.
   @visibleForTesting
   set isLoggedInForTest(bool value) => _isLoggedIn = value;
@@ -242,7 +245,7 @@ class MatrixService extends ChangeNotifier
             clientName: clientName,
             storage: _storage,
           );
-        } else if ('$e'.contains('Upload key failed')) {
+        } else if (_isOlmKeyUploadFailure(e)) {
           // The local OLM account was lost (e.g. DB deleted) but the
           // device ID still references server-side keys we can no longer
           // match. Clear the device ID so the SDK registers a fresh
@@ -299,15 +302,18 @@ class MatrixService extends ChangeNotifier
       );
 
       // Update stored session keys from backup.
-      await _storage.write(
-          key: latticeKey(clientName, 'access_token'),
-          value: backup.accessToken);
-      await _storage.write(
-          key: latticeKey(clientName, 'user_id'), value: backup.userId);
-      await _storage.write(
-          key: latticeKey(clientName, 'homeserver'), value: backup.homeserver);
-      await _storage.write(
-          key: latticeKey(clientName, 'device_id'), value: backup.deviceId);
+      await Future.wait([
+        _storage.write(
+            key: latticeKey(clientName, 'access_token'),
+            value: backup.accessToken),
+        _storage.write(
+            key: latticeKey(clientName, 'user_id'), value: backup.userId),
+        _storage.write(
+            key: latticeKey(clientName, 'homeserver'),
+            value: backup.homeserver),
+        _storage.write(
+            key: latticeKey(clientName, 'device_id'), value: backup.deviceId),
+      ]);
 
       await _activateSession();
       debugPrint('[Lattice] Session restored from backup');
@@ -326,10 +332,28 @@ class MatrixService extends ChangeNotifier
     }
   }
 
+  /// Whether the error indicates a failed OLM key upload, typically caused by
+  /// a lost local OLM account while the device ID still references server-side
+  /// keys. Checks both the Matrix SDK error and common message patterns.
+  static bool _isOlmKeyUploadFailure(Object e) {
+    if (e is MatrixException && e.errcode == 'M_UNKNOWN') {
+      return e.errorMessage.contains('key upload');
+    }
+    // Fallback: the SDK may wrap the error in a generic exception.
+    final msg = '$e';
+    return msg.contains('Upload key failed') ||
+        msg.contains('one_time_key_counts');
+  }
+
   /// Re-attempt session restore without a device ID so the SDK registers a
   /// fresh device. Called when the local OLM account was lost and the old
   /// device's keys can no longer be uploaded.
+  ///
+  /// Assumes the caller has already disposed and recreated [_client] so we
+  /// get a clean SDK instance (see [_restoreSession]).
   Future<void> _retryInitWithoutDevice() async {
+    assert(_client.userID == null,
+        '_retryInitWithoutDevice requires a fresh client');
     try {
       final token =
           await _storage.read(key: latticeKey(clientName, 'access_token'));

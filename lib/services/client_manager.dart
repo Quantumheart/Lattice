@@ -47,11 +47,10 @@ class ClientManager extends ChangeNotifier {
     _prefs ??= await SharedPreferences.getInstance();
     final names = _prefs!.getStringList(_clientNamesKey) ?? ['default'];
 
-    for (final name in names) {
-      final service = _createService(clientName: name);
-      await service.init();
-      _services.add(service);
-    }
+    final services =
+        names.map((name) => _createService(clientName: name)).toList();
+    await Future.wait(services.map((s) => s.init()));
+    _services.addAll(services);
 
     // Remove services that failed to restore (not logged in), unless it's
     // the only one left (so we still show the login screen).

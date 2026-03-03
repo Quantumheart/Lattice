@@ -25,10 +25,12 @@ mixin AuthMixin on ChangeNotifier {
   void clearCachedPassword();
   void cancelUiaSub();
   Future<void> startSync({Duration? timeout});
+  void cancelSyncSub();
   void resetSelection();
   void resetChatBackupState();
   Future<void> saveSessionBackup();
   Future<void> recreateClient();
+  String Function(Object e) get friendlyError;
 
   // ── Auth state ────────────────────────────────────────────────
   String? _loginError;
@@ -258,8 +260,7 @@ mixin AuthMixin on ChangeNotifier {
     debugPrint('[Lattice] Registration complete – userId=${response.userId}');
 
     if (client.accessToken == null || client.userID == null) {
-      throw StateError(
-          'Client was not initialized after register(). '
+      throw StateError('Client was not initialized after register(). '
           'accessToken=${client.accessToken}, userID=${client.userID}');
     }
 
@@ -307,7 +308,7 @@ mixin AuthMixin on ChangeNotifier {
     } catch (e) {
       debugPrint('[Lattice] Post-login sync error: $e');
       if (isLoggedIn) {
-        _postLoginSyncError = e.toString();
+        _postLoginSyncError = friendlyError(e);
         notifyListeners();
       }
     } finally {
@@ -334,8 +335,11 @@ mixin AuthMixin on ChangeNotifier {
 
   // ── Logout ───────────────────────────────────────────────────
   Future<void> logout() async {
-    // Cancel login state first so the background sync guard sees
-    // isLoggedIn == false, then wait for it to settle.
+    // Cancel subscriptions first to prevent concurrent state changes
+    // (e.g. listenForLoginState calling clearSessionKeys) while we
+    // await the background sync future.
+    _loginStateSub?.cancel();
+    cancelSyncSub();
     isLoggedIn = false;
     await _postLoginSyncFuture;
 
@@ -348,10 +352,8 @@ mixin AuthMixin on ChangeNotifier {
     }
     await clearSessionKeys();
     await SessionBackup.delete(clientName: clientName, storage: storage);
-    isLoggedIn = false;
     clearCachedPassword();
     cancelUiaSub();
-    _loginStateSub?.cancel();
     resetSelection();
     resetChatBackupState();
     notifyListeners();
@@ -373,6 +375,12 @@ mixin AuthMixin on ChangeNotifier {
     } catch (e) {
       debugPrint('[Lattice] Token refresh failed: $e');
       isLoggedIn = false;
+      _loginStateSub?.cancel();
+      cancelSyncSub();
+      clearCachedPassword();
+      cancelUiaSub();
+      resetSelection();
+      resetChatBackupState();
       await clearSessionKeys();
       await SessionBackup.delete(clientName: clientName, storage: storage);
       try {
@@ -395,15 +403,15 @@ mixin AuthMixin on ChangeNotifier {
   @protected
   void listenForLoginState() {
     _loginStateSub?.cancel();
-    _loginStateSub = client.onLoginStateChanged.stream.listen((state) {
+    _loginStateSub = client.onLoginStateChanged.stream.listen((state) async {
       if (state == LoginState.loggedOut && isLoggedIn) {
         debugPrint('[Lattice] Server-side logout detected');
         isLoggedIn = false;
         clearCachedPassword();
         resetSelection();
         resetChatBackupState();
-        clearSessionKeys();
-        SessionBackup.delete(clientName: clientName, storage: storage);
+        await clearSessionKeys();
+        await SessionBackup.delete(clientName: clientName, storage: storage);
         notifyListeners();
       }
     });
