@@ -119,7 +119,7 @@ class _HomeShellState extends State<HomeShell> {
   }
 
   Map<ShortcutActivator, VoidCallback> _buildKeyBindings(MatrixService matrix) {
-    final spaces = matrix.spaces;
+    final spaces = matrix.topLevelSpaces;
     final bindings = <ShortcutActivator, VoidCallback>{};
 
     // Ctrl+0 → clear space selection

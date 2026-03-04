@@ -262,6 +262,7 @@ class _RoomListState extends State<RoomList>
                             HeaderItem() => RoomSectionHeader(
                                 item: item,
                                 prefs: prefs,
+                                matrix: matrix,
                               ),
                             RoomItem() => Padding(
                                 padding: EdgeInsets.only(

@@ -10,12 +10,14 @@ class HeaderItem extends ListItem {
   final String sectionKey;
   final int depth;
   final int roomCount;
+  final bool isSpace;
 
   HeaderItem({
     required this.name,
     required this.sectionKey,
     required this.depth,
     required this.roomCount,
+    this.isSpace = false,
   });
 }
 

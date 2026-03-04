@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'new_room_dialog.dart';
 import 'room_list_models.dart';
 
 // ── Section header ──────────────────────────────────────────
@@ -9,10 +11,12 @@ class RoomSectionHeader extends StatelessWidget {
     super.key,
     required this.item,
     required this.prefs,
+    required this.matrix,
   });
 
   final HeaderItem item;
   final PreferencesService prefs;
+  final MatrixService matrix;
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +24,11 @@ class RoomSectionHeader extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     final isCollapsed =
         prefs.collapsedSpaceSections.contains(item.sectionKey);
+
+    final canAddRoom = item.isSpace &&
+        (matrix.client.getRoomById(item.sectionKey)
+                ?.canChangeStateEvent('m.space.child') ??
+            false);
 
     return Padding(
       padding: EdgeInsets.only(
@@ -53,6 +62,25 @@ class RoomSectionHeader extends StatelessWidget {
                   ),
                 ),
               ),
+              if (canAddRoom)
+                SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    iconSize: 18,
+                    icon: Icon(
+                      Icons.add_rounded,
+                      color: cs.onSurfaceVariant,
+                    ),
+                    tooltip: 'Add room',
+                    onPressed: () => NewRoomDialog.show(
+                      context,
+                      matrixService: matrix,
+                      parentSpaceIds: {item.sectionKey},
+                    ),
+                  ),
+                ),
               Text(
                 '${item.roomCount}',
                 style: tt.labelSmall?.copyWith(
