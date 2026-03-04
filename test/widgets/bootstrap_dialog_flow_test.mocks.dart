@@ -5,12 +5,13 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i5;
 import 'dart:typed_data' as _i14;
-import 'dart:ui' as _i16;
+import 'dart:ui' as _i17;
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart' as _i7;
 import 'package:http/http.dart' as _i4;
-import 'package:lattice/core/models/space_node.dart' as _i15;
-import 'package:lattice/core/services/matrix_service.dart' as _i8;
+import 'package:lattice/core/models/server_auth_capabilities.dart' as _i8;
+import 'package:lattice/core/models/space_node.dart' as _i16;
+import 'package:lattice/core/services/matrix_service.dart' as _i15;
 import 'package:matrix/encryption.dart' as _i9;
 import 'package:matrix/encryption/cross_signing.dart' as _i12;
 import 'package:matrix/encryption/key_verification_manager.dart' as _i11;
@@ -7696,7 +7697,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
 /// A class which mocks [MatrixService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
+class MockMatrixService extends _i1.Mock implements _i15.MatrixService {
   @override
   String get clientName => (super.noSuchMethod(
         Invocation.getter(#clientName),
@@ -7796,11 +7797,11 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
       ) as Set<String>);
 
   @override
-  List<_i15.SpaceNode> get spaceTree => (super.noSuchMethod(
+  List<_i16.SpaceNode> get spaceTree => (super.noSuchMethod(
         Invocation.getter(#spaceTree),
-        returnValue: <_i15.SpaceNode>[],
-        returnValueForMissingStub: <_i15.SpaceNode>[],
-      ) as List<_i15.SpaceNode>);
+        returnValue: <_i16.SpaceNode>[],
+        returnValueForMissingStub: <_i16.SpaceNode>[],
+      ) as List<_i16.SpaceNode>);
 
   @override
   List<_i2.Room> get spaces => (super.noSuchMethod(
@@ -7906,7 +7907,7 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
       );
 
   @override
-  void addListener(_i16.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i17.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #addListener,
           [listener],
@@ -7915,7 +7916,7 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
       );
 
   @override
-  void removeListener(_i16.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i17.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #removeListener,
           [listener],
