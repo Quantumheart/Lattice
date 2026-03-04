@@ -5,9 +5,9 @@ import 'package:matrix/matrix.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
-import 'package:lattice/widgets/chat/code_block.dart';
-import 'package:lattice/widgets/chat/html_message_text.dart';
-import 'package:lattice/widgets/chat/mention_pill.dart';
+import 'package:lattice/features/chat/widgets/code_block.dart';
+import 'package:lattice/features/chat/widgets/html_message_text.dart';
+import 'package:lattice/features/chat/widgets/mention_pill.dart';
 
 @GenerateNiceMocks([
   MockSpec<Room>(),

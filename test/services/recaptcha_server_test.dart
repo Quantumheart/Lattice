@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/services/recaptcha_server.dart';
+import 'package:lattice/features/auth/services/recaptcha_server.dart';
 
 void main() {
   group('RecaptchaServer', () {

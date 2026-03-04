@@ -4,7 +4,7 @@ import 'package:mockito/annotations.dart';
 
 import 'package:matrix/matrix.dart';
 
-import 'package:lattice/widgets/user_avatar.dart';
+import 'package:lattice/shared/widgets/user_avatar.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),

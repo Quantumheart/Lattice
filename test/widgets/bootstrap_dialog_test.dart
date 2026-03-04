@@ -7,8 +7,8 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/encryption.dart';
-import 'package:lattice/services/matrix_service.dart';
-import 'package:lattice/widgets/bootstrap_dialog.dart';
+import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/features/e2ee/widgets/bootstrap_dialog.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),

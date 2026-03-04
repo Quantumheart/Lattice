@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
-import 'package:lattice/screens/login_screen.dart';
-import 'package:lattice/services/matrix_service.dart';
-import 'package:lattice/services/client_manager.dart';
+import 'package:lattice/features/auth/screens/login_screen.dart';
+import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/client_manager.dart';
 
 import '../services/matrix_service_test.mocks.dart';
 

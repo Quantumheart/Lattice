@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:lattice/services/matrix_service.dart';
-import 'package:lattice/widgets/homeserver_controller.dart';
+import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/features/auth/widgets/homeserver_controller.dart';
 
 @GenerateNiceMocks([
   MockSpec<MatrixService>(),

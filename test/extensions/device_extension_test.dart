@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:matrix/matrix.dart';
-import 'package:lattice/extensions/device_extension.dart';
+import 'package:lattice/core/extensions/device_extension.dart';
 
 void main() {
   group('DeviceExtension', () {

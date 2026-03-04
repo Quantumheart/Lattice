@@ -7,8 +7,8 @@ import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/space_child.dart';
 import 'package:provider/provider.dart';
 
-import 'package:lattice/services/matrix_service.dart';
-import 'package:lattice/widgets/space_context_menu.dart';
+import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/features/spaces/widgets/space_context_menu.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),

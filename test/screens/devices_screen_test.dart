@@ -6,8 +6,8 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
-import 'package:lattice/services/matrix_service.dart';
-import 'package:lattice/screens/devices_screen.dart';
+import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/features/settings/screens/devices_screen.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),

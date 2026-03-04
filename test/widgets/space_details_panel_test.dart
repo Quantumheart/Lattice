@@ -4,8 +4,8 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
-import 'package:lattice/services/matrix_service.dart';
-import 'package:lattice/widgets/space_details_panel.dart';
+import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/features/spaces/widgets/space_details_panel.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),

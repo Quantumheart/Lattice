@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
-import 'package:lattice/widgets/key_verification_dialog.dart';
+import 'package:lattice/features/e2ee/widgets/key_verification_dialog.dart';
 
 /// A fake [KeyVerification] for testing. We cannot use Mockito because
 /// [onUpdate] and [state] are plain fields, not methods.

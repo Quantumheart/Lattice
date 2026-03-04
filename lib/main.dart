@@ -4,14 +4,14 @@ import 'package:provider/provider.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 
-import 'routing/app_router.dart';
-import 'services/client_manager.dart';
-import 'services/inbox_controller.dart';
-import 'services/matrix_service.dart';
-import 'services/notification_service.dart';
-import 'services/opengraph_service.dart';
-import 'services/preferences_service.dart';
-import 'theme/lattice_theme.dart';
+import 'package:lattice/core/routing/app_router.dart';
+import 'package:lattice/core/services/client_manager.dart';
+import 'package:lattice/features/notifications/services/inbox_controller.dart';
+import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/features/notifications/services/notification_service.dart';
+import 'package:lattice/features/chat/services/opengraph_service.dart';
+import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/theme/lattice_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

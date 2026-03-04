@@ -107,7 +107,7 @@ User enters credentials
 └───────────────────────────────┘
 ```
 
-**Source:** `lib/services/matrix_service.dart` — `login()` (line 130), `_startSync()` (line 281), `_tryAutoUnlockBackup()` (line 361)
+**Source:** `lib/core/services/matrix_service.dart` — `login()` (line 130), `_startSync()` (line 281), `_tryAutoUnlockBackup()` (line 361)
 
 ---
 
@@ -226,7 +226,7 @@ User taps "Chat backup: Not set up"
                      "Your keys are backed up"
 ```
 
-**Source:** `lib/widgets/bootstrap_controller.dart` — state machine (line 149), `onDone()` (line 378); `lib/widgets/bootstrap_views.dart` — UI rendering; `lib/widgets/bootstrap_dialog.dart` — dialog orchestration
+**Source:** `lib/features/e2ee/widgets/bootstrap_controller.dart` — state machine (line 149), `onDone()` (line 378); `lib/features/e2ee/widgets/bootstrap_views.dart` — UI rendering; `lib/features/e2ee/widgets/bootstrap_dialog.dart` — dialog orchestration
 
 ---
 
@@ -294,7 +294,7 @@ User taps "Verify with another device"
                     Dialog closes
 ```
 
-**Source:** `lib/widgets/key_verification_dialog.dart` — states (line 29), SAS auto-selection (line 56); `lib/widgets/bootstrap_dialog.dart` — `_showVerificationDialog()` (line 156)
+**Source:** `lib/features/e2ee/widgets/key_verification_dialog.dart` — states (line 29), SAS auto-selection (line 56); `lib/features/e2ee/widgets/bootstrap_dialog.dart` — `_showVerificationDialog()` (line 156)
 
 ---
 
@@ -332,7 +332,7 @@ Bootstrap needs server-side auth
 └──────────────────────────────────┘
 ```
 
-**Source:** `lib/services/matrix_service.dart` — `_handleUiaRequest()` (line 215), `_setCachedPassword()` (line 261)
+**Source:** `lib/core/services/matrix_service.dart` — `_handleUiaRequest()` (line 215), `_setCachedPassword()` (line 261)
 
 ---
 
@@ -398,7 +398,7 @@ Bootstrap needs server-side auth
                              └──────────────────────┘
 ```
 
-**Source:** `lib/screens/settings_screen.dart` — backup tile (line 109), `_showBackupInfo()` (line 182), `_confirmDisableBackup()` (line 223)
+**Source:** `lib/features/settings/screens/settings_screen.dart` — backup tile (line 109), `_showBackupInfo()` (line 182), `_confirmDisableBackup()` (line 223)
 
 ---
 
@@ -450,7 +450,7 @@ User taps "Sign Out"
    • Reset all state → null
 ```
 
-**Source:** `lib/screens/settings_screen.dart` — `_confirmLogout()` (line 254); `lib/services/matrix_service.dart` — `logout()` (line 183)
+**Source:** `lib/features/settings/screens/settings_screen.dart` — `_confirmLogout()` (line 254); `lib/core/services/matrix_service.dart` — `logout()` (line 183)
 
 ---
 
@@ -470,4 +470,4 @@ In-Memory (MatrixService)
 └── _client.encryption          ← SDK manages cached SSSS secrets
 ```
 
-**Source:** `lib/services/matrix_service.dart` — storage keys (line 316), recovery key (line 389), password caching (line 261)
+**Source:** `lib/core/services/matrix_service.dart` — storage keys (line 316), recovery key (line 389), password caching (line 261)
