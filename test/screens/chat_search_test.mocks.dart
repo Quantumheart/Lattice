@@ -7770,6 +7770,13 @@ class MockMatrixService extends _i1.Mock implements _i13.MatrixService {
       ) as List<_i2.Room>);
 
   @override
+  List<_i2.Room> get topLevelSpaces => (super.noSuchMethod(
+        Invocation.getter(#topLevelSpaces),
+        returnValue: <_i2.Room>[],
+        returnValueForMissingStub: <_i2.Room>[],
+      ) as List<_i2.Room>);
+
+  @override
   List<_i2.Room> get rooms => (super.noSuchMethod(
         Invocation.getter(#rooms),
         returnValue: <_i2.Room>[],
