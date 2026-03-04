@@ -6,7 +6,7 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:matrix/matrix.dart';
 
-import 'package:lattice/services/inbox_controller.dart';
+import 'package:lattice/features/notifications/services/inbox_controller.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),

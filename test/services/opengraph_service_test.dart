@@ -3,7 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:lattice/services/opengraph_service.dart';
+import 'package:lattice/features/chat/services/opengraph_service.dart';
 
 /// A public IPv4 address used for DNS override in tests.
 final _publicIp = InternetAddress('93.184.216.34');

@@ -9,8 +9,8 @@ import 'dart:ui' as _i13;
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart' as _i7;
 import 'package:http/http.dart' as _i4;
-import 'package:lattice/models/space_node.dart' as _i12;
-import 'package:lattice/services/matrix_service.dart' as _i8;
+import 'package:lattice/core/models/space_node.dart' as _i12;
+import 'package:lattice/core/services/matrix_service.dart' as _i8;
 import 'package:matrix/encryption.dart' as _i9;
 import 'package:matrix/matrix.dart' as _i2;
 import 'package:matrix/matrix_api_lite/generated/fixed_model.dart' as _i6;
@@ -7639,6 +7639,19 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
       ) as bool);
 
   @override
+  String Function(Object) get friendlyError => (super.noSuchMethod(
+        Invocation.getter(#friendlyError),
+        returnValue: (Object e) => _i10.dummyValue<String>(
+          this,
+          Invocation.getter(#friendlyError),
+        ),
+        returnValueForMissingStub: (Object e) => _i10.dummyValue<String>(
+          this,
+          Invocation.getter(#friendlyError),
+        ),
+      ) as String Function(Object));
+
+  @override
   bool get disposed => (super.noSuchMethod(
         Invocation.getter(#disposed),
         returnValue: false,
@@ -7762,6 +7775,16 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
   _i5.Future<void> saveSessionBackup() => (super.noSuchMethod(
         Invocation.method(
           #saveSessionBackup,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> recreateClient() => (super.noSuchMethod(
+        Invocation.method(
+          #recreateClient,
           [],
         ),
         returnValue: _i5.Future<void>.value(),

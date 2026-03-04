@@ -7,7 +7,7 @@ import 'package:matrix/encryption/cross_signing.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:matrix/src/utils/space_child.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:lattice/services/matrix_service.dart';
+import 'package:lattice/core/services/matrix_service.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),

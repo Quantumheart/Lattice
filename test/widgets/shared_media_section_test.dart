@@ -6,7 +6,7 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:matrix/matrix.dart';
 
-import 'package:lattice/widgets/shared_media_section.dart';
+import 'package:lattice/features/rooms/widgets/shared_media_section.dart';
 
 @GenerateNiceMocks([
   MockSpec<Room>(),

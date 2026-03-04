@@ -4,9 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:matrix/matrix.dart' hide LoginState;
-import 'package:lattice/services/matrix_service.dart';
-import 'package:lattice/services/client_manager.dart';
-import 'package:lattice/widgets/login_controller.dart';
+import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/client_manager.dart';
+import 'package:lattice/features/auth/widgets/login_controller.dart';
 
 @GenerateNiceMocks([
   MockSpec<MatrixService>(),

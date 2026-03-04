@@ -5,8 +5,8 @@ import 'package:mockito/mockito.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
-import 'package:lattice/services/matrix_service.dart';
-import 'package:lattice/widgets/room_context_menu.dart';
+import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/features/rooms/widgets/room_context_menu.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),

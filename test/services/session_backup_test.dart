@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:lattice/services/session_backup.dart';
+import 'package:lattice/core/services/session_backup.dart';
 
 import 'matrix_service_test.mocks.dart';
 

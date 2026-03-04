@@ -4,12 +4,12 @@ import 'package:go_router/go_router.dart';
 import 'package:mockito/mockito.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
-import 'package:lattice/routing/route_names.dart';
-import 'package:lattice/screens/homeserver_screen.dart';
-import 'package:lattice/screens/login_screen.dart';
-import 'package:lattice/screens/registration_screen.dart';
-import 'package:lattice/services/matrix_service.dart';
-import 'package:lattice/services/client_manager.dart';
+import 'package:lattice/core/routing/route_names.dart';
+import 'package:lattice/features/auth/screens/homeserver_screen.dart';
+import 'package:lattice/features/auth/screens/login_screen.dart';
+import 'package:lattice/features/auth/screens/registration_screen.dart';
+import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/client_manager.dart';
 
 import '../services/matrix_service_test.mocks.dart';
 

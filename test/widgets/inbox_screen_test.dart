@@ -8,8 +8,8 @@ import 'package:matrix/matrix.dart' as matrix_sdk;
 import 'package:matrix/matrix.dart' show Client, MatrixEvent, GetNotificationsResponse;
 import 'package:provider/provider.dart';
 
-import 'package:lattice/services/inbox_controller.dart';
-import 'package:lattice/widgets/inbox_screen.dart';
+import 'package:lattice/features/notifications/services/inbox_controller.dart';
+import 'package:lattice/features/home/widgets/inbox_screen.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),

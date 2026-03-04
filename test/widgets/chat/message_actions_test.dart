@@ -7,11 +7,11 @@ import 'package:mockito/mockito.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:provider/provider.dart';
-import 'package:lattice/services/matrix_service.dart';
-import 'package:lattice/services/preferences_service.dart';
-import 'package:lattice/screens/chat_screen.dart';
-import 'package:lattice/widgets/chat/edit_preview_banner.dart';
-import 'package:lattice/widgets/chat/message_bubble.dart';
+import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/features/chat/screens/chat_screen.dart';
+import 'package:lattice/features/chat/widgets/edit_preview_banner.dart';
+import 'package:lattice/features/chat/widgets/message_bubble.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),

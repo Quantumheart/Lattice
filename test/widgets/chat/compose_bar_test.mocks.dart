@@ -7,7 +7,7 @@ import 'dart:async' as _i5;
 import 'dart:typed_data' as _i11;
 
 import 'package:http/http.dart' as _i4;
-import 'package:lattice/services/typing_controller.dart' as _i12;
+import 'package:lattice/features/chat/services/typing_controller.dart' as _i12;
 import 'package:matrix/encryption.dart' as _i10;
 import 'package:matrix/matrix.dart' as _i2;
 import 'package:matrix/matrix_api_lite/generated/fixed_model.dart' as _i6;

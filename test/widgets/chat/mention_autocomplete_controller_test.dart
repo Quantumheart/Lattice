@@ -6,7 +6,7 @@ import 'package:matrix/matrix.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
-import 'package:lattice/widgets/chat/mention_autocomplete_controller.dart';
+import 'package:lattice/features/chat/widgets/mention_autocomplete_controller.dart';
 
 @GenerateNiceMocks([
   MockSpec<Room>(),

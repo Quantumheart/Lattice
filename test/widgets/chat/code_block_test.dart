@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:lattice/widgets/chat/code_block.dart';
+import 'package:lattice/features/chat/widgets/code_block.dart';
 
 Widget _wrap(Widget child) {
   return MaterialApp(

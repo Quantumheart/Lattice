@@ -6,9 +6,9 @@ import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:lattice/services/preferences_service.dart';
-import 'package:lattice/widgets/chat/read_receipts.dart';
-import 'package:lattice/widgets/user_avatar.dart';
+import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/features/chat/widgets/read_receipts.dart';
+import 'package:lattice/shared/widgets/user_avatar.dart';
 
 @GenerateNiceMocks([
   MockSpec<Room>(),

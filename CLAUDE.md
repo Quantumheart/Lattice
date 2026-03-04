@@ -23,11 +23,18 @@ Mock generation (`build_runner`) must run before `flutter test` whenever `@Gener
 
 ## Architecture
 
-**State management:** Single `MatrixService` (ChangeNotifier) provided at the root via Provider. It wraps the Matrix SDK client and manages login, sync, room/space selection, E2EE bootstrap, and UIA flows.
+**Directory structure:** Feature-based organization under `lib/`:
+- `core/` — extensions, models, routing, services (MatrixService + mixins), theme, utils
+- `features/` — feature modules: `auth/`, `chat/`, `e2ee/`, `home/`, `notifications/`, `rooms/`, `settings/`, `spaces/`
+- `shared/widgets/` — reusable UI components (avatars, section header, image viewer, speed dial)
 
-**Responsive layouts:** Three breakpoints in `HomeShell` — mobile (<720px, bottom nav), tablet (720–1100px, rail+list), desktop (≥1100px, rail+list+chat). The space rail is Discord/Slack-style vertical icons.
+Each feature module contains `screens/`, `services/`, and/or `widgets/` subdirectories as needed.
 
-**E2EE architecture:** Separated into three layers:
+**State management:** Single `MatrixService` (ChangeNotifier) provided at the root via Provider (`core/services/`). It wraps the Matrix SDK client and manages login, sync, room/space selection, E2EE bootstrap, and UIA flows.
+
+**Responsive layouts:** Three breakpoints in `HomeShell` (`features/home/screens/`) — mobile (<720px, bottom nav), tablet (720–1100px, rail+list), desktop (≥1100px, rail+list+chat). The space rail is Discord/Slack-style vertical icons.
+
+**E2EE architecture:** Separated into three layers (`features/e2ee/widgets/`):
 - `BootstrapController` (ChangeNotifier) — state machine for key backup/cross-signing setup
 - `BootstrapDialog` — modal orchestration
 - `BootstrapViews` — stateless UI components

@@ -9,10 +9,10 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
 
-import 'package:lattice/services/preferences_service.dart';
-import 'package:lattice/services/typing_controller.dart';
-import 'package:lattice/widgets/chat/compose_bar.dart';
-import 'package:lattice/widgets/chat/mention_suggestion_overlay.dart';
+import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/features/chat/services/typing_controller.dart';
+import 'package:lattice/features/chat/widgets/compose_bar.dart';
+import 'package:lattice/features/chat/widgets/mention_suggestion_overlay.dart';
 
 @GenerateNiceMocks([
   MockSpec<Room>(),

@@ -4,7 +4,7 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:matrix/matrix.dart';
 
-import 'package:lattice/widgets/chat/reaction_chips.dart';
+import 'package:lattice/features/chat/widgets/reaction_chips.dart';
 
 @GenerateNiceMocks([
   MockSpec<Event>(),

@@ -2,7 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
-import 'package:lattice/services/matrix_service.dart';
+import 'package:lattice/core/services/matrix_service.dart';
 
 import 'matrix_service_test.mocks.dart';
 
