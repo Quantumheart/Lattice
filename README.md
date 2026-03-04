@@ -1,45 +1,46 @@
-# Lattice — A Flutter Matrix Client
+# Lattice
 
-A modern, adaptive Matrix chat client built with Flutter and the `matrix` Dart SDK. Supports multiple layouts.
+A modern, adaptive Matrix chat client built with Flutter. Supports end-to-end encryption, rich messaging, spaces, and responsive layouts from mobile to desktop.
 
-## Architecture
+## Features
 
-```
-lib/
-├── main.dart                 # App entry, providers, dynamic color
-├── theme/
-│   └── lattice_theme.dart    # Material You theme (light + dark)
-├── services/
-│   └── matrix_service.dart   # Matrix SDK wrapper (login, sync, state)
-├── screens/
-│   ├── login_screen.dart     # Authentication screen
-│   ├── home_shell.dart       # Adaptive layout shell (rail + list + chat)
-│   ├── chat_screen.dart      # Message timeline + compose bar
-│   └── settings_screen.dart  # Account & preferences
-└── widgets/
-    ├── space_rail.dart       # Vertical space icon rail (desktop)
-    ├── room_list.dart        # Searchable room list
-    ├── room_avatar.dart      # Room avatar with initial fallback
-    └── message_bubble.dart   # Chat message bubble
-```
+**Messaging**
+- Rich text rendering (HTML, Markdown, syntax-highlighted code blocks)
+- Message reactions, replies, editing, and deletion
+- File and image uploads with progress tracking
+- Link previews via OpenGraph
+- @mention autocomplete with styled pills
+- Typing indicators and read receipts
+- Pinned messages
+- In-room message search
 
-## Layouts
+**End-to-End Encryption**
+- Cross-signing and device verification (SAS emoji)
+- Key backup setup with recovery key
+- Auto-unlock from secure storage on startup
+- Backup status indicators and management
 
-Lattice supports multiple adaptive layouts:
+**Spaces & Rooms**
+- Discord/Slack-style vertical space rail
+- Create, edit, and manage spaces
+- Room creation, DM creation, and invite flows
+- Room details panel with member list and shared media
+- Room admin controls
 
-| Width          | Layout                                         |
-| -------------- | ---------------------------------------------- |
-| < 720px        | Bottom nav bar + stack navigation (mobile)     |
-| 720–1100px     | Space rail + room list + placeholder           |
-| ≥ 1100px       | Space rail + room list + chat pane (3-column)  |
+**Adaptive Layouts**
 
-### Key Features
+| Width | Layout |
+| --- | --- |
+| < 720 px | Space rail + room list; chat pushes full-screen |
+| 720 – 1100 px | Space rail + room list + content pane (2-column) |
+| &ge; 1100 px | Space rail + resizable room list + chat pane (3-column) |
 
-- **Vertical icon rail** for spaces (Discord/Slack-style)
-- **Material You** dynamic color theming
-- **Adaptive master-detail** with animated transitions
-- **Unified search** across rooms
-- **Secure credential storage** via flutter_secure_storage
+**Other**
+- Material You dynamic color theming with light/dark modes
+- Theme and layout density picker
+- SSO and reCAPTCHA support
+- Local and desktop push notifications
+- Device management
 
 ## Getting Started
 
@@ -51,51 +52,99 @@ Lattice supports multiple adaptive layouts:
 ### Setup
 
 ```bash
-# Clone the project
+git clone https://github.com/<your-org>/lattice.git
 cd lattice
-
-# Install dependencies
 flutter pub get
-
-# Run on your target platform
-flutter run                  # Default device
-flutter run -d chrome        # Web
-flutter run -d macos         # macOS
-flutter run -d linux         # Linux
+flutter run              # default device
+flutter run -d linux     # Linux desktop
+flutter run -d chrome    # Web
 ```
 
-### Configuration
+The app connects to any Matrix homeserver. Enter your homeserver URL, username, and password on the login screen (defaults to `matrix.org`).
 
-The app connects to any Matrix homeserver. Enter your homeserver URL,
-username, and password on the login screen.
+### Building for Release
 
-Default: `matrix.org`
-
-## Commit Convention
-
-This project uses **semantic commits**:
-
-```
-feat: add hat wobble
-fix: resolve timeline sync race condition
-refactor: extract bubble styling into theme
-style: format imports
-docs: update README with architecture diagram
-test: add matrix_service unit tests
-chore: bump matrix SDK to 0.37.0
+```bash
+flutter build linux --release
+flutter build windows --release
 ```
 
-## Dependencies
+## Architecture
 
-| Package                  | Purpose                          |
-| ------------------------ | -------------------------------- |
-| `matrix`                 | Matrix protocol SDK              |
-| `provider`               | State management                 |
-| `cached_network_image`   | Avatar caching                   |
-| `flutter_secure_storage` | Credential persistence           |
-| `dynamic_color`          | Material You palette extraction  |
-| `animations`             | Page transition animations       |
-| `url_launcher`           | External link handling           |
+Feature-based organization under `lib/`:
+
+```
+lib/
+├── main.dart
+├── core/
+│   ├── extensions/       # Responsive device helpers
+│   ├── models/           # Space tree, upload state
+│   ├── routing/          # GoRouter configuration
+│   ├── services/         # MatrixService + mixins (auth, sync, selection, UIA)
+│   ├── theme/            # Material You light/dark themes
+│   └── utils/            # Emoji, colors, time formatting, syntax highlighting
+├── features/
+│   ├── auth/             # Login, registration, SSO, reCAPTCHA
+│   ├── chat/             # Message timeline, compose bar, reactions, search
+│   ├── e2ee/             # Bootstrap, device verification, key backup
+│   ├── home/             # Adaptive shell layout, inbox
+│   ├── notifications/    # Push and local notification handling
+│   ├── rooms/            # Room list, details, creation, invites, admin
+│   ├── settings/         # Preferences, devices, themes, notifications
+│   └── spaces/           # Space rail, creation, management
+└── shared/widgets/       # Avatars, image viewer, section headers, speed dial
+```
+
+**State management:** A single `MatrixService` (ChangeNotifier) provided at the root via Provider. It wraps the Matrix SDK client and manages login, sync, room/space selection, E2EE bootstrap, and UIA flows through composable mixins.
+
+See [`docs/e2ee-flow.md`](docs/e2ee-flow.md) for E2EE state machine diagrams.
+
+## Development
+
+```bash
+flutter analyze                                          # Lint
+dart run build_runner build --delete-conflicting-outputs  # Generate mocks
+flutter test                                             # Run all tests
+flutter test test/services/matrix_service_test.dart      # Single test file
+```
+
+Mock generation must run before `flutter test` whenever `@GenerateMocks` annotations change.
+
+### Commit Convention
+
+```
+feat:     new feature
+fix:      bug fix
+refactor: code restructuring
+style:    formatting only
+docs:     documentation
+test:     tests
+chore:    maintenance
+```
+
+## Key Dependencies
+
+| Package | Purpose |
+| --- | --- |
+| `matrix` | Matrix protocol SDK |
+| `flutter_vodozemac` / `vodozemac` | E2EE cryptography (Rust bindings) |
+| `provider` | State management |
+| `go_router` | Declarative routing |
+| `dynamic_color` | Material You palette extraction |
+| `cached_network_image` | Image caching |
+| `flutter_secure_storage` | Encrypted credential storage |
+| `sqflite` | Local database |
+| `flutter_local_notifications` | Push notifications |
+| `highlight` | Code syntax highlighting |
+
+## CI/CD
+
+GitHub Actions runs on push/PR to `master`:
+1. **Analyze** — `flutter analyze`
+2. **Test** — mock generation + `flutter test`
+3. **Build** — Linux release build
+
+Tagged releases (`v*`) build Linux (tar.gz) and Windows (Inno Setup installer) artifacts and publish a GitHub Release.
 
 ## License
 
