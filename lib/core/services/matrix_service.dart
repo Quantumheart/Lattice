@@ -2,14 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:sqflite/sqflite.dart' as sqflite_native;
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 import 'session_backup.dart';
 import 'mixins/selection_mixin.dart';
@@ -21,50 +15,6 @@ import 'mixins/auth_mixin.dart';
 /// Storage key helper shared across mixins.
 String latticeKey(String clientName, String suffix) =>
     'lattice_${clientName}_$suffix';
-
-/// Factory function that creates a configured [Client] instance.
-typedef ClientFactory = Future<Client> Function(
-  String clientName, {
-  Future<void> Function(Client)? onSoftLogout,
-});
-
-/// Default production factory: sets up sqflite DB and constructs [Client].
-Future<Client> createDefaultClient(
-  String clientName, {
-  Future<void> Function(Client)? onSoftLogout,
-}) async {
-  final Database sqfliteDb;
-  if (Platform.isAndroid || Platform.isIOS) {
-    final dir = await getApplicationSupportDirectory();
-    final dbPath = p.join(dir.path, 'lattice_$clientName.db');
-    sqfliteDb = await sqflite_native.openDatabase(dbPath);
-  } else {
-    sqfliteFfiInit();
-    final dbFactory = databaseFactoryFfi;
-    final dir = await getApplicationSupportDirectory();
-    final dbPath = p.join(dir.path, 'lattice_$clientName.db');
-    sqfliteDb = await dbFactory.openDatabase(dbPath);
-  }
-  final database = await MatrixSdkDatabase.init(
-    'lattice_$clientName',
-    database: sqfliteDb,
-  );
-  return Client(
-    'Lattice ($clientName)',
-    database: database,
-    logLevel: kReleaseMode ? Level.warning : Level.verbose,
-    defaultNetworkRequestTimeout: const Duration(minutes: 2),
-    onSoftLogout: onSoftLogout,
-    verificationMethods: {
-      KeyVerificationMethod.emoji,
-      KeyVerificationMethod.numbers,
-    },
-    nativeImplementations: NativeImplementationsIsolate(
-      compute,
-      vodozemacInit: () => vod.init(),
-    ),
-  );
-}
 
 /// Central service that owns the [Client] instance and exposes
 /// reactive state to the widget tree via [ChangeNotifier].
@@ -79,28 +29,20 @@ class MatrixService extends ChangeNotifier
   }
 
   MatrixService({
-    Client? client,
+    required Client client,
     FlutterSecureStorage? storage,
     this.clientName = 'default',
-    ClientFactory? clientFactory,
-  })  : _injectedClient = client,
-        _clientFactory = clientFactory ?? createDefaultClient,
-        _storage = storage ?? const FlutterSecureStorage() {
-    if (client != null) {
-      _client = client;
-    }
-  }
+  })  : _client = client,
+        _storage = storage ?? const FlutterSecureStorage();
 
   // ── Fields ──────────────────────────────────────────────────────
 
-  final Client? _injectedClient;
-  final ClientFactory _clientFactory;
   final FlutterSecureStorage _storage;
 
   @override
   final String clientName;
 
-  late Client _client;
+  final Client _client;
   @override
   Client get client => _client;
 
@@ -129,19 +71,13 @@ class MatrixService extends ChangeNotifier
 
   // ── Public API ──────────────────────────────────────────────────
 
-  /// Initializes the client, optionally restoring a saved session.
+  /// Initializes the service, optionally restoring a saved session.
   ///
   /// When [restoreSession] is true (default), migrates storage keys and
   /// attempts to restore a session from secure storage. When false, only
-  /// creates the client instance (used by [ClientManager] for login flows).
+  /// skips restore (used by [ClientManager] for login flows).
   Future<void> init({bool restoreSession = true}) async {
-    if (_injectedClient != null) {
-      _client = _injectedClient!;
-      return;
-    }
-
     if (restoreSession) await migrateStorageKeys();
-    _client = await _newClient();
     if (restoreSession) {
       await _restoreSession();
       notifyListeners();
@@ -166,14 +102,6 @@ class MatrixService extends ChangeNotifier
     debugPrint('[Lattice] Session backup saved for $clientName');
   }
 
-  /// Disposes the current [Client] and creates a fresh instance so that
-  /// a subsequent [login] call gets a clean SDK client.
-  @override
-  Future<void> recreateClient() async {
-    _client.dispose();
-    _client = await _newClient();
-  }
-
   @override
   void dispose() {
     _disposed = true;
@@ -182,17 +110,10 @@ class MatrixService extends ChangeNotifier
     cancelUiaSub();
     cancelLoginStateSub();
     disposeUiaController();
-    _client.dispose();
     super.dispose();
   }
 
   // ── Private: Initialization ─────────────────────────────────────
-
-  /// Creates a fresh [Client] via the factory with soft-logout wired up.
-  Future<Client> _newClient() => _clientFactory(
-        clientName,
-        onSoftLogout: (_) async => handleSoftLogout(),
-      );
 
   /// Wires up listeners and starts syncing after a successful session restore.
   Future<void> _activateSession() async {
@@ -282,11 +203,6 @@ class MatrixService extends ChangeNotifier
     } catch (e, s) {
       debugPrint('[Lattice] Session restore failed: $e');
       debugPrint('[Lattice] Stack trace:\n$s');
-
-      // The SDK client may be stuck in a partially initialized state after
-      // the failed _client.init() call. Dispose and recreate before any
-      // further restore attempts so we get a clean instance.
-      await recreateClient();
 
       // If the token expired, try initializing from the SDK database alone.
       // The database may contain a refresh token that lets the SDK obtain a
@@ -381,8 +297,6 @@ class MatrixService extends ChangeNotifier
       return false;
     } catch (e) {
       debugPrint('[Lattice] Database-only restore failed: $e');
-      // Recreate client again since it may be in a bad state.
-      await recreateClient();
       return false;
     }
   }
@@ -390,12 +304,7 @@ class MatrixService extends ChangeNotifier
   /// Re-attempt session restore without a device ID so the SDK registers a
   /// fresh device. Called when the local OLM account was lost and the old
   /// device's keys can no longer be uploaded.
-  ///
-  /// Assumes the caller has already disposed and recreated [_client] so we
-  /// get a clean SDK instance (see [_restoreSession]).
   Future<void> _retryInitWithoutDevice() async {
-    assert(_client.userID == null,
-        '_retryInitWithoutDevice requires a fresh client');
     try {
       final keys = await _readSessionKeys();
 

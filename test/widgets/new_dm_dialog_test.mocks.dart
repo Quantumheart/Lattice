@@ -7826,16 +7826,6 @@ class MockMatrixService extends _i1.Mock implements _i12.MatrixService {
       ) as _i5.Future<void>);
 
   @override
-  _i5.Future<void> recreateClient() => (super.noSuchMethod(
-        Invocation.method(
-          #recreateClient,
-          [],
-        ),
-        returnValue: _i5.Future<void>.value(),
-        returnValueForMissingStub: _i5.Future<void>.value(),
-      ) as _i5.Future<void>);
-
-  @override
   void dispose() => super.noSuchMethod(
         Invocation.method(
           #dispose,
