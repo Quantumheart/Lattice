@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 concurrency:
   group: release
@@ -17,6 +18,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Verify tag is on master
+        if: github.event_name == 'push'
         run: |
           if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/master; then
             echo "::error::Tag must point to a commit on master"
