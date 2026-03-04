@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import 'package:lattice/core/services/client_manager.dart';
+import 'package:lattice/core/models/server_auth_capabilities.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/auth/widgets/login_controller.dart';
 

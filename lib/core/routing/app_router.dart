@@ -9,6 +9,7 @@ import 'package:lattice/features/auth/screens/registration_screen.dart';
 import 'package:lattice/features/settings/screens/devices_screen.dart';
 import 'package:lattice/features/settings/screens/notification_settings_screen.dart';
 import 'package:lattice/features/settings/screens/settings_screen.dart';
+import 'package:lattice/core/models/server_auth_capabilities.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/home/widgets/inbox_screen.dart';
 import 'package:lattice/features/rooms/widgets/room_details_panel.dart';

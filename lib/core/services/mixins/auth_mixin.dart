@@ -4,8 +4,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:matrix/matrix.dart';
 
-import 'package:lattice/core/services/matrix_service.dart'
-    show ServerAuthCapabilities, SsoIdentityProvider, latticeKey;
+import 'package:lattice/core/models/server_auth_capabilities.dart';
+import 'package:lattice/core/services/matrix_service.dart' show latticeKey;
 import 'package:lattice/core/services/session_backup.dart';
 
 /// Authentication flows: login, SSO, registration, logout, credential

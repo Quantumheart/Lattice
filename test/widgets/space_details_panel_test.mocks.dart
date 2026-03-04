@@ -5,18 +5,19 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i5;
 import 'dart:typed_data' as _i11;
-import 'dart:ui' as _i13;
+import 'dart:ui' as _i14;
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart' as _i7;
 import 'package:http/http.dart' as _i4;
-import 'package:lattice/core/models/space_node.dart' as _i12;
-import 'package:lattice/core/services/matrix_service.dart' as _i8;
+import 'package:lattice/core/models/server_auth_capabilities.dart' as _i8;
+import 'package:lattice/core/models/space_node.dart' as _i13;
+import 'package:lattice/core/services/matrix_service.dart' as _i12;
 import 'package:matrix/encryption.dart' as _i9;
 import 'package:matrix/matrix.dart' as _i2;
 import 'package:matrix/matrix_api_lite/generated/fixed_model.dart' as _i6;
-import 'package:matrix/src/models/timeline_chunk.dart' as _i15;
+import 'package:matrix/src/models/timeline_chunk.dart' as _i16;
 import 'package:matrix/src/utils/cached_stream_controller.dart' as _i3;
-import 'package:matrix/src/utils/space_child.dart' as _i14;
+import 'package:matrix/src/utils/space_child.dart' as _i15;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i10;
 
@@ -7634,7 +7635,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
 /// A class which mocks [MatrixService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
+class MockMatrixService extends _i1.Mock implements _i12.MatrixService {
   @override
   String get clientName => (super.noSuchMethod(
         Invocation.getter(#clientName),
@@ -7734,11 +7735,11 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
       ) as Set<String>);
 
   @override
-  List<_i12.SpaceNode> get spaceTree => (super.noSuchMethod(
+  List<_i13.SpaceNode> get spaceTree => (super.noSuchMethod(
         Invocation.getter(#spaceTree),
-        returnValue: <_i12.SpaceNode>[],
-        returnValueForMissingStub: <_i12.SpaceNode>[],
-      ) as List<_i12.SpaceNode>);
+        returnValue: <_i13.SpaceNode>[],
+        returnValueForMissingStub: <_i13.SpaceNode>[],
+      ) as List<_i13.SpaceNode>);
 
   @override
   List<_i2.Room> get spaces => (super.noSuchMethod(
@@ -7844,7 +7845,7 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
       );
 
   @override
-  void addListener(_i13.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i14.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #addListener,
           [listener],
@@ -7853,7 +7854,7 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
       );
 
   @override
-  void removeListener(_i13.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i14.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #removeListener,
           [listener],
@@ -8760,18 +8761,18 @@ class MockRoom extends _i1.Mock implements _i2.Room {
       ) as bool);
 
   @override
-  List<_i14.SpaceParent> get spaceParents => (super.noSuchMethod(
+  List<_i15.SpaceParent> get spaceParents => (super.noSuchMethod(
         Invocation.getter(#spaceParents),
-        returnValue: <_i14.SpaceParent>[],
-        returnValueForMissingStub: <_i14.SpaceParent>[],
-      ) as List<_i14.SpaceParent>);
+        returnValue: <_i15.SpaceParent>[],
+        returnValueForMissingStub: <_i15.SpaceParent>[],
+      ) as List<_i15.SpaceParent>);
 
   @override
-  List<_i14.SpaceChild> get spaceChildren => (super.noSuchMethod(
+  List<_i15.SpaceChild> get spaceChildren => (super.noSuchMethod(
         Invocation.getter(#spaceChildren),
-        returnValue: <_i14.SpaceChild>[],
-        returnValueForMissingStub: <_i14.SpaceChild>[],
-      ) as List<_i14.SpaceChild>);
+        returnValue: <_i15.SpaceChild>[],
+        returnValueForMissingStub: <_i15.SpaceChild>[],
+      ) as List<_i15.SpaceChild>);
 
   @override
   set membership(_i2.Membership? value) => super.noSuchMethod(
@@ -9458,15 +9459,15 @@ class MockRoom extends _i1.Mock implements _i2.Room {
       ) as _i5.Future<void>);
 
   @override
-  _i5.Future<_i15.TimelineChunk?> getEventContext(String? eventId) =>
+  _i5.Future<_i16.TimelineChunk?> getEventContext(String? eventId) =>
       (super.noSuchMethod(
         Invocation.method(
           #getEventContext,
           [eventId],
         ),
-        returnValue: _i5.Future<_i15.TimelineChunk?>.value(),
-        returnValueForMissingStub: _i5.Future<_i15.TimelineChunk?>.value(),
-      ) as _i5.Future<_i15.TimelineChunk?>);
+        returnValue: _i5.Future<_i16.TimelineChunk?>.value(),
+        returnValueForMissingStub: _i5.Future<_i16.TimelineChunk?>.value(),
+      ) as _i5.Future<_i16.TimelineChunk?>);
 
   @override
   _i5.Future<void> postReceipt(
