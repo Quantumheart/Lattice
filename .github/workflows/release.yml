@@ -45,6 +45,8 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y ninja-build libgtk-3-dev libsecret-1-dev
       - run: flutter pub get
       - run: flutter build linux --release
+      - name: Strip debug symbols
+        run: strip build/linux/x64/release/bundle/lattice
       - name: Archive build
         run: tar -czf lattice-linux-x64.tar.gz -C build/linux/x64/release/bundle .
       - name: Generate checksum
@@ -67,6 +69,9 @@ jobs:
           flutter-version: '3.41.x'
       - run: flutter pub get
       - run: flutter build windows --release
+      - name: Strip debug symbols
+        shell: bash
+        run: strip build/windows/x64/runner/Release/lattice.exe
       - name: Build installer
         run: |
           $version = "${{ github.ref_name }}" -replace '^v', ''
