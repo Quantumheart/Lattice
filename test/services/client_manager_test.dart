@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:matrix/matrix.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 
@@ -12,15 +14,22 @@ import 'matrix_service_test.mocks.dart';
 ])
 import 'client_manager_test.mocks.dart';
 
-/// Creates a factory that produces MatrixService instances with injected mocks.
-/// Services are marked as logged-in if [loggedIn] is true.
-MatrixServiceFactory _testFactory(
-  MockFlutterSecureStorage mockStorage, {
-  List<String>? trackNames,
-  List<MatrixService>? trackServices,
-  bool loggedIn = true,
-}) {
-  return ({required clientName, storage, clientFactory}) {
+/// Test implementation of [MatrixServiceFactory] that creates services with
+/// injected mock clients.
+class _TestServiceFactory extends MatrixServiceFactory {
+  _TestServiceFactory({
+    this.trackNames,
+    this.trackServices,
+  });
+
+  final List<String>? trackNames;
+  final List<MatrixService>? trackServices;
+
+  @override
+  Future<(Client, MatrixService)> create({
+    required String clientName,
+    FlutterSecureStorage? storage,
+  }) async {
     trackNames?.add(clientName);
     final mockClient = MockClient();
     when(mockClient.rooms).thenReturn([]);
@@ -28,13 +37,13 @@ MatrixServiceFactory _testFactory(
     when(mockClient.dispose()).thenAnswer((_) async {});
     final s = MatrixService(
       client: mockClient,
-      storage: storage ?? mockStorage,
+      storage: storage ?? const FlutterSecureStorage(),
       clientName: clientName,
     );
-    if (loggedIn) s.isLoggedInForTest = true;
+    s.isLoggedInForTest = true;
     trackServices?.add(s);
-    return s;
-  };
+    return (mockClient, s);
+  }
 }
 
 void main() {
@@ -55,7 +64,7 @@ void main() {
       final manager = ClientManager(
         storage: mockStorage,
         prefs: mockPrefs,
-        serviceFactory: _testFactory(mockStorage, trackNames: createdNames),
+        serviceFactory: _TestServiceFactory(trackNames: createdNames),
       );
 
       await manager.init();
@@ -74,7 +83,7 @@ void main() {
       final manager = ClientManager(
         storage: mockStorage,
         prefs: mockPrefs,
-        serviceFactory: _testFactory(mockStorage, trackNames: createdNames),
+        serviceFactory: _TestServiceFactory(trackNames: createdNames),
       );
 
       await manager.init();
@@ -91,19 +100,7 @@ void main() {
       final manager = ClientManager(
         storage: mockStorage,
         prefs: mockPrefs,
-        serviceFactory: ({required clientName, storage, clientFactory}) {
-          final mockClient = MockClient();
-          when(mockClient.rooms).thenReturn([]);
-          when(mockClient.userID).thenReturn('@$clientName:example.com');
-          final s = MatrixService(
-            client: mockClient,
-            storage: storage ?? mockStorage,
-            clientName: clientName,
-          );
-          // Only the first service is logged in.
-          if (clientName == 'default') s.isLoggedInForTest = true;
-          return s;
-        },
+        serviceFactory: _MixedLoginFactory(mockStorage),
       );
 
       await manager.init();
@@ -123,7 +120,7 @@ void main() {
       final manager = ClientManager(
         storage: mockStorage,
         prefs: mockPrefs,
-        serviceFactory: _testFactory(mockStorage),
+        serviceFactory: _TestServiceFactory(),
       );
       await manager.init();
 
@@ -144,7 +141,7 @@ void main() {
       final manager = ClientManager(
         storage: mockStorage,
         prefs: mockPrefs,
-        serviceFactory: _testFactory(mockStorage),
+        serviceFactory: _TestServiceFactory(),
       );
       await manager.init();
 
@@ -162,7 +159,7 @@ void main() {
       final manager = ClientManager(
         storage: mockStorage,
         prefs: mockPrefs,
-        serviceFactory: _testFactory(mockStorage),
+        serviceFactory: _TestServiceFactory(),
       );
       await manager.init();
 
@@ -196,8 +193,7 @@ void main() {
       final manager = ClientManager(
         storage: mockStorage,
         prefs: mockPrefs,
-        serviceFactory:
-            _testFactory(mockStorage, trackServices: services),
+        serviceFactory: _TestServiceFactory(trackServices: services),
       );
       await manager.init();
 
@@ -220,20 +216,11 @@ void main() {
       final manager = ClientManager(
         storage: mockStorage,
         prefs: mockPrefs,
-        serviceFactory: ({required clientName, storage, clientFactory}) {
-          callCount++;
-          final mockClient = MockClient();
-          when(mockClient.rooms).thenReturn([]);
-          when(mockClient.dispose()).thenAnswer((_) async {});
-          final s = MatrixService(
-            client: mockClient,
-            storage: storage ?? mockStorage,
-            clientName: clientName,
-          );
-          s.isLoggedInForTest = true;
-          services.add(s);
-          return s;
-        },
+        serviceFactory: _CountingFactory(
+          mockStorage,
+          trackServices: services,
+          callCounter: () => callCount++,
+        ),
       );
       await manager.init();
 
@@ -254,7 +241,7 @@ void main() {
       final manager = ClientManager(
         storage: mockStorage,
         prefs: mockPrefs,
-        serviceFactory: _testFactory(mockStorage),
+        serviceFactory: _TestServiceFactory(),
       );
       await manager.init();
 
@@ -269,11 +256,67 @@ void main() {
       final manager = ClientManager(
         storage: mockStorage,
         prefs: mockPrefs,
-        serviceFactory: _testFactory(mockStorage),
+        serviceFactory: _TestServiceFactory(),
       );
       await manager.init();
 
       expect(manager.hasMultipleAccounts, isTrue);
     });
   });
+}
+
+/// Factory that only marks 'default' as logged in.
+class _MixedLoginFactory extends MatrixServiceFactory {
+  _MixedLoginFactory(this._storage);
+  final FlutterSecureStorage _storage;
+
+  @override
+  Future<(Client, MatrixService)> create({
+    required String clientName,
+    FlutterSecureStorage? storage,
+  }) async {
+    final mockClient = MockClient();
+    when(mockClient.rooms).thenReturn([]);
+    when(mockClient.userID).thenReturn('@$clientName:example.com');
+    final s = MatrixService(
+      client: mockClient,
+      storage: storage ?? _storage,
+      clientName: clientName,
+    );
+    // Only the first service is logged in.
+    if (clientName == 'default') s.isLoggedInForTest = true;
+    return (mockClient, s);
+  }
+}
+
+/// Factory that counts calls and tracks services.
+class _CountingFactory extends MatrixServiceFactory {
+  _CountingFactory(
+    this._storage, {
+    this.trackServices,
+    this.callCounter,
+  });
+
+  final FlutterSecureStorage _storage;
+  final List<MatrixService>? trackServices;
+  final void Function()? callCounter;
+
+  @override
+  Future<(Client, MatrixService)> create({
+    required String clientName,
+    FlutterSecureStorage? storage,
+  }) async {
+    callCounter?.call();
+    final mockClient = MockClient();
+    when(mockClient.rooms).thenReturn([]);
+    when(mockClient.dispose()).thenAnswer((_) async {});
+    final s = MatrixService(
+      client: mockClient,
+      storage: storage ?? _storage,
+      clientName: clientName,
+    );
+    s.isLoggedInForTest = true;
+    trackServices?.add(s);
+    return (mockClient, s);
+  }
 }

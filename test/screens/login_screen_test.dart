@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
 import 'package:lattice/features/auth/screens/login_screen.dart';
@@ -8,6 +10,19 @@ import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/client_manager.dart';
 
 import '../services/matrix_service_test.mocks.dart';
+
+class _FixedServiceFactory extends MatrixServiceFactory {
+  _FixedServiceFactory(this._service);
+  final MatrixService _service;
+
+  @override
+  Future<(Client, MatrixService)> create({
+    required String clientName,
+    FlutterSecureStorage? storage,
+  }) async {
+    return (_service.client, _service);
+  }
+}
 
 void main() {
   late MockClient mockClient;
@@ -26,8 +41,7 @@ void main() {
     );
     clientManager = ClientManager(
       storage: mockStorage,
-      serviceFactory: ({required String clientName, storage, clientFactory}) =>
-          matrixService,
+      serviceFactory: _FixedServiceFactory(matrixService),
     );
   });
 
