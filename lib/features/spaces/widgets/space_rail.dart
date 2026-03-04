@@ -45,7 +45,7 @@ class _SpaceRailState extends State<SpaceRail> {
   Widget build(BuildContext context) {
     final matrix = context.watch<MatrixService>();
     final cs = Theme.of(context).colorScheme;
-    final spaces = matrix.spaces;
+    final spaces = matrix.topLevelSpaces;
 
     final inboxUnread = context.select<InboxController, int>((c) => c.unreadCount);
 

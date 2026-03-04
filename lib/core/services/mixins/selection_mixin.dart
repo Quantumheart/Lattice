@@ -225,6 +225,9 @@ mixin SelectionMixin on ChangeNotifier {
         (r) => r.getLocalizedDisplayname(),
       );
 
+  /// Returns only top-level spaces (not children of another space).
+  List<Room> get topLevelSpaces => spaceTree.map((n) => n.room).toList();
+
   /// Returns all joined non-space rooms sorted by recency.
   List<Room> get rooms {
     final list = client.rooms

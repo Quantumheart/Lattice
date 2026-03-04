@@ -137,8 +137,21 @@ void _addSpaceSection(
   Set<String> pinnedIds,
   String query,
 ) {
+  // Collect room IDs owned by subspaces so we don't duplicate them here.
+  final subspaceRoomIds = <String>{};
+  void collectSubspaceRoomIds(List<SpaceNode> subs) {
+    for (final sub in subs) {
+      subspaceRoomIds.addAll(
+          matrix.roomsForSpace(sub.room.id).map((r) => r.id));
+      collectSubspaceRoomIds(sub.subspaces);
+    }
+  }
+  collectSubspaceRoomIds(node.subspaces);
+
   final rooms = applySearch(matrix.roomsForSpace(node.room.id), query)
-      .where((r) => !pinnedIds.contains(r.id)).toList();
+      .where((r) => !pinnedIds.contains(r.id) &&
+          !subspaceRoomIds.contains(r.id))
+      .toList();
 
   // Count total rooms including all nested subspaces for the header
   var totalRooms = rooms.length;
@@ -152,14 +165,16 @@ void _addSpaceSection(
   }
   countSubspaces(node.subspaces);
 
-  // Skip entirely empty sections
-  if (totalRooms == 0) return;
+  // Skip entirely empty leaf sections, but always show subspace headers
+  // so users can see and manage newly created (empty) subspaces.
+  if (totalRooms == 0 && node.subspaces.isEmpty) return;
 
   items.add(HeaderItem(
     name: node.room.getLocalizedDisplayname(),
     sectionKey: node.room.id,
     depth: depth,
     roomCount: totalRooms,
+    isSpace: true,
   ));
 
   if (!collapsed.contains(node.room.id)) {
