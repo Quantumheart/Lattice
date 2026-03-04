@@ -5,14 +5,27 @@ on:
     tags:
       - 'v*'
 
+concurrency:
+  group: release
+  cancel-in-progress: false
+
 jobs:
   analyze-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+      - name: Verify tag is on master
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/master; then
+            echo "::error::Tag must point to a commit on master"
+            exit 1
+          fi
+      - uses: subosito/flutter-action@fd55f4c5af5b953cc57a2be44cb082c8f6635e8e # v2
         with:
           channel: stable
+          flutter-version: '3.29.x'
       - run: flutter pub get
       - run: dart run build_runner build --delete-conflicting-outputs
       - run: flutter analyze
@@ -21,43 +34,49 @@ jobs:
   build-linux:
     needs: analyze-and-test
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: subosito/flutter-action@fd55f4c5af5b953cc57a2be44cb082c8f6635e8e # v2
         with:
           channel: stable
-      - run: sudo apt-get update && sudo apt-get install -y ninja-build libgtk-3-dev
+          flutter-version: '3.29.x'
+      - run: sudo apt-get update && sudo apt-get install -y ninja-build libgtk-3-dev libsecret-1-dev
       - run: flutter pub get
       - run: flutter build linux --release
       - name: Archive build
         run: tar -czf lattice-linux-x64.tar.gz -C build/linux/x64/release/bundle .
-      - uses: actions/upload-artifact@v4
+      - name: Generate checksum
+        run: sha256sum lattice-linux-x64.tar.gz > lattice-linux-x64.tar.gz.sha256
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: linux-release
-          path: lattice-linux-x64.tar.gz
+          path: |
+            lattice-linux-x64.tar.gz
+            lattice-linux-x64.tar.gz.sha256
 
   build-windows:
     needs: analyze-and-test
     runs-on: windows-latest
-    permissions:
-      contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: subosito/flutter-action@v2
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: subosito/flutter-action@fd55f4c5af5b953cc57a2be44cb082c8f6635e8e # v2
         with:
           channel: stable
+          flutter-version: '3.29.x'
       - run: flutter pub get
       - run: flutter build windows --release
       - name: Build installer
         run: |
-          $version = "${{ github.ref_name }}".TrimStart('v')
+          $version = "${{ github.ref_name }}" -replace '^v', ''
           iscc /DAppVersion=$version windows\packaging\inno_setup.iss
-      - uses: actions/upload-artifact@v4
+      - name: Generate checksum
+        run: Get-FileHash build\windows\installer\lattice-windows-x64-setup.exe -Algorithm SHA256 | Format-List > build\windows\installer\lattice-windows-x64-setup.exe.sha256
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: windows-release
-          path: build/windows/installer/lattice-windows-x64-setup.exe
+          path: |
+            build/windows/installer/lattice-windows-x64-setup.exe
+            build/windows/installer/lattice-windows-x64-setup.exe.sha256
 
   publish-release:
     needs: [build-linux, build-windows]
@@ -65,16 +84,18 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: linux-release
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: windows-release
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2
         with:
           files: |
             lattice-linux-x64.tar.gz
+            lattice-linux-x64.tar.gz.sha256
             lattice-windows-x64-setup.exe
+            lattice-windows-x64-setup.exe.sha256
           generate_release_notes: true
