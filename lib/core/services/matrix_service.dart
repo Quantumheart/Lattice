@@ -125,9 +125,12 @@ class MatrixService extends ChangeNotifier
     }
   }
 
+  // ── Fields ──────────────────────────────────────────────────────
+
   final Client? _injectedClient;
   final ClientFactory _clientFactory;
   final FlutterSecureStorage _storage;
+
   @override
   final String clientName;
 
@@ -153,13 +156,12 @@ class MatrixService extends ChangeNotifier
   @visibleForTesting
   set isLoggedInForTest(bool value) => _isLoggedIn = value;
 
-  // ── Initialization ───────────────────────────────────────────
+  bool _disposed = false;
 
-  /// Creates a fresh [Client] via the factory with soft-logout wired up.
-  Future<Client> _newClient() => _clientFactory(
-        clientName,
-        onSoftLogout: (_) async => handleSoftLogout(),
-      );
+  /// Whether this service has been disposed.
+  bool get disposed => _disposed;
+
+  // ── Public API ──────────────────────────────────────────────────
 
   /// Initializes the client, optionally restoring a saved session.
   ///
@@ -180,7 +182,51 @@ class MatrixService extends ChangeNotifier
     }
   }
 
-  // ── Session Activation ─────────────────────────────────────────
+  @override
+  Future<void> saveSessionBackup() async {
+    final backup = SessionBackup(
+      accessToken: _client.accessToken!,
+      userId: _client.userID!,
+      homeserver: _client.homeserver.toString(),
+      deviceId: _client.deviceID!,
+      deviceName: 'Lattice Flutter',
+      olmAccount: _client.encryption?.pickledOlmAccount,
+    );
+    await SessionBackup.save(
+      backup,
+      clientName: clientName,
+      storage: _storage,
+    );
+    debugPrint('[Lattice] Session backup saved for $clientName');
+  }
+
+  /// Disposes the current [Client] and creates a fresh instance so that
+  /// a subsequent [login] call gets a clean SDK client.
+  @override
+  Future<void> recreateClient() async {
+    _client.dispose();
+    _client = await _newClient();
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _isLoggedIn = false;
+    cancelSyncSub();
+    cancelUiaSub();
+    cancelLoginStateSub();
+    disposeUiaController();
+    _client.dispose();
+    super.dispose();
+  }
+
+  // ── Private: Initialization ─────────────────────────────────────
+
+  /// Creates a fresh [Client] via the factory with soft-logout wired up.
+  Future<Client> _newClient() => _clientFactory(
+        clientName,
+        onSoftLogout: (_) async => handleSoftLogout(),
+      );
 
   /// Wires up listeners and starts syncing after a successful session restore.
   Future<void> _activateSession() async {
@@ -196,7 +242,7 @@ class MatrixService extends ChangeNotifier
     await saveSessionBackup();
   }
 
-  // ── Session Keys ───────────────────────────────────────────────
+  // ── Private: Session Keys ──────────────────────────────────────
 
   /// Clears both the stored session keys and the session backup.
   Future<void> _clearSessionAndBackup() async {
@@ -239,7 +285,7 @@ class MatrixService extends ChangeNotifier
     );
   }
 
-  // ── Session Restore ────────────────────────────────────────────
+  // ── Private: Session Restore ───────────────────────────────────
 
   /// Attempts to restore a session from secure storage, falling back to
   /// backup restore or device re-registration on failure.
@@ -303,26 +349,6 @@ class MatrixService extends ChangeNotifier
     }
   }
 
-  // ── Session Backup ────────────────────────────────────────────
-
-  @override
-  Future<void> saveSessionBackup() async {
-    final backup = SessionBackup(
-      accessToken: _client.accessToken!,
-      userId: _client.userID!,
-      homeserver: _client.homeserver.toString(),
-      deviceId: _client.deviceID!,
-      deviceName: 'Lattice Flutter',
-      olmAccount: _client.encryption?.pickledOlmAccount,
-    );
-    await SessionBackup.save(
-      backup,
-      clientName: clientName,
-      storage: _storage,
-    );
-    debugPrint('[Lattice] Session backup saved for $clientName');
-  }
-
   Future<bool> _restoreFromBackup() async {
     debugPrint('[Lattice] Attempting restore from session backup...');
     try {
@@ -367,14 +393,6 @@ class MatrixService extends ChangeNotifier
     }
   }
 
-  /// Whether the error is specifically an expired token (not revoked/unknown).
-  static bool _isExpiredTokenError(Object e) {
-    if (e is MatrixException && e.errcode == 'M_UNKNOWN_TOKEN') {
-      return e.errorMessage.toLowerCase().contains('expired');
-    }
-    return false;
-  }
-
   /// Tries to initialize the client from the SDK database without overriding
   /// the access token. The database may contain a refresh token that lets the
   /// SDK obtain a fresh access token automatically.
@@ -401,19 +419,6 @@ class MatrixService extends ChangeNotifier
       await recreateClient();
       return false;
     }
-  }
-
-  /// Whether the error indicates a failed OLM key upload, typically caused by
-  /// a lost local OLM account while the device ID still references server-side
-  /// keys. Checks both the Matrix SDK error and common message patterns.
-  static bool _isOlmKeyUploadFailure(Object e) {
-    if (e is MatrixException && e.errcode == 'M_UNKNOWN') {
-      return e.errorMessage.contains('key upload');
-    }
-    // Fallback: the SDK may wrap the error in a generic exception.
-    final msg = '$e';
-    return msg.contains('Upload key failed') ||
-        msg.contains('one_time_key_counts');
   }
 
   /// Re-attempt session restore without a device ID so the SDK registers a
@@ -459,28 +464,26 @@ class MatrixService extends ChangeNotifier
     }
   }
 
-  bool _disposed = false;
+  // ── Private: Error Classification ──────────────────────────────
 
-  /// Disposes the current [Client] and creates a fresh instance so that
-  /// a subsequent [login] call gets a clean SDK client.
-  @override
-  Future<void> recreateClient() async {
-    _client.dispose();
-    _client = await _newClient();
+  /// Whether the error is specifically an expired token (not revoked/unknown).
+  static bool _isExpiredTokenError(Object e) {
+    if (e is MatrixException && e.errcode == 'M_UNKNOWN_TOKEN') {
+      return e.errorMessage.toLowerCase().contains('expired');
+    }
+    return false;
   }
 
-  /// Whether this service has been disposed.
-  bool get disposed => _disposed;
-
-  @override
-  void dispose() {
-    _disposed = true;
-    _isLoggedIn = false;
-    cancelSyncSub();
-    cancelUiaSub();
-    cancelLoginStateSub();
-    disposeUiaController();
-    _client.dispose();
-    super.dispose();
+  /// Whether the error indicates a failed OLM key upload, typically caused by
+  /// a lost local OLM account while the device ID still references server-side
+  /// keys. Checks both the Matrix SDK error and common message patterns.
+  static bool _isOlmKeyUploadFailure(Object e) {
+    if (e is MatrixException && e.errcode == 'M_UNKNOWN') {
+      return e.errorMessage.contains('key upload');
+    }
+    // Fallback: the SDK may wrap the error in a generic exception.
+    final msg = '$e';
+    return msg.contains('Upload key failed') ||
+        msg.contains('one_time_key_counts');
   }
 }
