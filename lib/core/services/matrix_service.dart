@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:matrix/matrix.dart';
+// ignore: implementation_imports
+import 'package:matrix/src/utils/client_init_exception.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'session_backup.dart';
@@ -116,17 +118,19 @@ class MatrixService extends ChangeNotifier
   // ── Private: Initialization ─────────────────────────────────────
 
   /// Wires up listeners and starts syncing after a successful session restore.
+  ///
+  /// A sync timeout is not treated as a session failure — the SDK client is
+  /// already initialized and the background sync loop will keep running.
   Future<void> _activateSession() async {
     listenForUia();
     listenForLoginState();
     _isLoggedIn = true;
-    await startSync();
-  }
-
-  /// Activates the session and persists a session backup.
-  Future<void> _completeRestore() async {
-    await _activateSession();
-    await saveSessionBackup();
+    try {
+      await startSync();
+    } on TimeoutException {
+      debugPrint('[Lattice] Initial sync timed out during session restore – '
+          'continuing in background');
+    }
   }
 
   // ── Private: Session Keys ──────────────────────────────────────
@@ -137,27 +141,14 @@ class MatrixService extends ChangeNotifier
     await SessionBackup.delete(clientName: clientName, storage: _storage);
   }
 
-  /// Writes session credentials to secure storage.
-  Future<void> _persistSessionKeys({
-    required String token,
-    required String userId,
-    required String homeserver,
-    String? deviceId,
-  }) =>
-      Future.wait([
-        _storage.write(
-            key: latticeKey(clientName, 'access_token'), value: token),
-        _storage.write(key: latticeKey(clientName, 'user_id'), value: userId),
-        _storage.write(
-            key: latticeKey(clientName, 'homeserver'), value: homeserver),
-        if (deviceId != null)
-          _storage.write(
-              key: latticeKey(clientName, 'device_id'), value: deviceId),
-      ]);
-
   /// Reads stored session credentials from secure storage.
-  Future<({String? token, String? userId, String? homeserver, String? deviceId})>
-      _readSessionKeys() async {
+  Future<
+      ({
+        String? token,
+        String? userId,
+        String? homeserver,
+        String? deviceId
+      })> _readSessionKeys() async {
     final results = await Future.wait([
       _storage.read(key: latticeKey(clientName, 'access_token')),
       _storage.read(key: latticeKey(clientName, 'user_id')),
@@ -174,104 +165,76 @@ class MatrixService extends ChangeNotifier
 
   // ── Private: Session Restore ───────────────────────────────────
 
-  /// Attempts to restore a session from secure storage, falling back to
-  /// backup restore or device re-registration on failure.
+  /// Attempts to restore a session from secure storage.
+  ///
+  /// The strategy is to make one well-prepared [Client.init] call with
+  /// the best available data. The session backup's OLM account is always
+  /// included (when available) because the SDK database copy can become
+  /// stale after an unclean shutdown. A failed [Client.init] calls
+  /// [Client.clear] internally which wipes the SDK database, so retrying
+  /// init on the same client is unreliable and avoided here.
+  ///
+  /// The one exception is expired tokens: the SDK database may contain a
+  /// refresh token that [Client.init] (without credential overrides) can
+  /// use to obtain a fresh access token automatically.
   Future<void> _restoreSession() async {
-    try {
-      final keys = await _readSessionKeys();
+    final keys = await _readSessionKeys();
 
-      if (keys.token != null &&
-          keys.userId != null &&
-          keys.homeserver != null) {
-        debugPrint(
-            '[Lattice] Restoring session for ${keys.userId} on ${keys.homeserver} '
-            '(deviceId=${keys.deviceId}, clientName=$clientName)');
-        final homeserverUri = Uri.parse(keys.homeserver!);
-        _client.homeserver = homeserverUri;
-        await _client.init(
-          newToken: keys.token,
-          newUserID: keys.userId,
-          newDeviceID: keys.deviceId,
-          newHomeserver: homeserverUri,
-          newDeviceName: 'Lattice Flutter',
-        );
-        debugPrint('[Lattice] Session restored – '
-            'encryption=${_client.encryption != null ? "available" : "null"}, '
-            'encryptionEnabled=${_client.encryptionEnabled}');
-        await _completeRestore();
-      }
+    if (keys.token == null ||
+        keys.userId == null ||
+        keys.homeserver == null) {
+      return;
+    }
+
+    // Pre-load the session backup. Its pickled OLM account may be fresher
+    // than the SDK database copy, which can become stale if the app is
+    // killed before the database is flushed.
+    final backup = await SessionBackup.load(
+      clientName: clientName,
+      storage: _storage,
+    );
+
+    debugPrint(
+        '[Lattice] Restoring session for ${keys.userId} on ${keys.homeserver} '
+        '(deviceId=${keys.deviceId}, clientName=$clientName)');
+
+    try {
+      final homeserverUri = Uri.parse(keys.homeserver!);
+      _client.homeserver = homeserverUri;
+      await _client.init(
+        newToken: keys.token,
+        newUserID: keys.userId,
+        newDeviceID: keys.deviceId,
+        newHomeserver: homeserverUri,
+        newDeviceName: 'Lattice Flutter',
+        newOlmAccount: backup?.olmAccount,
+      );
+      debugPrint('[Lattice] Session restored – '
+          'encryption=${_client.encryption != null ? "available" : "null"}, '
+          'encryptionEnabled=${_client.encryptionEnabled}');
+      await _activateSession();
+      await saveSessionBackup();
     } catch (e, s) {
       debugPrint('[Lattice] Session restore failed: $e');
       debugPrint('[Lattice] Stack trace:\n$s');
 
-      // If the token expired, try initializing from the SDK database alone.
-      // The database may contain a refresh token that lets the SDK obtain a
-      // new access token automatically without overriding with the stale one.
-      if (_isExpiredTokenError(e)) {
+      // Unwrap ClientInitException — the SDK wraps the real error.
+      final cause = _unwrapInitException(e);
+
+      // Expired token: the SDK database may hold a refresh token. A bare
+      // init() (no credential overrides) lets the SDK use it. This is the
+      // only retry we attempt because the first failure already called
+      // Client.clear() which wiped the database — providing credentials
+      // again won't help since the OLM/device state is gone.
+      if (_isExpiredTokenError(cause)) {
         final refreshed = await _tryDatabaseRestore();
         if (refreshed) return;
       }
 
-      // Try restoring from session backup before giving up.
-      final restored = await _restoreFromBackup();
-      if (!restored) {
-        _isLoggedIn = false;
-        if (isPermanentAuthFailure(e)) {
-          await _clearSessionAndBackup();
-        } else if (_isOlmKeyUploadFailure(e)) {
-          // The local OLM account was lost (e.g. DB deleted) but the
-          // device ID still references server-side keys we can no longer
-          // match. Clear the device ID so the SDK registers a fresh
-          // device on the next init attempt.
-          debugPrint('[Lattice] Clearing stale device ID and retrying init');
-          await _storage.delete(key: latticeKey(clientName, 'device_id'));
-          await _retryInitWithoutDevice();
-        }
-      }
-    }
-  }
-
-  Future<bool> _restoreFromBackup() async {
-    debugPrint('[Lattice] Attempting restore from session backup...');
-    try {
-      final backup = await SessionBackup.load(
-        clientName: clientName,
-        storage: _storage,
-      );
-      if (backup == null) {
-        debugPrint('[Lattice] No session backup found');
-        return false;
-      }
-
-      final homeserverUri = Uri.parse(backup.homeserver);
-      _client.homeserver = homeserverUri;
-      await _client.init(
-        newToken: backup.accessToken,
-        newUserID: backup.userId,
-        newDeviceID: backup.deviceId,
-        newHomeserver: homeserverUri,
-        newDeviceName: backup.deviceName ?? 'Lattice Flutter',
-        newOlmAccount: backup.olmAccount,
-      );
-
-      // Update stored session keys from backup.
-      await _persistSessionKeys(
-        token: backup.accessToken,
-        userId: backup.userId,
-        homeserver: backup.homeserver,
-        deviceId: backup.deviceId,
-      );
-
-      await _activateSession();
-      debugPrint('[Lattice] Session restored from backup');
-      return true;
-    } catch (e, s) {
-      debugPrint('[Lattice] Restore from backup also failed: $e');
-      debugPrint('[Lattice] Stack trace:\n$s');
-      if (isPermanentAuthFailure(e)) {
+      _isLoggedIn = false;
+      if (isPermanentAuthFailure(cause)) {
         await _clearSessionAndBackup();
       }
-      return false;
     }
   }
 
@@ -290,7 +253,8 @@ class MatrixService extends ChangeNotifier
             value: _client.accessToken,
           );
         }
-        await _completeRestore();
+        await _activateSession();
+        await saveSessionBackup();
         debugPrint('[Lattice] Session restored via database token refresh');
         return true;
       }
@@ -301,45 +265,13 @@ class MatrixService extends ChangeNotifier
     }
   }
 
-  /// Re-attempt session restore without a device ID so the SDK registers a
-  /// fresh device. Called when the local OLM account was lost and the old
-  /// device's keys can no longer be uploaded.
-  Future<void> _retryInitWithoutDevice() async {
-    try {
-      final keys = await _readSessionKeys();
-
-      if (keys.token == null ||
-          keys.userId == null ||
-          keys.homeserver == null) {
-        return;
-      }
-
-      final homeserverUri = Uri.parse(keys.homeserver!);
-      _client.homeserver = homeserverUri;
-      await _client.init(
-        newToken: keys.token,
-        newUserID: keys.userId,
-        newHomeserver: homeserverUri,
-        newDeviceName: 'Lattice Flutter',
-      );
-
-      // Persist the new device ID assigned by the server.
-      if (_client.deviceID != null) {
-        await _storage.write(
-            key: latticeKey(clientName, 'device_id'), value: _client.deviceID);
-      }
-
-      await _completeRestore();
-      debugPrint('[Lattice] Session restored with new device ID '
-          '${_client.deviceID}');
-    } catch (e, s) {
-      debugPrint('[Lattice] Retry without device ID also failed: $e');
-      debugPrint('[Lattice] Stack trace:\n$s');
-      _isLoggedIn = false;
-    }
-  }
-
   // ── Private: Error Classification ──────────────────────────────
+
+  /// Unwraps a [ClientInitException] to get the original error.
+  /// The SDK wraps all init failures in this type, but our classifiers
+  /// need the underlying [MatrixException].
+  static Object _unwrapInitException(Object e) =>
+      e is ClientInitException ? e.originalException : e;
 
   /// Whether the error is specifically an expired token (not revoked/unknown).
   static bool _isExpiredTokenError(Object e) {
@@ -349,16 +281,4 @@ class MatrixService extends ChangeNotifier
     return false;
   }
 
-  /// Whether the error indicates a failed OLM key upload, typically caused by
-  /// a lost local OLM account while the device ID still references server-side
-  /// keys. Checks both the Matrix SDK error and common message patterns.
-  static bool _isOlmKeyUploadFailure(Object e) {
-    if (e is MatrixException && e.errcode == 'M_UNKNOWN') {
-      return e.errorMessage.contains('key upload');
-    }
-    // Fallback: the SDK may wrap the error in a generic exception.
-    final msg = '$e';
-    return msg.contains('Upload key failed') ||
-        msg.contains('one_time_key_counts');
-  }
 }

@@ -156,13 +156,15 @@ class ClientManager extends ChangeNotifier {
         storage: _storage,
       );
     }
+    // Create service first with a placeholder client so we can wire the
+    // soft-logout callback to reference the service. Then replace via the
+    // actual factory call.
+    late final MatrixService service;
     final client = await createDefaultClient(
       clientName,
-      onSoftLogout: (_) async {
-        // Soft-logout handler will be wired after service creation below.
-      },
+      onSoftLogout: (_) async => service.handleSoftLogout(),
     );
-    final service = MatrixService(
+    service = MatrixService(
       client: client,
       clientName: clientName,
       storage: _storage,

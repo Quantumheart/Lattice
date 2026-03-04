@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:matrix/matrix.dart';
+// ignore: implementation_imports
+import 'package:matrix/src/utils/client_init_exception.dart';
 
 import 'package:lattice/core/models/server_auth_capabilities.dart';
 import 'package:lattice/core/services/matrix_service.dart' show latticeKey;
@@ -363,7 +365,8 @@ mixin AuthMixin on ChangeNotifier {
 
   // ── Soft Logout ──────────────────────────────────────────────
 
-  @protected
+  /// Handles a soft logout by attempting a token refresh. If the refresh
+  /// fails, clears all local session data and logs out.
   Future<void> handleSoftLogout() async {
     debugPrint('[Lattice] Soft logout detected, attempting token refresh...');
     try {
@@ -430,11 +433,13 @@ mixin AuthMixin on ChangeNotifier {
   /// return false so credentials are preserved for the next app launch.
   @protected
   bool isPermanentAuthFailure(Object error) {
-    if (error is MatrixException) {
+    final e =
+        error is ClientInitException ? error.originalException : error;
+    if (e is MatrixException) {
       // M_SOFT_LOGOUT is not permanent — handled by handleSoftLogout.
-      return error.errcode == 'M_UNKNOWN_TOKEN' ||
-          error.errcode == 'M_FORBIDDEN' ||
-          error.errcode == 'M_USER_DEACTIVATED';
+      return e.errcode == 'M_UNKNOWN_TOKEN' ||
+          e.errcode == 'M_FORBIDDEN' ||
+          e.errcode == 'M_USER_DEACTIVATED';
     }
     return false;
   }
