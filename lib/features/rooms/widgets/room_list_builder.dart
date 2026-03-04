@@ -137,33 +137,24 @@ void _addSpaceSection(
   Set<String> pinnedIds,
   String query,
 ) {
-  // Collect room IDs owned by subspaces so we don't duplicate them here.
+  // Single pass: collect subspace room IDs (for dedup) and count them.
   final subspaceRoomIds = <String>{};
-  void collectSubspaceRoomIds(List<SpaceNode> subs) {
+  void collectSubspaces(List<SpaceNode> subs) {
     for (final sub in subs) {
-      subspaceRoomIds.addAll(
-          matrix.roomsForSpace(sub.room.id).map((r) => r.id));
-      collectSubspaceRoomIds(sub.subspaces);
+      final subRooms = applySearch(matrix.roomsForSpace(sub.room.id), query)
+          .where((r) => !pinnedIds.contains(r.id));
+      subspaceRoomIds.addAll(subRooms.map((r) => r.id));
+      collectSubspaces(sub.subspaces);
     }
   }
-  collectSubspaceRoomIds(node.subspaces);
+  collectSubspaces(node.subspaces);
 
   final rooms = applySearch(matrix.roomsForSpace(node.room.id), query)
       .where((r) => !pinnedIds.contains(r.id) &&
           !subspaceRoomIds.contains(r.id))
       .toList();
 
-  // Count total rooms including all nested subspaces for the header
-  var totalRooms = rooms.length;
-  void countSubspaces(List<SpaceNode> subs) {
-    for (final sub in subs) {
-      totalRooms += applySearch(
-          matrix.roomsForSpace(sub.room.id), query)
-          .where((r) => !pinnedIds.contains(r.id)).length;
-      countSubspaces(sub.subspaces);
-    }
-  }
-  countSubspaces(node.subspaces);
+  final totalRooms = rooms.length + subspaceRoomIds.length;
 
   // Skip entirely empty leaf sections, but always show subspace headers
   // so users can see and manage newly created (empty) subspaces.

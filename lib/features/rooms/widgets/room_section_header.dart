@@ -63,22 +63,20 @@ class RoomSectionHeader extends StatelessWidget {
                 ),
               ),
               if (canAddRoom)
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: IconButton(
-                    padding: EdgeInsets.zero,
-                    iconSize: 18,
-                    icon: Icon(
-                      Icons.add_rounded,
-                      color: cs.onSurfaceVariant,
-                    ),
-                    tooltip: 'Add room',
-                    onPressed: () => NewRoomDialog.show(
-                      context,
-                      matrixService: matrix,
-                      parentSpaceIds: {item.sectionKey},
-                    ),
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints:
+                      const BoxConstraints(minWidth: 24, minHeight: 24),
+                  iconSize: 18,
+                  icon: Icon(
+                    Icons.add_rounded,
+                    color: cs.onSurfaceVariant,
+                  ),
+                  tooltip: 'Add room',
+                  onPressed: () => NewRoomDialog.show(
+                    context,
+                    matrixService: matrix,
+                    parentSpaceIds: {item.sectionKey},
                   ),
                 ),
               Text(
