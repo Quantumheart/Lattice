@@ -155,6 +155,12 @@ class MatrixService extends ChangeNotifier
 
   // ── Initialization ───────────────────────────────────────────
 
+  /// Creates a fresh [Client] via the factory with soft-logout wired up.
+  Future<Client> _newClient() => _clientFactory(
+        clientName,
+        onSoftLogout: (_) async => handleSoftLogout(),
+      );
+
   /// Initializes the client, optionally restoring a saved session.
   ///
   /// When [restoreSession] is true (default), migrates storage keys and
@@ -167,10 +173,7 @@ class MatrixService extends ChangeNotifier
     }
 
     if (restoreSession) await migrateStorageKeys();
-    _client = await _clientFactory(
-      clientName,
-      onSoftLogout: (_) async => handleSoftLogout(),
-    );
+    _client = await _newClient();
     if (restoreSession) {
       await _restoreSession();
       notifyListeners();
@@ -187,40 +190,82 @@ class MatrixService extends ChangeNotifier
     await startSync();
   }
 
+  /// Activates the session and persists a session backup.
+  Future<void> _completeRestore() async {
+    await _activateSession();
+    await saveSessionBackup();
+  }
+
+  // ── Session Keys ───────────────────────────────────────────────
+
+  /// Clears both the stored session keys and the session backup.
+  Future<void> _clearSessionAndBackup() async {
+    await clearSessionKeys();
+    await SessionBackup.delete(clientName: clientName, storage: _storage);
+  }
+
+  /// Writes session credentials to secure storage.
+  Future<void> _persistSessionKeys({
+    required String token,
+    required String userId,
+    required String homeserver,
+    String? deviceId,
+  }) =>
+      Future.wait([
+        _storage.write(
+            key: latticeKey(clientName, 'access_token'), value: token),
+        _storage.write(key: latticeKey(clientName, 'user_id'), value: userId),
+        _storage.write(
+            key: latticeKey(clientName, 'homeserver'), value: homeserver),
+        if (deviceId != null)
+          _storage.write(
+              key: latticeKey(clientName, 'device_id'), value: deviceId),
+      ]);
+
+  /// Reads stored session credentials from secure storage.
+  Future<({String? token, String? userId, String? homeserver, String? deviceId})>
+      _readSessionKeys() async {
+    final results = await Future.wait([
+      _storage.read(key: latticeKey(clientName, 'access_token')),
+      _storage.read(key: latticeKey(clientName, 'user_id')),
+      _storage.read(key: latticeKey(clientName, 'homeserver')),
+      _storage.read(key: latticeKey(clientName, 'device_id')),
+    ]);
+    return (
+      token: results[0],
+      userId: results[1],
+      homeserver: results[2],
+      deviceId: results[3],
+    );
+  }
+
   // ── Session Restore ────────────────────────────────────────────
 
   /// Attempts to restore a session from secure storage, falling back to
   /// backup restore or device re-registration on failure.
   Future<void> _restoreSession() async {
     try {
-      final token =
-          await _storage.read(key: latticeKey(clientName, 'access_token'));
-      final userId =
-          await _storage.read(key: latticeKey(clientName, 'user_id'));
-      final homeserver =
-          await _storage.read(key: latticeKey(clientName, 'homeserver'));
-      final deviceId =
-          await _storage.read(key: latticeKey(clientName, 'device_id'));
+      final keys = await _readSessionKeys();
 
-      if (token != null && userId != null && homeserver != null) {
-        debugPrint('[Lattice] Restoring session for $userId on $homeserver '
-            '(deviceId=$deviceId, clientName=$clientName)');
-        final homeserverUri = Uri.parse(homeserver);
+      if (keys.token != null &&
+          keys.userId != null &&
+          keys.homeserver != null) {
+        debugPrint(
+            '[Lattice] Restoring session for ${keys.userId} on ${keys.homeserver} '
+            '(deviceId=${keys.deviceId}, clientName=$clientName)');
+        final homeserverUri = Uri.parse(keys.homeserver!);
         _client.homeserver = homeserverUri;
         await _client.init(
-          newToken: token,
-          newUserID: userId,
-          newDeviceID: deviceId,
+          newToken: keys.token,
+          newUserID: keys.userId,
+          newDeviceID: keys.deviceId,
           newHomeserver: homeserverUri,
           newDeviceName: 'Lattice Flutter',
         );
         debugPrint('[Lattice] Session restored – '
             'encryption=${_client.encryption != null ? "available" : "null"}, '
             'encryptionEnabled=${_client.encryptionEnabled}');
-        await _activateSession();
-
-        // Write session backup after successful restore + first sync.
-        await saveSessionBackup();
+        await _completeRestore();
       }
     } catch (e, s) {
       debugPrint('[Lattice] Session restore failed: $e');
@@ -229,22 +274,22 @@ class MatrixService extends ChangeNotifier
       // The SDK client may be stuck in a partially initialized state after
       // the failed _client.init() call. Dispose and recreate before any
       // further restore attempts so we get a clean instance.
-      _client.dispose();
-      _client = await _clientFactory(
-        clientName,
-        onSoftLogout: (_) async => handleSoftLogout(),
-      );
+      await recreateClient();
+
+      // If the token expired, try initializing from the SDK database alone.
+      // The database may contain a refresh token that lets the SDK obtain a
+      // new access token automatically without overriding with the stale one.
+      if (_isExpiredTokenError(e)) {
+        final refreshed = await _tryDatabaseRestore();
+        if (refreshed) return;
+      }
 
       // Try restoring from session backup before giving up.
       final restored = await _restoreFromBackup();
       if (!restored) {
         _isLoggedIn = false;
         if (isPermanentAuthFailure(e)) {
-          await clearSessionKeys();
-          await SessionBackup.delete(
-            clientName: clientName,
-            storage: _storage,
-          );
+          await _clearSessionAndBackup();
         } else if (_isOlmKeyUploadFailure(e)) {
           // The local OLM account was lost (e.g. DB deleted) but the
           // device ID still references server-side keys we can no longer
@@ -302,18 +347,12 @@ class MatrixService extends ChangeNotifier
       );
 
       // Update stored session keys from backup.
-      await Future.wait([
-        _storage.write(
-            key: latticeKey(clientName, 'access_token'),
-            value: backup.accessToken),
-        _storage.write(
-            key: latticeKey(clientName, 'user_id'), value: backup.userId),
-        _storage.write(
-            key: latticeKey(clientName, 'homeserver'),
-            value: backup.homeserver),
-        _storage.write(
-            key: latticeKey(clientName, 'device_id'), value: backup.deviceId),
-      ]);
+      await _persistSessionKeys(
+        token: backup.accessToken,
+        userId: backup.userId,
+        homeserver: backup.homeserver,
+        deviceId: backup.deviceId,
+      );
 
       await _activateSession();
       debugPrint('[Lattice] Session restored from backup');
@@ -322,12 +361,44 @@ class MatrixService extends ChangeNotifier
       debugPrint('[Lattice] Restore from backup also failed: $e');
       debugPrint('[Lattice] Stack trace:\n$s');
       if (isPermanentAuthFailure(e)) {
-        await clearSessionKeys();
-        await SessionBackup.delete(
-          clientName: clientName,
-          storage: _storage,
-        );
+        await _clearSessionAndBackup();
       }
+      return false;
+    }
+  }
+
+  /// Whether the error is specifically an expired token (not revoked/unknown).
+  static bool _isExpiredTokenError(Object e) {
+    if (e is MatrixException && e.errcode == 'M_UNKNOWN_TOKEN') {
+      return e.errorMessage.toLowerCase().contains('expired');
+    }
+    return false;
+  }
+
+  /// Tries to initialize the client from the SDK database without overriding
+  /// the access token. The database may contain a refresh token that lets the
+  /// SDK obtain a fresh access token automatically.
+  Future<bool> _tryDatabaseRestore() async {
+    debugPrint('[Lattice] Attempting database-only restore (token refresh)...');
+    try {
+      await _client.init();
+      if (_client.isLogged()) {
+        // Persist the refreshed token so future startups use it.
+        if (_client.accessToken != null) {
+          await _storage.write(
+            key: latticeKey(clientName, 'access_token'),
+            value: _client.accessToken,
+          );
+        }
+        await _completeRestore();
+        debugPrint('[Lattice] Session restored via database token refresh');
+        return true;
+      }
+      return false;
+    } catch (e) {
+      debugPrint('[Lattice] Database-only restore failed: $e');
+      // Recreate client again since it may be in a bad state.
+      await recreateClient();
       return false;
     }
   }
@@ -355,20 +426,19 @@ class MatrixService extends ChangeNotifier
     assert(_client.userID == null,
         '_retryInitWithoutDevice requires a fresh client');
     try {
-      final token =
-          await _storage.read(key: latticeKey(clientName, 'access_token'));
-      final userId =
-          await _storage.read(key: latticeKey(clientName, 'user_id'));
-      final homeserver =
-          await _storage.read(key: latticeKey(clientName, 'homeserver'));
+      final keys = await _readSessionKeys();
 
-      if (token == null || userId == null || homeserver == null) return;
+      if (keys.token == null ||
+          keys.userId == null ||
+          keys.homeserver == null) {
+        return;
+      }
 
-      final homeserverUri = Uri.parse(homeserver);
+      final homeserverUri = Uri.parse(keys.homeserver!);
       _client.homeserver = homeserverUri;
       await _client.init(
-        newToken: token,
-        newUserID: userId,
+        newToken: keys.token,
+        newUserID: keys.userId,
         newHomeserver: homeserverUri,
         newDeviceName: 'Lattice Flutter',
       );
@@ -379,8 +449,7 @@ class MatrixService extends ChangeNotifier
             key: latticeKey(clientName, 'device_id'), value: _client.deviceID);
       }
 
-      await _activateSession();
-      await saveSessionBackup();
+      await _completeRestore();
       debugPrint('[Lattice] Session restored with new device ID '
           '${_client.deviceID}');
     } catch (e, s) {
@@ -397,10 +466,7 @@ class MatrixService extends ChangeNotifier
   @override
   Future<void> recreateClient() async {
     _client.dispose();
-    _client = await _clientFactory(
-      clientName,
-      onSoftLogout: (_) async => handleSoftLogout(),
-    );
+    _client = await _newClient();
   }
 
   /// Whether this service has been disposed.
