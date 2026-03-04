@@ -10,6 +10,7 @@ import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/rooms/widgets/add_existing_rooms_dialog.dart';
 import 'package:lattice/features/rooms/widgets/invite_user_dialog.dart';
 import 'package:lattice/features/rooms/widgets/new_room_dialog.dart';
+import 'package:lattice/features/spaces/widgets/create_subspace_dialog.dart';
 
 // ── Space Context Menu ──────────────────────────────────────────────
 
@@ -86,7 +87,6 @@ Future<void> showSpaceContextMenu(
         ),
         const PopupMenuItem(
           value: SpaceContextAction.createSubspace,
-          enabled: false,
           child: Row(
             children: [
               Icon(Icons.workspaces_outlined, size: 18),
@@ -166,6 +166,14 @@ Future<void> showSpaceContextMenu(
         );
       }
     case SpaceContextAction.createSubspace:
+      if (context.mounted) {
+        final matrix = context.read<MatrixService>();
+        await CreateSubspaceDialog.show(
+          context,
+          matrixService: matrix,
+          parentSpace: space,
+        );
+      }
     case SpaceContextAction.notifications:
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

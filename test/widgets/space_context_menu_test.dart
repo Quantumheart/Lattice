@@ -308,9 +308,8 @@ void main() {
       await tester.tap(find.text('Open Menu'));
       await tester.pumpAndSettle();
 
-      // Notifications and Create subspace items are shown but disabled.
+      // Notifications item is shown but disabled.
       expect(find.text('Notifications'), findsOneWidget);
-      expect(find.text('Create subspace'), findsOneWidget);
 
       // Tapping a disabled item does not dismiss the menu.
       await tester.tap(find.text('Notifications'));
