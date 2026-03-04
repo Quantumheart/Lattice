@@ -108,7 +108,6 @@ Future<void> showSpaceContextMenu(
       ],
       const PopupMenuItem(
         value: SpaceContextAction.notifications,
-        enabled: false,
         child: Row(
           children: [
             Icon(Icons.notifications_outlined, size: 18),
@@ -175,11 +174,7 @@ Future<void> showSpaceContextMenu(
         );
       }
     case SpaceContextAction.notifications:
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Coming soon')),
-        );
-      }
+      if (context.mounted) await _handleNotifications(context, space);
   }
 }
 
@@ -189,6 +184,68 @@ Future<void> showSpaceContextMenu(
 /// all child rooms. Reused by [SpaceDetailsPanel].
 Future<void> handleLeaveSpace(BuildContext context, Room space) =>
     _handleLeave(context, space);
+
+Future<void> _handleNotifications(BuildContext context, Room space) async {
+  final current = space.pushRuleState;
+  final result = await showDialog<PushRuleState>(
+    context: context,
+    builder: (ctx) {
+      var selected = current;
+      return StatefulBuilder(
+        builder: (ctx, setState) => AlertDialog(
+          title: const Text('Space notifications'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RadioGroup<PushRuleState>(
+                groupValue: selected,
+                onChanged: (v) => setState(() => selected = v!),
+                child: const Column(
+                  children: [
+                    RadioListTile<PushRuleState>(
+                      title: Text('All messages'),
+                      value: PushRuleState.notify,
+                    ),
+                    RadioListTile<PushRuleState>(
+                      title: Text('Mentions only'),
+                      value: PushRuleState.mentionsOnly,
+                    ),
+                    RadioListTile<PushRuleState>(
+                      title: Text('Muted'),
+                      value: PushRuleState.dontNotify,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, selected),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+
+  if (result == null || result == current || !context.mounted) return;
+
+  try {
+    await space.setPushRuleState(result);
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to update notifications: $e')),
+      );
+    }
+  }
+}
 
 Future<void> _handleMarkAsRead(Room space) async {
   // Mark the space itself as read.

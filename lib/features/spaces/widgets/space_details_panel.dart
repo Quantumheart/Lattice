@@ -68,6 +68,9 @@ class _SpaceDetailsPanelState extends State<SpaceDetailsPanel> {
     await _run('leave', () => handleLeaveSpace(context, space));
   }
 
+  Future<void> _setPushRule(Room space, PushRuleState state) =>
+      _run('pushRule', () => space.setPushRuleState(state));
+
   // ── Build ──────────────────────────────────────────────────
 
   @override
@@ -114,12 +117,54 @@ class _SpaceDetailsPanelState extends State<SpaceDetailsPanel> {
           ),
         const Divider(),
         RoomMembersSection(room: space),
+        const Divider(),
+        _buildNotificationSection(space, cs, tt),
         if (space.canChangeStateEvent(EventTypes.RoomName) ||
             space.canChangeStateEvent(EventTypes.RoomTopic) ||
             space.canChangePowerLevel) ...[
           const Divider(),
           AdminSettingsSection(room: space),
         ],
+      ],
+    );
+  }
+
+  // ── Notification settings ──────────────────────────────────
+
+  Widget _buildNotificationSection(Room space, ColorScheme cs, TextTheme tt) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 16, top: 12, bottom: 4),
+          child: Text(
+            'NOTIFICATIONS',
+            style: tt.labelSmall?.copyWith(
+              color: cs.primary,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ),
+        RadioGroup<PushRuleState>(
+          groupValue: space.pushRuleState,
+          onChanged: _busy('pushRule') ? (_) {} : (v) => _setPushRule(space, v!),
+          child: const Column(
+            children: [
+              RadioListTile<PushRuleState>(
+                title: Text('All messages'),
+                value: PushRuleState.notify,
+              ),
+              RadioListTile<PushRuleState>(
+                title: Text('Mentions only'),
+                value: PushRuleState.mentionsOnly,
+              ),
+              RadioListTile<PushRuleState>(
+                title: Text('Muted'),
+                value: PushRuleState.dontNotify,
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }

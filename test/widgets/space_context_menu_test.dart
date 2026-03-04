@@ -302,21 +302,15 @@ void main() {
       expect(find.text('Space details for !space:example.com'), findsOneWidget);
     });
 
-    testWidgets('stub menu items are visually disabled',
+    testWidgets('notifications and create subspace items are shown',
         (tester) async {
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Open Menu'));
       await tester.pumpAndSettle();
 
-      // Notifications item is shown but disabled.
+      // All menu items are shown and functional.
       expect(find.text('Notifications'), findsOneWidget);
-
-      // Tapping a disabled item does not dismiss the menu.
-      await tester.tap(find.text('Notifications'));
-      await tester.pumpAndSettle();
-
-      // Menu should still be visible (item was disabled).
-      expect(find.text('Notifications'), findsOneWidget);
+      expect(find.text('Create subspace'), findsOneWidget);
     });
   });
 }
