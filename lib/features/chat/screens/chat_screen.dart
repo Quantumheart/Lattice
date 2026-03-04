@@ -51,6 +51,7 @@ class _ChatScreenState extends State<ChatScreen> {
   static const _readMarkerDelay = Duration(seconds: 1);
 
   final _msgCtrl = TextEditingController();
+  final _composeFocusNode = FocusNode();
   final _itemScrollCtrl = ItemScrollController();
   final _itemPosListener = ItemPositionsListener.create();
   Timeline? _timeline;
@@ -82,6 +83,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _search = _createSearchController();
     _initTimeline();
     _itemPosListener.itemPositions.addListener(_onScroll);
+    _composeFocusNode.requestFocus();
   }
 
   @override
@@ -99,6 +101,7 @@ class _ChatScreenState extends State<ChatScreen> {
       _search.dispose();
       _search = _createSearchController();
       _initTimeline();
+      _composeFocusNode.requestFocus();
     }
   }
 
@@ -408,6 +411,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _uploadNotifier.dispose();
     _searchCtrl.dispose();
     _searchFocusNode.dispose();
+    _composeFocusNode.dispose();
     _typingCtrl?.dispose();
     _readMarkerTimer?.cancel();
     _search.removeListener(_onSearchChanged);
@@ -506,6 +510,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   room: room,
                   joinedRooms: matrix.rooms,
                   typingController: _typingCtrl,
+                  focusNode: _composeFocusNode,
                 );
               },
             );

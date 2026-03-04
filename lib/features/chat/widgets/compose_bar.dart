@@ -28,6 +28,7 @@ class ComposeBar extends StatefulWidget {
     this.room,
     this.joinedRooms,
     this.typingController,
+    this.focusNode,
   });
 
   final TextEditingController controller;
@@ -48,13 +49,17 @@ class ComposeBar extends StatefulWidget {
   /// Manages outgoing typing indicators for the current room.
   final TypingController? typingController;
 
+  /// Optional external focus node for the compose text field.
+  final FocusNode? focusNode;
+
   @override
   State<ComposeBar> createState() => _ComposeBarState();
 }
 
 class _ComposeBarState extends State<ComposeBar> {
   static final bool _isMacOS = defaultTargetPlatform == TargetPlatform.macOS;
-  final _focusNode = FocusNode();
+  FocusNode? _ownedFocusNode;
+  FocusNode get _focusNode => widget.focusNode ?? (_ownedFocusNode ??= FocusNode());
 
   MentionAutocompleteController? _mentionController;
 
@@ -114,7 +119,7 @@ class _ComposeBarState extends State<ComposeBar> {
     _focusNode.removeListener(_onFocusChanged);
     _mentionController?.removeListener(_onMentionChanged);
     _mentionController?.dispose();
-    _focusNode.dispose();
+    _ownedFocusNode?.dispose();
     super.dispose();
   }
 
