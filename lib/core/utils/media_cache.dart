@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -8,11 +9,13 @@ import 'package:path_provider/path_provider.dart';
 // ── Media cache (download/decrypt → temp file or memory) ──────
 
 class MediaCache {
-  static final Map<String, String> _tempFiles = {};
+  static const _maxEntries = 50;
+  static final LinkedHashMap<String, String> _tempFiles = LinkedHashMap();
 
   static Future<Media> resolve(Event event) async {
     final cached = _tempFiles[event.eventId];
     if (cached != null && !kIsWeb && File(cached).existsSync()) {
+      _promote(event.eventId);
       return Media(cached);
     }
 
@@ -43,7 +46,20 @@ class MediaCache {
     final file = File(path);
     await file.writeAsBytes(bytes);
     _tempFiles[eventId] = path;
+    _evictOldest();
     return Media(path);
+  }
+
+  static void _promote(String eventId) {
+    final path = _tempFiles.remove(eventId);
+    if (path != null) _tempFiles[eventId] = path;
+  }
+
+  static void _evictOldest() {
+    while (_tempFiles.length > _maxEntries) {
+      final oldest = _tempFiles.keys.first;
+      evict(oldest);
+    }
   }
 
   static void evict(String eventId) {

@@ -30,10 +30,14 @@ class FullVideoView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.sizeOf(context);
+    final maxWidth = screenSize.width - 32;
+    final maxHeight = screenSize.height - 32;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(12),
-      child: AspectRatio(
-        aspectRatio: 16 / 9,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: maxWidth, maxHeight: maxHeight),
         child: Video(controller: controller),
       ),
     );

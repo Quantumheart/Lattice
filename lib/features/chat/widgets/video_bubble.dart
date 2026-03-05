@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:provider/provider.dart';
 
+import 'package:lattice/core/utils/format_duration.dart';
 import 'package:lattice/core/utils/format_file_size.dart';
 import 'package:lattice/core/utils/media_auth.dart';
 import 'package:lattice/core/utils/media_cache.dart';
@@ -34,6 +36,8 @@ class _VideoBubbleState extends State<VideoBubble> {
   String? _thumbUrl;
   Player? _player;
   VideoController? _controller;
+  late final MediaPlaybackService _playbackService;
+  final List<StreamSubscription<dynamic>> _subs = [];
 
   @override
   void initState() {
@@ -42,9 +46,18 @@ class _VideoBubbleState extends State<VideoBubble> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _playbackService = context.read<MediaPlaybackService>();
+  }
+
+  @override
   void dispose() {
+    for (final sub in _subs) {
+      sub.cancel();
+    }
     if (_player != null) {
-      context.read<MediaPlaybackService>().unregisterPlayer(widget.event.eventId);
+      _playbackService.unregisterPlayer(widget.event.eventId);
       _player!.dispose();
     }
     super.dispose();
@@ -101,17 +114,17 @@ class _VideoBubbleState extends State<VideoBubble> {
       _player = Player();
       _controller = VideoController(_player!);
 
-      _player!.stream.completed.listen((completed) {
+      _subs.add(_player!.stream.completed.listen((completed) {
         if (completed && mounted) {
           _player!.seek(Duration.zero);
           _player!.pause();
         }
-      });
+      }));
 
       await _player!.open(media);
       if (!mounted) return;
 
-      context.read<MediaPlaybackService>().registerPlayer(
+      _playbackService.registerPlayer(
             widget.event.eventId,
             _player!,
           );
@@ -123,6 +136,10 @@ class _VideoBubbleState extends State<VideoBubble> {
   }
 
   void _retry() {
+    for (final sub in _subs) {
+      sub.cancel();
+    }
+    _subs.clear();
     _player?.dispose();
     _player = null;
     _controller = null;
@@ -156,7 +173,7 @@ class _VideoBubbleState extends State<VideoBubble> {
         .tryGet<Map<String, Object?>>('info')
         ?.tryGet<int>('duration');
     final durationLabel = durationMs != null
-        ? _formatDuration(Duration(milliseconds: durationMs))
+        ? formatDuration(Duration(milliseconds: durationMs))
         : null;
 
     Widget thumb;
@@ -308,9 +325,4 @@ class _VideoBubbleState extends State<VideoBubble> {
     );
   }
 
-  static String _formatDuration(Duration d) {
-    final minutes = d.inMinutes;
-    final seconds = d.inSeconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  }
 }
