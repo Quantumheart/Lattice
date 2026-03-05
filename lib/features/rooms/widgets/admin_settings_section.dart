@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:matrix/matrix.dart';
 
 import 'package:lattice/core/services/matrix_service.dart';
@@ -121,30 +120,6 @@ class _AdminSettingsSectionState extends State<AdminSettingsSection> {
     await _run('encryption', () => widget.room.enableEncryption(), successMessage: 'Encryption enabled');
   }
 
-  Future<void> _uploadAvatar() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 512,
-      maxHeight: 512,
-      imageQuality: 85,
-    );
-    if (picked == null || !mounted) return;
-
-    await _run('avatar', () async {
-      final bytes = await picked.readAsBytes();
-      await widget.room.setAvatar(MatrixFile(bytes: bytes, name: picked.name));
-      debugPrint('[Lattice] Room avatar uploaded: ${picked.name} (${bytes.length} bytes)');
-    }, successMessage: 'Avatar updated');
-  }
-
-  Future<void> _removeAvatar() async {
-    await _run('avatar', () async {
-      await widget.room.setAvatar(null);
-      debugPrint('[Lattice] Room avatar removed');
-    }, successMessage: 'Avatar removed');
-  }
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -218,32 +193,6 @@ class _AdminSettingsSectionState extends State<AdminSettingsSection> {
                   icon: const Icon(Icons.check_rounded),
                   tooltip: 'Save topic',
                 ),
-              ],
-            ),
-          ),
-
-        // Avatar
-        if (room.canChangeStateEvent(EventTypes.RoomAvatar))
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 8,
-              children: [
-                OutlinedButton.icon(
-                  onPressed: _busy('avatar') ? null : _uploadAvatar,
-                  icon: const Icon(Icons.photo_library_outlined, size: 18),
-                  label: const Text('Upload avatar'),
-                ),
-                if (room.avatar != null)
-                  OutlinedButton.icon(
-                    onPressed: _busy('avatar') ? null : _removeAvatar,
-                    icon: Icon(Icons.delete_outline, size: 18, color: cs.error),
-                    label: Text('Remove avatar', style: TextStyle(color: cs.error)),
-                    style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: cs.error.withValues(alpha: 0.5)),
-                    ),
-                  ),
               ],
             ),
           ),

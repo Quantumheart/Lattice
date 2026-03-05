@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/rooms/widgets/admin_settings_section.dart';
 import 'package:lattice/features/rooms/widgets/invite_user_dialog.dart';
-import 'package:lattice/shared/widgets/room_avatar.dart';
+import 'package:lattice/shared/widgets/avatar_edit_overlay.dart';
 import 'package:lattice/features/rooms/widgets/room_members_section.dart';
 import 'space_context_menu.dart';
 
@@ -132,7 +132,7 @@ class _SpaceDetailsPanelState extends State<SpaceDetailsPanel> {
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          RoomAvatarWidget(room: space, size: 72),
+          AvatarEditOverlay(room: space, size: 72),
           const SizedBox(height: 12),
           Text(
             space.getLocalizedDisplayname(),

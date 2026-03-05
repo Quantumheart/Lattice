@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/e2ee/widgets/key_verification_dialog.dart';
-import 'package:lattice/shared/widgets/room_avatar.dart';
+import 'package:lattice/shared/widgets/avatar_edit_overlay.dart';
 import 'room_members_section.dart';
 import 'shared_media_section.dart';
 import 'admin_settings_section.dart';
@@ -224,7 +224,7 @@ class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          RoomAvatarWidget(room: room, size: 72),
+          AvatarEditOverlay(room: room, size: 72),
           const SizedBox(height: 12),
           Text(
             room.getLocalizedDisplayname(),
