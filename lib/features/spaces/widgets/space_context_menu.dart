@@ -11,6 +11,7 @@ import 'package:lattice/features/rooms/widgets/add_existing_rooms_dialog.dart';
 import 'package:lattice/features/rooms/widgets/invite_user_dialog.dart';
 import 'package:lattice/features/rooms/widgets/new_room_dialog.dart';
 import 'package:lattice/features/spaces/widgets/create_subspace_dialog.dart';
+import 'package:lattice/features/spaces/widgets/notification_radio_group.dart';
 
 // ── Space Context Menu ──────────────────────────────────────────────
 
@@ -194,30 +195,9 @@ Future<void> _handleNotifications(BuildContext context, Room space) async {
       return StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
           title: const Text('Space notifications'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              RadioGroup<PushRuleState>(
-                groupValue: selected,
-                onChanged: (v) => setState(() => selected = v!),
-                child: const Column(
-                  children: [
-                    RadioListTile<PushRuleState>(
-                      title: Text('All messages'),
-                      value: PushRuleState.notify,
-                    ),
-                    RadioListTile<PushRuleState>(
-                      title: Text('Mentions only'),
-                      value: PushRuleState.mentionsOnly,
-                    ),
-                    RadioListTile<PushRuleState>(
-                      title: Text('Muted'),
-                      value: PushRuleState.dontNotify,
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          content: NotificationRadioGroup(
+            groupValue: selected,
+            onChanged: (v) => setState(() => selected = v!),
           ),
           actions: [
             TextButton(
@@ -238,6 +218,11 @@ Future<void> _handleNotifications(BuildContext context, Room space) async {
 
   try {
     await space.setPushRuleState(result);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Notifications updated')),
+      );
+    }
   } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

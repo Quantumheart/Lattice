@@ -302,15 +302,109 @@ void main() {
       expect(find.text('Space details for !space:example.com'), findsOneWidget);
     });
 
-    testWidgets('notifications and create subspace items are shown',
+    testWidgets('Notifications item opens notification dialog',
         (tester) async {
+      when(mockSpace.pushRuleState).thenReturn(PushRuleState.notify);
+
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Open Menu'));
       await tester.pumpAndSettle();
 
-      // All menu items are shown and functional.
-      expect(find.text('Notifications'), findsOneWidget);
-      expect(find.text('Create subspace'), findsOneWidget);
+      // Notifications item is shown and enabled (tapping opens dialog).
+      await tester.tap(find.text('Notifications'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Space notifications'), findsOneWidget);
+      expect(find.text('All messages'), findsOneWidget);
+      expect(find.text('Mentions only'), findsOneWidget);
+      expect(find.text('Muted'), findsOneWidget);
+      expect(find.text('Cancel'), findsOneWidget);
+      expect(find.text('Save'), findsOneWidget);
+    });
+
+    testWidgets('Selecting a push rule and saving calls setPushRuleState',
+        (tester) async {
+      when(mockSpace.pushRuleState).thenReturn(PushRuleState.notify);
+      when(mockSpace.setPushRuleState(any)).thenAnswer((_) async {});
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.tap(find.text('Open Menu'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Notifications'));
+      await tester.pumpAndSettle();
+
+      // Select "Muted"
+      await tester.tap(find.text('Muted'));
+      await tester.pumpAndSettle();
+
+      // Confirm
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      verify(mockSpace.setPushRuleState(PushRuleState.dontNotify)).called(1);
+      // Success snackbar shown
+      expect(find.text('Notifications updated'), findsOneWidget);
+    });
+
+    testWidgets('Cancelling notification dialog does not call setPushRuleState',
+        (tester) async {
+      when(mockSpace.pushRuleState).thenReturn(PushRuleState.notify);
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.tap(find.text('Open Menu'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Notifications'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      verifyNever(mockSpace.setPushRuleState(any));
+    });
+
+    testWidgets('Saving unchanged push rule does not call setPushRuleState',
+        (tester) async {
+      when(mockSpace.pushRuleState).thenReturn(PushRuleState.notify);
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.tap(find.text('Open Menu'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Notifications'));
+      await tester.pumpAndSettle();
+
+      // Save without changing the selection
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      verifyNever(mockSpace.setPushRuleState(any));
+    });
+
+    testWidgets('Notification error shows failure snackbar',
+        (tester) async {
+      when(mockSpace.pushRuleState).thenReturn(PushRuleState.notify);
+      when(mockSpace.setPushRuleState(any))
+          .thenThrow(Exception('network error'));
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.tap(find.text('Open Menu'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Notifications'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Muted'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Save'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('Failed to update notifications'),
+        findsOneWidget,
+      );
     });
   });
 }
