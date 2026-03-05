@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:matrix/matrix.dart';
 
 import 'package:lattice/core/models/space_node.dart';
+import 'package:lattice/core/utils/order_utils.dart' as order_utils;
 
 /// Room/space selection state, space tree, and filtered-room helpers.
 mixin SelectionMixin on ChangeNotifier {
@@ -273,29 +274,20 @@ mixin SelectionMixin on ChangeNotifier {
     return rooms.where((r) => !spaceRoomIds.contains(r.id)).toList();
   }
 
-  /// Direct child rooms of a specific space (not recursive into subspaces).
-  ///
-  /// Rooms with an `order` field on their `m.space.child` state event are
-  /// sorted lexicographically first; rooms without an order follow
-  /// alphabetically by display name.
   List<Room> roomsForSpace(String spaceId) {
     _ensureTreeFresh();
     final space = client.getRoomById(spaceId);
     if (space == null) return [];
     final childIds = <String>{};
-    final orderMap = <String, String>{};
     for (final child in space.spaceChildren) {
       final childId = child.roomId;
       if (childId == null) continue;
       final childRoom = client.getRoomById(childId);
       if (childRoom != null && !childRoom.isSpace) {
         childIds.add(childId);
-        final order = child.order;
-        if (order.isNotEmpty) {
-          orderMap[childId] = order;
-        }
       }
     }
+    final orderMap = order_utils.buildOrderMap(space);
     final result = rooms.where((r) => childIds.contains(r.id)).toList();
     result.sort((a, b) {
       final aOrder = orderMap[a.id];

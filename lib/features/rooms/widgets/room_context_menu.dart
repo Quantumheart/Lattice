@@ -20,11 +20,9 @@ Future<void> showRoomContextMenu(
   final matrix = context.read<MatrixService>();
   final cs = Theme.of(context).colorScheme;
 
-  // Determine capabilities.
   final selectedIds = matrix.selectedSpaceIds;
   final memberships = matrix.spaceMemberships(room.id);
 
-  // "Remove from space" — when any selected space has permission.
   Room? activeSpace;
   bool canRemove = false;
   for (final spaceId in selectedIds) {
@@ -36,12 +34,10 @@ Future<void> showRoomContextMenu(
     }
   }
 
-  // "Add to space" — when there are eligible spaces the room isn't already in.
   final canAdd = matrix.spaces.any((s) =>
       s.canChangeStateEvent('m.space.child') &&
       !memberships.contains(s.id));
 
-  // Move Up / Move Down — when room is in a manageable space with known order.
   Room? reorderSpace;
   List<Room>? orderedRooms;
   int roomIndex = -1;
@@ -160,17 +156,8 @@ Future<void> _handleReorder(
     final matrix = context.read<MatrixService>();
     final roomId = orderedRooms[fromIndex].id;
 
-    // Build a map of current order strings.
-    final orderMap = <String, String>{};
-    for (final child in space.spaceChildren) {
-      final cid = child.roomId;
-      if (cid != null && child.order.isNotEmpty) {
-        orderMap[cid] = child.order;
-      }
-    }
+    final orderMap = order_utils.buildOrderMap(space);
 
-    // When moving up, place between (toIndex-1) and toIndex.
-    // When moving down, place between toIndex and (toIndex+1).
     final String? neighborBefore;
     final String? neighborAfter;
     if (toIndex < fromIndex) {

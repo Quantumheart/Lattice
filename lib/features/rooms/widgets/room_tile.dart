@@ -247,7 +247,6 @@ class RoomTile extends StatelessWidget {
       );
     }
 
-    // Wrap in DragTarget for within-section reorder on desktop.
     if (_isDesktop && parentSpaceId != null && sectionRooms != null) {
       tile = _ReorderDragTarget(
         room: room,
@@ -370,9 +369,7 @@ class _ReorderDragTargetState extends State<_ReorderDragTarget> {
       onWillAcceptWithDetails: (details) {
         final data = details.data;
         if (data is! RoomDragData) return false;
-        // Only accept drops from the same space section.
         if (data.currentParentSpaceId != widget.parentSpaceId) return false;
-        // Don't accept drop on self.
         if (data.roomId == widget.room.id) return false;
         return true;
       },
@@ -387,13 +384,14 @@ class _ReorderDragTargetState extends State<_ReorderDragTarget> {
         });
       },
       onAcceptWithDetails: (details) {
+        final insertAbove = _showAbove;
         setState(() {
           _showAbove = false;
           _showBelow = false;
         });
         final data = details.data;
         if (data is! RoomDragData) return;
-        _handleReorderDrop(context, data);
+        _handleReorderDrop(context, data, insertAbove: insertAbove);
       },
       onLeave: (_) => setState(() {
         _showAbove = false;
@@ -422,7 +420,11 @@ class _ReorderDragTargetState extends State<_ReorderDragTarget> {
     );
   }
 
-  void _handleReorderDrop(BuildContext context, RoomDragData data) async {
+  void _handleReorderDrop(
+    BuildContext context,
+    RoomDragData data, {
+    required bool insertAbove,
+  }) async {
     final matrix = context.read<MatrixService>();
     final space = matrix.client.getRoomById(widget.parentSpaceId);
     if (space == null) return;
@@ -432,18 +434,9 @@ class _ReorderDragTargetState extends State<_ReorderDragTarget> {
       final targetIndex = rooms.indexWhere((r) => r.id == widget.room.id);
       if (targetIndex < 0) return;
 
-      // Determine insertion position: above = before target, below = after.
-      final insertBefore = _showAbove;
-      final insertIndex = insertBefore ? targetIndex : targetIndex + 1;
+      final insertIndex = insertAbove ? targetIndex : targetIndex + 1;
 
-      // Build order map from space children.
-      final orderMap = <String, String>{};
-      for (final child in space.spaceChildren) {
-        final cid = child.roomId;
-        if (cid != null && child.order.isNotEmpty) {
-          orderMap[cid] = child.order;
-        }
-      }
+      final orderMap = order_utils.buildOrderMap(space);
 
       final String? neighborBefore = insertIndex > 0
           ? orderMap[rooms[insertIndex - 1].id]
