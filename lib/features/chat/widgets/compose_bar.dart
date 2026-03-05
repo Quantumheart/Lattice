@@ -8,9 +8,11 @@ import 'package:provider/provider.dart';
 import 'package:lattice/core/models/upload_state.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/chat/services/typing_controller.dart';
+import 'package:lattice/features/chat/services/voice_recording_controller.dart';
 import 'mention_autocomplete_controller.dart';
 import 'mention_suggestion_overlay.dart';
 import 'edit_preview_banner.dart';
+import 'recording_indicator.dart';
 import 'reply_preview_banner.dart';
 import 'upload_progress_banner.dart';
 
@@ -29,6 +31,10 @@ class ComposeBar extends StatefulWidget {
     this.joinedRooms,
     this.typingController,
     this.focusNode,
+    this.voiceController,
+    this.onMicTap,
+    this.onVoiceStop,
+    this.onVoiceCancel,
   });
 
   final TextEditingController controller;
@@ -51,6 +57,11 @@ class ComposeBar extends StatefulWidget {
 
   /// Optional external focus node for the compose text field.
   final FocusNode? focusNode;
+
+  final VoiceRecordingController? voiceController;
+  final VoidCallback? onMicTap;
+  final VoidCallback? onVoiceStop;
+  final VoidCallback? onVoiceCancel;
 
   @override
   State<ComposeBar> createState() => _ComposeBarState();
@@ -225,70 +236,112 @@ class _ComposeBarState extends State<ComposeBar> {
                 );
               },
             ),
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
-            child: Row(
-              children: [
-                _buildAttachButton(cs),
-                Expanded(
-                  child: CallbackShortcuts(
-                    bindings: {
-                      const SingleActivator(LogicalKeyboardKey.enter):
-                          _handleSend,
-                      SingleActivator(LogicalKeyboardKey.arrowUp,
-                          meta: _isMacOS, control: !_isMacOS): _jumpToStart,
-                      SingleActivator(LogicalKeyboardKey.arrowDown,
-                          meta: _isMacOS, control: !_isMacOS): _jumpToEnd,
-                    },
-                    child: Focus(
-                      onKeyEvent: _handleKeyEvent,
-                      child: TextField(
-                        controller: widget.controller,
-                        focusNode: _focusNode,
-                        textInputAction: TextInputAction.newline,
-                        decoration: InputDecoration(
-                          hintText: widget.editEvent != null
-                              ? 'Edit message…'
-                              : 'Type a message…',
-                          isDense: true,
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 10),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide.none,
-                          ),
-                          filled: true,
-                          fillColor:
-                              cs.surfaceContainerHighest.withValues(alpha: 0.5),
-                        ),
-                        minLines: 1,
-                        maxLines: 5,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 4),
-                ValueListenableBuilder<TextEditingValue>(
-                  valueListenable: widget.controller,
-                  builder: (context, value, _) {
-                    final hasText = value.text.trim().isNotEmpty;
-                    return IconButton.filled(
-                      onPressed: hasText ? _handleSend : null,
-                      icon: const Icon(Icons.send_rounded, size: 20),
-                      style: IconButton.styleFrom(
-                        backgroundColor:
-                            hasText ? cs.primary : cs.surfaceContainerHighest,
-                        foregroundColor:
-                            hasText ? cs.onPrimary : cs.onSurfaceVariant,
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
+          _buildComposeRow(cs),
         ],
       ),
+    );
+  }
+
+  Widget _buildComposeRow(ColorScheme cs) {
+    final vc = widget.voiceController;
+    if (vc == null) return _buildDefaultRow(cs);
+
+    return ListenableBuilder(
+      listenable: vc,
+      builder: (context, _) {
+        final isRecording = vc.state == VoiceRecordingState.recording ||
+            vc.state == VoiceRecordingState.requesting;
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 200),
+          child: isRecording
+              ? RecordingIndicator(
+                  key: const ValueKey('recording'),
+                  controller: vc,
+                  onCancel: widget.onVoiceCancel ?? () {},
+                  onStop: widget.onVoiceStop ?? () {},
+                )
+              : _buildDefaultRow(cs),
+        );
+      },
+    );
+  }
+
+  Widget _buildDefaultRow(ColorScheme cs) {
+    return Padding(
+      key: const ValueKey('compose'),
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        children: [
+          _buildAttachButton(cs),
+          Expanded(
+            child: CallbackShortcuts(
+              bindings: {
+                const SingleActivator(LogicalKeyboardKey.enter): _handleSend,
+                SingleActivator(LogicalKeyboardKey.arrowUp,
+                    meta: _isMacOS, control: !_isMacOS): _jumpToStart,
+                SingleActivator(LogicalKeyboardKey.arrowDown,
+                    meta: _isMacOS, control: !_isMacOS): _jumpToEnd,
+              },
+              child: Focus(
+                onKeyEvent: _handleKeyEvent,
+                child: TextField(
+                  controller: widget.controller,
+                  focusNode: _focusNode,
+                  textInputAction: TextInputAction.newline,
+                  decoration: InputDecoration(
+                    hintText: widget.editEvent != null
+                        ? 'Edit message…'
+                        : 'Type a message…',
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(24),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor:
+                        cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                  ),
+                  minLines: 1,
+                  maxLines: 5,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 4),
+          _buildSendOrMicButton(cs),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSendOrMicButton(ColorScheme cs) {
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: widget.controller,
+      builder: (context, value, _) {
+        final hasText = value.text.trim().isNotEmpty;
+        if (!hasText && widget.voiceController != null) {
+          return IconButton.filled(
+            onPressed: widget.onMicTap,
+            icon: const Icon(Icons.mic_rounded, size: 20),
+            style: IconButton.styleFrom(
+              backgroundColor: cs.surfaceContainerHighest,
+              foregroundColor: cs.onSurfaceVariant,
+            ),
+          );
+        }
+        return IconButton.filled(
+          onPressed: hasText ? _handleSend : null,
+          icon: const Icon(Icons.send_rounded, size: 20),
+          style: IconButton.styleFrom(
+            backgroundColor:
+                hasText ? cs.primary : cs.surfaceContainerHighest,
+            foregroundColor:
+                hasText ? cs.onPrimary : cs.onSurfaceVariant,
+          ),
+        );
+      },
     );
   }
 

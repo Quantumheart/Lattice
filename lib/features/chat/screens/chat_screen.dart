@@ -10,6 +10,9 @@ import 'package:lattice/features/chat/services/chat_search_controller.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/chat/services/typing_controller.dart';
+import 'package:lattice/features/chat/services/voice_recording_controller.dart';
+import 'package:lattice/features/chat/services/media_playback_service.dart';
+import 'package:lattice/features/chat/widgets/voice_send_handler.dart';
 import 'package:lattice/features/chat/widgets/chat_app_bar.dart';
 import 'package:lattice/features/chat/widgets/compose_bar.dart';
 import 'package:lattice/features/chat/widgets/delete_event_dialog.dart';
@@ -72,6 +75,9 @@ class _ChatScreenState extends State<ChatScreen> {
   // ── Typing ─────────────────────────────────────────────
   TypingController? _typingCtrl;
 
+  // ── Voice recording ─────────────────────────────────────
+  VoiceRecordingController? _voiceCtrl;
+
   // ── Search ─────────────────────────────────────────────
   late ChatSearchController _search;
   final _searchCtrl = TextEditingController();
@@ -97,6 +103,7 @@ class _ChatScreenState extends State<ChatScreen> {
       _msgCtrl.clear();
       _cachedVisibleEvents = null;
       _typingCtrl?.dispose();
+      _voiceCtrl?.dispose();
       _search.removeListener(_onSearchChanged);
       _search.dispose();
       _search = _createSearchController();
@@ -125,6 +132,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (room == null) return;
 
     _typingCtrl = TypingController(room: room);
+    _voiceCtrl = VoiceRecordingController();
 
     _timeline = await room.getTimeline(
       onUpdate: () {
@@ -320,6 +328,36 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  // ── Voice recording ────────────────────────────────────
+
+  Future<void> _startVoiceRecording() async {
+    context.read<MediaPlaybackService>().pauseActive();
+    final started = await _voiceCtrl!.startRecording();
+    if (!started && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Microphone permission denied')),
+      );
+    }
+  }
+
+  Future<void> _stopAndSendVoiceMessage() async {
+    final elapsed = _voiceCtrl!.elapsed;
+    final path = await _voiceCtrl!.stopRecording();
+    if (path != null && mounted) {
+      await sendVoiceMessage(
+        context,
+        widget.roomId,
+        _uploadNotifier,
+        path,
+        elapsed,
+      );
+    }
+  }
+
+  Future<void> _cancelVoiceRecording() async {
+    await _voiceCtrl?.cancelRecording();
+  }
+
   // ── Send ───────────────────────────────────────────────
 
   Future<void> _send() async {
@@ -414,6 +452,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _searchFocusNode.dispose();
     _composeFocusNode.dispose();
     _typingCtrl?.dispose();
+    _voiceCtrl?.dispose();
     _readMarkerTimer?.cancel();
     _search.removeListener(_onSearchChanged);
     _search.dispose();
@@ -512,6 +551,10 @@ class _ChatScreenState extends State<ChatScreen> {
                   joinedRooms: matrix.rooms,
                   typingController: _typingCtrl,
                   focusNode: _composeFocusNode,
+                  voiceController: _voiceCtrl,
+                  onMicTap: _startVoiceRecording,
+                  onVoiceStop: _stopAndSendVoiceMessage,
+                  onVoiceCancel: _cancelVoiceRecording,
                 );
               },
             );
