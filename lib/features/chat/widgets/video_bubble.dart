@@ -152,7 +152,7 @@ class _VideoBubbleState extends State<VideoBubble> {
 
   void _openFullscreen() {
     if (_player == null || _controller == null) return;
-    showFullVideoDialog(context, player: _player!, controller: _controller!);
+    showFullVideoDialog(context, event: widget.event, player: _player!, controller: _controller!);
   }
 
   @override
