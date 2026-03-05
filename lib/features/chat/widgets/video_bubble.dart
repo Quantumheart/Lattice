@@ -36,6 +36,7 @@ class _VideoBubbleState extends State<VideoBubble> {
   String? _thumbUrl;
   Player? _player;
   VideoController? _controller;
+  bool _isPlaying = false;
   late final MediaPlaybackService _playbackService;
   final List<StreamSubscription<dynamic>> _subs = [];
 
@@ -114,6 +115,9 @@ class _VideoBubbleState extends State<VideoBubble> {
       _player = Player();
       _controller = VideoController(_player!);
 
+      _subs.add(_player!.stream.playing.listen((playing) {
+        if (mounted) setState(() => _isPlaying = playing);
+      }));
       _subs.add(_player!.stream.completed.listen((completed) {
         if (completed && mounted) {
           _player!.seek(Duration.zero);
@@ -252,30 +256,59 @@ class _VideoBubbleState extends State<VideoBubble> {
     );
   }
 
+  void _togglePlayPause() {
+    if (_player == null) return;
+    if (_isPlaying) {
+      _player!.pause();
+    } else {
+      _playbackService.registerPlayer(widget.event.eventId, _player!);
+      _player!.play();
+    }
+  }
+
   Widget _buildInlinePlayer(ColorScheme cs) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 280, maxHeight: 260),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Video(controller: _controller!),
-            Positioned(
-              top: 6,
-              right: 6,
-              child: IconButton.filled(
-                onPressed: _openFullscreen,
-                icon: const Icon(Icons.fullscreen_rounded, size: 20),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.black.withValues(alpha: 0.5),
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.all(4),
-                  minimumSize: const Size(32, 32),
+    return GestureDetector(
+      onTap: _togglePlayPause,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 280, maxHeight: 260),
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              Video(
+                controller: _controller!,
+                controls: (state) => const SizedBox.shrink(),
+              ),
+              if (!_isPlaying)
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.4),
+                    shape: BoxShape.circle,
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: const Icon(
+                    Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+              Positioned(
+                top: 6,
+                right: 6,
+                child: IconButton.filled(
+                  onPressed: _openFullscreen,
+                  icon: const Icon(Icons.fullscreen_rounded, size: 20),
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.black.withValues(alpha: 0.5),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.all(4),
+                    minimumSize: const Size(32, 32),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

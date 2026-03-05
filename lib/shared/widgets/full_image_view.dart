@@ -36,10 +36,10 @@ class FullImageView extends StatefulWidget {
   final Event event;
 
   @override
-  State<FullImageView> createState() => FullImageViewState();
+  State<FullImageView> createState() => _FullImageViewState();
 }
 
-class FullImageViewState extends State<FullImageView> {
+class _FullImageViewState extends State<FullImageView> {
   Uint8List? _imageBytes;
   String? _imageUrl;
   bool _loading = true;

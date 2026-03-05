@@ -69,8 +69,12 @@ class _AudioBubbleState extends State<AudioBubble> {
     return size != null && size > _maxFileSizeBytes;
   }
 
+  bool get _pendingSend =>
+      widget.event.status == EventStatus.sending ||
+      widget.event.status == EventStatus.error;
+
   Future<void> _initAndPlay() async {
-    if (_tooLarge) return;
+    if (_tooLarge || _pendingSend) return;
     setState(() => _state = _AudioState.loading);
 
     try {
@@ -163,28 +167,32 @@ class _AudioBubbleState extends State<AudioBubble> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                GestureDetector(
-                  onTapDown: (details) {
-                    final box = context.findRenderObject() as RenderBox;
-                    final fraction = details.localPosition.dx / box.size.width;
-                    _seek(fraction.clamp(0.0, 1.0));
+                Builder(
+                  builder: (waveformContext) {
+                    void seekFromOffset(double dx) {
+                      final box =
+                          waveformContext.findRenderObject() as RenderBox;
+                      _seek((dx / box.size.width).clamp(0.0, 1.0));
+                    }
+
+                    return GestureDetector(
+                      onTapDown: (d) => seekFromOffset(d.localPosition.dx),
+                      onHorizontalDragUpdate: (d) =>
+                          seekFromOffset(d.localPosition.dx),
+                      child: CustomPaint(
+                        size: const Size(double.infinity, 32),
+                        painter: _WaveformPainter(
+                          bars: _bars,
+                          progress: _duration.inMilliseconds > 0
+                              ? _position.inMilliseconds /
+                                  _duration.inMilliseconds
+                              : 0.0,
+                          activeColor: accent,
+                          inactiveColor: muted,
+                        ),
+                      ),
+                    );
                   },
-                  onHorizontalDragUpdate: (details) {
-                    final box = context.findRenderObject() as RenderBox;
-                    final fraction = details.localPosition.dx / box.size.width;
-                    _seek(fraction.clamp(0.0, 1.0));
-                  },
-                  child: CustomPaint(
-                    size: const Size(double.infinity, 32),
-                    painter: _WaveformPainter(
-                      bars: _bars,
-                      progress: _duration.inMilliseconds > 0
-                          ? _position.inMilliseconds / _duration.inMilliseconds
-                          : 0.0,
-                      activeColor: accent,
-                      inactiveColor: muted,
-                    ),
-                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -206,8 +214,11 @@ class _AudioBubbleState extends State<AudioBubble> {
     switch (_state) {
       case _AudioState.initial:
         return IconButton(
-          onPressed: _initAndPlay,
-          icon: Icon(Icons.play_arrow_rounded, color: foreground),
+          onPressed: _pendingSend ? null : _initAndPlay,
+          icon: Icon(Icons.play_arrow_rounded,
+              color: _pendingSend
+                  ? foreground.withValues(alpha: 0.3)
+                  : foreground),
           style: IconButton.styleFrom(
             backgroundColor: accent.withValues(alpha: 0.15),
           ),

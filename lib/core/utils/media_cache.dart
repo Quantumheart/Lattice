@@ -19,21 +19,6 @@ class MediaCache {
       return Media(cached);
     }
 
-    if (event.isAttachmentEncrypted) {
-      return _resolveEncrypted(event);
-    }
-    return _resolveUnencrypted(event);
-  }
-
-  static Future<Media> _resolveEncrypted(Event event) async {
-    final file = await event.downloadAndDecryptAttachment();
-    final mimetype = event.content
-        .tryGet<Map<String, Object?>>('info')
-        ?.tryGet<String>('mimetype');
-    return _bytesToMedia(event.eventId, file.bytes, mimetype);
-  }
-
-  static Future<Media> _resolveUnencrypted(Event event) async {
     final file = await event.downloadAndDecryptAttachment();
     final mimetype = event.content
         .tryGet<Map<String, Object?>>('info')

@@ -32,6 +32,7 @@ class MediaPlaybackService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _activePlayer?.pause();
     _activePlayer = null;
     _activeEventId = null;
     super.dispose();
