@@ -57,5 +57,4 @@ class FileBubble extends StatelessWidget {
       ),
     );
   }
-
 }

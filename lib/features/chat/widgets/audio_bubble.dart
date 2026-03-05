@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -5,6 +6,7 @@ import 'package:matrix/matrix.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
 
+import 'package:lattice/core/utils/format_duration.dart';
 import 'package:lattice/core/utils/format_file_size.dart';
 import 'package:lattice/core/utils/media_cache.dart';
 import 'package:lattice/features/chat/services/media_playback_service.dart';
@@ -33,6 +35,8 @@ class _AudioBubbleState extends State<AudioBubble> {
   Duration _position = Duration.zero;
   Duration _duration = Duration.zero;
   late final List<double> _bars;
+  late final MediaPlaybackService _playbackService;
+  final List<StreamSubscription<dynamic>> _subs = [];
 
   @override
   void initState() {
@@ -41,9 +45,18 @@ class _AudioBubbleState extends State<AudioBubble> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _playbackService = context.read<MediaPlaybackService>();
+  }
+
+  @override
   void dispose() {
+    for (final sub in _subs) {
+      sub.cancel();
+    }
     if (_player != null) {
-      context.read<MediaPlaybackService>().unregisterPlayer(widget.event.eventId);
+      _playbackService.unregisterPlayer(widget.event.eventId);
       _player!.dispose();
     }
     super.dispose();
@@ -65,28 +78,28 @@ class _AudioBubbleState extends State<AudioBubble> {
       if (!mounted) return;
 
       _player = Player();
-      _player!.stream.playing.listen((playing) {
+      _subs.add(_player!.stream.playing.listen((playing) {
         if (mounted) setState(() => _playing = playing);
-      });
-      _player!.stream.position.listen((pos) {
+      }));
+      _subs.add(_player!.stream.position.listen((pos) {
         if (mounted) setState(() => _position = pos);
-      });
-      _player!.stream.duration.listen((dur) {
+      }));
+      _subs.add(_player!.stream.duration.listen((dur) {
         if (mounted) setState(() => _duration = dur);
-      });
-      _player!.stream.completed.listen((completed) {
+      }));
+      _subs.add(_player!.stream.completed.listen((completed) {
         if (completed && mounted) {
           setState(() {
             _playing = false;
             _position = Duration.zero;
           });
         }
-      });
+      }));
 
       await _player!.open(media);
       if (!mounted) return;
 
-      context.read<MediaPlaybackService>().registerPlayer(
+      _playbackService.registerPlayer(
             widget.event.eventId,
             _player!,
           );
@@ -102,7 +115,7 @@ class _AudioBubbleState extends State<AudioBubble> {
     if (_playing) {
       _player!.pause();
     } else {
-      context.read<MediaPlaybackService>().registerPlayer(
+      _playbackService.registerPlayer(
             widget.event.eventId,
             _player!,
           );
@@ -119,6 +132,10 @@ class _AudioBubbleState extends State<AudioBubble> {
   }
 
   void _retry() {
+    for (final sub in _subs) {
+      sub.cancel();
+    }
+    _subs.clear();
     _player?.dispose();
     _player = null;
     _initAndPlay();
@@ -149,21 +166,13 @@ class _AudioBubbleState extends State<AudioBubble> {
                 GestureDetector(
                   onTapDown: (details) {
                     final box = context.findRenderObject() as RenderBox;
-                    final localX = details.localPosition.dx;
-                    const playBtnWidth = 40.0 + 8.0;
-                    final barAreaWidth = box.size.width - playBtnWidth;
-                    if (barAreaWidth > 0) {
-                      _seek((localX / barAreaWidth).clamp(0.0, 1.0));
-                    }
+                    final fraction = details.localPosition.dx / box.size.width;
+                    _seek(fraction.clamp(0.0, 1.0));
                   },
                   onHorizontalDragUpdate: (details) {
                     final box = context.findRenderObject() as RenderBox;
-                    final localX = details.localPosition.dx;
-                    const playBtnWidth = 40.0 + 8.0;
-                    final barAreaWidth = box.size.width - playBtnWidth;
-                    if (barAreaWidth > 0) {
-                      _seek((localX / barAreaWidth).clamp(0.0, 1.0));
-                    }
+                    final fraction = details.localPosition.dx / box.size.width;
+                    _seek(fraction.clamp(0.0, 1.0));
                   },
                   child: CustomPaint(
                     size: const Size(double.infinity, 32),
@@ -179,7 +188,7 @@ class _AudioBubbleState extends State<AudioBubble> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  _formatDuration(
+                  formatDuration(
                       _state == _AudioState.ready ? _position : _infoDuration),
                   style: tt.bodySmall?.copyWith(
                     color: foreground.withValues(alpha: 0.6),
@@ -272,12 +281,6 @@ class _AudioBubbleState extends State<AudioBubble> {
         .tryGet<Map<String, Object?>>('info')
         ?.tryGet<int>('duration');
     return ms != null ? Duration(milliseconds: ms) : Duration.zero;
-  }
-
-  static String _formatDuration(Duration d) {
-    final minutes = d.inMinutes;
-    final seconds = d.inSeconds % 60;
-    return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
   static List<double> _generateBars(String seed) {
