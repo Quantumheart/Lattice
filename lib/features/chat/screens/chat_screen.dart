@@ -566,7 +566,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
     final hasReactions = _timeline != null &&
         event.hasAggregatedEvents(_timeline!, RelationshipTypes.reaction);
-    final receipts = receiptMap[event.eventId];
+    final receipts = receiptMap[event.eventId]
+        ?.where((r) => r.user.id != event.senderId)
+        .toList();
 
     Widget? reactionBubble;
     if (hasReactions) {
