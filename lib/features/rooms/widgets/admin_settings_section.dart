@@ -5,7 +5,7 @@ import 'package:matrix/matrix.dart';
 
 import 'package:lattice/core/services/matrix_service.dart';
 
-/// Admin settings for a room: edit name, topic, avatar, encryption,
+/// Admin settings for a room: edit name, topic, encryption,
 /// and power levels. Only rendered when the user has sufficient power level.
 class AdminSettingsSection extends StatefulWidget {
   const AdminSettingsSection({super.key, required this.room});

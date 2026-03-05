@@ -9,7 +9,7 @@ import 'package:lattice/shared/widgets/room_avatar.dart';
 /// Tapping the avatar opens the image picker to upload a new photo.
 /// A small "x" badge at the top-right removes the current avatar.
 /// Only shows controls if the user has permission to change the avatar.
-class AvatarEditOverlay extends StatelessWidget {
+class AvatarEditOverlay extends StatefulWidget {
   const AvatarEditOverlay({
     super.key,
     required this.room,
@@ -19,41 +19,45 @@ class AvatarEditOverlay extends StatelessWidget {
   final Room room;
   final double size;
 
-  bool get _canEdit => room.canChangeStateEvent(EventTypes.RoomAvatar);
+  @override
+  State<AvatarEditOverlay> createState() => _AvatarEditOverlayState();
+}
+
+class _AvatarEditOverlayState extends State<AvatarEditOverlay> {
+  bool _busy = false;
+
+  bool get _canEdit => widget.room.canChangeStateEvent(EventTypes.RoomAvatar);
 
   @override
   Widget build(BuildContext context) {
-    if (!_canEdit) return RoomAvatarWidget(room: room, size: size);
+    if (!_canEdit) return RoomAvatarWidget(room: widget.room, size: widget.size);
 
     final cs = Theme.of(context).colorScheme;
-    final badgeSize = size * 0.3;
-
+    final badgeSize = widget.size * 0.3;
     final badgeOffset = badgeSize * 0.25;
 
-    return SizedBox(
-      width: size + badgeOffset,
-      height: size + badgeOffset,
+    // Pad all sides equally so the avatar stays centered when the badge
+    // protrudes beyond the avatar bounds.
+    return Padding(
+      padding: EdgeInsets.all(badgeOffset),
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          Positioned(
-            bottom: 0,
-            left: 0,
-            child: MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                onTap: () => _uploadAvatar(context),
-                child: RoomAvatarWidget(room: room, size: size),
-              ),
+          MouseRegion(
+            cursor: _busy ? SystemMouseCursors.basic : SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: _busy ? null : () => _uploadAvatar(),
+              child: RoomAvatarWidget(room: widget.room, size: widget.size),
             ),
           ),
-          if (room.avatar != null)
+          if (widget.room.avatar != null)
             Positioned(
-              top: 0,
-              right: 0,
+              top: -badgeOffset,
+              right: -badgeOffset,
               child: MouseRegion(
-                cursor: SystemMouseCursors.click,
+                cursor: _busy ? SystemMouseCursors.basic : SystemMouseCursors.click,
                 child: GestureDetector(
-                  onTap: () => _removeAvatar(context),
+                  onTap: _busy ? null : () => _removeAvatar(),
                   child: Container(
                     width: badgeSize,
                     height: badgeSize,
@@ -75,8 +79,9 @@ class AvatarEditOverlay extends StatelessWidget {
     );
   }
 
-  Future<void> _uploadAvatar(BuildContext context) async {
+  Future<void> _uploadAvatar() async {
     final scaffold = ScaffoldMessenger.of(context);
+    setState(() => _busy = true);
     try {
       final picker = ImagePicker();
       final picked = await picker.pickImage(
@@ -88,32 +93,45 @@ class AvatarEditOverlay extends StatelessWidget {
       if (picked == null) return;
 
       final bytes = await picked.readAsBytes();
-      await room.setAvatar(MatrixFile(bytes: bytes, name: picked.name));
+      await widget.room.setAvatar(MatrixFile(bytes: bytes, name: picked.name));
       debugPrint('[Lattice] Room avatar uploaded: ${picked.name} (${bytes.length} bytes)');
-      scaffold.showSnackBar(
-        const SnackBar(content: Text('Avatar updated')),
-      );
+      if (mounted) {
+        scaffold.showSnackBar(
+          const SnackBar(content: Text('Avatar updated')),
+        );
+      }
     } catch (e) {
       debugPrint('[Lattice] Avatar upload failed: $e');
-      scaffold.showSnackBar(
-        const SnackBar(content: Text('Failed to update avatar')),
-      );
+      if (mounted) {
+        scaffold.showSnackBar(
+          const SnackBar(content: Text('Failed to update avatar')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
-  Future<void> _removeAvatar(BuildContext context) async {
+  Future<void> _removeAvatar() async {
     final scaffold = ScaffoldMessenger.of(context);
+    setState(() => _busy = true);
     try {
-      await room.setAvatar(null);
+      await widget.room.setAvatar(null);
       debugPrint('[Lattice] Room avatar removed');
-      scaffold.showSnackBar(
-        const SnackBar(content: Text('Avatar removed')),
-      );
+      if (mounted) {
+        scaffold.showSnackBar(
+          const SnackBar(content: Text('Avatar removed')),
+        );
+      }
     } catch (e) {
       debugPrint('[Lattice] Avatar removal failed: $e');
-      scaffold.showSnackBar(
-        const SnackBar(content: Text('Failed to remove avatar')),
-      );
+      if (mounted) {
+        scaffold.showSnackBar(
+          const SnackBar(content: Text('Failed to remove avatar')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 }
