@@ -7,6 +7,7 @@ import 'package:lattice/features/rooms/widgets/admin_settings_section.dart';
 import 'package:lattice/features/rooms/widgets/invite_user_dialog.dart';
 import 'package:lattice/shared/widgets/avatar_edit_overlay.dart';
 import 'package:lattice/features/rooms/widgets/room_members_section.dart';
+import 'notification_radio_group.dart';
 import 'space_context_menu.dart';
 
 /// Displays space details: header, actions, members, and admin controls.
@@ -145,25 +146,9 @@ class _SpaceDetailsPanelState extends State<SpaceDetailsPanel> {
             ),
           ),
         ),
-        RadioGroup<PushRuleState>(
+        NotificationRadioGroup(
           groupValue: space.pushRuleState,
-          onChanged: _busy('pushRule') ? (_) {} : (v) => _setPushRule(space, v!),
-          child: const Column(
-            children: [
-              RadioListTile<PushRuleState>(
-                title: Text('All messages'),
-                value: PushRuleState.notify,
-              ),
-              RadioListTile<PushRuleState>(
-                title: Text('Mentions only'),
-                value: PushRuleState.mentionsOnly,
-              ),
-              RadioListTile<PushRuleState>(
-                title: Text('Muted'),
-                value: PushRuleState.dontNotify,
-              ),
-            ],
-          ),
+          onChanged: _busy('pushRule') ? null : (v) => _setPushRule(space, v!),
         ),
       ],
     );
