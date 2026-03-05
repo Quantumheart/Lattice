@@ -31,8 +31,10 @@ class RoomItem extends ListItem {
     required this.room,
     this.depth = 0,
     this.parentSpaceId,
-    this.sectionRooms,
-  });
+    List<Room>? sectionRooms,
+  }) : sectionRooms = sectionRooms != null
+           ? List.unmodifiable(sectionRooms)
+           : null;
 }
 
 class InviteItem extends ListItem {

@@ -51,3 +51,4 @@ See `docs/e2ee-flow.md` for detailed state machine diagrams.
 - **Logging:** `debugPrint('[Lattice] ...')` prefix for all log messages
 - **Code sections:** Organized with `// ── Section Name ──────` markers
 - **Linting:** `avoid_print: false` is intentional (uses `debugPrint` instead of `print`)
+- **Comments:** Avoid comments — code should be self-descriptive. Comments lead to misdirection and increase bugs. Section markers (`// ── Section Name ──────`) are the exception.
