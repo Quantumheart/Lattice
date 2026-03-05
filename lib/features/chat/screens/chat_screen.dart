@@ -235,6 +235,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _setReplyTo(Event event) {
     _replyNotifier.value = event;
+    _composeFocusNode.requestFocus();
   }
 
   void _cancelReply() {
