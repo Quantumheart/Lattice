@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lattice/core/models/pending_attachment.dart';
 import 'package:lattice/core/models/upload_state.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/chat/services/typing_controller.dart';
 import 'package:lattice/features/chat/services/voice_recording_controller.dart';
+import 'package:lattice/features/chat/widgets/attachment_preview_bar.dart';
 import 'package:lattice/features/chat/widgets/edit_preview_banner.dart';
 import 'package:lattice/features/chat/widgets/mention_autocomplete_controller.dart';
 import 'package:lattice/features/chat/widgets/mention_suggestion_overlay.dart';
@@ -30,6 +32,9 @@ class ComposeBar extends StatefulWidget {
     this.onMicTap,
     this.onVoiceStop,
     this.onVoiceCancel,
+    this.pendingAttachments = const [],
+    this.onRemoveAttachment,
+    this.onClearAttachments,
   });
 
   final TextEditingController controller;
@@ -59,6 +64,10 @@ class ComposeBar extends StatefulWidget {
   final VoidCallback? onMicTap;
   final VoidCallback? onVoiceStop;
   final VoidCallback? onVoiceCancel;
+
+  final List<PendingAttachment> pendingAttachments;
+  final ValueChanged<int>? onRemoveAttachment;
+  final VoidCallback? onClearAttachments;
 
   @override
   State<ComposeBar> createState() => _ComposeBarState();
@@ -138,7 +147,9 @@ class _ComposeBarState extends State<ComposeBar> {
     }
     // Dismiss empty autocomplete so it doesn't linger after send.
     _mentionController?.dismiss();
-    if (widget.controller.text.trim().isNotEmpty) {
+    final hasText = widget.controller.text.trim().isNotEmpty;
+    final hasAttachments = widget.pendingAttachments.isNotEmpty;
+    if (hasText || hasAttachments) {
       widget.typingController?.stop();
       widget.onSend();
       _focusNode.requestFocus();
@@ -228,6 +239,12 @@ class _ComposeBarState extends State<ComposeBar> {
             ReplyPreviewBanner(
               event: widget.replyEvent!,
               onCancel: widget.onCancelReply,
+            ),
+          if (widget.pendingAttachments.isNotEmpty)
+            AttachmentPreviewBar(
+              attachments: widget.pendingAttachments,
+              onRemove: widget.onRemoveAttachment ?? (_) {},
+              onClearAll: widget.onClearAttachments ?? () {},
             ),
           if (widget.uploadNotifier != null)
             ValueListenableBuilder<UploadState?>(
@@ -325,7 +342,9 @@ class _ComposeBarState extends State<ComposeBar> {
       valueListenable: widget.controller,
       builder: (context, value, _) {
         final hasText = value.text.trim().isNotEmpty;
-        if (!hasText && widget.voiceController != null) {
+        final hasAttachments = widget.pendingAttachments.isNotEmpty;
+        final canSend = hasText || hasAttachments;
+        if (!canSend && widget.voiceController != null) {
           return IconButton.filled(
             onPressed: widget.onMicTap,
             icon: const Icon(Icons.mic_rounded, size: 20),
@@ -336,13 +355,13 @@ class _ComposeBarState extends State<ComposeBar> {
           );
         }
         return IconButton.filled(
-          onPressed: hasText ? _handleSend : null,
+          onPressed: canSend ? _handleSend : null,
           icon: const Icon(Icons.send_rounded, size: 20),
           style: IconButton.styleFrom(
             backgroundColor:
-                hasText ? cs.primary : cs.surfaceContainerHighest,
+                canSend ? cs.primary : cs.surfaceContainerHighest,
             foregroundColor:
-                hasText ? cs.onPrimary : cs.onSurfaceVariant,
+                canSend ? cs.onPrimary : cs.onSurfaceVariant,
           ),
         );
       },
