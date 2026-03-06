@@ -110,7 +110,7 @@ void main() {
       mockClient.onSync.add(update);
       await Future<void>.delayed(Duration.zero);
 
-      verifyNever(mockPlugin.show(any, any, any, any, payload: anyNamed('payload')));
+      verifyNever(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: anyNamed('payload')));
     });
 
     test('second sync triggers notification', () async {
@@ -128,7 +128,7 @@ void main() {
       mockClient.onSync.add(update);
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
+      verify(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: roomId)).called(1);
     });
   });
 
@@ -154,63 +154,63 @@ void main() {
 
     test('own messages are ignored', () async {
       await emitMessage(senderId: ownUserId);
-      verifyNever(mockPlugin.show(any, any, any, any, payload: anyNamed('payload')));
+      verifyNever(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: anyNamed('payload')));
     });
 
     test('osNotificationsEnabled=false suppresses all', () async {
       await prefs.setOsNotificationsEnabled(false);
       await emitMessage();
-      verifyNever(mockPlugin.show(any, any, any, any, payload: anyNamed('payload')));
+      verifyNever(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: anyNamed('payload')));
     });
 
     test('notification level off suppresses all', () async {
       await prefs.setNotificationLevel(NotificationLevel.off);
       await emitMessage();
-      verifyNever(mockPlugin.show(any, any, any, any, payload: anyNamed('payload')));
+      verifyNever(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: anyNamed('payload')));
     });
 
     test('per-room dontNotify suppresses notification', () async {
       when(mockRoom.pushRuleState).thenReturn(PushRuleState.dontNotify);
       await emitMessage();
-      verifyNever(mockPlugin.show(any, any, any, any, payload: anyNamed('payload')));
+      verifyNever(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: anyNamed('payload')));
     });
 
     test('currently selected room suppresses notification', () async {
       when(mockMatrix.selectedRoomId).thenReturn(roomId);
       await emitMessage();
-      verifyNever(mockPlugin.show(any, any, any, any, payload: anyNamed('payload')));
+      verifyNever(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: anyNamed('payload')));
     });
 
     test('foreground toggle overrides selected room suppression', () async {
       when(mockMatrix.selectedRoomId).thenReturn(roomId);
       await prefs.setForegroundNotificationsEnabled(true);
       await emitMessage();
-      verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
+      verify(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: roomId)).called(1);
     });
 
     test('mentionsOnly with no match suppresses', () async {
       await prefs.setNotificationLevel(NotificationLevel.mentionsOnly);
       await emitMessage(body: 'just chatting');
-      verifyNever(mockPlugin.show(any, any, any, any, payload: anyNamed('payload')));
+      verifyNever(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: anyNamed('payload')));
     });
 
     test('mentionsOnly with keyword match fires notification', () async {
       await prefs.setNotificationLevel(NotificationLevel.mentionsOnly);
       await prefs.addNotificationKeyword('urgent');
       await emitMessage(body: 'this is URGENT');
-      verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
+      verify(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: roomId)).called(1);
     });
 
     test('mentionsOnly with user mention fires notification', () async {
       await prefs.setNotificationLevel(NotificationLevel.mentionsOnly);
       await emitMessage(body: 'hey @me:example.com check this');
-      verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
+      verify(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: roomId)).called(1);
     });
 
     test('mentionsOnly with display name mention fires notification', () async {
       await prefs.setNotificationLevel(NotificationLevel.mentionsOnly);
       await emitMessage(body: 'hey Me, are you there?');
-      verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
+      verify(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: roomId)).called(1);
     });
   });
 
@@ -255,8 +255,8 @@ void main() {
       mockClient.onSync.add(update);
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      verify(mockPlugin.show(any, 'General', argThat(contains('invited you to join')), any,
-              payload: roomId,),)
+      verify(mockPlugin.show(id: anyNamed('id'), title: 'General', body: argThat(contains('invited you to join'), named: 'body'), notificationDetails: anyNamed('notificationDetails'),
+              payload: roomId))
           .called(1);
     });
 
@@ -272,7 +272,7 @@ void main() {
       mockClient.onSync.add(update);
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
+      verify(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: roomId)).called(1);
     });
 
     test('suppressed when app is in foreground', () async {
@@ -283,7 +283,7 @@ void main() {
       mockClient.onSync.add(update);
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      verifyNever(mockPlugin.show(any, any, any, any, payload: anyNamed('payload')));
+      verifyNever(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: anyNamed('payload')));
     });
 
     test('shown when app in foreground but foreground notifications enabled', () async {
@@ -295,7 +295,7 @@ void main() {
       mockClient.onSync.add(update);
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
+      verify(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: roomId)).called(1);
     });
 
     test('suppressed when room push rule is dontNotify', () async {
@@ -307,7 +307,7 @@ void main() {
       mockClient.onSync.add(update);
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      verifyNever(mockPlugin.show(any, any, any, any, payload: anyNamed('payload')));
+      verifyNever(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: anyNamed('payload')));
     });
 
     test('allows re-invite notification after room is left', () async {
@@ -318,7 +318,7 @@ void main() {
       final invite1 = makeInviteSyncUpdate(roomId: roomId);
       mockClient.onSync.add(invite1);
       await Future<void>.delayed(const Duration(milliseconds: 50));
-      verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
+      verify(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: roomId)).called(1);
 
       // Room left (declined).
       final leaveSync = SyncUpdate(
@@ -331,7 +331,7 @@ void main() {
       // Re-invite — should notify again.
       mockClient.onSync.add(invite1);
       await Future<void>.delayed(const Duration(milliseconds: 50));
-      verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
+      verify(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: roomId)).called(1);
     });
 
     test('allows re-invite notification after room is joined', () async {
@@ -342,7 +342,7 @@ void main() {
       final invite1 = makeInviteSyncUpdate(roomId: roomId);
       mockClient.onSync.add(invite1);
       await Future<void>.delayed(const Duration(milliseconds: 50));
-      verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
+      verify(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: roomId)).called(1);
 
       // Room joined.
       final joinSync = SyncUpdate(
@@ -355,7 +355,7 @@ void main() {
       // Re-invite — should notify again.
       mockClient.onSync.add(invite1);
       await Future<void>.delayed(const Duration(milliseconds: 50));
-      verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
+      verify(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: roomId)).called(1);
     });
   });
 
@@ -379,7 +379,7 @@ void main() {
         hash = (hash * 0x01000193) & 0xFFFFFFFF;
       }
       final expectedId = hash & 0x7FFFFFFF;
-      verify(mockPlugin.show(expectedId, any, any, any, payload: roomId)).called(1);
+      verify(mockPlugin.show(id: expectedId, title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: roomId)).called(1);
     });
 
     test('notification shows room name as title', () async {
@@ -394,7 +394,7 @@ void main() {
       mockClient.onSync.add(update);
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      verify(mockPlugin.show(any, 'General', 'Alice: hey', any, payload: roomId))
+      verify(mockPlugin.show(id: anyNamed('id'), title: 'General', body: 'Alice: hey', notificationDetails: anyNamed('notificationDetails'), payload: roomId))
           .called(1);
     });
   });
@@ -516,8 +516,8 @@ void main() {
       mockClient.onSync.add(update);
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      verify(mockPlugin.show(any, any, argThat(contains('Encrypted message')), any,
-              payload: roomId,),)
+      verify(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: argThat(contains('Encrypted message'), named: 'body'), notificationDetails: anyNamed('notificationDetails'),
+              payload: roomId))
           .called(1);
     });
   });
