@@ -58,6 +58,7 @@ class _ChatScreenState extends State<ChatScreen> {
   static const _historyLoadThreshold = 15;
   static const _scrollAnimationDuration = Duration(milliseconds: 400);
   static const _readMarkerDelay = Duration(seconds: 1);
+  static const _maxAttachments = 10;
 
   final _msgCtrl = TextEditingController();
   final _composeFocusNode = FocusNode();
@@ -376,8 +377,6 @@ class _ChatScreenState extends State<ChatScreen> {
   // ── Clipboard paste ──────────────────────────────────────
 
   Future<void> _handlePasteImage() async {
-    if (_uploadNotifier.value != null) return;
-
     final imageData = await readClipboardImage();
     if (imageData == null || !mounted) return;
 
@@ -388,6 +387,12 @@ class _ChatScreenState extends State<ChatScreen> {
   // ── Pending attachments ─────────────────────────────────
 
   void _addAttachment(PendingAttachment attachment) {
+    if (_pendingAttachments.value.length >= _maxAttachments) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Maximum $_maxAttachments attachments allowed')),
+      );
+      return;
+    }
     _pendingAttachments.value = [..._pendingAttachments.value, attachment];
   }
 
@@ -422,33 +427,40 @@ class _ChatScreenState extends State<ChatScreen> {
     final room = matrix.client.getRoomById(widget.roomId);
     if (room == null) return;
 
-    try {
-      for (final attachment in attachments) {
-        await sendFileBytes(
-          scaffold: scaffold,
-          room: room,
-          name: attachment.name,
-          bytes: attachment.bytes,
-          uploadNotifier: _uploadNotifier,
-        );
+    for (var i = 0; i < attachments.length; i++) {
+      final ok = await sendFileBytes(
+        scaffold: scaffold,
+        room: room,
+        name: attachments[i].name,
+        bytes: attachments[i].bytes,
+        uploadNotifier: _uploadNotifier,
+      );
+      if (!ok) {
+        _pendingAttachments.value = attachments.sublist(i + 1);
+        if (text.isNotEmpty) {
+          _msgCtrl.text = text;
+          _replyNotifier.value = replyEvent;
+          _editNotifier.value = editEvent;
+        }
+        return;
       }
+    }
 
-      if (text.isNotEmpty) {
+    if (text.isNotEmpty) {
+      try {
         await room.sendTextEvent(
           text,
           inReplyTo: editEvent == null ? replyEvent : null,
           editEventId: editEvent?.eventId,
         );
-      }
-    } catch (e) {
-      if (text.isNotEmpty) {
+      } catch (e) {
         _msgCtrl.text = text;
         _replyNotifier.value = replyEvent;
         _editNotifier.value = editEvent;
+        scaffold.showSnackBar(
+          SnackBar(content: Text('Failed to send: ${MatrixService.friendlyAuthError(e)}')),
+        );
       }
-      scaffold.showSnackBar(
-        SnackBar(content: Text('Failed to send: ${MatrixService.friendlyAuthError(e)}')),
-      );
     }
   }
 

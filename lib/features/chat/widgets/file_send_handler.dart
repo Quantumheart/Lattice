@@ -39,7 +39,7 @@ Future<void> pickAndSendFile(
   );
 }
 
-Future<void> sendFileBytes({
+Future<bool> sendFileBytes({
   required ScaffoldMessengerState scaffold,
   required Room room,
   required String name,
@@ -55,11 +55,13 @@ Future<void> sendFileBytes({
     final file = MatrixFile.fromMimeType(bytes: bytes, name: name);
     await room.sendFileEvent(file);
     uploadNotifier.value = null;
+    return true;
   } on FileTooBigMatrixException {
     uploadNotifier.value = null;
     scaffold.showSnackBar(
       SnackBar(content: Text('File too large: $name')),
     );
+    return false;
   } catch (e) {
     uploadNotifier.value = UploadState(
       status: UploadStatus.error,
@@ -69,5 +71,6 @@ Future<void> sendFileBytes({
     scaffold.showSnackBar(
       SnackBar(content: Text('Upload failed: ${MatrixService.friendlyAuthError(e)}')),
     );
+    return false;
   }
 }

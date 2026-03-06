@@ -100,7 +100,9 @@ class _AttachmentCard extends StatelessWidget {
                             color: cs.onSurfaceVariant,
                           ),
                           Text(
-                            attachment.name.split('.').last,
+                            attachment.name.contains('.')
+                                ? attachment.name.split('.').last
+                                : attachment.name,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: tt.labelSmall?.copyWith(
