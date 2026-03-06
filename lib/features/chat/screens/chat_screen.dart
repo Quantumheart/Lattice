@@ -21,6 +21,8 @@ import 'package:lattice/features/chat/widgets/drop_send_handler.dart';
 import 'package:lattice/features/chat/widgets/drop_zone_overlay.dart';
 import 'package:lattice/features/chat/widgets/emoji_picker_sheet.dart';
 import 'package:lattice/features/chat/widgets/file_send_handler.dart';
+import 'package:lattice/features/chat/widgets/paste_confirm_dialog.dart';
+import 'package:lattice/features/chat/widgets/paste_image_handler.dart';
 import 'package:lattice/features/chat/widgets/long_press_wrapper.dart';
 import 'package:lattice/features/chat/widgets/message_action_sheet.dart';
 import 'package:lattice/features/chat/widgets/message_bubble.dart' show MessageBubble;
@@ -370,6 +372,32 @@ class _ChatScreenState extends State<ChatScreen> {
     await _voiceCtrl?.cancelRecording();
   }
 
+  // ── Clipboard paste ──────────────────────────────────────
+
+  Future<void> _handlePasteImage() async {
+    if (_uploadNotifier.value != null) return;
+
+    final imageData = await readClipboardImage();
+    if (imageData == null || !mounted) return;
+
+    final defaultName = generatePasteFilename(imageData.mimeType);
+    final confirmedName = await confirmPastedImage(context, imageData.bytes, defaultName);
+    if (confirmedName == null || !mounted) return;
+
+    final scaffold = ScaffoldMessenger.of(context);
+    final matrix = context.read<MatrixService>();
+    final room = matrix.client.getRoomById(widget.roomId);
+    if (room == null) return;
+
+    await sendFileBytes(
+      scaffold: scaffold,
+      room: room,
+      name: confirmedName,
+      bytes: imageData.bytes,
+      uploadNotifier: _uploadNotifier,
+    );
+  }
+
   // ── Send ───────────────────────────────────────────────
 
   Future<void> _send() async {
@@ -560,6 +588,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   editEvent: editEvent,
                   onCancelEdit: _cancelEdit,
                   onAttach: () => pickAndSendFile(context, widget.roomId, _uploadNotifier),
+                  onPasteImage: _isDesktop ? _handlePasteImage : null,
                   uploadNotifier: _uploadNotifier,
                   room: room,
                   joinedRooms: matrix.rooms,
