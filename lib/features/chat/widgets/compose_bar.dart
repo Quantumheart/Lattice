@@ -20,6 +20,7 @@ class ComposeBar extends StatefulWidget {
     this.replyEvent,
     this.editEvent,
     this.onAttach,
+    this.onPasteImage,
     this.uploadNotifier,
     this.room,
     this.joinedRooms,
@@ -53,6 +54,8 @@ class ComposeBar extends StatefulWidget {
   final FocusNode? focusNode;
 
   final VoiceRecordingController? voiceController;
+  final Future<void> Function()? onPasteImage;
+
   final VoidCallback? onMicTap;
   final VoidCallback? onVoiceStop;
   final VoidCallback? onVoiceCancel;
@@ -153,6 +156,14 @@ class _ComposeBarState extends State<ComposeBar> {
 
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+
+    if (widget.onPasteImage != null &&
+        event.logicalKey == LogicalKeyboardKey.keyV &&
+        ((_isMacOS && HardwareKeyboard.instance.isMetaPressed) ||
+            (!_isMacOS && HardwareKeyboard.instance.isControlPressed))) {
+      widget.onPasteImage!();
       return KeyEventResult.ignored;
     }
 
