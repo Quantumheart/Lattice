@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:matrix/matrix.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
+import 'package:lattice/core/models/pending_attachment.dart';
 import 'package:lattice/core/models/upload_state.dart';
 import 'package:lattice/features/chat/services/chat_search_controller.dart';
 import 'package:lattice/core/services/matrix_service.dart';
@@ -20,11 +21,8 @@ import 'package:lattice/features/chat/widgets/chat_app_bar.dart';
 import 'package:lattice/features/chat/widgets/compose_bar.dart';
 import 'package:lattice/features/chat/widgets/delete_event_dialog.dart';
 import 'package:lattice/features/chat/widgets/emoji_picker_sheet.dart';
-import 'package:lattice/features/chat/widgets/drop_confirm_dialog.dart';
-import 'package:lattice/features/chat/widgets/drop_send_handler.dart';
 import 'package:lattice/features/chat/widgets/drop_zone_overlay.dart';
 import 'package:lattice/features/chat/widgets/file_send_handler.dart';
-import 'package:lattice/features/chat/widgets/paste_confirm_dialog.dart';
 import 'package:lattice/features/chat/widgets/paste_image_handler.dart';
 import 'package:lattice/features/chat/widgets/long_press_wrapper.dart';
 import 'package:lattice/features/chat/widgets/message_action_sheet.dart';
@@ -80,6 +78,9 @@ class _ChatScreenState extends State<ChatScreen> {
   // ── Upload state ────────────────────────────────────────
   final _uploadNotifier = ValueNotifier<UploadState?>(null);
 
+  // ── Pending attachments ────────────────────────────────
+  final _pendingAttachments = ValueNotifier<List<PendingAttachment>>([]);
+
   // ── Typing ─────────────────────────────────────────────
   TypingController? _typingCtrl;
 
@@ -113,6 +114,7 @@ class _ChatScreenState extends State<ChatScreen> {
       _readMarkerTimer?.cancel();
       _replyNotifier.value = null;
       _editNotifier.value = null;
+      _pendingAttachments.value = [];
       _msgCtrl.clear();
       _cachedVisibleEvents = null;
       _typingCtrl?.dispose();
@@ -379,30 +381,35 @@ class _ChatScreenState extends State<ChatScreen> {
     final imageData = await readClipboardImage();
     if (imageData == null || !mounted) return;
 
-    final defaultName = generatePasteFilename(imageData.mimeType);
-    final confirmedName = await confirmPastedImage(context, imageData.bytes, defaultName);
-    if (confirmedName == null || !mounted) return;
+    final name = generatePasteFilename(imageData.mimeType);
+    _addAttachment(PendingAttachment.fromBytes(bytes: imageData.bytes, name: name));
+  }
 
-    final scaffold = ScaffoldMessenger.of(context);
-    final matrix = context.read<MatrixService>();
-    final room = matrix.client.getRoomById(widget.roomId);
-    if (room == null) return;
+  // ── Pending attachments ─────────────────────────────────
 
-    await sendFileBytes(
-      scaffold: scaffold,
-      room: room,
-      name: confirmedName,
-      bytes: imageData.bytes,
-      uploadNotifier: _uploadNotifier,
-    );
+  void _addAttachment(PendingAttachment attachment) {
+    _pendingAttachments.value = [..._pendingAttachments.value, attachment];
+  }
+
+  void _removeAttachment(int index) {
+    final list = [..._pendingAttachments.value];
+    list.removeAt(index);
+    _pendingAttachments.value = list;
+  }
+
+  void _clearAttachments() {
+    _pendingAttachments.value = [];
   }
 
   // ── Send ───────────────────────────────────────────────
 
   Future<void> _send() async {
     final text = _msgCtrl.text.trim();
-    if (text.isEmpty) return;
+    final attachments = List<PendingAttachment>.from(_pendingAttachments.value);
+    if (text.isEmpty && attachments.isEmpty) return;
+
     _msgCtrl.clear();
+    _pendingAttachments.value = [];
 
     final replyEvent = _replyNotifier.value;
     _replyNotifier.value = null;
@@ -416,15 +423,29 @@ class _ChatScreenState extends State<ChatScreen> {
     if (room == null) return;
 
     try {
-      await room.sendTextEvent(
-        text,
-        inReplyTo: editEvent == null ? replyEvent : null,
-        editEventId: editEvent?.eventId,
-      );
+      for (final attachment in attachments) {
+        await sendFileBytes(
+          scaffold: scaffold,
+          room: room,
+          name: attachment.name,
+          bytes: attachment.bytes,
+          uploadNotifier: _uploadNotifier,
+        );
+      }
+
+      if (text.isNotEmpty) {
+        await room.sendTextEvent(
+          text,
+          inReplyTo: editEvent == null ? replyEvent : null,
+          editEventId: editEvent?.eventId,
+        );
+      }
     } catch (e) {
-      _msgCtrl.text = text;
-      _replyNotifier.value = replyEvent;
-      _editNotifier.value = editEvent;
+      if (text.isNotEmpty) {
+        _msgCtrl.text = text;
+        _replyNotifier.value = replyEvent;
+        _editNotifier.value = editEvent;
+      }
       scaffold.showSnackBar(
         SnackBar(content: Text('Failed to send: ${MatrixService.friendlyAuthError(e)}')),
       );
@@ -487,6 +508,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _replyNotifier.dispose();
     _editNotifier.dispose();
     _uploadNotifier.dispose();
+    _pendingAttachments.dispose();
     _searchCtrl.dispose();
     _searchFocusNode.dispose();
     _composeFocusNode.dispose();
@@ -577,24 +599,32 @@ class _ChatScreenState extends State<ChatScreen> {
             return ValueListenableBuilder<Event?>(
               valueListenable: _editNotifier,
               builder: (context, editEvent, _) {
-                return ComposeBar(
-                  controller: _msgCtrl,
-                  onSend: _send,
-                  replyEvent: replyEvent,
-                  onCancelReply: _cancelReply,
-                  editEvent: editEvent,
-                  onCancelEdit: _cancelEdit,
-                  onAttach: () => pickAndSendFile(context, widget.roomId, _uploadNotifier),
-                  onPasteImage: _isDesktop ? _handlePasteImage : null,
-                  uploadNotifier: _uploadNotifier,
-                  room: room,
-                  joinedRooms: matrix.rooms,
-                  typingController: _typingCtrl,
-                  focusNode: _composeFocusNode,
-                  voiceController: _voiceCtrl,
-                  onMicTap: _startVoiceRecording,
-                  onVoiceStop: _stopAndSendVoiceMessage,
-                  onVoiceCancel: _cancelVoiceRecording,
+                return ValueListenableBuilder<List<PendingAttachment>>(
+                  valueListenable: _pendingAttachments,
+                  builder: (context, attachments, _) {
+                    return ComposeBar(
+                      controller: _msgCtrl,
+                      onSend: _send,
+                      replyEvent: replyEvent,
+                      onCancelReply: _cancelReply,
+                      editEvent: editEvent,
+                      onCancelEdit: _cancelEdit,
+                      onAttach: () => pickAndSendFile(context, widget.roomId, _uploadNotifier),
+                      onPasteImage: _isDesktop ? _handlePasteImage : null,
+                      uploadNotifier: _uploadNotifier,
+                      room: room,
+                      joinedRooms: matrix.rooms,
+                      typingController: _typingCtrl,
+                      focusNode: _composeFocusNode,
+                      voiceController: _voiceCtrl,
+                      onMicTap: _startVoiceRecording,
+                      onVoiceStop: _stopAndSendVoiceMessage,
+                      onVoiceCancel: _cancelVoiceRecording,
+                      pendingAttachments: attachments,
+                      onRemoveAttachment: _removeAttachment,
+                      onClearAttachments: _clearAttachments,
+                    );
+                  },
                 );
               },
             );
@@ -611,11 +641,10 @@ class _ChatScreenState extends State<ChatScreen> {
       onDragDone: (details) async {
         setState(() => _isDragging = false);
         final files = details.files;
-        if (files.isEmpty) return;
-        if (!mounted) return;
-        final confirmed = await confirmDroppedFiles(context, files);
-        if (confirmed && mounted) {
-          await sendDroppedFiles(context, widget.roomId, _uploadNotifier, files);
+        if (files.isEmpty || !mounted) return;
+        for (final file in files) {
+          final bytes = await file.readAsBytes();
+          _addAttachment(PendingAttachment.fromBytes(bytes: bytes, name: file.name));
         }
       },
       child: Stack(
