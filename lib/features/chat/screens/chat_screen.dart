@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'dart:io' show Platform;
+import 'package:desktop_drop/desktop_drop.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -17,6 +20,9 @@ import 'package:lattice/features/chat/widgets/chat_app_bar.dart';
 import 'package:lattice/features/chat/widgets/compose_bar.dart';
 import 'package:lattice/features/chat/widgets/delete_event_dialog.dart';
 import 'package:lattice/features/chat/widgets/emoji_picker_sheet.dart';
+import 'package:lattice/features/chat/widgets/drop_confirm_dialog.dart';
+import 'package:lattice/features/chat/widgets/drop_send_handler.dart';
+import 'package:lattice/features/chat/widgets/drop_zone_overlay.dart';
 import 'package:lattice/features/chat/widgets/file_send_handler.dart';
 import 'package:lattice/features/chat/widgets/long_press_wrapper.dart';
 import 'package:lattice/features/chat/widgets/message_action_sheet.dart';
@@ -77,6 +83,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
   // ── Voice recording ─────────────────────────────────────
   VoiceRecordingController? _voiceCtrl;
+
+  // ── Drag-and-drop ──────────────────────────────────────
+  bool _isDragging = false;
+  bool get _isDesktop =>
+      !kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS);
 
   // ── Search ─────────────────────────────────────────────
   late ChatSearchController _search;
@@ -510,7 +521,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final tt = Theme.of(context).textTheme;
     final events = _visibleEvents;
 
-    return Column(
+    final column = Column(
       children: [
         Expanded(
           child: _timeline == null
@@ -561,6 +572,40 @@ class _ChatScreenState extends State<ChatScreen> {
           },
         ),
       ],
+    );
+
+    if (!_isDesktop) return column;
+
+    return DropTarget(
+      onDragEntered: (_) => setState(() => _isDragging = true),
+      onDragExited: (_) => setState(() => _isDragging = false),
+      onDragDone: (details) async {
+        setState(() => _isDragging = false);
+        final files = details.files;
+        if (files.isEmpty) return;
+        if (!mounted) return;
+        final confirmed = await confirmDroppedFiles(context, files);
+        if (confirmed && mounted) {
+          await sendDroppedFiles(context, widget.roomId, _uploadNotifier, files);
+        }
+      },
+      child: Stack(
+        children: [
+          column,
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedOpacity(
+                opacity: _isDragging ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 200),
+                child: const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: DropZoneOverlay(),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
