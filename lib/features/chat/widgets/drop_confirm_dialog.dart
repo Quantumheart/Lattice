@@ -11,17 +11,28 @@ bool _isImage(String name) {
 }
 
 Future<bool> confirmDroppedFiles(BuildContext context, List<DropItem> files) async {
+  final previews = <_FilePreview>[];
+  for (final file in files) {
+    final bytes = _isImage(file.name) ? await file.readAsBytes() : null;
+    previews.add(_FilePreview(name: file.name, imageBytes: bytes));
+  }
+
+  if (!context.mounted) return false;
+
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
       title: Text(files.length == 1 ? 'Send file?' : 'Send ${files.length} files?'),
       content: SizedBox(
         width: 400,
-        height: files.length == 1 ? 56 : (files.length.clamp(2, 5) * 64).toDouble(),
-        child: ListView.separated(
-          itemCount: files.length,
-          separatorBuilder: (_, __) => const SizedBox(height: 8),
-          itemBuilder: (context, i) => _FilePreviewTile(file: files[i]),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxHeight: 320),
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: previews.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
+            itemBuilder: (context, i) => _FilePreviewTile(preview: previews[i]),
+          ),
         ),
       ),
       actions: [
@@ -39,41 +50,34 @@ Future<bool> confirmDroppedFiles(BuildContext context, List<DropItem> files) asy
   return confirmed ?? false;
 }
 
-class _FilePreviewTile extends StatelessWidget {
-  const _FilePreviewTile({required this.file});
+class _FilePreview {
+  const _FilePreview({required this.name, this.imageBytes});
+  final String name;
+  final Uint8List? imageBytes;
+}
 
-  final DropItem file;
+class _FilePreviewTile extends StatelessWidget {
+  const _FilePreviewTile({required this.preview});
+
+  final _FilePreview preview;
 
   @override
   Widget build(BuildContext context) {
-    final name = file.name;
-    if (_isImage(name)) {
+    if (preview.imageBytes != null) {
       return Row(
         children: [
           ClipRRect(
             borderRadius: BorderRadius.circular(6),
-            child: FutureBuilder<Uint8List>(
-              future: file.readAsBytes(),
-              builder: (context, snap) {
-                if (!snap.hasData) {
-                  return const SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-                  );
-                }
-                return Image.memory(
-                  snap.data!,
-                  width: 48,
-                  height: 48,
-                  fit: BoxFit.cover,
-                );
-              },
+            child: Image.memory(
+              preview.imageBytes!,
+              width: 48,
+              height: 48,
+              fit: BoxFit.cover,
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(name, overflow: TextOverflow.ellipsis),
+            child: Text(preview.name, overflow: TextOverflow.ellipsis),
           ),
         ],
       );
@@ -83,7 +87,7 @@ class _FilePreviewTile extends StatelessWidget {
         const Icon(Icons.insert_drive_file_outlined, size: 32),
         const SizedBox(width: 12),
         Expanded(
-          child: Text(name, overflow: TextOverflow.ellipsis),
+          child: Text(preview.name, overflow: TextOverflow.ellipsis),
         ),
       ],
     );

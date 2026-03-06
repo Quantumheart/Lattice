@@ -1,12 +1,10 @@
-import 'dart:typed_data';
-
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
 import 'package:lattice/core/models/upload_state.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/features/chat/widgets/file_send_handler.dart';
 
 Future<void> sendDroppedFiles(
   BuildContext context,
@@ -20,31 +18,13 @@ Future<void> sendDroppedFiles(
   if (room == null) return;
 
   for (final file in files) {
-    final name = file.name;
-    uploadNotifier.value = UploadState(
-      status: UploadStatus.uploading,
-      fileName: name,
+    final bytes = await file.readAsBytes();
+    await sendFileBytes(
+      scaffold: scaffold,
+      room: room,
+      name: file.name,
+      bytes: bytes,
+      uploadNotifier: uploadNotifier,
     );
-
-    try {
-      final Uint8List bytes = await file.readAsBytes();
-      final matrixFile = MatrixFile.fromMimeType(bytes: bytes, name: name);
-      await room.sendFileEvent(matrixFile);
-      uploadNotifier.value = null;
-    } on FileTooBigMatrixException {
-      uploadNotifier.value = null;
-      scaffold.showSnackBar(
-        SnackBar(content: Text('File too large: $name')),
-      );
-    } catch (e) {
-      uploadNotifier.value = UploadState(
-        status: UploadStatus.error,
-        fileName: name,
-        error: e.toString(),
-      );
-      scaffold.showSnackBar(
-        SnackBar(content: Text('Upload failed: ${MatrixService.friendlyAuthError(e)}')),
-      );
-    }
   }
 }
