@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
@@ -6,7 +8,6 @@ import 'package:provider/provider.dart';
 import 'package:lattice/core/models/upload_state.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 
-/// Picks a file and sends it to [roomId] via the Matrix SDK.
 Future<void> pickAndSendFile(
   BuildContext context,
   String roomId,
@@ -26,15 +27,29 @@ Future<void> pickAndSendFile(
   final name = picked.name;
   if (bytes == null) return;
 
+  final room = matrix.client.getRoomById(roomId);
+  if (room == null) return;
+
+  await sendFileBytes(
+    scaffold: scaffold,
+    room: room,
+    name: name,
+    bytes: bytes,
+    uploadNotifier: uploadNotifier,
+  );
+}
+
+Future<void> sendFileBytes({
+  required ScaffoldMessengerState scaffold,
+  required Room room,
+  required String name,
+  required Uint8List bytes,
+  required ValueNotifier<UploadState?> uploadNotifier,
+}) async {
   uploadNotifier.value = UploadState(
     status: UploadStatus.uploading,
     fileName: name,
   );
-  final room = matrix.client.getRoomById(roomId);
-  if (room == null) {
-    uploadNotifier.value = null;
-    return;
-  }
 
   try {
     final file = MatrixFile.fromMimeType(bytes: bytes, name: name);
@@ -43,7 +58,7 @@ Future<void> pickAndSendFile(
   } on FileTooBigMatrixException {
     uploadNotifier.value = null;
     scaffold.showSnackBar(
-      const SnackBar(content: Text('File too large for this server')),
+      SnackBar(content: Text('File too large: $name')),
     );
   } catch (e) {
     uploadNotifier.value = UploadState(
