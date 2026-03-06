@@ -39,6 +39,7 @@ dependencies:
   media_kit_video: ^2.0.1
   media_kit_libs_video: ^1.0.7
   record: ^6.2.0
+  desktop_drop: ^0.7.0
 
 dev_dependencies:
   flutter_test:
