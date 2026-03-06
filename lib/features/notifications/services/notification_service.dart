@@ -80,14 +80,21 @@ class NotificationService {
       
     );
 
+    const windowsSettings = WindowsInitializationSettings(
+      appName: 'Lattice',
+      appUserModelId: 'com.lattice.app',
+      guid: 'ef82b5e7-fd65-431d-bcbb-9c7fa9acb761',
+    );
+
     const settings = InitializationSettings(
       android: androidSettings,
       iOS: darwinSettings,
       macOS: darwinSettings,
+      windows: windowsSettings,
     );
 
     await _plugin.initialize(
-      settings,
+      settings: settings,
       onDidReceiveNotificationResponse: _onNotificationTap,
     );
 
@@ -438,19 +445,22 @@ class NotificationService {
       presentSound: preferencesService.notificationSoundEnabled,
     );
 
+    const windowsDetails = WindowsNotificationDetails();
+
     final details = NotificationDetails(
       android: androidDetails,
       iOS: darwinDetails,
       macOS: darwinDetails,
+      windows: windowsDetails,
     );
 
     final displayBody = isGrouped ? body : '$senderName: $body';
 
     await _plugin.show(
-      notificationId,
-      title,
-      displayBody,
-      details,
+      id: notificationId,
+      title: title,
+      body: displayBody,
+      notificationDetails: details,
       payload: roomId,
     );
 
@@ -560,7 +570,7 @@ class NotificationService {
       return;
     }
     final notificationId = _stableNotificationId(roomId);
-    await _plugin.cancel(notificationId);
+    await _plugin.cancel(id: notificationId);
   }
 
   /// Dismiss all active notifications from the system tray.
