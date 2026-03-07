@@ -40,7 +40,6 @@ Future<void> pickAndSendFile(
 
 Future<PendingAttachment?> pickFileAsAttachment() async {
   final result = await FilePicker.platform.pickFiles(
-    type: FileType.any,
     withData: true,
   );
   if (result == null || result.files.isEmpty) return null;

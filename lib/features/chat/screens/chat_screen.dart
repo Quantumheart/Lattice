@@ -5,10 +5,6 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:matrix/matrix.dart';
-import 'package:provider/provider.dart';
-import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
-
 import 'package:lattice/core/models/pending_attachment.dart';
 import 'package:lattice/core/models/upload_state.dart';
 import 'package:lattice/core/services/matrix_service.dart';
@@ -21,15 +17,13 @@ import 'package:lattice/features/chat/services/voice_recording_controller.dart';
 import 'package:lattice/features/chat/widgets/chat_app_bar.dart';
 import 'package:lattice/features/chat/widgets/compose_bar.dart';
 import 'package:lattice/features/chat/widgets/delete_event_dialog.dart';
-import 'package:lattice/features/chat/widgets/drop_confirm_dialog.dart';
-import 'package:lattice/features/chat/widgets/drop_send_handler.dart';
 import 'package:lattice/features/chat/widgets/drop_zone_overlay.dart';
 import 'package:lattice/features/chat/widgets/emoji_picker_sheet.dart';
 import 'package:lattice/features/chat/widgets/file_send_handler.dart';
-import 'package:lattice/features/chat/widgets/paste_image_handler.dart';
 import 'package:lattice/features/chat/widgets/long_press_wrapper.dart';
 import 'package:lattice/features/chat/widgets/message_action_sheet.dart';
 import 'package:lattice/features/chat/widgets/message_bubble.dart' show MessageBubble;
+import 'package:lattice/features/chat/widgets/paste_image_handler.dart';
 import 'package:lattice/features/chat/widgets/reaction_chips.dart';
 import 'package:lattice/features/chat/widgets/read_receipts.dart';
 import 'package:lattice/features/chat/widgets/search_results_body.dart';
@@ -64,6 +58,7 @@ class _ChatScreenState extends State<ChatScreen> {
   static const _scrollAnimationDuration = Duration(milliseconds: 400);
   static const _readMarkerDelay = Duration(seconds: 1);
   static const _maxAttachments = 10;
+  static const int _maxAttachmentBytes = 25 * 1024 * 1024;
 
   final _msgCtrl = TextEditingController();
   final _composeFocusNode = FocusNode();
@@ -384,6 +379,7 @@ class _ChatScreenState extends State<ChatScreen> {
   // ── Clipboard paste ──────────────────────────────────────
 
   Future<void> _handlePasteImage() async {
+    if (!await clipboardHasImage()) return;
     final imageData = await readClipboardImage();
     if (imageData == null || !mounted) return;
 
@@ -397,6 +393,12 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_pendingAttachments.value.length >= _maxAttachments) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Maximum $_maxAttachments attachments allowed')),
+      );
+      return;
+    }
+    if (attachment.bytes.length > _maxAttachmentBytes) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('File exceeds 25 MB limit')),
       );
       return;
     }

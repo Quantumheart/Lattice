@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -18,7 +20,12 @@ import 'package:provider/provider.dart';
 
 class ComposeBar extends StatefulWidget {
   const ComposeBar({
-    required this.controller, required this.onSend, required this.onCancelReply, required this.onCancelEdit, super.key,
+    required this.controller,
+    required this.onSend,
+    required this.onCancelReply,
+    required this.onCancelEdit,
+    required this.onRemoveAttachment,
+    required this.onClearAttachments,
     this.replyEvent,
     this.editEvent,
     this.onAttach,
@@ -33,8 +40,7 @@ class ComposeBar extends StatefulWidget {
     this.onVoiceStop,
     this.onVoiceCancel,
     this.pendingAttachments = const [],
-    this.onRemoveAttachment,
-    this.onClearAttachments,
+    super.key,
   });
 
   final TextEditingController controller;
@@ -66,8 +72,8 @@ class ComposeBar extends StatefulWidget {
   final VoidCallback? onVoiceCancel;
 
   final List<PendingAttachment> pendingAttachments;
-  final ValueChanged<int>? onRemoveAttachment;
-  final VoidCallback? onClearAttachments;
+  final ValueChanged<int> onRemoveAttachment;
+  final VoidCallback onClearAttachments;
 
   @override
   State<ComposeBar> createState() => _ComposeBarState();
@@ -174,7 +180,7 @@ class _ComposeBarState extends State<ComposeBar> {
         event.logicalKey == LogicalKeyboardKey.keyV &&
         ((_isMacOS && HardwareKeyboard.instance.isMetaPressed) ||
             (!_isMacOS && HardwareKeyboard.instance.isControlPressed))) {
-      widget.onPasteImage!();
+      unawaited(widget.onPasteImage!());
       return KeyEventResult.ignored;
     }
 
@@ -243,8 +249,8 @@ class _ComposeBarState extends State<ComposeBar> {
           if (widget.pendingAttachments.isNotEmpty)
             AttachmentPreviewBar(
               attachments: widget.pendingAttachments,
-              onRemove: widget.onRemoveAttachment ?? (_) {},
-              onClearAll: widget.onClearAttachments ?? () {},
+              onRemove: widget.onRemoveAttachment,
+              onClearAll: widget.onClearAttachments,
             ),
           if (widget.uploadNotifier != null)
             ValueListenableBuilder<UploadState?>(
