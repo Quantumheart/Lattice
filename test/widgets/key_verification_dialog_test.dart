@@ -104,7 +104,7 @@ void main() {
                   barrierDismissible: false,
                   builder: (_) =>
                       KeyVerificationDialog(verification: verification),
-                ));
+                ),);
               },
               child: const Text('Open'),
             ),

@@ -108,7 +108,7 @@ void main() {
 
       // Emit via the client's onSync stream.
       mockClient.onSync.add(update);
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
       verifyNever(mockPlugin.show(any, any, any, any, payload: anyNamed('payload')));
     });
@@ -118,7 +118,7 @@ void main() {
 
       // First sync (skipped).
       mockClient.onSync.add(SyncUpdate(nextBatch: 'batch_0'));
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
       // Second sync with a message.
       final update = makeSyncUpdate(
@@ -126,7 +126,7 @@ void main() {
         events: [makeMessageEvent()],
       );
       mockClient.onSync.add(update);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
     });
@@ -142,14 +142,14 @@ void main() {
       service.startListening();
       // Skip first sync.
       mockClient.onSync.add(SyncUpdate(nextBatch: 'batch_0'));
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
       final update = makeSyncUpdate(
         roomId: roomId,
         events: [makeMessageEvent(senderId: senderId, body: body, type: type)],
       );
       mockClient.onSync.add(update);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
     }
 
     test('own messages are ignored', () async {
@@ -234,7 +234,7 @@ void main() {
     Future<void> skipFirstSync() async {
       service.startListening();
       mockClient.onSync.add(SyncUpdate(nextBatch: 'batch_0'));
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
     }
 
     test('shows notification for invite', () async {
@@ -253,7 +253,7 @@ void main() {
         ],
       );
       mockClient.onSync.add(update);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       verify(mockPlugin.show(any, 'General', argThat(contains('invited you to join')), any,
               payload: roomId,),)
@@ -266,11 +266,11 @@ void main() {
 
       final update = makeInviteSyncUpdate(roomId: roomId);
       mockClient.onSync.add(update);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       // Same invite again in next sync.
       mockClient.onSync.add(update);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
     });
@@ -281,7 +281,7 @@ void main() {
 
       final update = makeInviteSyncUpdate(roomId: roomId);
       mockClient.onSync.add(update);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       verifyNever(mockPlugin.show(any, any, any, any, payload: anyNamed('payload')));
     });
@@ -293,7 +293,7 @@ void main() {
 
       final update = makeInviteSyncUpdate(roomId: roomId);
       mockClient.onSync.add(update);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
     });
@@ -305,7 +305,7 @@ void main() {
 
       final update = makeInviteSyncUpdate(roomId: roomId);
       mockClient.onSync.add(update);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       verifyNever(mockPlugin.show(any, any, any, any, payload: anyNamed('payload')));
     });
@@ -317,7 +317,7 @@ void main() {
       // First invite — should notify.
       final invite1 = makeInviteSyncUpdate(roomId: roomId);
       mockClient.onSync.add(invite1);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
       verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
 
       // Room left (declined).
@@ -326,11 +326,11 @@ void main() {
         rooms: RoomsUpdate(leave: {roomId: LeftRoomUpdate()}),
       );
       mockClient.onSync.add(leaveSync);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       // Re-invite — should notify again.
       mockClient.onSync.add(invite1);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
       verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
     });
 
@@ -341,7 +341,7 @@ void main() {
       // First invite — should notify.
       final invite1 = makeInviteSyncUpdate(roomId: roomId);
       mockClient.onSync.add(invite1);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
       verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
 
       // Room joined.
@@ -350,11 +350,11 @@ void main() {
         rooms: RoomsUpdate(join: {roomId: JoinedRoomUpdate()}),
       );
       mockClient.onSync.add(joinSync);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       // Re-invite — should notify again.
       mockClient.onSync.add(invite1);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
       verify(mockPlugin.show(any, any, any, any, payload: roomId)).called(1);
     });
   });
@@ -363,14 +363,14 @@ void main() {
     test('notification ID is derived from stable FNV-1a hash of roomId', () async {
       service.startListening();
       mockClient.onSync.add(SyncUpdate(nextBatch: 'batch_0'));
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
       final update = makeSyncUpdate(
         roomId: roomId,
         events: [makeMessageEvent()],
       );
       mockClient.onSync.add(update);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       // FNV-1a 32-bit, matching _stableNotificationId in the service.
       var hash = 0x811c9dc5;
@@ -385,14 +385,14 @@ void main() {
     test('notification shows room name as title', () async {
       service.startListening();
       mockClient.onSync.add(SyncUpdate(nextBatch: 'batch_0'));
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
       final update = makeSyncUpdate(
         roomId: roomId,
         events: [makeMessageEvent(body: 'hey')],
       );
       mockClient.onSync.add(update);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       verify(mockPlugin.show(any, 'General', 'Alice: hey', any, payload: roomId))
           .called(1);
@@ -403,7 +403,7 @@ void main() {
     test('falls back to "Encrypted message" for encrypted events', () async {
       service.startListening();
       mockClient.onSync.add(SyncUpdate(nextBatch: 'batch_0'));
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
       // Encrypted event with no encryption available (client.encryption is null).
       when(mockClient.encryption).thenReturn(null);
@@ -412,7 +412,7 @@ void main() {
         events: [makeMessageEvent(type: EventTypes.Encrypted)],
       );
       mockClient.onSync.add(update);
-      await Future.delayed(const Duration(milliseconds: 50));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
 
       verify(mockPlugin.show(any, any, argThat(contains('Encrypted message')), any,
               payload: roomId,),)

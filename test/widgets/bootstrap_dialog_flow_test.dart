@@ -66,7 +66,7 @@ void main() {
                     matrixService: mockMatrixService,
                     wipeExisting: wipeExisting,
                   ),
-                ));
+                ),);
               },
               child: const Text('Open'),
             ),

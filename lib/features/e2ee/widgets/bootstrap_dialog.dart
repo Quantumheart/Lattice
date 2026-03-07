@@ -41,7 +41,7 @@ class BootstrapDialog extends StatefulWidget {
 class _BootstrapDialogState extends State<BootstrapDialog> {
   late final BootstrapController _controller;
   final _recoveryKeyController = TextEditingController();
-  StreamSubscription? _uiaSub;
+  StreamSubscription<UiaRequest<dynamic>>? _uiaSub;
   bool _uiaPromptShowing = false;
 
   @override
@@ -68,7 +68,7 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
     super.dispose();
   }
 
-  Future<void> _showUiaPasswordPrompt(UiaRequest request) async {
+  Future<void> _showUiaPasswordPrompt(UiaRequest<dynamic> request) async {
     if (!mounted || _uiaPromptShowing) return;
     _uiaPromptShowing = true;
     final passwordController = TextEditingController();
@@ -212,7 +212,7 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
       final cached = await encryption.keyManager.isCached() &&
           await encryption.crossSigning.isCached();
       if (cached) return true;
-      await Future.delayed(const Duration(seconds: 1));
+      await Future<void>.delayed(const Duration(seconds: 1));
     }
     return false;
   }
@@ -240,7 +240,7 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
           ),
         ],
       ),
-    ));
+    ),);
   }
 
   void _showLostKeyConfirmation() {
@@ -267,7 +267,7 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
           ),
         ],
       ),
-    ));
+    ),);
   }
 
   @override

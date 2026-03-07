@@ -113,8 +113,8 @@ void main() {
 
       // Wait for second fetch to finish
       // (setFilter calls fetch internally, we need to let it settle)
-      await Future.delayed(Duration.zero);
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
       // Now complete the first (stale) fetch
       completer1.complete(_makeResponse([
@@ -166,8 +166,8 @@ void main() {
       controller.setFilter(InboxFilter.mentions);
 
       // Wait for async fetch to complete
-      await Future.delayed(Duration.zero);
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
       expect(controller.filter, InboxFilter.mentions);
       expect(controller.grouped, hasLength(1));
@@ -241,8 +241,8 @@ void main() {
             _makeNotification(eventId: 'new1', roomId: '!new:x'),
           ]),);
       controller.setFilter(InboxFilter.mentions);
-      await Future.delayed(Duration.zero);
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
       // Complete the stale loadMore
       loadMoreCompleter.complete(_makeResponse([
@@ -420,8 +420,8 @@ void main() {
       controller.updateClient(newClient);
 
       // Wait for async fetch
-      await Future.delayed(Duration.zero);
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
       expect(controller.grouped, hasLength(1));
       expect(controller.grouped[0].roomId, '!new:x');

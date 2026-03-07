@@ -65,7 +65,7 @@ void main() {
                   mockRoom,
                   parentSpaceId: parentSpaceId,
                   sectionRooms: sectionRooms,
-                ));
+                ),);
               },
               child: const Text('Open Menu'),
             ),

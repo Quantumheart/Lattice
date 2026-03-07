@@ -51,7 +51,7 @@ void main() {
                   context,
                   const RelativeRect.fromLTRB(100, 100, 100, 100),
                   mockSpace,
-                ));
+                ),);
               },
               child: const Text('Open Menu'),
             ),
@@ -273,7 +273,7 @@ void main() {
                         context,
                         const RelativeRect.fromLTRB(100, 100, 100, 100),
                         mockSpace,
-                      ));
+                      ),);
                     },
                     child: const Text('Open Menu'),
                   ),

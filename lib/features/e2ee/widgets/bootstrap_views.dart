@@ -162,7 +162,7 @@ Widget _buildNewSsss(BuildContext context, BootstrapController controller) {
               : () {
                   if (controller.newRecoveryKey != null) {
                     unawaited(Clipboard.setData(
-                        ClipboardData(text: controller.newRecoveryKey!),));
+                        ClipboardData(text: controller.newRecoveryKey!),),);
                     controller.setKeyCopied();
                   }
                 },

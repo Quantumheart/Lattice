@@ -37,7 +37,7 @@ mixin AuthMixin on ChangeNotifier {
   String? _loginError;
   String? get loginError => _loginError;
 
-  StreamSubscription? _loginStateSub;
+  StreamSubscription<LoginState>? _loginStateSub;
 
   Completer<void>? _capabilitiesLock;
 
@@ -109,7 +109,7 @@ mixin AuthMixin on ChangeNotifier {
         await client.request(
           RequestType.POST,
           '/client/v3/register',
-          data: {},
+          data: <String, dynamic>{},
         );
       } on MatrixException catch (e) {
         if (e.raw.containsKey('flows')) {
@@ -297,7 +297,7 @@ mixin AuthMixin on ChangeNotifier {
     unawaited(_runPostLoginSync().whenComplete(() {
       completer.complete();
       _postLoginSyncCompleter = null;
-    }));
+    },),);
   }
 
   Future<void> _runPostLoginSync() async {

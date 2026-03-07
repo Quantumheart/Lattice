@@ -37,7 +37,7 @@ Future<void> sendVoiceMessage(
           'mimetype': 'audio/ogg',
           'size': bytes.length,
         },
-        'org.matrix.msc3245.voice': {},
+        'org.matrix.msc3245.voice': <String, dynamic>{},
       },
     );
     uploadNotifier.value = null;

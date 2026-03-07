@@ -12,7 +12,7 @@ void showEmojiPickerSheet(BuildContext context, void Function(String emoji) onSe
     context: context,
     barrierColor: Colors.black26,
     builder: (context) => _EmojiPickerDialog(onSelected: onSelected),
-  ));
+  ),);
 }
 
 class _EmojiPickerDialog extends StatelessWidget {

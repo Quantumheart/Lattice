@@ -25,7 +25,7 @@ mixin SyncMixin on ChangeNotifier {
   /// UI can observe this to hint that messages may be undecryptable.
   String? get autoUnlockError => _autoUnlockError;
 
-  StreamSubscription? _syncSub;
+  StreamSubscription<SyncUpdate>? _syncSub;
 
   @protected
   Future<void> startSync({Duration? timeout = const Duration(seconds: 30)}) async {
@@ -64,7 +64,7 @@ mixin SyncMixin on ChangeNotifier {
       debugPrint('[Lattice] Background E2EE auto-unlock error: $e');
       _autoUnlockError = e.toString();
       notifyListeners();
-    }));
+    },),);
   }
 
   /// Cancel sync subscription (e.g. on dispose).

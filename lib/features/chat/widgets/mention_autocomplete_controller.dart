@@ -155,10 +155,10 @@ class MentionAutocompleteController extends ChangeNotifier {
           _filterUsers();
           notifyListeners();
         }
-      }).catchError((_) {
+      }).catchError((Object _) {
         if (_disposed) return;
         _loadingMembers = false;
-      }));
+      },),);
     }
 
     final members = _cachedMembers;

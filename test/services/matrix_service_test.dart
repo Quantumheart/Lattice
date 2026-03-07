@@ -208,7 +208,7 @@ void main() {
       when(mockClient.onLoginStateChanged).thenReturn(CachedStreamController());
 
       // Emit a sync event so _startSync() completes.
-      Future.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
+      Future<void>.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
 
       final result = await service.login(
         homeserver: 'example.com',
@@ -287,7 +287,7 @@ void main() {
       when(mockClient.onUiaRequest).thenReturn(CachedStreamController());
       when(mockClient.onLoginStateChanged).thenReturn(CachedStreamController());
 
-      Future.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
+      Future<void>.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
       await service.login(
         homeserver: 'example.com',
         username: 'user',
@@ -347,7 +347,7 @@ void main() {
     });
 
     test('server-side logout clears state and notifies listeners', () async {
-      Future.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
+      Future<void>.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
       await service.login(
         homeserver: 'example.com',
         username: 'user',
@@ -360,7 +360,7 @@ void main() {
 
       // Simulate server-side logout.
       loginStateController.add(LoginState.loggedOut);
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
       expect(service.isLoggedIn, isFalse);
       expect(service.selectedSpaceIds, isEmpty);
@@ -369,7 +369,7 @@ void main() {
     });
 
     test('duplicate loggedIn event while logged in is idempotent', () async {
-      Future.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
+      Future<void>.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
       await service.login(
         homeserver: 'example.com',
         username: 'user',
@@ -384,7 +384,7 @@ void main() {
 
       // Emit loggedIn — should not change state.
       loginStateController.add(LoginState.loggedIn);
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
       expect(service.isLoggedIn, isTrue);
       expect(notifyCount, 0);
@@ -420,7 +420,7 @@ void main() {
       when(mockClient.onUiaRequest).thenReturn(CachedStreamController());
       when(mockClient.onLoginStateChanged).thenReturn(loginStateController);
 
-      Future.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
+      Future<void>.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
       await service.login(
         homeserver: 'example.com',
         username: 'user',
@@ -432,7 +432,7 @@ void main() {
 
       // Emitting after dispose should not cause errors.
       loginStateController.add(LoginState.loggedOut);
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
     });
   });
 
@@ -1280,7 +1280,7 @@ void main() {
       when(mockClient.onUiaRequest).thenReturn(CachedStreamController());
       when(mockClient.onLoginStateChanged).thenReturn(CachedStreamController());
 
-      Future.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
+      Future<void>.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
       await service.login(
         homeserver: 'example.com',
         username: 'user',
