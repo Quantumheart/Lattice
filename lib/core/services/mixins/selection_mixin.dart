@@ -110,6 +110,8 @@ mixin SelectionMixin on ChangeNotifier {
   List<SpaceNode>? _cachedSpaceTree;
   Set<String>? _cachedAllSpaceRoomIds;
   Map<String, Set<String>>? _cachedRoomToSpaces;
+  Map<String, SpaceNode>? _cachedNodeById;
+  List<Room>? _cachedRooms;
   bool _spaceTreeDirty = true;
 
   /// Mark the space tree cache as stale. Call this when the underlying
@@ -199,9 +201,31 @@ mixin SelectionMixin on ChangeNotifier {
       walkTree(node);
     }
 
+    // Build flat node-by-id map for O(1) lookups.
+    final flatNodeMap = <String, SpaceNode>{};
+    void indexNodes(List<SpaceNode> nodes) {
+      for (final node in nodes) {
+        flatNodeMap[node.room.id] = node;
+        indexNodes(node.subspaces);
+      }
+    }
+    indexNodes(topLevel);
+
+    // Cache sorted non-space rooms.
+    final sortedRooms = client.rooms
+        .where((r) => !r.isSpace && r.membership == Membership.join)
+        .toList()
+      ..sort((a, b) {
+        final aTs = a.lastEvent?.originServerTs ?? DateTime(1970);
+        final bTs = b.lastEvent?.originServerTs ?? DateTime(1970);
+        return bTs.compareTo(aTs);
+      });
+
     _cachedSpaceTree = topLevel;
     _cachedAllSpaceRoomIds = allRoomIds;
     _cachedRoomToSpaces = roomToSpaces;
+    _cachedNodeById = flatNodeMap;
+    _cachedRooms = sortedRooms;
     _spaceTreeDirty = false;
   }
 
@@ -231,15 +255,8 @@ mixin SelectionMixin on ChangeNotifier {
 
   /// Returns all joined non-space rooms sorted by recency.
   List<Room> get rooms {
-    final list = client.rooms
-        .where((r) => !r.isSpace && r.membership == Membership.join)
-        .toList()
-      ..sort((a, b) {
-        final aTs = a.lastEvent?.originServerTs ?? DateTime(1970);
-        final bTs = b.lastEvent?.originServerTs ?? DateTime(1970);
-        return bTs.compareTo(aTs);
-      });
-    return list;
+    _ensureTreeFresh();
+    return _cachedRooms!;
   }
 
   /// Returns invited non-space rooms sorted alphabetically.
@@ -309,16 +326,7 @@ mixin SelectionMixin on ChangeNotifier {
   /// Aggregate unread count for a space (including subspace children).
   int unreadCountForSpace(String spaceId) {
     _ensureTreeFresh();
-    SpaceNode? findNode(List<SpaceNode> nodes, String id) {
-      for (final node in nodes) {
-        if (node.room.id == id) return node;
-        final found = findNode(node.subspaces, id);
-        if (found != null) return found;
-      }
-      return null;
-    }
-
-    final node = findNode(_cachedSpaceTree!, spaceId);
+    final node = _cachedNodeById![spaceId];
     if (node == null) return 0;
 
     var count = 0;

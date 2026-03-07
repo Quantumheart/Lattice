@@ -52,7 +52,10 @@ class RoomTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final prefs = context.watch<PreferencesService>();
+    final prefs = context.read<PreferencesService>();
+    context.select<PreferencesService, (NotificationLevel, List<String>, bool)>(
+      (p) => (p.notificationLevel, p.notificationKeywords, p.typingIndicators),
+    );
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final unread = effectiveUnreadCount(room, prefs);
