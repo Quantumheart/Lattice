@@ -20,7 +20,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
   List<Device>? _devices;
   bool _loading = true;
   String? _error;
-  StreamSubscription? _uiaSub;
+  StreamSubscription<UiaRequest<dynamic>>? _uiaSub;
 
   // ── Lifecycle ──────────────────────────────────────────────
 
@@ -65,7 +65,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
 
   // ── UIA Password Prompt ────────────────────────────────────
 
-  Future<void> _showUiaPasswordPrompt(UiaRequest request) async {
+  Future<void> _showUiaPasswordPrompt(UiaRequest<dynamic> request) async {
     if (!mounted) return;
     final password = await showDialog<String>(
       context: context,

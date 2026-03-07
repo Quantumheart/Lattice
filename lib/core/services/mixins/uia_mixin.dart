@@ -14,10 +14,10 @@ mixin UiaMixin on ChangeNotifier {
 
   /// Expose UIA requests that need user interaction (e.g. password prompt).
   /// The UI should listen to this and call [completeUiaWithPassword].
-  final _uiaController = StreamController<UiaRequest>.broadcast();
-  Stream<UiaRequest> get onUiaRequest => _uiaController.stream;
+  final _uiaController = StreamController<UiaRequest<dynamic>>.broadcast();
+  Stream<UiaRequest<dynamic>> get onUiaRequest => _uiaController.stream;
 
-  StreamSubscription? _uiaSub;
+  StreamSubscription<UiaRequest<dynamic>>? _uiaSub;
 
   /// Start listening for UIA requests from the client.
   @protected
@@ -26,7 +26,7 @@ mixin UiaMixin on ChangeNotifier {
     _uiaSub = client.onUiaRequest.stream.listen(_handleUiaRequest);
   }
 
-  Future<void> _handleUiaRequest(UiaRequest uiaRequest) async {
+  Future<void> _handleUiaRequest(UiaRequest<dynamic> uiaRequest) async {
     if (uiaRequest.state != UiaRequestState.waitForUser ||
         uiaRequest.nextStages.isEmpty) {
       return;
@@ -67,7 +67,7 @@ mixin UiaMixin on ChangeNotifier {
 
   /// Complete a UIA request with the user's password.
   /// Also caches the password so subsequent UIA stages auto-complete.
-  void completeUiaWithPassword(UiaRequest request, String password) {
+  void completeUiaWithPassword(UiaRequest<dynamic> request, String password) {
     final userId = client.userID;
     if (userId == null) return;
     setCachedPassword(password);
@@ -77,7 +77,7 @@ mixin UiaMixin on ChangeNotifier {
         password: password,
         identifier: AuthenticationUserIdentifier(user: userId),
       ),
-    ));
+    ),);
   }
 
   /// Cache the password with an auto-expiry so it doesn't linger in memory

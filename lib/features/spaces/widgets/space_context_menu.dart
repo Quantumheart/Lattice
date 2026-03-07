@@ -259,7 +259,7 @@ Future<void> _handleMarkAsRead(Room space) async {
   const batchSize = 5;
   for (var i = 0; i < roomsToMark.length; i += batchSize) {
     final batch = roomsToMark.sublist(i, min(i + batchSize, roomsToMark.length));
-    await Future.wait(batch.map((r) => r.room.setReadMarker(r.eventId).catchError((e) {
+    await Future.wait(batch.map((r) => r.room.setReadMarker(r.eventId).catchError((Object e) {
       debugPrint('[Lattice] Failed to mark room ${r.room.id} as read: $e');
     }),),);
   }

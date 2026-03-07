@@ -26,7 +26,7 @@ void main() {
     when(mockClient.deviceID).thenReturn('THISDEVICE');
     when(mockClient.userID).thenReturn('@alice:example.com');
     when(mockMatrix.onUiaRequest).thenAnswer(
-      (_) => const Stream<UiaRequest>.empty(),
+      (_) => const Stream<UiaRequest<dynamic>>.empty(),
     );
     when(mockMatrix.chatBackupNeeded).thenReturn(false);
     when(mockClient.userDeviceKeys).thenReturn({});

@@ -36,7 +36,7 @@ void main() {
                 unawaited(NewDirectMessageDialog.show(
                   context,
                   matrixService: mockMatrixService,
-                ));
+                ),);
               },
               child: const Text('Open'),
             ),

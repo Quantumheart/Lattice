@@ -32,7 +32,7 @@ class RoomDetailsPanel extends StatefulWidget {
 class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
   final Set<String> _inFlight = {};
   String? _error;
-  StreamSubscription? _syncSub;
+  StreamSubscription<SyncUpdate>? _syncSub;
   Timer? _syncDebounce;
   bool _deviceKeysExpanded = false;
 

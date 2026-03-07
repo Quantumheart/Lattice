@@ -538,7 +538,7 @@ void main() {
         _makeUser('@eve:example.com', 'Eve'),
       ];
       completer.complete(newMembers);
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
 
       expect(ctrl.suggestions.length, 4);
 
@@ -565,7 +565,7 @@ void main() {
 
       // Complete after dispose — should not throw.
       completer.complete(members);
-      await Future.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
     });
 
     // ── selectedIndex resets on new query ───────────────────
