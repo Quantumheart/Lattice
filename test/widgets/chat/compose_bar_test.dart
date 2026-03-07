@@ -42,6 +42,8 @@ Widget _wrap({
           room: room,
           joinedRooms: joinedRooms,
           typingController: typingController,
+          onRemoveAttachment: (_) {},
+          onClearAttachments: () {},
         ),
       ),
     ),
