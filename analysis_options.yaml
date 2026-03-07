@@ -20,3 +20,4 @@ linter:
     avoid_setters_without_getters: false
     no_default_cases: false
     parameter_assignments: false
+    use_late_for_private_fields_and_variables: false

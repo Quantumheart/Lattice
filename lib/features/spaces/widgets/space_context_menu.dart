@@ -388,4 +388,3 @@ void _collectDescendantRooms(Room space, Set<String> ids, Client client) {
     }
   }
 }
-

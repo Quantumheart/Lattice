@@ -6,7 +6,7 @@ import 'package:lattice/core/models/server_auth_capabilities.dart';
 import 'package:lattice/core/services/matrix_service.dart' show latticeKey;
 import 'package:lattice/core/services/session_backup.dart';
 import 'package:matrix/matrix.dart';
-// ignore: implementation_imports
+// ignore: implementation_imports, no public API for ClientInitException
 import 'package:matrix/src/utils/client_init_exception.dart';
 
 /// Authentication flows: login, SSO, registration, logout, credential

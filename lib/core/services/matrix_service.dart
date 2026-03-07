@@ -11,7 +11,7 @@ import 'package:lattice/core/services/mixins/sync_mixin.dart';
 import 'package:lattice/core/services/mixins/uia_mixin.dart';
 import 'package:lattice/core/services/session_backup.dart';
 import 'package:matrix/matrix.dart';
-// ignore: implementation_imports
+// ignore: implementation_imports, no public API for ClientInitException
 import 'package:matrix/src/utils/client_init_exception.dart';
 
 /// Storage key helper shared across mixins.
