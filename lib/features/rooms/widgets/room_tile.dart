@@ -53,8 +53,8 @@ class RoomTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final prefs = context.read<PreferencesService>();
-    context.select<PreferencesService, (NotificationLevel, List<String>, bool)>(
-      (p) => (p.notificationLevel, p.notificationKeywords, p.typingIndicators),
+    context.select<PreferencesService, (NotificationLevel, String, bool)>(
+      (p) => (p.notificationLevel, p.notificationKeywords.join(','), p.typingIndicators),
     );
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
