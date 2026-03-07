@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
+import 'package:lattice/core/models/pending_attachment.dart';
 import 'package:lattice/core/models/upload_state.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 
@@ -37,6 +38,18 @@ Future<void> pickAndSendFile(
     bytes: bytes,
     uploadNotifier: uploadNotifier,
   );
+}
+
+Future<PendingAttachment?> pickFileAsAttachment() async {
+  final result = await FilePicker.platform.pickFiles(
+    type: FileType.any,
+    withData: true,
+  );
+  if (result == null || result.files.isEmpty) return null;
+  final picked = result.files.first;
+  final bytes = picked.bytes;
+  if (bytes == null) return null;
+  return PendingAttachment.fromBytes(bytes: bytes, name: picked.name);
 }
 
 Future<bool> sendFileBytes({

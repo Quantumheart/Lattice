@@ -436,7 +436,7 @@ class _ChatScreenState extends State<ChatScreen> {
         uploadNotifier: _uploadNotifier,
       );
       if (!ok) {
-        _pendingAttachments.value = attachments.sublist(i + 1);
+        _pendingAttachments.value = attachments.sublist(i);
         if (text.isNotEmpty) {
           _msgCtrl.text = text;
           _replyNotifier.value = replyEvent;
@@ -621,7 +621,10 @@ class _ChatScreenState extends State<ChatScreen> {
                       onCancelReply: _cancelReply,
                       editEvent: editEvent,
                       onCancelEdit: _cancelEdit,
-                      onAttach: () => pickAndSendFile(context, widget.roomId, _uploadNotifier),
+                      onAttach: () async {
+                        final attachment = await pickFileAsAttachment();
+                        if (attachment != null && mounted) _addAttachment(attachment);
+                      },
                       onPasteImage: _isDesktop ? _handlePasteImage : null,
                       uploadNotifier: _uploadNotifier,
                       room: room,
@@ -656,6 +659,7 @@ class _ChatScreenState extends State<ChatScreen> {
         if (files.isEmpty || !mounted) return;
         for (final file in files) {
           final bytes = await file.readAsBytes();
+          if (!mounted) return;
           _addAttachment(PendingAttachment.fromBytes(bytes: bytes, name: file.name));
         }
       },
