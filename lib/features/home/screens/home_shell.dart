@@ -104,7 +104,7 @@ class _HomeShellState extends State<HomeShell> {
 
     // Only rebuild when spaces change (for keyboard bindings).
     final matrix = context.read<MatrixService>();
-    context.select<MatrixService, String>((m) => m.spaces.map((s) => s.id).join(','));
+    context.select<MatrixService, int>((m) => Object.hashAll(m.spaces.map((s) => s.id)));
 
     final child = isWide
         ? _buildWideLayout(width, matrix)

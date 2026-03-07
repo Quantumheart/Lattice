@@ -255,6 +255,14 @@ class NotificationService {
       return;
     }
 
+    final lowerUserId = client.userID?.toLowerCase();
+    final lowerDisplayName = client.userID != null
+        ? room
+            .unsafeGetUserFromMemoryOrFallback(client.userID!)
+            .calcDisplayname()
+            .toLowerCase()
+        : null;
+
     for (final matrixEvent in events) {
       if (matrixEvent.type != EventTypes.Message &&
           matrixEvent.type != EventTypes.Encrypted) {
@@ -276,6 +284,8 @@ class NotificationService {
         ownUserId: client.userID,
         room: room,
         prefs: preferencesService,
+        cachedLowerUserId: lowerUserId,
+        cachedLowerDisplayName: lowerDisplayName,
       )) {
         continue;
       }
