@@ -59,6 +59,7 @@ class _ChatScreenState extends State<ChatScreen> {
   static const _scrollAnimationDuration = Duration(milliseconds: 400);
   static const _readMarkerDelay = Duration(seconds: 1);
   static const _maxAttachments = 10;
+  static const _maxAttachmentBytes = 25 * 1024 * 1024;
 
   final _msgCtrl = TextEditingController();
   final _composeFocusNode = FocusNode();
@@ -377,6 +378,7 @@ class _ChatScreenState extends State<ChatScreen> {
   // ── Clipboard paste ──────────────────────────────────────
 
   Future<void> _handlePasteImage() async {
+    if (!await clipboardHasImage()) return;
     final imageData = await readClipboardImage();
     if (imageData == null || !mounted) return;
 
@@ -390,6 +392,12 @@ class _ChatScreenState extends State<ChatScreen> {
     if (_pendingAttachments.value.length >= _maxAttachments) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Maximum $_maxAttachments attachments allowed')),
+      );
+      return;
+    }
+    if (attachment.bytes.length > _maxAttachmentBytes) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('File exceeds 25 MB limit')),
       );
       return;
     }

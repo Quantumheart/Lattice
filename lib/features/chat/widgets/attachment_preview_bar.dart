@@ -48,6 +48,7 @@ class AttachmentPreviewBar extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.close_rounded, size: 18),
+            tooltip: 'Clear all attachments',
             onPressed: onClearAll,
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
@@ -118,20 +119,21 @@ class _AttachmentCard extends StatelessWidget {
           Positioned(
             top: -6,
             right: -6,
-            child: GestureDetector(
-              onTap: onRemove,
-              child: Container(
-                width: 18,
-                height: 18,
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest,
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: cs.outlineVariant,
-                    width: 0.5,
-                  ),
+            child: SizedBox(
+              width: 18,
+              height: 18,
+              child: IconButton(
+                onPressed: onRemove,
+                tooltip: 'Remove',
+                padding: EdgeInsets.zero,
+                iconSize: 12,
+                constraints: const BoxConstraints(),
+                style: IconButton.styleFrom(
+                  backgroundColor: cs.surfaceContainerHighest,
+                  side: BorderSide(color: cs.outlineVariant, width: 0.5),
+                  shape: const CircleBorder(),
                 ),
-                child: Icon(
+                icon: Icon(
                   Icons.close_rounded,
                   size: 12,
                   color: cs.onSurfaceVariant,

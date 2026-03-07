@@ -16,6 +16,13 @@ final _formats = <(SimpleFileFormat, String)>[
   (Formats.webp, 'image/webp'),
 ];
 
+Future<bool> clipboardHasImage() async {
+  final clipboard = SystemClipboard.instance;
+  if (clipboard == null) return false;
+  final reader = await clipboard.read();
+  return _formats.any((entry) => reader.canProvide(entry.$1));
+}
+
 Future<ClipboardImageData?> readClipboardImage() async {
   final clipboard = SystemClipboard.instance;
   if (clipboard == null) return null;

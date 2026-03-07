@@ -39,8 +39,8 @@ class ComposeBar extends StatefulWidget {
     this.onVoiceStop,
     this.onVoiceCancel,
     this.pendingAttachments = const [],
-    this.onRemoveAttachment,
-    this.onClearAttachments,
+    required this.onRemoveAttachment,
+    required this.onClearAttachments,
   });
 
   final TextEditingController controller;
@@ -72,8 +72,8 @@ class ComposeBar extends StatefulWidget {
   final VoidCallback? onVoiceCancel;
 
   final List<PendingAttachment> pendingAttachments;
-  final ValueChanged<int>? onRemoveAttachment;
-  final VoidCallback? onClearAttachments;
+  final ValueChanged<int> onRemoveAttachment;
+  final VoidCallback onClearAttachments;
 
   @override
   State<ComposeBar> createState() => _ComposeBarState();
@@ -250,8 +250,8 @@ class _ComposeBarState extends State<ComposeBar> {
           if (widget.pendingAttachments.isNotEmpty)
             AttachmentPreviewBar(
               attachments: widget.pendingAttachments,
-              onRemove: widget.onRemoveAttachment ?? (_) {},
-              onClearAll: widget.onClearAttachments ?? () {},
+              onRemove: widget.onRemoveAttachment,
+              onClearAll: widget.onClearAttachments,
             ),
           if (widget.uploadNotifier != null)
             ValueListenableBuilder<UploadState?>(
