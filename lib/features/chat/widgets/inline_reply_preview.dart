@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-
-import 'package:lattice/core/utils/sender_color.dart';
 import 'package:lattice/core/utils/reply_fallback.dart';
+import 'package:lattice/core/utils/sender_color.dart';
+import 'package:matrix/matrix.dart';
 
 // ── Inline reply preview ──────────────────────────────────────
 
 class InlineReplyPreview extends StatefulWidget {
   const InlineReplyPreview({
-    super.key,
-    required this.event,
-    required this.timeline,
-    required this.isMe,
+    required this.event, required this.timeline, required this.isMe, super.key,
     this.onTap,
   });
 

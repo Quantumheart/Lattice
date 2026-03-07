@@ -1,15 +1,14 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:html/parser.dart' as html_parser;
 import 'package:html/dom.dart' as dom;
-import 'package:matrix/matrix.dart';
-import 'package:url_launcher/url_launcher.dart';
-
+import 'package:html/parser.dart' as html_parser;
 import 'package:lattice/core/utils/emoji_spans.dart';
 import 'package:lattice/core/utils/media_auth.dart';
-import 'code_block.dart';
-import 'linkable_text.dart';
-import 'mention_pill.dart';
+import 'package:lattice/features/chat/widgets/code_block.dart';
+import 'package:lattice/features/chat/widgets/linkable_text.dart';
+import 'package:lattice/features/chat/widgets/mention_pill.dart';
+import 'package:matrix/matrix.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// Renders Matrix HTML `formatted_body` as a styled [Text.rich] widget.
 ///
@@ -18,10 +17,7 @@ import 'mention_pill.dart';
 /// Unsupported tags degrade gracefully — text content is preserved.
 class HtmlMessageText extends StatefulWidget {
   const HtmlMessageText({
-    super.key,
-    required this.html,
-    required this.style,
-    required this.isMe,
+    required this.html, required this.style, required this.isMe, super.key,
     this.room,
     this.maxLines,
     this.overflow,
@@ -50,7 +46,7 @@ class _HtmlMessageTextState extends State<HtmlMessageText> {
   );
 
   static final _mxReplyRegex = RegExp(
-    r'<mx-reply>.*?</mx-reply>',
+    '<mx-reply>.*?</mx-reply>',
     dotAll: true,
   );
 
@@ -177,7 +173,7 @@ class _HtmlMessageTextState extends State<HtmlMessageText> {
             padding: const EdgeInsets.only(left: 8),
             child: Text.rich(TextSpan(children: quoteSpans)),
           ),
-        ));
+        ),);
         return;
 
       case 'ol':
@@ -240,7 +236,7 @@ class _HtmlMessageTextState extends State<HtmlMessageText> {
           spans.add(const TextSpan(text: '\n'));
         }
         String? language;
-        String codeText = node.text;
+        var codeText = node.text;
         for (final child in node.nodes) {
           if (child is dom.Element && child.localName == 'code') {
             final cls = child.attributes['class'] ?? '';
@@ -252,7 +248,7 @@ class _HtmlMessageTextState extends State<HtmlMessageText> {
         }
         spans.add(WidgetSpan(
           child: CodeBlock(code: codeText, language: language, isMe: widget.isMe),
-        ));
+        ),);
         return;
 
       case 'code':
@@ -276,7 +272,7 @@ class _HtmlMessageTextState extends State<HtmlMessageText> {
               ),
             ),
           ),
-        ));
+        ),);
         return;
 
       case 'a':
@@ -292,7 +288,7 @@ class _HtmlMessageTextState extends State<HtmlMessageText> {
               spans.add(WidgetSpan(
                 alignment: PlaceholderAlignment.middle,
                 child: pill,
-              ));
+              ),);
               return;
             }
           }
@@ -312,7 +308,7 @@ class _HtmlMessageTextState extends State<HtmlMessageText> {
                 launchUrl(uri, mode: LaunchMode.externalApplication);
               }
             }),
-          ));
+          ),);
           return;
         }
         // No href — just render children.
@@ -348,7 +344,7 @@ class _HtmlMessageTextState extends State<HtmlMessageText> {
               fallbackText: alt.isNotEmpty ? alt : ':emoji:',
               fallbackStyle: currentStyle,
             ),
-          ));
+          ),);
         } else {
           spans.add(WidgetSpan(
             child: Padding(
@@ -367,7 +363,7 @@ class _HtmlMessageTextState extends State<HtmlMessageText> {
                 ),
               ),
             ),
-          ));
+          ),);
         }
         return;
 
@@ -440,7 +436,7 @@ class _HtmlMessageTextState extends State<HtmlMessageText> {
 
       if (match.start > lastEnd) {
         spans.addAll(
-            buildEmojiSpans(text.substring(lastEnd, match.start), currentStyle));
+            buildEmojiSpans(text.substring(lastEnd, match.start), currentStyle),);
       }
 
       spans.add(TextSpan(
@@ -456,7 +452,7 @@ class _HtmlMessageTextState extends State<HtmlMessageText> {
             launchUrl(uri, mode: LaunchMode.externalApplication);
           }
         }),
-      ));
+      ),);
 
       lastEnd = urlEnd;
     }
@@ -510,10 +506,8 @@ class _MxcImage extends StatefulWidget {
   const _MxcImage({
     required this.mxcUrl,
     required this.client,
-    this.width,
+    required this.fallbackText, required this.fallbackStyle, this.width,
     this.height,
-    required this.fallbackText,
-    required this.fallbackStyle,
   });
 
   final String mxcUrl;

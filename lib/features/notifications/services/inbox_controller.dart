@@ -240,7 +240,7 @@ class InboxController extends ChangeNotifier {
   // ── Helpers ────────────────────────────────────────────────
 
   List<NotificationGroup> _groupByRoom(
-      List<matrix_sdk.Notification> notifications) {
+      List<matrix_sdk.Notification> notifications,) {
     final map = <String, List<matrix_sdk.Notification>>{};
     final order = <String>[];
 

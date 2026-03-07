@@ -1,29 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:matrix/matrix.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/core/utils/reply_fallback.dart';
 import 'package:lattice/core/utils/sender_color.dart';
+import 'package:lattice/features/chat/widgets/audio_bubble.dart';
+import 'package:lattice/features/chat/widgets/density_metrics.dart';
+import 'package:lattice/features/chat/widgets/file_bubble.dart';
+import 'package:lattice/features/chat/widgets/hover_action_bar.dart';
+import 'package:lattice/features/chat/widgets/html_message_text.dart';
+import 'package:lattice/features/chat/widgets/image_bubble.dart';
+import 'package:lattice/features/chat/widgets/inline_reply_preview.dart';
+import 'package:lattice/features/chat/widgets/link_preview_card.dart';
+import 'package:lattice/features/chat/widgets/linkable_text.dart';
+import 'package:lattice/features/chat/widgets/video_bubble.dart';
 import 'package:lattice/shared/widgets/user_avatar.dart';
-import 'density_metrics.dart';
-import 'audio_bubble.dart';
-import 'file_bubble.dart';
-import 'hover_action_bar.dart';
-import 'html_message_text.dart';
-import 'image_bubble.dart';
-import 'video_bubble.dart';
-import 'inline_reply_preview.dart';
-import 'link_preview_card.dart';
-import 'linkable_text.dart';
+import 'package:matrix/matrix.dart';
+import 'package:provider/provider.dart';
 
 class MessageBubble extends StatefulWidget {
   const MessageBubble({
-    super.key,
-    required this.event,
-    required this.isMe,
-    required this.isFirst,
+    required this.event, required this.isMe, required this.isFirst, super.key,
     this.highlighted = false,
     this.isPinned = false,
     this.timeline,
@@ -109,7 +105,7 @@ class _MessageBubbleState extends State<MessageBubble> {
     final isEdited = !isRedacted &&
         widget.timeline != null &&
         widget.event.hasAggregatedEvents(
-            widget.timeline!, RelationshipTypes.edit);
+            widget.timeline!, RelationshipTypes.edit,);
 
     final replyEventId = widget.event.content
             .tryGet<Map<String, Object?>>('m.relates_to')
@@ -164,7 +160,6 @@ class _MessageBubbleState extends State<MessageBubble> {
               children: [
                 Row(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     // Hover action bar (before bubble for isMe)
                     if (isDesktop && _hovering && widget.isMe)
@@ -204,19 +199,19 @@ class _MessageBubbleState extends State<MessageBubble> {
                                         .withValues(alpha: 0.6),
                                 borderRadius: BorderRadius.only(
                                   topLeft: Radius.circular(
-                                      metrics.bubbleRadius),
+                                      metrics.bubbleRadius,),
                                   topRight: Radius.circular(
-                                      metrics.bubbleRadius),
+                                      metrics.bubbleRadius,),
                                   bottomLeft: Radius.circular(widget.isMe
                                       ? metrics.bubbleRadius
                                       : (widget.isFirst
                                           ? 4
-                                          : metrics.bubbleRadius)),
+                                          : metrics.bubbleRadius),),
                                   bottomRight: Radius.circular(widget.isMe
                                       ? (widget.isFirst
                                           ? 4
                                           : metrics.bubbleRadius)
-                                      : metrics.bubbleRadius),
+                                      : metrics.bubbleRadius,),
                                 ),
                               ),
                               child: Column(
@@ -227,7 +222,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                   if (replyEventId != null)
                                     Padding(
                                       padding: const EdgeInsets.only(
-                                          bottom: 4),
+                                          bottom: 4,),
                                       child: InlineReplyPreview(
                                         event: widget.event,
                                         timeline: widget.timeline,
@@ -241,7 +236,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                     Padding(
                                       padding: EdgeInsets.only(
                                           bottom:
-                                              metrics.senderNameBottomPad),
+                                              metrics.senderNameBottomPad,),
                                       child: Text(
                                         widget.event
                                                 .senderFromMemoryOrFallback
@@ -252,7 +247,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                           fontSize:
                                               metrics.senderNameFontSize,
                                           color: senderColor(
-                                              widget.event.senderId, cs),
+                                              widget.event.senderId, cs,),
                                         ),
                                       ),
                                     ),
@@ -268,7 +263,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                   // Timestamp
                                   Padding(
                                     padding: EdgeInsets.only(
-                                        top: metrics.timestampTopPad),
+                                        top: metrics.timestampTopPad,),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
@@ -276,7 +271,7 @@ class _MessageBubbleState extends State<MessageBubble> {
                                           Padding(
                                             padding:
                                                 const EdgeInsets.only(
-                                                    right: 4),
+                                                    right: 4,),
                                             child: Icon(
                                               Icons.push_pin_rounded,
                                               size:
@@ -284,17 +279,17 @@ class _MessageBubbleState extends State<MessageBubble> {
                                                       2,
                                               color: widget.isMe
                                                   ? cs.onPrimary.withValues(
-                                                      alpha: 0.6)
+                                                      alpha: 0.6,)
                                                   : cs.onSurfaceVariant
                                                       .withValues(
-                                                          alpha: 0.5),
+                                                          alpha: 0.5,),
                                             ),
                                           ),
                                         if (isEdited)
                                           Padding(
                                             padding:
                                                 const EdgeInsets.only(
-                                                    right: 4),
+                                                    right: 4,),
                                             child: Text(
                                               '(edited)',
                                               style:
@@ -304,25 +299,25 @@ class _MessageBubbleState extends State<MessageBubble> {
                                                 color: widget.isMe
                                                     ? cs.onPrimary
                                                         .withValues(
-                                                            alpha: 0.6)
+                                                            alpha: 0.6,)
                                                     : cs.onSurfaceVariant
                                                         .withValues(
-                                                            alpha: 0.5),
+                                                            alpha: 0.5,),
                                               ),
                                             ),
                                           ),
                                         Text(
                                           _formatTime(widget
-                                              .event.originServerTs),
+                                              .event.originServerTs,),
                                           style: tt.bodyMedium?.copyWith(
                                             fontSize:
                                                 metrics.timestampFontSize,
                                             color: widget.isMe
                                                 ? cs.onPrimary.withValues(
-                                                    alpha: 0.6)
+                                                    alpha: 0.6,)
                                                 : cs.onSurfaceVariant
                                                     .withValues(
-                                                        alpha: 0.5),
+                                                        alpha: 0.5,),
                                           ),
                                         ),
                                         if (widget.isMe) ...[
@@ -413,7 +408,7 @@ class _MessageBubbleState extends State<MessageBubble> {
     final value = await showMenu<String>(
       context: context,
       position: RelativeRect.fromLTRB(
-          position.dx, position.dy, position.dx, position.dy),
+          position.dx, position.dy, position.dx, position.dy,),
       color: cs.surfaceContainer,
       items: [
         if (widget.onReply != null)
@@ -503,7 +498,7 @@ class _MessageBubbleState extends State<MessageBubble> {
   }
 
   Widget _buildBody(
-      BuildContext context, DensityMetrics metrics, String bodyText) {
+      BuildContext context, DensityMetrics metrics, String bodyText,) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 

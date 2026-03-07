@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/matrix_service.dart' show MatrixService;
 import 'package:lattice/features/auth/widgets/app_logo_header.dart';
 import 'package:lattice/features/auth/widgets/homeserver_controller.dart';
+import 'package:provider/provider.dart';
 
 class HomeserverScreen extends StatefulWidget {
   const HomeserverScreen({super.key});
@@ -101,7 +100,7 @@ class _HomeserverScreenState extends State<HomeserverScreen>
                     enabled: !isChecking,
                     decoration: InputDecoration(
                       prefixIcon: Icon(Icons.dns_outlined,
-                          color: cs.onSurfaceVariant),
+                          color: cs.onSurfaceVariant,),
                       hintText: 'Homeserver',
                       errorText: hasError ? _controller.error : null,
                       suffixIcon: isChecking

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/rooms/widgets/new_room_dialog.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -64,7 +64,7 @@ void main() {
         visibility: anyNamed('visibility'),
         initialState: anyNamed('initialState'),
         invite: anyNamed('invite'),
-      )).thenAnswer((_) async => '!newroom:example.com');
+      ),).thenAnswer((_) async => '!newroom:example.com');
       when(mockClient.waitForRoomInSync(any, join: anyNamed('join')))
           .thenAnswer((_) async => SyncUpdate(nextBatch: ''));
 
@@ -86,8 +86,7 @@ void main() {
         topic: 'A test topic',
         visibility: Visibility.private,
         initialState: anyNamed('initialState'),
-        invite: null,
-      )).called(1);
+      ),).called(1);
       verify(mockClient.waitForRoomInSync('!newroom:example.com', join: true))
           .called(1);
       verify(mockMatrixService.selectRoom('!newroom:example.com')).called(1);
@@ -100,7 +99,7 @@ void main() {
         visibility: anyNamed('visibility'),
         initialState: anyNamed('initialState'),
         invite: anyNamed('invite'),
-      )).thenThrow(Exception('Server error'));
+      ),).thenThrow(Exception('Server error'));
       await openDialog(tester);
 
       await tester.enterText(
@@ -130,7 +129,7 @@ void main() {
         visibility: anyNamed('visibility'),
         initialState: anyNamed('initialState'),
         invite: anyNamed('invite'),
-      )).thenAnswer((_) async => '!newroom:example.com');
+      ),).thenAnswer((_) async => '!newroom:example.com');
       when(mockClient.waitForRoomInSync(any, join: anyNamed('join')))
           .thenAnswer((_) async => SyncUpdate(nextBatch: ''));
 
@@ -149,11 +148,9 @@ void main() {
 
       verify(mockClient.createRoom(
         name: 'Public Room',
-        topic: null,
         visibility: Visibility.public,
         initialState: anyNamed('initialState'),
-        invite: null,
-      )).called(1);
+      ),).called(1);
     });
 
     testWidgets('invite chips can be added and removed', (tester) async {

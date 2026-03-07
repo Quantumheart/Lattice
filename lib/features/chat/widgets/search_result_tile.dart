@@ -1,16 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/core/utils/text_highlight.dart';
 import 'package:lattice/core/utils/time_format.dart';
 import 'package:lattice/shared/widgets/user_avatar.dart';
+import 'package:matrix/matrix.dart';
 
 class SearchResultTile extends StatelessWidget {
   const SearchResultTile({
-    super.key,
-    required this.event,
-    required this.query,
-    required this.onTap,
+    required this.event, required this.query, required this.onTap, super.key,
   });
 
   final Event event;

@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-
+import 'package:flutter/material.dart';
 import 'package:lattice/core/utils/media_auth.dart';
+import 'package:matrix/matrix.dart';
 
 /// Displays a room's avatar with a colored-initial fallback.
 ///
@@ -10,8 +9,7 @@ import 'package:lattice/core/utils/media_auth.dart';
 /// and passes auth headers for authenticated media endpoints.
 class RoomAvatarWidget extends StatefulWidget {
   const RoomAvatarWidget({
-    super.key,
-    required this.room,
+    required this.room, super.key,
     this.size = 44,
   });
 

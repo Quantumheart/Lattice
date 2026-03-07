@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/spaces/widgets/space_action_dialog.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:provider/provider.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -84,7 +83,7 @@ void main() {
         initialState: anyNamed('initialState'),
         visibility: anyNamed('visibility'),
         powerLevelContentOverride: anyNamed('powerLevelContentOverride'),
-      )).thenAnswer((_) async => '!newspace:example.com');
+      ),).thenAnswer((_) async => '!newspace:example.com');
 
       when(mockClient.waitForRoomInSync(any, join: anyNamed('join')))
           .thenAnswer((_) async => SyncUpdate(nextBatch: ''));
@@ -104,7 +103,7 @@ void main() {
         initialState: anyNamed('initialState'),
         visibility: anyNamed('visibility'),
         powerLevelContentOverride: anyNamed('powerLevelContentOverride'),
-      )).called(1);
+      ),).called(1);
 
       verify(mockMatrixService.selectSpace('!newspace:example.com')).called(1);
     });
@@ -117,7 +116,7 @@ void main() {
         initialState: anyNamed('initialState'),
         visibility: anyNamed('visibility'),
         powerLevelContentOverride: anyNamed('powerLevelContentOverride'),
-      )).thenThrow(Exception('Server error'));
+      ),).thenThrow(Exception('Server error'));
 
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Open'));

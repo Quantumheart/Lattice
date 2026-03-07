@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/rooms/widgets/room_list_models.dart';
 import 'package:lattice/features/rooms/widgets/room_section_header.dart';
 import 'package:lattice/features/spaces/widgets/space_reparent_controller.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:provider/provider.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -103,9 +102,8 @@ void main() {
           sectionKey: 'dms',
           depth: 0,
           roomCount: 5,
-          isSpace: false,
         ),
-      ));
+      ),);
       expect(find.byIcon(Icons.add_rounded), findsNothing);
     });
   });
@@ -122,7 +120,7 @@ void main() {
       final animatedContainer = tester.widget<AnimatedContainer>(
         find.byType(AnimatedContainer).first,
       );
-      final decoration = animatedContainer.decoration as BoxDecoration;
+      final decoration = animatedContainer.decoration! as BoxDecoration;
       expect(decoration.color, isNot(Colors.transparent));
     });
 
@@ -133,9 +131,8 @@ void main() {
           sectionKey: 'unsorted',
           depth: 0,
           roomCount: 2,
-          isSpace: false,
         ),
-      ));
+      ),);
       expect(find.byType(DragTarget<ReparentDragData>), findsNothing);
     });
 

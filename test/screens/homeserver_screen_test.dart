@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-import 'package:provider/provider.dart';
+import 'package:lattice/core/models/server_auth_capabilities.dart';
 import 'package:lattice/core/routing/route_names.dart';
+import 'package:lattice/core/services/client_manager.dart';
+import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/auth/screens/homeserver_screen.dart';
 import 'package:lattice/features/auth/screens/login_screen.dart';
 import 'package:lattice/features/auth/screens/registration_screen.dart';
-import 'package:lattice/core/models/server_auth_capabilities.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/client_manager.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mockito/mockito.dart';
+import 'package:provider/provider.dart';
 
 import '../services/matrix_service_test.mocks.dart';
 
@@ -55,10 +55,10 @@ void main() {
           GetVersionsResponse.fromJson({'versions': ['v1.1']}),
           <LoginFlow>[],
           null,
-        ));
+        ),);
     when(mockClient.getLoginFlows()).thenAnswer((_) async => [
           LoginFlow(type: AuthenticationTypes.password),
-        ]);
+        ],);
     when(mockClient.register()).thenThrow(
       MatrixException.fromJson({
         'errcode': 'M_FORBIDDEN',

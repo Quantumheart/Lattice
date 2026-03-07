@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart' hide Visibility;
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/rooms/widgets/admin_settings_section.dart';
 import 'package:lattice/features/rooms/widgets/invite_user_dialog.dart';
-import 'package:lattice/shared/widgets/avatar_edit_overlay.dart';
 import 'package:lattice/features/rooms/widgets/room_members_section.dart';
-import 'notification_radio_group.dart';
-import 'space_context_menu.dart';
+import 'package:lattice/features/spaces/widgets/notification_radio_group.dart';
+import 'package:lattice/features/spaces/widgets/space_context_menu.dart';
+import 'package:lattice/shared/widgets/avatar_edit_overlay.dart';
+import 'package:matrix/matrix.dart' hide Visibility;
+import 'package:provider/provider.dart';
 
 /// Displays space details: header, actions, members, and admin controls.
 ///
@@ -17,8 +16,7 @@ import 'space_context_menu.dart';
 /// (for the desktop content pane).
 class SpaceDetailsPanel extends StatefulWidget {
   const SpaceDetailsPanel({
-    super.key,
-    required this.spaceId,
+    required this.spaceId, super.key,
     this.isFullPage = false,
   });
 
@@ -97,7 +95,7 @@ class _SpaceDetailsPanelState extends State<SpaceDetailsPanel> {
       );
     }
 
-    return Container(
+    return ColoredBox(
       color: cs.surface,
       child: content,
     );
@@ -162,7 +160,7 @@ class _SpaceDetailsPanelState extends State<SpaceDetailsPanel> {
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          AvatarEditOverlay(room: space, size: 72),
+          AvatarEditOverlay(room: space),
           const SizedBox(height: 12),
           Text(
             space.getLocalizedDisplayname(),

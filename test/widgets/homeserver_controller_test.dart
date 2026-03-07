@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
 import 'package:lattice/core/models/server_auth_capabilities.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/auth/widgets/homeserver_controller.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 
 @GenerateNiceMocks([
   MockSpec<MatrixService>(),
@@ -40,7 +40,7 @@ void main() {
         when(mockMatrixService.getServerAuthCapabilities(any))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsPassword: true,
-                ));
+                ),);
 
         final controller = createController();
         await controller.checkServer('example.com');
@@ -58,7 +58,7 @@ void main() {
                   ssoIdentityProviders: [
                     SsoIdentityProvider(id: 'google', name: 'Google'),
                   ],
-                ));
+                ),);
 
         final controller = createController();
         await controller.checkServer('example.com');
@@ -75,7 +75,7 @@ void main() {
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsPassword: true,
                   supportsSso: true,
-                ));
+                ),);
 
         final controller = createController();
         await controller.checkServer('example.com');
@@ -145,7 +145,7 @@ void main() {
           if (callCount == 1) return firstCompleter.future;
           return Future.value(const ServerAuthCapabilities(
             supportsPassword: true,
-          ));
+          ),);
         });
 
         final controller = createController();
@@ -163,7 +163,7 @@ void main() {
         // Complete the first check — it should be discarded.
         firstCompleter.complete(const ServerAuthCapabilities(
           supportsSso: true,
-        ));
+        ),);
         await first;
 
         // State should still reflect the second check.
@@ -178,7 +178,7 @@ void main() {
         when(mockMatrixService.getServerAuthCapabilities(any))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsPassword: true,
-                ));
+                ),);
 
         final controller = createController();
         controller.dispose();

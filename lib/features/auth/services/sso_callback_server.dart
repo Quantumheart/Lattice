@@ -45,7 +45,7 @@ class SsoCallbackServer {
   }
 
   void _serve() {
-    _server?.listen((HttpRequest request) async {
+    _server?.listen((request) async {
       try {
         if (request.method == 'GET' && request.uri.path == '/callback') {
           final loginToken = request.uri.queryParameters['loginToken'];
@@ -62,7 +62,7 @@ class SsoCallbackServer {
             }
             Future<void>.delayed(
               const Duration(seconds: 1),
-              () => dispose(),
+              dispose,
             );
           } else {
             request.response

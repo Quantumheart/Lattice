@@ -1,14 +1,13 @@
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/features/notifications/services/notification_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/features/notifications/services/notification_service.dart';
-import 'package:lattice/core/services/preferences_service.dart';
 
 @GenerateNiceMocks([
   MockSpec<MatrixService>(),
@@ -257,7 +256,7 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 50));
 
       verify(mockPlugin.show(any, 'General', argThat(contains('invited you to join')), any,
-              payload: roomId))
+              payload: roomId,),)
           .called(1);
     });
 
@@ -416,7 +415,7 @@ void main() {
       await Future.delayed(const Duration(milliseconds: 50));
 
       verify(mockPlugin.show(any, any, argThat(contains('Encrypted message')), any,
-              payload: roomId))
+              payload: roomId,),)
           .called(1);
     });
   });

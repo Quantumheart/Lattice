@@ -57,7 +57,7 @@ class RecaptchaServer {
   }
 
   void _serve() {
-    _server?.listen((HttpRequest request) async {
+    _server?.listen((request) async {
       try {
         if (request.method == 'GET' && request.uri.path == '/') {
           request.response
@@ -86,7 +86,7 @@ class RecaptchaServer {
             }
             Future<void>.delayed(
               const Duration(seconds: 1),
-              () => dispose(),
+              dispose,
             );
           } else {
             request.response

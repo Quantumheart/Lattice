@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/features/rooms/widgets/new_room_dialog.dart';
+import 'package:lattice/features/rooms/widgets/room_list_models.dart';
 import 'package:lattice/features/spaces/widgets/create_subspace_dialog.dart';
 import 'package:lattice/features/spaces/widgets/space_reparent_controller.dart';
-import 'new_room_dialog.dart';
-import 'room_list_models.dart';
+import 'package:provider/provider.dart';
 
 // ── Popup menu actions ──────────────────────────────────────
 enum _HeaderAddAction { createRoom, createSubspace }
@@ -14,10 +13,7 @@ enum _HeaderAddAction { createRoom, createSubspace }
 // ── Section header ──────────────────────────────────────────
 class RoomSectionHeader extends StatelessWidget {
   const RoomSectionHeader({
-    super.key,
-    required this.item,
-    required this.prefs,
-    required this.matrix,
+    required this.item, required this.prefs, required this.matrix, super.key,
   });
 
   final HeaderItem item;
@@ -38,7 +34,7 @@ class RoomSectionHeader extends StatelessWidget {
     final reparent = context.watch<SpaceReparentController>();
     final isHovered = reparent.hoveredHeaderId == item.sectionKey;
 
-    Widget header = Padding(
+    final Widget header = Padding(
       padding: EdgeInsets.only(
         left: 10.0 + item.depth * 16.0,
         right: 10,
@@ -115,7 +111,7 @@ class RoomSectionHeader extends StatelessWidget {
         if (data is SpaceDragData) {
           // Reject dropping a space onto itself or its own descendant.
           if (wouldCreateCycle(
-              matrix.spaceTree, item.sectionKey, data.spaceId)) {
+              matrix.spaceTree, item.sectionKey, data.spaceId,)) {
             return false;
           }
         }
@@ -136,7 +132,6 @@ class RoomSectionHeader extends StatelessWidget {
       final dragData = SpaceDragData(spaceId: item.sectionKey);
       result = LongPressDraggable<ReparentDragData>(
         data: dragData,
-        hapticFeedbackOnStart: true,
         onDragStarted: () => reparent.startDrag(dragData),
         onDragEnd: (_) => reparent.endDrag(),
         feedback: Material(
@@ -175,7 +170,7 @@ class RoomSectionHeader extends StatelessWidget {
   }
 
   void _showAddMenu(BuildContext context) {
-    final box = context.findRenderObject() as RenderBox;
+    final box = context.findRenderObject()! as RenderBox;
     final pos = box.localToGlobal(Offset.zero);
     final cs = Theme.of(context).colorScheme;
 
@@ -232,7 +227,7 @@ class RoomSectionHeader extends StatelessWidget {
     });
   }
 
-  void _handleDrop(BuildContext context, ReparentDragData data) async {
+  Future<void> _handleDrop(BuildContext context, ReparentDragData data) async {
     final targetRoom = matrix.client.getRoomById(item.sectionKey);
     if (targetRoom == null) return;
 

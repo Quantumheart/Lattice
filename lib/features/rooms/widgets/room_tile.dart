@@ -3,9 +3,6 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
@@ -13,9 +10,11 @@ import 'package:lattice/core/utils/notification_filter.dart';
 import 'package:lattice/core/utils/order_utils.dart' as order_utils;
 import 'package:lattice/core/utils/reply_fallback.dart';
 import 'package:lattice/features/chat/widgets/typing_indicator.dart' show TypingIndicator;
+import 'package:lattice/features/rooms/widgets/room_context_menu.dart';
 import 'package:lattice/features/spaces/widgets/space_reparent_controller.dart';
 import 'package:lattice/shared/widgets/room_avatar.dart';
-import 'room_context_menu.dart';
+import 'package:matrix/matrix.dart';
+import 'package:provider/provider.dart';
 
 bool get _isDesktop =>
     !kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS);
@@ -23,11 +22,7 @@ bool get _isDesktop =>
 // ── Room tile ───────────────────────────────────────────────
 class RoomTile extends StatelessWidget {
   const RoomTile({
-    super.key,
-    required this.room,
-    required this.isSelected,
-    required this.memberships,
-    required this.hasContextMenu,
+    required this.room, required this.isSelected, required this.memberships, required this.hasContextMenu, super.key,
     this.parentSpaceId,
     this.sectionRooms,
   });
@@ -181,7 +176,7 @@ class RoomTile extends StatelessWidget {
                         const SizedBox(height: 4),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
+                              horizontal: 6, vertical: 2,),
                           decoration: BoxDecoration(
                             color: cs.primary,
                             borderRadius: BorderRadius.circular(10),
@@ -214,7 +209,6 @@ class RoomTile extends StatelessWidget {
       );
       tile = LongPressDraggable<ReparentDragData>(
         data: dragData,
-        hapticFeedbackOnStart: true,
         onDragStarted: () {
           context.read<SpaceReparentController>().startDrag(dragData);
         },
@@ -423,7 +417,7 @@ class _ReorderDragTargetState extends State<_ReorderDragTarget> {
     );
   }
 
-  void _handleReorderDrop(
+  Future<void> _handleReorderDrop(
     BuildContext context,
     RoomDragData data, {
     required bool insertAbove,
@@ -441,10 +435,10 @@ class _ReorderDragTargetState extends State<_ReorderDragTarget> {
 
       final orderMap = order_utils.buildOrderMap(space);
 
-      final String? neighborBefore = insertIndex > 0
+      final neighborBefore = insertIndex > 0
           ? orderMap[rooms[insertIndex - 1].id]
           : null;
-      final String? neighborAfter = insertIndex < rooms.length
+      final neighborAfter = insertIndex < rooms.length
           ? orderMap[rooms[insertIndex].id]
           : null;
 

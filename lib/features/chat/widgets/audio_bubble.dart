@@ -2,14 +2,13 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-import 'package:media_kit/media_kit.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/utils/format_duration.dart';
 import 'package:lattice/core/utils/format_file_size.dart';
 import 'package:lattice/core/utils/media_cache.dart';
 import 'package:lattice/features/chat/services/media_playback_service.dart';
+import 'package:matrix/matrix.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:provider/provider.dart';
 
 // ── Audio bubble (waveform + seek + play/pause) ───────────────
 
@@ -17,7 +16,7 @@ const _maxFileSizeBytes = 104857600;
 const _barCount = 40;
 
 class AudioBubble extends StatefulWidget {
-  const AudioBubble({super.key, required this.event, required this.isMe});
+  const AudioBubble({required this.event, required this.isMe, super.key});
 
   final Event event;
   final bool isMe;
@@ -84,13 +83,13 @@ class _AudioBubbleState extends State<AudioBubble> {
       _player = Player();
       _subs.add(_player!.stream.playing.listen((playing) {
         if (mounted) setState(() => _playing = playing);
-      }));
+      }),);
       _subs.add(_player!.stream.position.listen((pos) {
         if (mounted) setState(() => _position = pos);
-      }));
+      }),);
       _subs.add(_player!.stream.duration.listen((dur) {
         if (mounted) setState(() => _duration = dur);
-      }));
+      }),);
       _subs.add(_player!.stream.completed.listen((completed) {
         if (completed && mounted) {
           setState(() {
@@ -98,7 +97,7 @@ class _AudioBubbleState extends State<AudioBubble> {
             _position = Duration.zero;
           });
         }
-      }));
+      }),);
 
       await _player!.open(media);
       if (!mounted) return;
@@ -171,7 +170,7 @@ class _AudioBubbleState extends State<AudioBubble> {
                   builder: (waveformContext) {
                     void seekFromOffset(double dx) {
                       final box =
-                          waveformContext.findRenderObject() as RenderBox;
+                          waveformContext.findRenderObject()! as RenderBox;
                       _seek((dx / box.size.width).clamp(0.0, 1.0));
                     }
 
@@ -197,7 +196,7 @@ class _AudioBubbleState extends State<AudioBubble> {
                 const SizedBox(height: 2),
                 Text(
                   formatDuration(
-                      _state == _AudioState.ready ? _position : _infoDuration),
+                      _state == _AudioState.ready ? _position : _infoDuration,),
                   style: tt.bodySmall?.copyWith(
                     color: foreground.withValues(alpha: 0.6),
                   ),
@@ -218,7 +217,7 @@ class _AudioBubbleState extends State<AudioBubble> {
           icon: Icon(Icons.play_arrow_rounded,
               color: _pendingSend
                   ? foreground.withValues(alpha: 0.3)
-                  : foreground),
+                  : foreground,),
           style: IconButton.styleFrom(
             backgroundColor: accent.withValues(alpha: 0.15),
           ),
@@ -262,7 +261,7 @@ class _AudioBubbleState extends State<AudioBubble> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(Icons.audiotrack_rounded,
-            size: 28, color: foreground.withValues(alpha: 0.7)),
+            size: 28, color: foreground.withValues(alpha: 0.7),),
         const SizedBox(width: 8),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,

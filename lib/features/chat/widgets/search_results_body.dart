@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/features/chat/services/chat_search_controller.dart';
-import 'search_result_tile.dart';
+import 'package:lattice/features/chat/widgets/search_result_tile.dart';
+import 'package:matrix/matrix.dart';
 
 /// Displays search results for in-room message search.
 ///
@@ -10,9 +9,7 @@ import 'search_result_tile.dart';
 /// error, empty results, or a scrollable results list.
 class SearchResultsBody extends StatelessWidget {
   const SearchResultsBody({
-    super.key,
-    required this.search,
-    required this.onTapResult,
+    required this.search, required this.onTapResult, super.key,
   });
 
   final ChatSearchController search;
@@ -49,7 +46,7 @@ class SearchResultsBody extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.error_outline_rounded,
-                  size: 48, color: cs.error.withValues(alpha: 0.6)),
+                  size: 48, color: cs.error.withValues(alpha: 0.6),),
               const SizedBox(height: 12),
               Text(
                 search.error!,
@@ -76,7 +73,7 @@ class SearchResultsBody extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(Icons.search_off_rounded,
-                  size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
+                  size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.4),),
               const SizedBox(height: 12),
               Text(
                 'No messages found for "$query"',

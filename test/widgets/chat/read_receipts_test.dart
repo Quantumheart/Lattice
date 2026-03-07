@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-import 'package:provider/provider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/chat/widgets/read_receipts.dart';
 import 'package:lattice/shared/widgets/user_avatar.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 @GenerateNiceMocks([
   MockSpec<Room>(),
@@ -29,8 +28,7 @@ MockUser _makeUser(String id, String? displayName, {Uri? avatarUrl}) {
 
 MockRoom _makeRoom({
   required Map<String, LatestReceiptStateData> globalOtherUsers,
-  Map<String, LatestReceiptStateData>? mainThreadOtherUsers,
-  required Map<String, MockUser> userMap,
+  required Map<String, MockUser> userMap, Map<String, LatestReceiptStateData>? mainThreadOtherUsers,
 }) {
   final room = MockRoom();
 
@@ -54,7 +52,7 @@ MockRoom _makeRoom({
   when(room.receiptState).thenReturn(LatestReceiptState(
     global: global,
     mainThread: mainThread,
-  ));
+  ),);
 
   for (final entry in userMap.entries) {
     when(room.unsafeGetUserFromMemoryOrFallback(entry.key))
@@ -86,9 +84,9 @@ void main() {
 
       final room = _makeRoom(
         globalOtherUsers: {
-          '@alice:example.com': LatestReceiptStateData('\$evt1', 1000),
-          '@bob:example.com': LatestReceiptStateData('\$evt1', 2000),
-          '@me:example.com': LatestReceiptStateData('\$evt2', 3000),
+          '@alice:example.com': LatestReceiptStateData(r'$evt1', 1000),
+          '@bob:example.com': LatestReceiptStateData(r'$evt1', 2000),
+          '@me:example.com': LatestReceiptStateData(r'$evt2', 3000),
         },
         userMap: {
           '@alice:example.com': alice,
@@ -99,10 +97,10 @@ void main() {
 
       final map = buildReceiptMap(room, '@me:example.com');
 
-      expect(map.containsKey('\$evt1'), isTrue);
-      expect(map['\$evt1']!.length, 2);
-      expect(map['\$evt1']!.map((r) => r.user.id),
-          containsAll(['@alice:example.com', '@bob:example.com']));
+      expect(map.containsKey(r'$evt1'), isTrue);
+      expect(map[r'$evt1']!.length, 2);
+      expect(map[r'$evt1']!.map((r) => r.user.id),
+          containsAll(['@alice:example.com', '@bob:example.com']),);
 
       // Own user should not appear
       expect(
@@ -116,10 +114,10 @@ void main() {
 
       final room = _makeRoom(
         globalOtherUsers: {
-          '@alice:example.com': LatestReceiptStateData('\$evt1', 1000),
+          '@alice:example.com': LatestReceiptStateData(r'$evt1', 1000),
         },
         mainThreadOtherUsers: {
-          '@alice:example.com': LatestReceiptStateData('\$evt2', 2000),
+          '@alice:example.com': LatestReceiptStateData(r'$evt2', 2000),
         },
         userMap: {
           '@alice:example.com': alice,
@@ -169,7 +167,7 @@ void main() {
       final receipts = [
         Receipt(
           _makeUser('@alice:example.com', 'Alice'),
-          DateTime(2024, 1, 1, 12, 0),
+          DateTime(2024, 1, 1, 12),
         ),
         Receipt(
           _makeUser('@bob:example.com', 'Bob'),
@@ -290,7 +288,7 @@ void main() {
       final receipts = [
         Receipt(
           _makeUser('@anon:example.com', null),
-          DateTime(2024, 1, 1, 10, 0),
+          DateTime(2024, 1, 1, 10),
         ),
       ];
 

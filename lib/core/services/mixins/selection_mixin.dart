@@ -1,8 +1,7 @@
 import 'package:flutter/foundation.dart';
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/core/models/space_node.dart';
 import 'package:lattice/core/utils/order_utils.dart' as order_utils;
+import 'package:matrix/matrix.dart';
 
 /// Room/space selection state, space tree, and filtered-room helpers.
 mixin SelectionMixin on ChangeNotifier {
@@ -163,12 +162,12 @@ mixin SelectionMixin on ChangeNotifier {
       return SpaceNode(
         room: mutable.room,
         subspaces: mutable.subspaceIds
-            .where((id) => nodeMap.containsKey(id))
-            .map((id) => buildNode(id))
+            .where(nodeMap.containsKey)
+            .map(buildNode)
             .toList()
           ..sort((a, b) => a.room
               .getLocalizedDisplayname()
-              .compareTo(b.room.getLocalizedDisplayname())),
+              .compareTo(b.room.getLocalizedDisplayname()),),
         directChildRoomIds: mutable.directChildRoomIds,
       );
     }
@@ -177,7 +176,7 @@ mixin SelectionMixin on ChangeNotifier {
     final topLevel = _sortByCustomOrder(
       nodeMap.keys
           .where((id) => !childSpaceIds.contains(id))
-          .map((id) => buildNode(id))
+          .map(buildNode)
           .toList(),
       (n) => n.room.id,
       (n) => n.room.getLocalizedDisplayname(),
@@ -264,14 +263,14 @@ mixin SelectionMixin on ChangeNotifier {
       .where((r) => !r.isSpace && r.membership == Membership.invite)
       .toList()
     ..sort((a, b) => a.getLocalizedDisplayname().compareTo(
-        b.getLocalizedDisplayname()));
+        b.getLocalizedDisplayname(),),);
 
   /// Returns invited spaces sorted alphabetically.
   List<Room> get invitedSpaces => client.rooms
       .where((r) => r.isSpace && r.membership == Membership.invite)
       .toList()
     ..sort((a, b) => a.getLocalizedDisplayname().compareTo(
-        b.getLocalizedDisplayname()));
+        b.getLocalizedDisplayname(),),);
 
   /// Returns the display name of the user who invited us to [room],
   /// or null if not found.

@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:matrix/matrix.dart';
-import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/features/home/screens/home_shell.dart';
 import 'package:lattice/features/e2ee/widgets/backup_info_dialog.dart';
 import 'package:lattice/features/e2ee/widgets/bootstrap_dialog.dart';
+import 'package:lattice/features/home/screens/home_shell.dart';
 import 'package:lattice/features/settings/widgets/density_picker_dialog.dart';
-import 'package:lattice/shared/widgets/section_header.dart';
 import 'package:lattice/features/settings/widgets/theme_picker_dialog.dart';
+import 'package:lattice/shared/widgets/section_header.dart';
 import 'package:lattice/shared/widgets/user_avatar.dart';
+import 'package:matrix/matrix.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -191,7 +190,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   width: 24,
                                   height: 24,
                                   child: CircularProgressIndicator(
-                                      strokeWidth: 2),
+                                      strokeWidth: 2,),
                                 ),
                               ),
                             ),
@@ -261,16 +260,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       OutlinedButton.icon(
                         onPressed: _avatarUploading ? null : _uploadAvatar,
                         icon: const Icon(Icons.photo_library_outlined,
-                            size: 18),
+                            size: 18,),
                         label: const Text('Upload avatar'),
                       ),
                       if (_avatarUrl != null)
                         OutlinedButton.icon(
                           onPressed: _avatarUploading ? null : _removeAvatar,
                           icon: Icon(Icons.delete_outline,
-                              size: 18, color: cs.error),
+                              size: 18, color: cs.error,),
                           label: Text('Remove',
-                              style: TextStyle(color: cs.error)),
+                              style: TextStyle(color: cs.error),),
                           style: OutlinedButton.styleFrom(
                             side: BorderSide(color: cs.error.withValues(alpha: 0.5)),
                           ),
@@ -367,7 +366,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle:
                       const Text('Show previews for URLs in messages'),
                   value: prefs.showLinkPreviews,
-                  onChanged: (v) => prefs.setShowLinkPreviews(v),
+                  onChanged: prefs.setShowLinkPreviews,
                 ),
                 const Divider(height: 1, indent: 56),
                 SwitchListTile(
@@ -376,7 +375,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle:
                       const Text('Send and show typing notifications'),
                   value: prefs.typingIndicators,
-                  onChanged: (v) => prefs.setTypingIndicators(v),
+                  onChanged: prefs.setTypingIndicators,
                 ),
                 const Divider(height: 1, indent: 56),
                 SwitchListTile(
@@ -385,7 +384,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   subtitle:
                       const Text('Send and show read receipts'),
                   value: prefs.readReceipts,
-                  onChanged: (v) => prefs.setReadReceipts(v),
+                  onChanged: prefs.setReadReceipts,
                 ),
               ],
             ),
@@ -509,14 +508,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Row(
                 children: [
                   Icon(Icons.warning_amber_rounded,
-                      color: Theme.of(ctx).colorScheme.error),
+                      color: Theme.of(ctx).colorScheme.error,),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Your encryption keys are not backed up. You will '
                       'permanently lose access to your encrypted messages.',
                       style: TextStyle(
-                          color: Theme.of(ctx).colorScheme.error),
+                          color: Theme.of(ctx).colorScheme.error,),
                     ),
                   ),
                 ],

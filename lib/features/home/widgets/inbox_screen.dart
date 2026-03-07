@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:matrix/matrix.dart' as matrix_sdk;
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/features/notifications/services/inbox_controller.dart';
 import 'package:lattice/core/utils/reply_fallback.dart';
 import 'package:lattice/core/utils/time_format.dart';
+import 'package:lattice/features/notifications/services/inbox_controller.dart';
 import 'package:lattice/shared/widgets/room_avatar.dart';
+import 'package:matrix/matrix.dart' as matrix_sdk;
+import 'package:provider/provider.dart';
 
 class InboxScreen extends StatefulWidget {
   const InboxScreen({super.key});
@@ -80,7 +79,7 @@ class _InboxScreenState extends State<InboxScreen> {
                           children: [
                             Icon(Icons.error_outline,
                                 size: 48,
-                                color: cs.error.withValues(alpha: 0.6)),
+                                color: cs.error.withValues(alpha: 0.6),),
                             const SizedBox(height: 12),
                             Text(
                               'Failed to load notifications',
@@ -104,7 +103,7 @@ class _InboxScreenState extends State<InboxScreen> {
                                 Icon(Icons.notifications_none_rounded,
                                     size: 56,
                                     color: cs.onSurfaceVariant
-                                        .withValues(alpha: 0.3)),
+                                        .withValues(alpha: 0.3),),
                                 const SizedBox(height: 16),
                                 Text(
                                   'No notifications',
@@ -120,7 +119,7 @@ class _InboxScreenState extends State<InboxScreen> {
                             onRefresh: controller.fetch,
                             child: ListView.builder(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4),
+                                  horizontal: 8, vertical: 4,),
                               itemCount: controller.grouped.length +
                                   (controller.hasMore ? 1 : 0),
                               itemBuilder: (context, i) {

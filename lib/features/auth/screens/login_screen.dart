@@ -1,17 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-
-import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/models/server_auth_capabilities.dart';
+import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/auth/widgets/login_controller.dart';
+import 'package:provider/provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({
-    super.key,
-    required this.homeserver,
-    required this.capabilities,
+    required this.homeserver, required this.capabilities, super.key,
   });
 
   final String homeserver;
@@ -105,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen>
                   // ── Homeserver chip ──
                   ActionChip(
                     avatar: Icon(Icons.dns_outlined, size: 18,
-                        color: cs.onSurfaceVariant),
+                        color: cs.onSurfaceVariant,),
                     label: Text(widget.homeserver),
                     onPressed: () => context.pop(),
                   ),
@@ -142,7 +139,7 @@ class _LoginScreenState extends State<LoginScreen>
                       enabled: formEnabled,
                       decoration: InputDecoration(
                         prefixIcon: Icon(Icons.person_outline,
-                            color: cs.onSurfaceVariant),
+                            color: cs.onSurfaceVariant,),
                         hintText: 'Username',
                       ),
                       textInputAction: TextInputAction.next,
@@ -154,7 +151,7 @@ class _LoginScreenState extends State<LoginScreen>
                       obscureText: _obscurePassword,
                       decoration: InputDecoration(
                         prefixIcon: Icon(Icons.lock_outline,
-                            color: cs.onSurfaceVariant),
+                            color: cs.onSurfaceVariant,),
                         hintText: 'Password',
                         suffixIcon: IconButton(
                           icon: Icon(
@@ -164,7 +161,7 @@ class _LoginScreenState extends State<LoginScreen>
                             color: cs.onSurfaceVariant,
                           ),
                           onPressed: () => setState(
-                              () => _obscurePassword = !_obscurePassword),
+                              () => _obscurePassword = !_obscurePassword,),
                         ),
                       ),
                       textInputAction: TextInputAction.done,
@@ -235,7 +232,7 @@ class _LoginScreenState extends State<LoginScreen>
                           child: Text('or', style: tt.bodySmall),
                         ),
                         Expanded(child: Divider(color: cs.outlineVariant)),
-                      ]),
+                      ],),
                       const SizedBox(height: 14),
                     ],
                     if (_controller.ssoProviders.isNotEmpty)
@@ -248,7 +245,7 @@ class _LoginScreenState extends State<LoginScreen>
                             child: OutlinedButton.icon(
                               onPressed: formEnabled
                                   ? () => _controller.startSsoLogin(
-                                      providerId: provider.id)
+                                      providerId: provider.id,)
                                   : null,
                               icon: const Icon(Icons.open_in_browser),
                               label: Text('Sign in with ${provider.name}'),

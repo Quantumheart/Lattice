@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/utils/known_contacts.dart';
+import 'package:matrix/matrix.dart';
 
 // ── New Direct Message dialog ─────────────────────────────────
 
@@ -283,7 +283,7 @@ class _UserTile extends StatelessWidget {
       subtitle: displayName != null
           ? Text(userId,
               style: const TextStyle(fontSize: 12),
-              overflow: TextOverflow.ellipsis)
+              overflow: TextOverflow.ellipsis,)
           : null,
       onTap: onTap,
     );

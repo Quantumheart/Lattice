@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:lattice/features/chat/services/opengraph_service.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import 'package:lattice/features/chat/services/opengraph_service.dart';
 
 /// Displays an OpenGraph preview card for a URL found in a chat message.
 class LinkPreviewCard extends StatefulWidget {
   const LinkPreviewCard({
-    super.key,
-    required this.url,
-    required this.isMe,
+    required this.url, required this.isMe, super.key,
   });
 
   final String url;
@@ -148,7 +145,7 @@ class _LinkPreviewCardState extends State<LinkPreviewCard>
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 8),
+                            horizontal: 10, vertical: 8,),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [

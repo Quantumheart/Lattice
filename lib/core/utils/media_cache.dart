@@ -27,7 +27,7 @@ class MediaCache {
   }
 
   static Future<Media> _bytesToMedia(
-      String eventId, Uint8List bytes, String? mimetype) async {
+      String eventId, Uint8List bytes, String? mimetype,) async {
     if (kIsWeb) {
       return Media.memory(bytes);
     }

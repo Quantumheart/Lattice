@@ -1,10 +1,9 @@
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/models/upload_state.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/chat/widgets/file_send_handler.dart';
+import 'package:provider/provider.dart';
 
 Future<void> sendDroppedFiles(
   BuildContext context,

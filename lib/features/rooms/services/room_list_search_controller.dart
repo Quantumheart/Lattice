@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
-import 'package:matrix/matrix.dart';
 
+import 'package:flutter/foundation.dart';
 import 'package:lattice/core/utils/reply_fallback.dart';
+import 'package:matrix/matrix.dart';
 
 // ── Data class ──────────────────────────────────────────────
 class MessageSearchResult {
@@ -83,9 +83,7 @@ class RoomListSearchController extends ChangeNotifier {
 
     _isLoading = true;
     if (!_disposed) notifyListeners();
-    _debounceTimer = Timer(_debounceDuration, () {
-      performSearch();
-    });
+    _debounceTimer = Timer(_debounceDuration, performSearch);
   }
 
   Future<void> performSearch({bool loadMore = false}) async {
@@ -173,7 +171,7 @@ class RoomListSearchController extends ChangeNotifier {
             body: stripReplyFallback(rawBody),
             eventId: event.eventId,
             originServerTs: event.originServerTs,
-          ));
+          ),);
         }
 
         _nextBatch = roomEvents.nextBatch;
@@ -245,7 +243,7 @@ class RoomListSearchController extends ChangeNotifier {
           return result.events
               .where((event) =>
                   event.type == EventTypes.Message &&
-                  (event.content.tryGet<String>('body')?.isNotEmpty ?? false))
+                  (event.content.tryGet<String>('body')?.isNotEmpty ?? false),)
               .map((event) {
                 final rawBody = event.content.tryGet<String>('body') ?? '';
                 return MessageSearchResult(
@@ -267,7 +265,7 @@ class RoomListSearchController extends ChangeNotifier {
           );
           return <MessageSearchResult>[];
         }
-      }));
+      }),);
       allResults.addAll(batchResults.expand((list) => list));
     }
     return allResults;

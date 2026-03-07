@@ -1,8 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/mockito.dart';
 import 'package:lattice/core/services/session_backup.dart';
+import 'package:mockito/mockito.dart';
 
 import 'matrix_service_test.mocks.dart';
 
@@ -69,7 +69,7 @@ void main() {
       final captured = verify(mockStorage.write(
         key: 'lattice_session_backup_default',
         value: captureAnyNamed('value'),
-      )).captured.single as String;
+      ),).captured.single as String;
 
       final decoded = jsonDecode(captured) as Map<String, dynamic>;
       expect(decoded['accessToken'], 'token123');

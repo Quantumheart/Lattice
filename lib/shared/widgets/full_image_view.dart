@@ -1,10 +1,9 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/core/utils/media_auth.dart';
 import 'package:lattice/shared/widgets/media_viewer_shell.dart';
+import 'package:matrix/matrix.dart';
 
 void showFullImageDialog(BuildContext context, Event event) {
   showMediaViewer(

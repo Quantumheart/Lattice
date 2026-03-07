@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:provider/provider.dart';
 
 // ── Theme picker dialog ─────────────────────────────────────────
 
@@ -15,7 +14,7 @@ class ThemePickerDialog extends StatelessWidget {
     );
   }
 
-  static const _options = [
+  static const List<(ThemeMode, String)> _options = [
     (ThemeMode.system, 'System default'),
     (ThemeMode.light, 'Light'),
     (ThemeMode.dark, 'Dark'),
@@ -29,7 +28,7 @@ class ThemePickerDialog extends StatelessWidget {
       contentPadding: const EdgeInsets.only(top: 12, bottom: 8),
       content: RadioGroup<ThemeMode>(
         groupValue: prefs.themeMode,
-        onChanged: (ThemeMode? value) {
+        onChanged: (value) {
           if (value != null) {
             prefs.setThemeMode(value);
             Navigator.pop(context);

@@ -5,10 +5,7 @@ import 'package:lattice/features/chat/services/voice_recording_controller.dart';
 
 class RecordingIndicator extends StatelessWidget {
   const RecordingIndicator({
-    super.key,
-    required this.controller,
-    required this.onCancel,
-    required this.onStop,
+    required this.controller, required this.onCancel, required this.onStop, super.key,
   });
 
   final VoiceRecordingController controller;

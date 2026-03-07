@@ -53,7 +53,7 @@ void main() {
         expect(next, isNotNull, reason: 'midpoint #$i failed');
         if (prev != null) {
           expect(next!.compareTo(prev), greaterThan(0),
-              reason: '$next should be > $prev');
+              reason: '$next should be > $prev',);
         }
         orders.add(next!);
         prev = next;
@@ -66,15 +66,15 @@ void main() {
 
     test('successive midpoints between two values maintain ordering', () {
       // Repeatedly insert between first and second element.
-      var lo = 'A';
+      const lo = 'A';
       var hi = 'Z';
       for (var i = 0; i < 30; i++) {
         final mid = midpoint(lo, hi);
         expect(mid, isNotNull, reason: 'midpoint #$i between $lo and $hi');
         expect(mid!.compareTo(lo), greaterThan(0),
-            reason: '$mid should be > $lo');
+            reason: '$mid should be > $lo',);
         expect(mid.compareTo(hi), lessThan(0),
-            reason: '$mid should be < $hi');
+            reason: '$mid should be < $hi',);
         hi = mid; // Keep narrowing the range from above.
       }
     });
@@ -91,12 +91,12 @@ void main() {
       for (final s in strings) {
         if (s == null) continue;
         expect(s.length, lessThanOrEqualTo(50),
-            reason: 'Order string too long: $s');
+            reason: 'Order string too long: $s',);
         for (var i = 0; i < s.length; i++) {
           expect(s.codeUnitAt(i), greaterThanOrEqualTo(0x20),
-              reason: 'Char below range in: $s');
+              reason: 'Char below range in: $s',);
           expect(s.codeUnitAt(i), lessThanOrEqualTo(0x7E),
-              reason: 'Char above range in: $s');
+              reason: 'Char above range in: $s',);
         }
       }
     });

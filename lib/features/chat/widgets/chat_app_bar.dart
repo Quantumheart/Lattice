@@ -1,19 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/core/routing/route_names.dart';
+import 'package:lattice/features/chat/widgets/pinned_messages_popup.dart';
 import 'package:lattice/shared/widgets/room_avatar.dart';
-import 'pinned_messages_popup.dart';
+import 'package:matrix/matrix.dart';
 
 /// Default app bar for the chat screen showing room name, avatar, and actions.
 class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
   const ChatAppBar({
-    super.key,
-    required this.room,
+    required this.room, required this.onSearch, super.key,
     this.onBack,
     this.onShowDetails,
-    required this.onSearch,
     this.onPinnedEvent,
   });
 
@@ -117,11 +114,7 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
 /// Search-mode app bar with a text field and clear button.
 class ChatSearchAppBar extends StatelessWidget implements PreferredSizeWidget {
   const ChatSearchAppBar({
-    super.key,
-    required this.controller,
-    required this.focusNode,
-    required this.onChanged,
-    required this.onClose,
+    required this.controller, required this.focusNode, required this.onChanged, required this.onClose, super.key,
   });
 
   final TextEditingController controller;

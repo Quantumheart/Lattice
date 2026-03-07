@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lattice/features/auth/widgets/registration_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
-
-import 'registration_controller.dart';
 
 /// Builds content for UIA stages that appear after form submission.
 Widget buildUiaContent({

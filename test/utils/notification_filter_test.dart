@@ -1,11 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/core/utils/notification_filter.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 @GenerateNiceMocks([MockSpec<Room>(), MockSpec<Client>()])
 import 'notification_filter_test.mocks.dart';

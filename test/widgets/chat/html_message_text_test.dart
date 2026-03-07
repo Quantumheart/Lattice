@@ -1,13 +1,12 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:matrix/matrix.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-
 import 'package:lattice/features/chat/widgets/code_block.dart';
 import 'package:lattice/features/chat/widgets/html_message_text.dart';
 import 'package:lattice/features/chat/widgets/mention_pill.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 
 @GenerateNiceMocks([
   MockSpec<Room>(),
@@ -58,7 +57,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractFlatSpans(tester);
       expect(spans.length, 1);
@@ -72,7 +71,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractFlatSpans(tester);
       expect(spans.length, 2);
@@ -88,7 +87,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractFlatSpans(tester);
       expect(spans[0].text, 'strong');
@@ -102,7 +101,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractFlatSpans(tester);
       expect(spans[0].text, 'italic');
@@ -118,7 +117,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractFlatSpans(tester);
       expect(spans[0].text, 'strike');
@@ -136,7 +135,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractFlatSpans(tester);
       expect(spans[0].text, 'underlined');
@@ -152,7 +151,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractFlatSpans(tester);
       expect(spans[0].text, 'bold italic');
@@ -167,7 +166,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractFlatSpans(tester);
       expect(spans.length, 3);
@@ -185,7 +184,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractFlatSpans(tester);
       expect(spans.length, 3);
@@ -202,7 +201,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractFlatSpans(tester);
       // First paragraph content, then \n\n, then second paragraph content.
@@ -219,7 +218,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractFlatSpans(tester);
       expect(spans[0].text, 'Big heading');
@@ -235,7 +234,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractFlatSpans(tester);
       final allText = spans.map((s) => s.text ?? '').join();
@@ -250,7 +249,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractFlatSpans(tester);
       final allText = spans.map((s) => s.text ?? '').join();
@@ -265,7 +264,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       // Blockquote uses a WidgetSpan containing a Container with an inner
       // Text.rich. Find all RichText widgets and inspect the inner one.
@@ -296,7 +295,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractFlatSpans(tester);
       final allText = spans.map((s) => s.text ?? '').join();
@@ -311,7 +310,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractFlatSpans(tester);
       expect(spans[0].text, 'preserved text');
@@ -324,7 +323,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractFlatSpans(tester);
       expect(spans.length, 3);
@@ -343,7 +342,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       // Inline code now uses a WidgetSpan containing a Container > Text.
       // Find the Text widget that contains the code content.
@@ -362,7 +361,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       // Find the Container wrapping the code text.
       final container = tester.widget<Container>(
@@ -371,7 +370,7 @@ void main() {
           matching: find.byType(Container),
         ),
       );
-      final decoration = container.decoration as BoxDecoration;
+      final decoration = container.decoration! as BoxDecoration;
       expect(decoration.borderRadius, BorderRadius.circular(4));
       expect(decoration.color, isNotNull);
     });
@@ -383,7 +382,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       final codeText = tester.widget<Text>(find.text('dart'));
       // 14 * 0.9 = 12.6
@@ -397,7 +396,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       expect(find.byType(CodeBlock), findsOneWidget);
     });
@@ -411,7 +410,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       final codeBlock = tester.widget<CodeBlock>(find.byType(CodeBlock));
       expect(codeBlock.language, 'dart');
@@ -426,7 +425,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       final codeBlock = tester.widget<CodeBlock>(find.byType(CodeBlock));
       expect(codeBlock.language, isNull);
@@ -441,7 +440,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       final codeBlock = tester.widget<CodeBlock>(find.byType(CodeBlock));
       expect(codeBlock.language, isNull);
@@ -473,7 +472,7 @@ void main() {
           isMe: false,
           room: mockRoom,
         ),
-      ));
+      ),);
 
       expect(find.byType(MentionPill), findsOneWidget);
       final pill = tester.widget<MentionPill>(find.byType(MentionPill));
@@ -492,7 +491,7 @@ void main() {
           isMe: false,
           room: mockRoom,
         ),
-      ));
+      ),);
 
       expect(find.byType(MentionPill), findsOneWidget);
       final pill = tester.widget<MentionPill>(find.byType(MentionPill));
@@ -515,7 +514,7 @@ void main() {
           isMe: false,
           room: mockRoom,
         ),
-      ));
+      ),);
 
       expect(find.byType(MentionPill), findsOneWidget);
       final pill = tester.widget<MentionPill>(find.byType(MentionPill));
@@ -532,7 +531,7 @@ void main() {
           isMe: false,
           room: mockRoom,
         ),
-      ));
+      ),);
 
       expect(find.byType(MentionPill), findsNothing);
       final spans = _extractFlatSpans(tester);
@@ -548,9 +547,8 @@ void main() {
               '<a href="https://matrix.to/#/@unknown:example.com">Unknown</a>',
           style: TextStyle(fontSize: 14),
           isMe: false,
-          room: null,
         ),
-      ));
+      ),);
 
       expect(find.byType(MentionPill), findsOneWidget);
       final pill = tester.widget<MentionPill>(find.byType(MentionPill));

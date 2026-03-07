@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/spaces/widgets/create_subspace_dialog.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -59,7 +58,7 @@ void main() {
     expect(find.text('Create subspace'), findsOneWidget);
     expect(find.widgetWithText(TextField, 'Name'), findsOneWidget);
     expect(
-        find.widgetWithText(TextField, 'Topic (optional)'), findsOneWidget);
+        find.widgetWithText(TextField, 'Topic (optional)'), findsOneWidget,);
     expect(find.textContaining('Parent Space'), findsOneWidget);
   });
 
@@ -79,7 +78,7 @@ void main() {
       creationContent: anyNamed('creationContent'),
       visibility: anyNamed('visibility'),
       powerLevelContentOverride: anyNamed('powerLevelContentOverride'),
-    )).thenAnswer((_) async => '!subspace:example.com');
+    ),).thenAnswer((_) async => '!subspace:example.com');
 
     when(mockClient.waitForRoomInSync(any, join: anyNamed('join')))
         .thenAnswer((_) async => SyncUpdate(nextBatch: ''));
@@ -87,9 +86,9 @@ void main() {
     await openDialog(tester);
 
     await tester.enterText(
-        find.widgetWithText(TextField, 'Name'), 'My Subspace');
+        find.widgetWithText(TextField, 'Name'), 'My Subspace',);
     await tester.enterText(
-        find.widgetWithText(TextField, 'Topic (optional)'), 'A topic');
+        find.widgetWithText(TextField, 'Topic (optional)'), 'A topic',);
     await tester.tap(find.widgetWithText(FilledButton, 'Create'));
     await tester.pumpAndSettle();
 
@@ -99,7 +98,7 @@ void main() {
       creationContent: anyNamed('creationContent'),
       visibility: anyNamed('visibility'),
       powerLevelContentOverride: anyNamed('powerLevelContentOverride'),
-    )).called(1);
+    ),).called(1);
 
     verify(mockParentSpace.setSpaceChild('!subspace:example.com')).called(1);
     verify(mockMatrixService.invalidateSpaceTree()).called(1);
@@ -115,12 +114,12 @@ void main() {
       creationContent: anyNamed('creationContent'),
       visibility: anyNamed('visibility'),
       powerLevelContentOverride: anyNamed('powerLevelContentOverride'),
-    )).thenThrow(Exception('Server error'));
+    ),).thenThrow(Exception('Server error'));
 
     await openDialog(tester);
 
     await tester.enterText(
-        find.widgetWithText(TextField, 'Name'), 'Bad Subspace');
+        find.widgetWithText(TextField, 'Name'), 'Bad Subspace',);
     await tester.tap(find.widgetWithText(FilledButton, 'Create'));
     await tester.pumpAndSettle();
 

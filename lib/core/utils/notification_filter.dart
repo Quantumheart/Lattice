@@ -1,6 +1,5 @@
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:matrix/matrix.dart';
 
 /// Whether [text] contains [word] as a whole word (bounded by non-letter
 /// characters or string edges). Avoids per-call RegExp compilation.

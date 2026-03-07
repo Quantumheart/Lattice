@@ -20,7 +20,7 @@ void main() {
           isMe: false,
           style: TextStyle(fontSize: 14),
         ),
-      ));
+      ),);
 
       expect(find.text('@Alice'), findsOneWidget);
     });
@@ -34,7 +34,7 @@ void main() {
           isMe: false,
           style: TextStyle(fontSize: 14),
         ),
-      ));
+      ),);
 
       expect(find.text('#general'), findsOneWidget);
     });
@@ -49,7 +49,7 @@ void main() {
           isMe: false,
           style: TextStyle(fontSize: 14),
         ),
-      ));
+      ),);
 
       expect(find.text('@Alice'), findsOneWidget);
       expect(find.text('@@Alice'), findsNothing);
@@ -65,7 +65,7 @@ void main() {
           isMe: false,
           style: TextStyle(fontSize: 14),
         ),
-      ));
+      ),);
 
       expect(find.text('#general'), findsOneWidget);
       expect(find.text('##general'), findsNothing);
@@ -80,7 +80,7 @@ void main() {
           isMe: false,
           style: TextStyle(fontSize: 14),
         ),
-      ));
+      ),);
 
       final container = tester.widget<Container>(
         find.ancestor(
@@ -88,7 +88,7 @@ void main() {
           matching: find.byType(Container),
         ),
       );
-      final decoration = container.decoration as BoxDecoration;
+      final decoration = container.decoration! as BoxDecoration;
       expect(decoration.borderRadius, BorderRadius.circular(12));
     });
 
@@ -101,7 +101,7 @@ void main() {
           isMe: false,
           style: TextStyle(fontSize: 14),
         ),
-      ));
+      ),);
 
       final text = tester.widget<Text>(find.text('@Alice'));
       // 14 * 0.92 = 12.88
@@ -110,7 +110,7 @@ void main() {
     });
 
     testWidgets('onTap callback is invoked', (tester) async {
-      int tapCount = 0;
+      var tapCount = 0;
       await tester.pumpWidget(_wrap(
         MentionPill(
           displayName: 'Alice',
@@ -120,7 +120,7 @@ void main() {
           style: const TextStyle(fontSize: 14),
           onTap: () => tapCount++,
         ),
-      ));
+      ),);
 
       await tester.tap(find.text('@Alice'));
       expect(tapCount, 1);

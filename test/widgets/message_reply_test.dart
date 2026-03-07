@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/cached_stream_controller.dart';
-import 'package:provider/provider.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/features/chat/screens/chat_screen.dart';
 import 'package:lattice/core/utils/reply_fallback.dart';
+import 'package:lattice/features/chat/screens/chat_screen.dart';
+import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:provider/provider.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -93,7 +93,7 @@ void main() {
       when(event.body).thenReturn(body);
       when(event.type).thenReturn(EventTypes.Message);
       when(event.messageType).thenReturn(MessageTypes.Text);
-      when(event.originServerTs).thenReturn(DateTime(2025, 1, 1, 12, 0));
+      when(event.originServerTs).thenReturn(DateTime(2025, 1, 1, 12));
       when(event.status).thenReturn(EventStatus.synced);
       when(event.content)
           .thenReturn(content ?? {'body': body, 'msgtype': 'm.text'});
@@ -101,7 +101,7 @@ void main() {
 
       final sender = MockUser();
       when(sender.displayName).thenReturn(
-          senderId.split(':').first.substring(1));
+          senderId.split(':').first.substring(1),);
       when(sender.avatarUrl).thenReturn(null);
       when(event.senderFromMemoryOrFallback).thenReturn(sender);
       when(event.getDisplayEvent(any)).thenReturn(event);
@@ -137,7 +137,7 @@ void main() {
         providers: [
           ChangeNotifierProvider<MatrixService>.value(value: mockMatrix),
           ChangeNotifierProvider<PreferencesService>.value(
-              value: prefsService),
+              value: prefsService,),
         ],
         child: const MaterialApp(
           home: SizedBox(
@@ -159,7 +159,7 @@ void main() {
       });
 
       final event = makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@alice:example.com',
         body: 'Hello world',
       );
@@ -195,7 +195,7 @@ void main() {
       });
 
       final event = makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@alice:example.com',
         body: 'Hello world',
       );
@@ -227,7 +227,7 @@ void main() {
       });
 
       final event = makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@alice:example.com',
         body: 'Hello world',
       );
@@ -236,7 +236,7 @@ void main() {
           .thenAnswer((_) async => mockTimeline);
       when(mockRoom.sendTextEvent(any,
               inReplyTo: anyNamed('inReplyTo'),
-              editEventId: anyNamed('editEventId')))
+              editEventId: anyNamed('editEventId'),),)
           .thenThrow(Exception('Network error'));
 
       await tester.pumpWidget(buildTestWidget());

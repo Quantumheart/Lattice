@@ -4,9 +4,7 @@ import 'package:lattice/core/models/upload_state.dart';
 
 class UploadProgressBanner extends StatelessWidget {
   const UploadProgressBanner({
-    super.key,
-    required this.state,
-    required this.onCancel,
+    required this.state, required this.onCancel, super.key,
   });
 
   final UploadState state;

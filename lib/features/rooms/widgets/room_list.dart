@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/rooms/services/room_list_search_controller.dart';
-import 'invite_tile.dart';
-import 'message_search_tiles.dart';
-import 'new_dm_dialog.dart';
-import 'new_room_dialog.dart';
-import 'room_list_builder.dart';
-import 'room_list_models.dart';
-import 'room_section_header.dart';
-import 'room_tile.dart';
+import 'package:lattice/features/rooms/widgets/invite_tile.dart';
+import 'package:lattice/features/rooms/widgets/message_search_tiles.dart';
+import 'package:lattice/features/rooms/widgets/new_dm_dialog.dart';
+import 'package:lattice/features/rooms/widgets/new_room_dialog.dart';
+import 'package:lattice/features/rooms/widgets/room_list_builder.dart';
+import 'package:lattice/features/rooms/widgets/room_list_models.dart';
+import 'package:lattice/features/rooms/widgets/room_section_header.dart';
+import 'package:lattice/features/rooms/widgets/room_tile.dart';
 import 'package:lattice/shared/widgets/speed_dial_item.dart';
+import 'package:provider/provider.dart';
 
 class RoomList extends StatefulWidget {
   const RoomList({super.key});
@@ -152,7 +151,7 @@ class _RoomListState extends State<RoomList>
         resultCount: _messageSearch.totalCount,
         isLoading: _messageSearch.isLoading,
         error: _messageSearch.error,
-      ));
+      ),);
       for (final result in _messageSearch.results) {
         items.add(MessageSearchResultItem(result: result));
       }
@@ -163,7 +162,7 @@ class _RoomListState extends State<RoomList>
 
     // Determine if the list is truly empty (no rooms AND no message results)
     final hasRoomItems = items.any((i) =>
-        i is RoomItem || i is InviteItem || i is HeaderItem);
+        i is RoomItem || i is InviteItem || i is HeaderItem,);
     final hasMessageResults = _messageSearch.results.isNotEmpty;
     final isMessageSearchActive = _messageSearch.isLoading;
     final isEmpty = !hasRoomItems && !hasMessageResults && !isMessageSearchActive;
@@ -189,7 +188,7 @@ class _RoomListState extends State<RoomList>
                       onChanged: (v) {
                         setState(() => _query = v);
                         _messageSearch.onQueryChanged(v,
-                            scopeRoomIds: spaceRoomIds(matrix));
+                            scopeRoomIds: spaceRoomIds(matrix),);
                       },
                       decoration: InputDecoration(
                         hintText: 'Search\u2026',
@@ -252,7 +251,7 @@ class _RoomListState extends State<RoomList>
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                            horizontal: 8, vertical: 4,),
                         itemCount: items.length,
                         itemBuilder: (context, i) {
                           final item = items[i];
@@ -266,7 +265,7 @@ class _RoomListState extends State<RoomList>
                               ),
                             RoomItem() => Padding(
                                 padding: EdgeInsets.only(
-                                    left: item.depth * 16.0),
+                                    left: item.depth * 16.0,),
                                 child: Builder(builder: (_) {
                                   final memberships = matrix.spaceMemberships(item.room.id);
                                   return RoomTile(
@@ -278,7 +277,7 @@ class _RoomListState extends State<RoomList>
                                     parentSpaceId: item.parentSpaceId,
                                     sectionRooms: item.sectionRooms,
                                   );
-                                }),
+                                },),
                               ),
                             MessageSearchHeaderItem() =>
                               MessageSearchHeader(item: item),
@@ -291,7 +290,7 @@ class _RoomListState extends State<RoomList>
                               LoadMoreButton(
                                 isLoading: item.isLoading,
                                 onPressed: () => _messageSearch.performSearch(
-                                    loadMore: true),
+                                    loadMore: true,),
                               ),
                           };
                         },
@@ -344,7 +343,7 @@ class _RoomListState extends State<RoomList>
                           onTap: () {
                             _closeFab();
                             NewDirectMessageDialog.show(context,
-                                matrixService: matrix);
+                                matrixService: matrix,);
                           },
                         ),
                       ],

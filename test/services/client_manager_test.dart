@@ -1,18 +1,17 @@
-import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
-
-import 'matrix_service_test.mocks.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 @GenerateNiceMocks([
   MockSpec<SharedPreferences>(),
 ])
 import 'client_manager_test.mocks.dart';
+import 'matrix_service_test.mocks.dart';
 
 /// Test implementation of [MatrixServiceFactory] that creates services with
 /// injected mock clients.
@@ -179,7 +178,7 @@ void main() {
       verify(mockPrefs.setStringList(
         'lattice_client_names',
         ['default', 'account_1'],
-      )).called(1);
+      ),).called(1);
     });
   });
 

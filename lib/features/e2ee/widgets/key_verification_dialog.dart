@@ -6,8 +6,7 @@ class KeyVerificationDialog extends StatefulWidget {
   final KeyVerification verification;
 
   const KeyVerificationDialog({
-    super.key,
-    required this.verification,
+    required this.verification, super.key,
   });
 
   static Future<bool?> show(
@@ -129,7 +128,7 @@ class _KeyVerificationDialogState extends State<KeyVerificationDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.check_circle,
-                color: Theme.of(context).colorScheme.primary, size: 64),
+                color: Theme.of(context).colorScheme.primary, size: 64,),
             const SizedBox(height: 16),
             const Text('QR code scanned successfully.'),
           ],
@@ -145,7 +144,7 @@ class _KeyVerificationDialogState extends State<KeyVerificationDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.verified,
-                color: Theme.of(context).colorScheme.primary, size: 64),
+                color: Theme.of(context).colorScheme.primary, size: 64,),
             const SizedBox(height: 16),
             const Text('Device verified successfully!'),
           ],
@@ -156,7 +155,7 @@ class _KeyVerificationDialogState extends State<KeyVerificationDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(Icons.error_outline,
-                color: Theme.of(context).colorScheme.error, size: 64),
+                color: Theme.of(context).colorScheme.error, size: 64,),
             const SizedBox(height: 16),
             Text(
               widget.verification.canceledReason ??
@@ -200,14 +199,14 @@ class _KeyVerificationDialogState extends State<KeyVerificationDialog> {
                       children: [
                         ExcludeSemantics(
                           child: Text(e.emoji,
-                              style: const TextStyle(fontSize: 32)),
+                              style: const TextStyle(fontSize: 32),),
                         ),
                         const SizedBox(height: 4),
                         Text(e.name,
-                            style: Theme.of(context).textTheme.bodySmall),
+                            style: Theme.of(context).textTheme.bodySmall,),
                       ],
                     ),
-                  ))
+                  ),)
               .toList(),
         ),
       ],
@@ -249,7 +248,7 @@ class _KeyVerificationDialogState extends State<KeyVerificationDialog> {
         return [
           TextButton(
             onPressed: () => widget.verification.rejectSas(),
-            child: const Text('They don\'t match'),
+            child: const Text("They don't match"),
           ),
           FilledButton(
             onPressed: () => widget.verification.acceptSas(),

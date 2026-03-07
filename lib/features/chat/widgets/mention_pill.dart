@@ -9,12 +9,7 @@ enum MentionType { user, room }
 /// `@user:server` and `#room:server` mentions from regular links.
 class MentionPill extends StatelessWidget {
   const MentionPill({
-    super.key,
-    required this.displayName,
-    required this.matrixId,
-    required this.type,
-    required this.isMe,
-    required this.style,
+    required this.displayName, required this.matrixId, required this.type, required this.isMe, required this.style, super.key,
     this.onTap,
   });
 

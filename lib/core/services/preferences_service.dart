@@ -200,7 +200,7 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setShowLinkPreviews(bool value) async {
     await _prefs?.setBool(_showLinkPreviewsKey, value);
     debugPrint(
-        '[Lattice] Link previews ${value ? "enabled" : "disabled"}');
+        '[Lattice] Link previews ${value ? "enabled" : "disabled"}',);
     notifyListeners();
   }
 
@@ -214,7 +214,7 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setTypingIndicators(bool value) async {
     await _prefs?.setBool(_typingIndicatorsKey, value);
     debugPrint(
-        '[Lattice] Typing indicators ${value ? "enabled" : "disabled"}');
+        '[Lattice] Typing indicators ${value ? "enabled" : "disabled"}',);
     notifyListeners();
   }
 
@@ -227,7 +227,7 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setReadReceipts(bool value) async {
     await _prefs?.setBool(_readReceiptsKey, value);
     debugPrint(
-        '[Lattice] Read receipts ${value ? "enabled" : "disabled"}');
+        '[Lattice] Read receipts ${value ? "enabled" : "disabled"}',);
     notifyListeners();
   }
 
@@ -255,7 +255,7 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setNotificationSoundEnabled(bool value) async {
     await _prefs?.setBool(_notificationSoundEnabledKey, value);
     debugPrint(
-        '[Lattice] Notification sound ${value ? "enabled" : "disabled"}');
+        '[Lattice] Notification sound ${value ? "enabled" : "disabled"}',);
     notifyListeners();
   }
 
@@ -265,7 +265,7 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setNotificationVibrationEnabled(bool value) async {
     await _prefs?.setBool(_notificationVibrationEnabledKey, value);
     debugPrint(
-        '[Lattice] Notification vibration ${value ? "enabled" : "disabled"}');
+        '[Lattice] Notification vibration ${value ? "enabled" : "disabled"}',);
     notifyListeners();
   }
 
@@ -275,7 +275,7 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setForegroundNotificationsEnabled(bool value) async {
     await _prefs?.setBool(_foregroundNotificationsEnabledKey, value);
     debugPrint(
-        '[Lattice] Foreground notifications ${value ? "enabled" : "disabled"}');
+        '[Lattice] Foreground notifications ${value ? "enabled" : "disabled"}',);
     notifyListeners();
   }
 }

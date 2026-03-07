@@ -1,14 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/extensions/device_extension.dart';
 import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/features/settings/widgets/device_list_item.dart';
 import 'package:lattice/features/e2ee/widgets/key_verification_dialog.dart';
+import 'package:lattice/features/settings/widgets/device_list_item.dart';
 import 'package:lattice/shared/widgets/section_header.dart';
+import 'package:matrix/matrix.dart';
+import 'package:provider/provider.dart';
 
 class DevicesScreen extends StatefulWidget {
   const DevicesScreen({super.key});

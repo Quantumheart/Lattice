@@ -308,7 +308,7 @@ void main() {
             _ogHtml(title: 'Hello', description: 'World'),
             200,
             headers: {'content-type': 'text/html; charset=utf-8'},
-          ));
+          ),);
       addTearDown(svc.dispose);
 
       final data = await svc.fetch('https://example.com/page');
@@ -322,7 +322,7 @@ void main() {
             '{"key": "value"}',
             200,
             headers: {'content-type': 'application/json'},
-          ));
+          ),);
       addTearDown(svc.dispose);
 
       final data = await svc.fetch('https://example.com/api');
@@ -331,7 +331,7 @@ void main() {
 
     test('returns null for non-2xx status codes', () async {
       final svc = _createTestService((_) => http.Response('Not found', 404,
-          headers: {'content-type': 'text/html'}));
+          headers: {'content-type': 'text/html'},),);
       addTearDown(svc.dispose);
 
       final data = await svc.fetch('https://example.com/missing');
@@ -345,7 +345,7 @@ void main() {
         if (callCount < 3) {
           return http.Response('', 302, headers: {
             'location': 'https://example.com/step$callCount',
-          });
+          },);
         }
         return http.Response(
           _ogHtml(title: 'Final'),
@@ -364,7 +364,7 @@ void main() {
     test('returns null when redirect target is a private host', () async {
       final svc = _createTestService((_) => http.Response('', 302, headers: {
             'location': 'http://localhost:8080/internal',
-          }));
+          },),);
       addTearDown(svc.dispose);
 
       final data = await svc.fetch('https://example.com/redirect');
@@ -385,7 +385,7 @@ void main() {
             _ogHtml(title: 'Should not reach'),
             200,
             headers: {'content-type': 'text/html'},
-          ));
+          ),);
       final svc = OpenGraphService(client: mockClient)
         ..dnsResolver = (_) async => [InternetAddress('10.0.0.1')];
       addTearDown(svc.dispose);
@@ -418,7 +418,7 @@ void main() {
       final svc = _createTestService((_) {
         callCount++;
         return http.Response('Not found', 404,
-            headers: {'content-type': 'text/html'});
+            headers: {'content-type': 'text/html'},);
       });
       addTearDown(svc.dispose);
 
@@ -437,7 +437,7 @@ void main() {
             html,
             200,
             headers: {'content-type': 'text/html'},
-          ));
+          ),);
       addTearDown(svc.dispose);
 
       final data = await svc.fetch('https://example.com/big');
@@ -457,10 +457,10 @@ void main() {
       final svc = _createTestService((_) => http.Response(
             _ogHtml(
                 title: 'Title',
-                image: 'https://evil-cdn.example.com/img.png'),
+                image: 'https://evil-cdn.example.com/img.png',),
             200,
             headers: {'content-type': 'text/html'},
-          ));
+          ),);
       // First DNS call (page host) returns public, second (image host) returns private.
       var dnsCallCount = 0;
       svc.dnsResolver = (host) async {

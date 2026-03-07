@@ -3,9 +3,8 @@ import 'dart:ui';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart'
     show DefaultEmojiTextStyle;
 import 'package:flutter/material.dart';
+import 'package:lattice/features/chat/widgets/message_bubble.dart';
 import 'package:matrix/matrix.dart';
-
-import 'message_bubble.dart';
 
 // ── Data class ──────────────────────────────────────────
 
@@ -167,7 +166,7 @@ class _MessageActionSheetState extends State<_MessageActionSheet> {
 
     // Determine top position: try to keep bubble in place, but shift up if
     // the action list would overflow the screen bottom.
-    double bubbleTop = widget.bubbleRect.top;
+    var bubbleTop = widget.bubbleRect.top;
     final bottomEdge = bubbleTop + totalHeight;
     if (bottomEdge > screenHeight - safeBottom) {
       bubbleTop = screenHeight - safeBottom - totalHeight;
@@ -201,7 +200,7 @@ class _MessageActionSheetState extends State<_MessageActionSheet> {
           child: FadeTransition(
             opacity: _curved,
             child: ScaleTransition(
-              scale: Tween<double>(begin: 0.95, end: 1.0).animate(_curved),
+              scale: Tween<double>(begin: 0.95, end: 1).animate(_curved),
               child: IgnorePointer(
                 child: AbsorbPointer(
                   child: Theme(

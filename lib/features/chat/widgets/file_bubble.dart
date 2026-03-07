@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/core/utils/format_file_size.dart';
+import 'package:matrix/matrix.dart';
 
 // ── File bubble (generic file attachment) ─────────────────────
 
 class FileBubble extends StatelessWidget {
-  const FileBubble({super.key, required this.event, required this.isMe});
+  const FileBubble({required this.event, required this.isMe, super.key});
 
   final Event event;
   final bool isMe;

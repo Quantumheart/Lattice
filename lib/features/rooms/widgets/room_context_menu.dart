@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart' hide Visibility;
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/utils/order_utils.dart' as order_utils;
-import 'add_room_to_space_dialog.dart';
+import 'package:lattice/features/rooms/widgets/add_room_to_space_dialog.dart';
+import 'package:matrix/matrix.dart' hide Visibility;
+import 'package:provider/provider.dart';
 
 // ── Room Context Menu ───────────────────────────────────────────────
 
@@ -24,7 +23,7 @@ Future<void> showRoomContextMenu(
   final memberships = matrix.spaceMemberships(room.id);
 
   Room? activeSpace;
-  bool canRemove = false;
+  var canRemove = false;
   for (final spaceId in selectedIds) {
     final space = matrix.client.getRoomById(spaceId);
     if (space != null && space.canChangeStateEvent('m.space.child')) {
@@ -36,11 +35,11 @@ Future<void> showRoomContextMenu(
 
   final canAdd = matrix.spaces.any((s) =>
       s.canChangeStateEvent('m.space.child') &&
-      !memberships.contains(s.id));
+      !memberships.contains(s.id),);
 
   Room? reorderSpace;
   List<Room>? orderedRooms;
-  int roomIndex = -1;
+  var roomIndex = -1;
   if (parentSpaceId != null && sectionRooms != null) {
     final space = matrix.client.getRoomById(parentSpaceId);
     if (space != null && space.canChangeStateEvent('m.space.child')) {
@@ -132,13 +131,13 @@ Future<void> showRoomContextMenu(
     case _RoomContextAction.moveUp:
       if (reorderSpace != null && orderedRooms != null && roomIndex > 0) {
         await _handleReorder(
-          context, reorderSpace, orderedRooms, roomIndex, roomIndex - 1);
+          context, reorderSpace, orderedRooms, roomIndex, roomIndex - 1,);
       }
     case _RoomContextAction.moveDown:
       if (reorderSpace != null && orderedRooms != null &&
           roomIndex < orderedRooms.length - 1) {
         await _handleReorder(
-          context, reorderSpace, orderedRooms, roomIndex, roomIndex + 1);
+          context, reorderSpace, orderedRooms, roomIndex, roomIndex + 1,);
       }
   }
 }

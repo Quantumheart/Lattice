@@ -2,22 +2,20 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/features/e2ee/widgets/bootstrap_controller.dart';
+import 'package:lattice/features/e2ee/widgets/bootstrap_views.dart';
+import 'package:lattice/features/e2ee/widgets/key_verification_dialog.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
-
-import 'package:lattice/core/services/matrix_service.dart';
-import 'bootstrap_controller.dart';
-import 'bootstrap_views.dart';
-import 'package:lattice/features/e2ee/widgets/key_verification_dialog.dart';
 
 class BootstrapDialog extends StatefulWidget {
   final MatrixService matrixService;
   final bool wipeExisting;
 
   const BootstrapDialog({
-    super.key,
-    required this.matrixService,
+    required this.matrixService, super.key,
     this.wipeExisting = false,
   });
 
@@ -134,19 +132,15 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
         switch (action) {
           case BootstrapAction.startVerification:
             _showVerificationDialog();
-            break;
           case BootstrapAction.confirmLostKey:
             _showLostKeyConfirmation();
-            break;
           case BootstrapAction.confirmCancel:
             _showCancelConfirmation();
-            break;
           case BootstrapAction.done:
             if (_controller.keyCopied) {
               Clipboard.setData(const ClipboardData(text: ''));
             }
             Navigator.pop(context, true);
-            break;
           case BootstrapAction.none:
             break;
         }

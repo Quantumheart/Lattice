@@ -52,7 +52,6 @@ mixin UiaMixin on ChangeNotifier {
         // No cached password — forward to UI for prompting.
         debugPrint('[Lattice] UIA: no cached password, forwarding to UI');
         _uiaController.add(uiaRequest);
-        break;
       case AuthenticationTypes.dummy:
         return uiaRequest.completeStage(
           AuthenticationData(

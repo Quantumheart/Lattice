@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart' hide Visibility;
-
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/shared/widgets/room_avatar.dart';
+import 'package:matrix/matrix.dart' hide Visibility;
 
 // ── Add Existing Rooms to Space Dialog ───────────────────────────
 
@@ -60,12 +59,12 @@ class _AddExistingRoomsDialogState extends State<AddExistingRoomsDialog> {
         .where((r) =>
             r.membership == Membership.join &&
             !r.isSpace &&
-            !existingChildIds.contains(r.id))
+            !existingChildIds.contains(r.id),)
         .toList()
       ..sort((a, b) => a
           .getLocalizedDisplayname()
           .toLowerCase()
-          .compareTo(b.getLocalizedDisplayname().toLowerCase()));
+          .compareTo(b.getLocalizedDisplayname().toLowerCase()),);
   }
 
   Future<void> _submit() async {
@@ -106,7 +105,7 @@ class _AddExistingRoomsDialogState extends State<AddExistingRoomsDialog> {
             .where((r) => r
                 .getLocalizedDisplayname()
                 .toLowerCase()
-                .contains(_query.toLowerCase()))
+                .contains(_query.toLowerCase()),)
             .toList();
 
     return AlertDialog(
@@ -116,7 +115,7 @@ class _AddExistingRoomsDialogState extends State<AddExistingRoomsDialog> {
         height: 400,
         child: _eligibleRooms.isEmpty
             ? const Center(
-                child: Text('All your rooms are already in this space.'))
+                child: Text('All your rooms are already in this space.'),)
             : Column(
                 children: [
                   TextField(

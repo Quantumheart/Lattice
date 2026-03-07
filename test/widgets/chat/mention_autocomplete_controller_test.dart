@@ -2,11 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lattice/features/chat/widgets/mention_autocomplete_controller.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-
-import 'package:lattice/features/chat/widgets/mention_autocomplete_controller.dart';
 
 @GenerateNiceMocks([
   MockSpec<Room>(),
@@ -58,9 +57,9 @@ void main() {
 
       joinedRooms = [
         _makeJoinedRoom('!general:example.com', 'General',
-            alias: '#general:example.com'),
+            alias: '#general:example.com',),
         _makeJoinedRoom('!random:example.com', 'Random',
-            alias: '#random:example.com'),
+            alias: '#random:example.com',),
         _makeJoinedRoom('!dev:example.com', 'Development'),
       ];
     });
@@ -313,7 +312,7 @@ void main() {
       );
 
       final john = ctrl.suggestions.firstWhere(
-          (s) => s.displayName == 'John Doe');
+          (s) => s.displayName == 'John Doe',);
       ctrl.selectSuggestion(john);
 
       expect(textCtrl.text, '@[John Doe] ');

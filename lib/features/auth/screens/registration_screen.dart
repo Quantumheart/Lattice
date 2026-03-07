@@ -2,12 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/auth/widgets/app_logo_header.dart';
 import 'package:lattice/features/auth/widgets/registration_controller.dart';
 import 'package:lattice/features/auth/widgets/registration_views.dart';
+import 'package:provider/provider.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key, this.initialHomeserver = 'matrix.org'});
@@ -187,7 +186,7 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                         enabled: formEnabled,
                         decoration: InputDecoration(
                           prefixIcon: Icon(Icons.vpn_key_outlined,
-                              color: cs.onSurfaceVariant),
+                              color: cs.onSurfaceVariant,),
                           hintText: 'Registration token',
                           errorText: _controller.tokenError,
                         ),
@@ -201,7 +200,7 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                     enabled: formEnabled,
                     decoration: InputDecoration(
                       prefixIcon: Icon(Icons.person_outline,
-                          color: cs.onSurfaceVariant),
+                          color: cs.onSurfaceVariant,),
                       hintText: 'Username',
                       errorText: _controller.usernameError,
                     ),
@@ -227,7 +226,7 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                           color: cs.onSurfaceVariant,
                         ),
                         onPressed: () => setState(
-                            () => _obscurePassword = !_obscurePassword),
+                            () => _obscurePassword = !_obscurePassword,),
                       ),
                     ),
                     textInputAction: TextInputAction.next,
@@ -252,7 +251,7 @@ class _RegistrationScreenState extends State<RegistrationScreen>
                           color: cs.onSurfaceVariant,
                         ),
                         onPressed: () => setState(() =>
-                            _obscureConfirmPassword = !_obscureConfirmPassword),
+                            _obscureConfirmPassword = !_obscureConfirmPassword,),
                       ),
                     ),
                     textInputAction: TextInputAction.done,

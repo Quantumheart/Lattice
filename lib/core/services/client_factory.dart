@@ -1,13 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
-import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:sqflite/sqflite.dart' as sqflite_native;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:sqflite/sqflite.dart' as sqflite_native;
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 /// Creates a configured [Client] instance with platform-specific database.
 Future<Client> createDefaultClient(
@@ -42,7 +42,7 @@ Future<Client> createDefaultClient(
     },
     nativeImplementations: NativeImplementationsIsolate(
       compute,
-      vodozemacInit: () => vod.init(),
+      vodozemacInit: vod.init,
     ),
   );
 }

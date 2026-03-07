@@ -1,10 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/core/models/space_node.dart';
 import 'package:lattice/features/spaces/widgets/space_reparent_controller.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 
 @GenerateNiceMocks([MockSpec<Room>()])
 import 'space_reparent_controller_test.mocks.dart';

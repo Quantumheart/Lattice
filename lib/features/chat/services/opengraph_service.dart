@@ -10,11 +10,10 @@ import 'package:http/http.dart' as http;
 
 class OpenGraphData {
   OpenGraphData({
-    this.title,
+    required this.url, this.title,
     this.description,
     this.imageUrl,
     this.siteName,
-    required this.url,
     DateTime? fetchedAt,
   }) : fetchedAt = fetchedAt ?? DateTime.now();
 
@@ -43,7 +42,7 @@ class OpenGraphService {
 
   static const _maxCacheSize = 200;
   static const _fetchTimeout = Duration(seconds: 5);
-  static const _maxBytes = 50 * 1024; // 50 KB
+  static const int _maxBytes = 50 * 1024; // 50 KB
   static const _maxRedirects = 5;
   static const _cacheTtl = Duration(minutes: 30);
 
@@ -159,7 +158,7 @@ class OpenGraphService {
     final resolve = dnsResolver ?? InternetAddress.lookup;
     final addresses = await resolve(host).timeout(_fetchTimeout);
     if (addresses.isEmpty) return null;
-    if (addresses.any((a) => _isPrivateAddress(a))) {
+    if (addresses.any(_isPrivateAddress)) {
       debugPrint('[Lattice] OpenGraph blocked private IP for $host');
       return null;
     }
@@ -169,7 +168,7 @@ class OpenGraphService {
   /// Sends a GET request to [uri], connecting via [pinnedAddress] to prevent
   /// DNS rebinding attacks. The Host header is set to the original hostname.
   Future<http.StreamedResponse> _sendPinned(
-      Uri uri, InternetAddress pinnedAddress) async {
+      Uri uri, InternetAddress pinnedAddress,) async {
     // Rewrite the URI to connect to the pinned IP directly.
     final pinnedUri = uri.replace(host: pinnedAddress.address);
     final request = http.Request('GET', pinnedUri)
@@ -212,7 +211,7 @@ class OpenGraphService {
   }
 
   Future<OpenGraphData?> _readResponse(
-      http.StreamedResponse response, String url) async {
+      http.StreamedResponse response, String url,) async {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       return null;
     }
@@ -323,7 +322,6 @@ class OpenGraphService {
         return OpenGraphData(
           title: data.title,
           description: data.description,
-          imageUrl: null,
           siteName: data.siteName,
           url: data.url,
           fetchedAt: data.fetchedAt,
@@ -333,7 +331,6 @@ class OpenGraphService {
       return OpenGraphData(
         title: data.title,
         description: data.description,
-        imageUrl: null,
         siteName: data.siteName,
         url: data.url,
         fetchedAt: data.fetchedAt,

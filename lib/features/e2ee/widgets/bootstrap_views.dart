@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lattice/features/e2ee/widgets/bootstrap_controller.dart';
 import 'package:matrix/encryption.dart';
-
-import 'bootstrap_controller.dart';
 
 /// Builds the main content area for the bootstrap dialog.
 Widget buildBootstrapContent({
@@ -161,7 +160,7 @@ Widget _buildNewSsss(BuildContext context, BootstrapController controller) {
               : () {
                   if (controller.newRecoveryKey != null) {
                     Clipboard.setData(
-                        ClipboardData(text: controller.newRecoveryKey!));
+                        ClipboardData(text: controller.newRecoveryKey!),);
                     controller.setKeyCopied();
                   }
                 },

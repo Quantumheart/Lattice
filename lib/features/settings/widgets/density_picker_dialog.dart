@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:provider/provider.dart';
 
 // ── Density picker dialog ───────────────────────────────────────
 
@@ -23,7 +22,7 @@ class DensityPickerDialog extends StatelessWidget {
       contentPadding: const EdgeInsets.only(top: 12, bottom: 8),
       content: RadioGroup<MessageDensity>(
         groupValue: prefs.messageDensity,
-        onChanged: (MessageDensity? value) {
+        onChanged: (value) {
           if (value != null) {
             prefs.setMessageDensity(value);
             Navigator.pop(context);

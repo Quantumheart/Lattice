@@ -2,24 +2,23 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/utils/format_duration.dart';
 import 'package:lattice/core/utils/format_file_size.dart';
 import 'package:lattice/core/utils/media_auth.dart';
 import 'package:lattice/core/utils/media_cache.dart';
 import 'package:lattice/features/chat/services/media_playback_service.dart';
-import 'full_video_view.dart';
+import 'package:lattice/features/chat/widgets/full_video_view.dart';
+import 'package:matrix/matrix.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
+import 'package:provider/provider.dart';
 
 // ── Video bubble (thumbnail → inline player) ──────────────────
 
 const _maxFileSizeBytes = 104857600;
 
 class VideoBubble extends StatefulWidget {
-  const VideoBubble({super.key, required this.event, required this.isMe});
+  const VideoBubble({required this.event, required this.isMe, super.key});
 
   final Event event;
   final bool isMe;
@@ -89,7 +88,6 @@ class _VideoBubbleState extends State<VideoBubble> {
           getThumbnail: true,
           width: 280,
           height: 260,
-          method: ThumbnailMethod.scale,
         );
         if (mounted) {
           setState(() {
@@ -117,13 +115,13 @@ class _VideoBubbleState extends State<VideoBubble> {
 
       _subs.add(_player!.stream.playing.listen((playing) {
         if (mounted) setState(() => _isPlaying = playing);
-      }));
+      }),);
       _subs.add(_player!.stream.completed.listen((completed) {
         if (completed && mounted) {
           _player!.seek(Duration.zero);
           _player!.pause();
         }
-      }));
+      }),);
 
       await _player!.open(media);
       if (!mounted) return;
@@ -214,7 +212,7 @@ class _VideoBubbleState extends State<VideoBubble> {
                 const CircularProgressIndicator(strokeWidth: 2)
               else if (_state == _VideoState.error)
                 Icon(Icons.error_outline_rounded,
-                    size: 40, color: cs.error)
+                    size: 40, color: cs.error,)
               else
                 Container(
                   decoration: BoxDecoration(
@@ -322,7 +320,7 @@ class _VideoBubbleState extends State<VideoBubble> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(Icons.videocam_rounded,
-            size: 28, color: foreground.withValues(alpha: 0.7)),
+            size: 28, color: foreground.withValues(alpha: 0.7),),
         const SizedBox(width: 8),
         Flexible(
           child: Column(

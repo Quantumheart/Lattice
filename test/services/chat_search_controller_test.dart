@@ -1,11 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lattice/features/chat/services/chat_search_controller.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-
-import 'package:lattice/features/chat/services/chat_search_controller.dart';
 
 @GenerateNiceMocks([
   MockSpec<Room>(),
@@ -66,7 +65,7 @@ void main() {
         searchTerm: anyNamed('searchTerm'),
         limit: anyNamed('limit'),
         nextBatch: anyNamed('nextBatch'),
-      ));
+      ),);
     });
 
     test('trims whitespace from query', () {
@@ -86,11 +85,11 @@ void main() {
         searchTerm: anyNamed('searchTerm'),
         limit: anyNamed('limit'),
         nextBatch: anyNamed('nextBatch'),
-      )).thenAnswer((_) async => (
+      ),).thenAnswer((_) async => (
             events: <Event>[mockEvent],
             nextBatch: 'batch2' as String?,
             searchedUntil: null as DateTime?,
-          ));
+          ),);
 
       await controller.performSearch();
 
@@ -108,7 +107,7 @@ void main() {
         searchTerm: anyNamed('searchTerm'),
         limit: anyNamed('limit'),
         nextBatch: anyNamed('nextBatch'),
-      )).thenThrow(Exception('Network error'));
+      ),).thenThrow(Exception('Network error'));
 
       await controller.performSearch();
 
@@ -128,11 +127,11 @@ void main() {
         searchTerm: anyNamed('searchTerm'),
         limit: anyNamed('limit'),
         nextBatch: argThat(isNull, named: 'nextBatch'),
-      )).thenAnswer((_) async => (
+      ),).thenAnswer((_) async => (
             events: <Event>[event1],
             nextBatch: 'batch2' as String?,
             searchedUntil: null as DateTime?,
-          ));
+          ),);
 
       await controller.performSearch();
       expect(controller.results, hasLength(1));
@@ -141,11 +140,11 @@ void main() {
         searchTerm: anyNamed('searchTerm'),
         limit: anyNamed('limit'),
         nextBatch: argThat(equals('batch2'), named: 'nextBatch'),
-      )).thenAnswer((_) async => (
+      ),).thenAnswer((_) async => (
             events: <Event>[event2],
             nextBatch: null as String?,
             searchedUntil: null as DateTime?,
-          ));
+          ),);
 
       await controller.performSearch(loadMore: true);
       expect(controller.results, hasLength(2));
@@ -160,7 +159,7 @@ void main() {
         searchTerm: anyNamed('searchTerm'),
         limit: anyNamed('limit'),
         nextBatch: anyNamed('nextBatch'),
-      ));
+      ),);
     });
 
     test('skips search when room is null', () async {
@@ -189,7 +188,7 @@ void main() {
         searchTerm: anyNamed('searchTerm'),
         limit: anyNamed('limit'),
         nextBatch: anyNamed('nextBatch'),
-      )).thenAnswer((_) => completer.future);
+      ),).thenAnswer((_) => completer.future);
 
       // Start the search but don't await it.
       final searchFuture = ctrl.performSearch();
@@ -202,7 +201,7 @@ void main() {
         events: <Event>[MockEvent()],
         nextBatch: null as String?,
         searchedUntil: null as DateTime?,
-      ));
+      ),);
 
       // Should not throw.
       await searchFuture;

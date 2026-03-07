@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:matrix/matrix.dart';
-import 'package:url_launcher/url_launcher.dart';
-
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/auth/services/recaptcha_server.dart';
+import 'package:lattice/features/e2ee/widgets/bootstrap_controller.dart' show BootstrapController;
+import 'package:matrix/matrix.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 /// States for the registration flow state machine.
 enum RegistrationState {
@@ -241,7 +241,7 @@ class RegistrationController extends ChangeNotifier {
             List<String>.from(e.raw['completed'] as List? ?? []);
         _flows = (e.raw['flows'] as List?)
                 ?.map((f) =>
-                    List<String>.from((f as Map)['stages'] as List? ?? []))
+                    List<String>.from((f as Map)['stages'] as List? ?? []),)
                 .toList() ??
             [];
         _uiaParams = Map<String, dynamic>.from(
@@ -312,7 +312,7 @@ class RegistrationController extends ChangeNotifier {
     _notify();
   }
 
-  static const _supportedStages = {
+  static const Set<String> _supportedStages = {
     AuthenticationTypes.dummy,
     AuthenticationTypes.emailIdentity,
     AuthenticationTypes.recaptcha,
@@ -486,7 +486,7 @@ class RegistrationController extends ChangeNotifier {
 class _RecaptchaAuth extends AuthenticationData {
   final String _response;
 
-  _RecaptchaAuth({super.session, required String response})
+  _RecaptchaAuth({required String response, super.session})
       : _response = response,
         super(type: AuthenticationTypes.recaptcha);
 
@@ -502,7 +502,7 @@ class _RecaptchaAuth extends AuthenticationData {
 class _RegistrationTokenAuth extends AuthenticationData {
   final String _token;
 
-  _RegistrationTokenAuth({super.session, required String token})
+  _RegistrationTokenAuth({required String token, super.session})
       : _token = token,
         super(type: 'm.login.registration_token');
 

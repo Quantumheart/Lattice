@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-import 'package:matrix/encryption.dart';
-import 'package:matrix/encryption/cross_signing.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/e2ee/widgets/bootstrap_dialog.dart';
+import 'package:matrix/encryption.dart';
+import 'package:matrix/encryption/cross_signing.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -396,7 +396,7 @@ void main() {
       // Tap "Create new backup"
       await tester.tap(find.text('Create new backup'));
       // Pump several frames to allow confirmation dialog to animate out
-      for (int i = 0; i < 10; i++) {
+      for (var i = 0; i < 10; i++) {
         await tester.pump(const Duration(milliseconds: 50));
       }
 

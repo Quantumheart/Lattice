@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/shared/widgets/user_avatar.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mockito/annotations.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -62,7 +60,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget(
         userId: '@bob:example.com',
         size: 64,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       final sizedBox = tester.widget<SizedBox>(find.byType(SizedBox).first);
@@ -76,7 +74,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget(
         avatarUrl: mxcUri,
         userId: '@charlie:example.com',
-      ));
+      ),);
       await tester.pump();
 
       // While resolving, the fallback initial should show
@@ -100,7 +98,7 @@ void main() {
             ],
           ),
         ),
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       expect(find.text('A'), findsOneWidget);

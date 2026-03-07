@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/rooms/widgets/new_dm_dialog.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -66,7 +66,7 @@ void main() {
       final button = tester.widget<FilledButton>(find.widgetWithText(
         FilledButton,
         'Start Chat',
-      ));
+      ),);
       expect(button.onPressed, isNull);
     });
 
@@ -75,7 +75,7 @@ void main() {
           .thenAnswer((_) async => SearchUserDirectoryResponse(
                 results: [],
                 limited: false,
-              ));
+              ),);
 
       await openDialog(tester);
 
@@ -88,7 +88,7 @@ void main() {
       final button = tester.widget<FilledButton>(find.widgetWithText(
         FilledButton,
         'Start Chat',
-      ));
+      ),);
       expect(button.onPressed, isNotNull);
     });
 
@@ -96,14 +96,14 @@ void main() {
       when(mockClient.startDirectChat(
         any,
         enableEncryption: anyNamed('enableEncryption'),
-      )).thenAnswer((_) async => '!dm:example.com');
+      ),).thenAnswer((_) async => '!dm:example.com');
       when(mockClient.waitForRoomInSync(any, join: anyNamed('join')))
           .thenAnswer((_) async => SyncUpdate(nextBatch: ''));
       when(mockClient.searchUserDirectory(any, limit: anyNamed('limit')))
           .thenAnswer((_) async => SearchUserDirectoryResponse(
                 results: [],
                 limited: false,
-              ));
+              ),);
 
       await openDialog(tester);
 
@@ -119,7 +119,7 @@ void main() {
       verify(mockClient.startDirectChat(
         '@alice:example.com',
         enableEncryption: true,
-      )).called(1);
+      ),).called(1);
       verify(mockMatrixService.selectRoom('!dm:example.com')).called(1);
     });
 
@@ -150,7 +150,7 @@ void main() {
       when(mockClient.startDirectChat(
         any,
         enableEncryption: anyNamed('enableEncryption'),
-      )).thenThrow(Exception('User not found'));
+      ),).thenThrow(Exception('User not found'));
 
       await openDialog(tester);
 

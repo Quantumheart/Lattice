@@ -77,9 +77,7 @@ class ChatSearchController extends ChangeNotifier {
     }
 
     notifyListeners();
-    _debounceTimer = Timer(_debounceDuration, () {
-      performSearch();
-    });
+    _debounceTimer = Timer(_debounceDuration, performSearch);
   }
 
   Future<void> performSearch({bool loadMore = false}) async {

@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/shared/widgets/room_avatar.dart';
+import 'package:matrix/matrix.dart';
+import 'package:provider/provider.dart';
 
 // ── Invite tile ─────────────────────────────────────────────
 class InviteTile extends StatefulWidget {
-  const InviteTile({super.key, required this.room});
+  const InviteTile({required this.room, super.key});
   final Room room;
 
   @override

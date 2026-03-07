@@ -2,10 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:lattice/core/services/preferences_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
-
-import 'package:lattice/core/services/preferences_service.dart';
 
 /// Displays "Alice is typing…" with an animated dot indicator.
 ///
@@ -14,10 +13,7 @@ import 'package:lattice/core/services/preferences_service.dart';
 /// typing user IDs actually changes.
 class TypingIndicator extends StatefulWidget {
   const TypingIndicator({
-    super.key,
-    required this.room,
-    required this.myUserId,
-    required this.syncStream,
+    required this.room, required this.myUserId, required this.syncStream, super.key,
   });
 
   final Room room;

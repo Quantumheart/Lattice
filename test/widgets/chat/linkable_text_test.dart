@@ -33,7 +33,7 @@ void main() {
           style: TextStyle(fontSize: 14),
           isMe: false,
         ),
-      ));
+      ),);
 
       // Should render as a single Text widget, not Text.rich with children.
       expect(find.text('Hello world, no links here'), findsOneWidget);
@@ -47,7 +47,7 @@ void main() {
           style: TextStyle(fontSize: 14, color: Colors.black),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractSpans(tester);
       expect(spans.length, 3);
@@ -67,7 +67,7 @@ void main() {
           style: TextStyle(fontSize: 14, color: Colors.black),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractSpans(tester);
       expect(spans.length, 5);
@@ -85,7 +85,7 @@ void main() {
           style: TextStyle(fontSize: 14, color: Colors.black),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractSpans(tester);
       expect(spans.length, 2);
@@ -100,7 +100,7 @@ void main() {
           style: TextStyle(fontSize: 14, color: Colors.black),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractSpans(tester);
       expect(spans.length, 2);
@@ -115,7 +115,7 @@ void main() {
           style: TextStyle(fontSize: 14, color: Colors.black),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractSpans(tester);
       // Should be: "check ", "https://example.com", "."
@@ -132,7 +132,7 @@ void main() {
           style: TextStyle(fontSize: 14, color: Colors.white),
           isMe: true,
         ),
-      ));
+      ),);
 
       final spans = _extractSpans(tester);
       expect(spans.length, 1);
@@ -147,7 +147,7 @@ void main() {
           style: TextStyle(fontSize: 14, color: Colors.black),
           isMe: false,
         ),
-      ));
+      ),);
 
       final spans = _extractSpans(tester);
       expect(spans.length, 3);

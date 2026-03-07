@@ -1,10 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:matrix/matrix.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:lattice/core/services/client_factory.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:matrix/matrix.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Abstract factory for creating [MatrixService] instances with their [Client].
 /// Override in tests to inject mocks.

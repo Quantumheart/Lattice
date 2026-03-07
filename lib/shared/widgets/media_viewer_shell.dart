@@ -3,10 +3,9 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/core/utils/time_format.dart';
 import 'package:lattice/shared/widgets/user_avatar.dart';
+import 'package:matrix/matrix.dart';
 
 // ── Shared fullscreen media viewer shell ─────────────────────
 
@@ -20,7 +19,6 @@ void showMediaViewer(
     barrierColor: Colors.black,
     barrierDismissible: true,
     barrierLabel: 'Close media',
-    transitionDuration: const Duration(milliseconds: 200),
     transitionBuilder: (_, animation, __, child) =>
         FadeTransition(opacity: animation, child: child),
     pageBuilder: (ctx, _, __) => SafeArea(
@@ -34,9 +32,7 @@ void showMediaViewer(
 
 class MediaViewerShell extends StatefulWidget {
   const MediaViewerShell({
-    super.key,
-    required this.event,
-    required this.child,
+    required this.event, required this.child, super.key,
   });
 
   final Event event;
@@ -167,8 +163,7 @@ class _MediaViewerShellState extends State<MediaViewerShell> {
                           ],
                         ),
                       ),
-                      _downloading
-                          ? const Padding(
+                      if (_downloading) const Padding(
                               padding: EdgeInsets.all(12),
                               child: SizedBox(
                                 width: 20,
@@ -178,8 +173,7 @@ class _MediaViewerShellState extends State<MediaViewerShell> {
                                   color: Colors.white,
                                 ),
                               ),
-                            )
-                          : IconButton(
+                            ) else IconButton(
                               icon: const Icon(Icons.download_rounded),
                               color: Colors.white,
                               onPressed: _download,

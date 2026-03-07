@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-import 'package:provider/provider.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/rooms/widgets/room_members_section.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:provider/provider.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -41,7 +41,7 @@ void main() {
     when(mockRoom.summary).thenReturn(RoomSummary.fromJson({
       'm.joined_member_count': 3,
       'm.invited_member_count': 0,
-    }));
+    }),);
     when(mockRoom.getPowerLevelByUserId(any)).thenReturn(0);
     when(mockRoom.canKick).thenReturn(false);
     when(mockRoom.canBan).thenReturn(false);

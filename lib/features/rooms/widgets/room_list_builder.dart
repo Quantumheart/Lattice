@@ -1,9 +1,8 @@
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/core/models/space_node.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
-import 'room_list_models.dart';
+import 'package:lattice/features/rooms/widgets/room_list_models.dart';
+import 'package:matrix/matrix.dart';
 
 // ── Section-building helpers for the room list ──────────
 
@@ -73,7 +72,7 @@ List<ListItem> buildSectionItems(
 
     // Pinned section
     final pinnedRooms = applySearch(
-        matrix.rooms.where((r) => r.isFavourite).toList(), query);
+        matrix.rooms.where((r) => r.isFavourite).toList(), query,);
     pinnedIds.addAll(pinnedRooms.map((r) => r.id));
     if (pinnedRooms.isNotEmpty) {
       items.add(HeaderItem(
@@ -81,27 +80,27 @@ List<ListItem> buildSectionItems(
         sectionKey: PreferencesService.pinnedSectionKey,
         depth: 0,
         roomCount: pinnedRooms.length,
-      ));
+      ),);
       if (!collapsed.contains(PreferencesService.pinnedSectionKey)) {
         for (final room in pinnedRooms) {
-          items.add(RoomItem(room: room, depth: 0));
+          items.add(RoomItem(room: room));
         }
       }
     }
 
     // DMs section — all direct chats
     final dmRooms = applySearch(
-        matrix.rooms.where((r) => r.isDirectChat && !pinnedIds.contains(r.id)).toList(), query);
+        matrix.rooms.where((r) => r.isDirectChat && !pinnedIds.contains(r.id)).toList(), query,);
     if (dmRooms.isNotEmpty) {
       items.add(HeaderItem(
         name: 'Direct Messages',
         sectionKey: PreferencesService.dmSectionKey,
         depth: 0,
         roomCount: dmRooms.length,
-      ));
+      ),);
       if (!collapsed.contains(PreferencesService.dmSectionKey)) {
         for (final room in dmRooms) {
-          items.add(RoomItem(room: room, depth: 0));
+          items.add(RoomItem(room: room));
         }
       }
     }
@@ -116,10 +115,10 @@ List<ListItem> buildSectionItems(
         sectionKey: PreferencesService.unsortedSectionKey,
         depth: 0,
         roomCount: orphans.length,
-      ));
+      ),);
       if (!collapsed.contains(PreferencesService.unsortedSectionKey)) {
         for (final room in orphans) {
-          items.add(RoomItem(room: room, depth: 0));
+          items.add(RoomItem(room: room));
         }
       }
     }
@@ -151,7 +150,7 @@ void _addSpaceSection(
 
   final rooms = applySearch(matrix.roomsForSpace(node.room.id), query)
       .where((r) => !pinnedIds.contains(r.id) &&
-          !subspaceRoomIds.contains(r.id))
+          !subspaceRoomIds.contains(r.id),)
       .toList();
 
   final totalRooms = rooms.length + subspaceRoomIds.length;
@@ -166,7 +165,7 @@ void _addSpaceSection(
     depth: depth,
     roomCount: totalRooms,
     isSpace: true,
-  ));
+  ),);
 
   if (!collapsed.contains(node.room.id)) {
     for (final room in rooms) {
@@ -175,11 +174,11 @@ void _addSpaceSection(
         depth: depth,
         parentSpaceId: node.room.id,
         sectionRooms: rooms,
-      ));
+      ),);
     }
     for (final sub in node.subspaces) {
       _addSpaceSection(
-          items, sub, depth + 1, matrix, collapsed, pinnedIds, query);
+          items, sub, depth + 1, matrix, collapsed, pinnedIds, query,);
     }
   }
 }

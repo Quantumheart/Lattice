@@ -91,7 +91,7 @@ class MentionAutocompleteController extends ChangeNotifier {
     final lastAt = textBeforeCursor.lastIndexOf('@');
     final lastHash = textBeforeCursor.lastIndexOf('#');
 
-    int triggerPos = -1;
+    var triggerPos = -1;
     MentionTriggerType? type;
 
     if (lastAt >= 0 && lastAt >= lastHash) {
@@ -176,7 +176,7 @@ class MentionAutocompleteController extends ChangeNotifier {
               displayName: u.displayName ?? u.id,
               id: u.id,
               avatarUrl: u.avatarUrl,
-            ))
+            ),)
         .toList();
   }
 
@@ -184,7 +184,7 @@ class MentionAutocompleteController extends ChangeNotifier {
     final lowerQuery = _query.toLowerCase();
     _suggestions = joinedRooms
         .where((r) =>
-            r.getLocalizedDisplayname().toLowerCase().contains(lowerQuery))
+            r.getLocalizedDisplayname().toLowerCase().contains(lowerQuery),)
         .take(20)
         .map((r) => MentionSuggestion(
               type: MentionTriggerType.room,
@@ -192,7 +192,7 @@ class MentionAutocompleteController extends ChangeNotifier {
               id: r.canonicalAlias.isNotEmpty ? r.canonicalAlias : r.id,
               avatarUrl: r.avatar,
               roomId: r.id,
-            ))
+            ),)
         .toList();
   }
 

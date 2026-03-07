@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:url_launcher/url_launcher.dart';
-
-import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/models/server_auth_capabilities.dart';
+import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/auth/services/sso_callback_server.dart';
+import 'package:lattice/features/auth/widgets/registration_controller.dart' show RegistrationController;
+import 'package:url_launcher/url_launcher.dart';
 
 // ── LoginState ──────────────────────────────────────────────────────────────
 
