@@ -1,7 +1,22 @@
-include: package:flutter_lints/flutter.yaml
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  errors:
+    public_member_api_docs: ignore
 
 linter:
   rules:
-    prefer_const_constructors: true
-    prefer_const_declarations: true
     avoid_print: false
+    public_member_api_docs: false
+    lines_longer_than_80_chars: false
+    one_member_abstracts: false
+    sort_constructors_first: false
+    cascade_invocations: false
+    avoid_catches_without_on_clauses: false
+    comment_references: false
+    avoid_positional_boolean_parameters: false
+    prefer_foreach: false
+    use_setters_to_change_properties: false
+    avoid_setters_without_getters: false
+    no_default_cases: false
+    parameter_assignments: false

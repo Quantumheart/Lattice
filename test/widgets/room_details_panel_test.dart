@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/cached_stream_controller.dart';
-import 'package:provider/provider.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/rooms/widgets/room_details_panel.dart';
+import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:provider/provider.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -43,7 +43,7 @@ void main() {
     when(mockRoom.summary).thenReturn(RoomSummary.fromJson({
       'm.joined_member_count': 3,
       'm.invited_member_count': 0,
-    }));
+    }),);
     when(mockRoom.client).thenReturn(mockClient);
     when(mockRoom.avatar).thenReturn(null);
     when(mockRoom.canChangeStateEvent(any)).thenReturn(false);
@@ -188,7 +188,7 @@ void main() {
             isFullPage: true,
           ),
         ),
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // AppBar should show the room name
@@ -209,7 +209,7 @@ void main() {
           'curve25519:DEVICE1': 'fakekey1',
           'ed25519:DEVICE1': 'fakekey2',
         },
-      }, mockClient);
+      }, mockClient,);
       bobKeys.deviceKeys['DEVICE2'] = DeviceKeys.fromJson({
         'user_id': '@bob:example.com',
         'device_id': 'DEVICE2',
@@ -218,7 +218,7 @@ void main() {
           'curve25519:DEVICE2': 'fakekey3',
           'ed25519:DEVICE2': 'fakekey4',
         },
-      }, mockClient);
+      }, mockClient,);
 
       when(mockClient.userDeviceKeys).thenReturn({
         '@bob:example.com': bobKeys,
@@ -256,7 +256,7 @@ void main() {
           'curve25519:DEVICE1': 'fakekey1',
           'ed25519:DEVICE1': 'fakekey2',
         },
-      }, mockClient);
+      }, mockClient,);
 
       when(mockClient.userDeviceKeys).thenReturn({
         '@bob:example.com': bobKeys,

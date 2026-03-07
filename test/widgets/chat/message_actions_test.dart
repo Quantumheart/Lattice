@@ -2,16 +2,16 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/cached_stream_controller.dart';
-import 'package:provider/provider.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/chat/screens/chat_screen.dart';
 import 'package:lattice/features/chat/widgets/edit_preview_banner.dart';
 import 'package:lattice/features/chat/widgets/message_bubble.dart';
+import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:provider/provider.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -42,7 +42,7 @@ MockEvent _makeEvent({
   when(event.body).thenReturn(body);
   when(event.type).thenReturn(EventTypes.Message);
   when(event.messageType).thenReturn(MessageTypes.Text);
-  when(event.originServerTs).thenReturn(DateTime(2025, 1, 1, 12, 0));
+  when(event.originServerTs).thenReturn(DateTime(2025, 1, 1, 12));
   when(event.status).thenReturn(EventStatus.synced);
   when(event.content)
       .thenReturn(content ?? {'body': body, 'msgtype': 'm.text'});
@@ -146,7 +146,7 @@ void main() {
   group('EditPreviewBanner', () {
     testWidgets('shows edit icon and message body', (tester) async {
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'Original message text',
       );
@@ -158,7 +158,7 @@ void main() {
             onCancel: () {},
           ),
         ),
-      ));
+      ),);
 
       expect(find.byIcon(Icons.edit_rounded), findsOneWidget);
       expect(find.text('Editing'), findsOneWidget);
@@ -166,9 +166,9 @@ void main() {
     });
 
     testWidgets('cancel button calls onCancel', (tester) async {
-      bool cancelled = false;
+      var cancelled = false;
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'Some message',
       );
@@ -180,7 +180,7 @@ void main() {
             onCancel: () => cancelled = true,
           ),
         ),
-      ));
+      ),);
 
       await tester.tap(find.byIcon(Icons.close_rounded));
       expect(cancelled, isTrue);
@@ -188,7 +188,7 @@ void main() {
 
     testWidgets('strips reply fallback from body', (tester) async {
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: '> <@alice:example.com> quoted\n\nActual text',
       );
@@ -200,7 +200,7 @@ void main() {
             onCancel: () {},
           ),
         ),
-      ));
+      ),);
 
       expect(find.text('Actual text'), findsOneWidget);
     });
@@ -212,7 +212,7 @@ void main() {
     testWidgets('shows "You deleted this message" for own redacted message',
         (tester) async {
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: '',
         redacted: true,
@@ -228,13 +228,13 @@ void main() {
     testWidgets('shows "This message was deleted" for other user self-redact',
         (tester) async {
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@alice:example.com',
         body: '',
         redacted: true,
       );
       final redactEvent = _makeEvent(
-        eventId: '\$redact1',
+        eventId: r'$redact1',
         senderId: '@alice:example.com',
       );
       when(event.redactedBecause).thenReturn(redactEvent);
@@ -248,13 +248,13 @@ void main() {
     testWidgets('shows "Deleted by moderator" for moderator redaction',
         (tester) async {
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@alice:example.com',
         body: '',
         redacted: true,
       );
       final redactEvent = _makeEvent(
-        eventId: '\$redact1',
+        eventId: r'$redact1',
         senderId: '@mod:example.com',
       );
       when(event.redactedBecause).thenReturn(redactEvent);
@@ -277,7 +277,7 @@ void main() {
     testWidgets('shows (edited) indicator when message has edits',
         (tester) async {
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'Updated text',
       );
@@ -288,7 +288,7 @@ void main() {
         event: event,
         isMe: true,
         timeline: mockTimeline,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       expect(find.text('(edited)'), findsOneWidget);
@@ -296,26 +296,26 @@ void main() {
 
     testWidgets('uses display event body for edited messages', (tester) async {
       final originalEvent = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'Original text',
       );
       final editedEvent = _makeEvent(
-        eventId: '\$edit1',
+        eventId: r'$edit1',
         senderId: '@me:example.com',
         body: 'Edited text',
       );
       when(originalEvent.getDisplayEvent(mockTimeline))
           .thenReturn(editedEvent);
       when(originalEvent.hasAggregatedEvents(
-              mockTimeline, RelationshipTypes.edit))
+              mockTimeline, RelationshipTypes.edit,),)
           .thenReturn(true);
 
       await tester.pumpWidget(_buildBubble(
         event: originalEvent,
         isMe: true,
         timeline: mockTimeline,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       expect(find.text('Edited text'), findsOneWidget);
@@ -328,7 +328,7 @@ void main() {
   group('Desktop context menu', () {
     testWidgets('shows Edit option only for own messages', (tester) async {
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'My message',
       );
@@ -339,7 +339,7 @@ void main() {
         onReply: () {},
         onEdit: () {},
         onDelete: () {},
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // Right-click to show context menu.
@@ -359,7 +359,7 @@ void main() {
     testWidgets('shows "Remove" label for other users messages',
         (tester) async {
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@alice:example.com',
         body: 'Their message',
       );
@@ -369,7 +369,7 @@ void main() {
         isMe: false,
         onReply: () {},
         onDelete: () {},
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // Right-click.
@@ -390,7 +390,7 @@ void main() {
       String? copiedText;
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         SystemChannels.platform,
-        (MethodCall call) async {
+        (call) async {
           if (call.method == 'Clipboard.setData') {
             copiedText = (call.arguments as Map)['text'] as String;
           }
@@ -405,12 +405,12 @@ void main() {
       });
 
       final originalEvent = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'Original text',
       );
       final editedEvent = _makeEvent(
-        eventId: '\$edit1',
+        eventId: r'$edit1',
         senderId: '@me:example.com',
         body: 'Edited text',
       );
@@ -422,7 +422,7 @@ void main() {
         isMe: true,
         timeline: mockTimeline,
         onReply: () {},
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // Right-click.
@@ -455,7 +455,7 @@ void main() {
       });
 
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'My message to edit',
       );
@@ -468,7 +468,7 @@ void main() {
         mockMatrix: mockMatrix,
         prefsService: prefsService,
         width: 800,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // Right-click the message.
@@ -502,7 +502,7 @@ void main() {
       });
 
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'My message',
       );
@@ -515,7 +515,7 @@ void main() {
         mockMatrix: mockMatrix,
         prefsService: prefsService,
         width: 800,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // Trigger edit via right-click.
@@ -548,7 +548,7 @@ void main() {
       });
 
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'Original text',
       );
@@ -559,14 +559,14 @@ void main() {
         any,
         inReplyTo: anyNamed('inReplyTo'),
         editEventId: anyNamed('editEventId'),
-      )).thenAnswer((_) async => '\$sent1');
+      ),).thenAnswer((_) async => r'$sent1');
 
       await tester.pumpWidget(_buildChatWidget(
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
         width: 800,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // Trigger edit.
@@ -585,9 +585,8 @@ void main() {
 
       verify(mockRoom.sendTextEvent(
         'Updated text',
-        inReplyTo: null,
-        editEventId: '\$evt1',
-      )).called(1);
+        editEventId: r'$evt1',
+      ),).called(1);
     });
   });
 
@@ -604,7 +603,7 @@ void main() {
       });
 
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'Delete me',
       );
@@ -617,7 +616,7 @@ void main() {
         mockMatrix: mockMatrix,
         prefsService: prefsService,
         width: 800,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // Right-click → Delete.
@@ -649,22 +648,22 @@ void main() {
       });
 
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'Delete me',
       );
       when(mockTimeline.events).thenReturn([event]);
       when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
-      when(mockRoom.redactEvent('\$evt1'))
-          .thenAnswer((_) async => '\$redact1');
+      when(mockRoom.redactEvent(r'$evt1'))
+          .thenAnswer((_) async => r'$redact1');
 
       await tester.pumpWidget(_buildChatWidget(
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
         width: 800,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // Right-click → Delete.
@@ -680,7 +679,7 @@ void main() {
       await tester.tap(find.widgetWithText(TextButton, 'Delete'));
       await tester.pumpAndSettle();
 
-      verify(mockRoom.redactEvent('\$evt1')).called(1);
+      verify(mockRoom.redactEvent(r'$evt1')).called(1);
     });
 
     testWidgets('cancelling delete dialog does not call redactEvent',
@@ -693,7 +692,7 @@ void main() {
       });
 
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'Do not delete',
       );
@@ -706,7 +705,7 @@ void main() {
         mockMatrix: mockMatrix,
         prefsService: prefsService,
         width: 800,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // Right-click → Delete → Cancel.
@@ -730,7 +729,7 @@ void main() {
     testWidgets('redacted messages do not show context menu on desktop',
         (tester) async {
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: '',
         redacted: true,
@@ -741,7 +740,7 @@ void main() {
       await tester.pumpWidget(_buildBubble(
         event: event,
         isMe: true,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // Right-click should not produce a context menu with Reply/Edit/Delete.
@@ -771,12 +770,12 @@ void main() {
       });
 
       final original = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'Original message',
       );
       final editEvent = _makeEvent(
-        eventId: '\$edit1',
+        eventId: r'$edit1',
         senderId: '@me:example.com',
         body: 'Edited message',
         relationshipType: RelationshipTypes.edit,
@@ -790,7 +789,7 @@ void main() {
         mockMatrix: mockMatrix,
         prefsService: prefsService,
         width: 800,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // Only the original message should be visible, not the edit event.

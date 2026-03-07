@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class AppLogoHeader extends StatelessWidget {
-  const AppLogoHeader({super.key, required this.subtitle});
+  const AppLogoHeader({required this.subtitle, super.key});
   final String subtitle;
 
   @override

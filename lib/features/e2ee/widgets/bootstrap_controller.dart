@@ -3,12 +3,11 @@ import 'dart:convert';
 
 import 'package:canonical_json/canonical_json.dart';
 import 'package:flutter/foundation.dart';
+import 'package:lattice/core/services/matrix_service.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/encryption/utils/base64_unpadded.dart';
 import 'package:matrix/matrix.dart';
 import 'package:vodozemac/vodozemac.dart' as vod;
-
-import 'package:lattice/core/services/matrix_service.dart';
 
 /// Signals for UI-only actions that the dialog must handle.
 enum BootstrapAction {

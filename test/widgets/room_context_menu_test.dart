@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/space_child.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/rooms/widgets/room_context_menu.dart';
+import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/space_child.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:provider/provider.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -206,19 +205,19 @@ void main() {
           content: {'via': ['example.com'], 'order': 'a'},
           stateKey: '!r1:example.com',
           senderId: '@admin:example.com',
-        )),
+        ),),
         SpaceChild.fromState(StrippedStateEvent(
           type: EventTypes.SpaceChild,
           content: {'via': ['example.com'], 'order': 'm'},
           stateKey: '!r2:example.com',
           senderId: '@admin:example.com',
-        )),
+        ),),
         SpaceChild.fromState(StrippedStateEvent(
           type: EventTypes.SpaceChild,
           content: {'via': ['example.com'], 'order': 'z'},
           stateKey: '!r3:example.com',
           senderId: '@admin:example.com',
-        )),
+        ),),
       ]);
 
       when(mockSpace.setSpaceChild(any, order: anyNamed('order')))
@@ -233,7 +232,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget(
         parentSpaceId: '!space:example.com',
         sectionRooms: [mockRoom1, mockRoom, mockRoom3],
-      ));
+      ),);
       await tester.tap(find.text('Open Menu'));
       await tester.pumpAndSettle();
 
@@ -248,7 +247,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget(
         parentSpaceId: '!space:example.com',
         sectionRooms: [mockRoom, mockRoom2, mockRoom3],
-      ));
+      ),);
       await tester.tap(find.text('Open Menu'));
       await tester.pumpAndSettle();
 
@@ -263,7 +262,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget(
         parentSpaceId: '!space:example.com',
         sectionRooms: [mockRoom1, mockRoom2, mockRoom],
-      ));
+      ),);
       await tester.tap(find.text('Open Menu'));
       await tester.pumpAndSettle();
 
@@ -276,7 +275,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget(
         parentSpaceId: '!space:example.com',
         sectionRooms: [mockRoom1, mockRoom, mockRoom3],
-      ));
+      ),);
       await tester.tap(find.text('Open Menu'));
       await tester.pumpAndSettle();
 
@@ -287,7 +286,7 @@ void main() {
       // order string that is between null (before first) and 'a' (first item).
       final captured = verify(
         mockSpace.setSpaceChild('!r2:example.com',
-            order: captureAnyNamed('order')),
+            order: captureAnyNamed('order'),),
       ).captured;
       expect(captured, hasLength(1));
       final newOrder = captured.first as String;
@@ -301,7 +300,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget(
         parentSpaceId: '!space:example.com',
         sectionRooms: [mockRoom1, mockRoom, mockRoom3],
-      ));
+      ),);
       await tester.tap(find.text('Open Menu'));
       await tester.pumpAndSettle();
 
@@ -310,7 +309,7 @@ void main() {
 
       final captured = verify(
         mockSpace.setSpaceChild('!r2:example.com',
-            order: captureAnyNamed('order')),
+            order: captureAnyNamed('order'),),
       ).captured;
       expect(captured, hasLength(1));
       final newOrder = captured.first as String;
@@ -325,7 +324,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget(
         parentSpaceId: '!space:example.com',
         sectionRooms: [mockRoom1, mockRoom, mockRoom3],
-      ));
+      ),);
       await tester.tap(find.text('Open Menu'));
       await tester.pumpAndSettle();
 

@@ -1,19 +1,17 @@
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart'
-    show DefaultEmojiTextStyle, EmojiPicker, Config, EmojiViewConfig,
-         CategoryViewConfig, SkinToneConfig, BottomActionBarConfig,
-         SearchViewConfig;
+    show BottomActionBarConfig, CategoryViewConfig, Config, DefaultEmojiTextStyle,
+         EmojiPicker, EmojiViewConfig, SearchViewConfig,
+         SkinToneConfig;
 import 'package:flutter/material.dart';
 
 // ── Hover action bar ────────────────────────────────────────
 
 class HoverActionBar extends StatefulWidget {
   const HoverActionBar({
-    super.key,
-    required this.cs,
+    required this.cs, required this.onMore, super.key,
     this.onReact,
     this.onQuickReact,
     this.onReply,
-    required this.onMore,
     this.onQuickReactOpenChanged,
   });
 
@@ -235,7 +233,6 @@ class _QuickReactOverlayState extends State<_QuickReactOverlay> {
                             emojiTextStyle: DefaultEmojiTextStyle,
                             emojiViewConfig: EmojiViewConfig(
                               columns: 8,
-                              emojiSizeMax: 28,
                               backgroundColor: cs.surfaceContainer,
                             ),
                             categoryViewConfig: CategoryViewConfig(
@@ -282,7 +279,7 @@ class _QuickReactOverlayState extends State<_QuickReactOverlay> {
                               child: Text(
                                 emoji,
                                 style: DefaultEmojiTextStyle.copyWith(
-                                    fontSize: 22),
+                                    fontSize: 22,),
                               ),
                             ),
                           ),

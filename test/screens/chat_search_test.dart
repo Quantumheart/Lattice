@@ -2,14 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/cached_stream_controller.dart';
-import 'package:provider/provider.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/chat/screens/chat_screen.dart';
+import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:provider/provider.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -129,11 +129,11 @@ void main() {
         searchTerm: anyNamed('searchTerm'),
         limit: anyNamed('limit'),
         nextBatch: anyNamed('nextBatch'),
-      )).thenAnswer((_) async => (
+      ),).thenAnswer((_) async => (
             events: <Event>[],
             nextBatch: null,
             searchedUntil: null,
-          ));
+          ),);
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -158,7 +158,7 @@ void main() {
         searchTerm: anyNamed('searchTerm'),
         limit: anyNamed('limit'),
         nextBatch: anyNamed('nextBatch'),
-      )).thenThrow(Exception('Server error'));
+      ),).thenThrow(Exception('Server error'));
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -183,7 +183,7 @@ void main() {
         searchTerm: anyNamed('searchTerm'),
         limit: anyNamed('limit'),
         nextBatch: anyNamed('nextBatch'),
-      )).thenAnswer((_) => completer.future);
+      ),).thenAnswer((_) => completer.future);
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -204,7 +204,7 @@ void main() {
         events: <Event>[],
         nextBatch: null,
         searchedUntil: null,
-      ));
+      ),);
       await tester.pumpAndSettle();
     });
   });

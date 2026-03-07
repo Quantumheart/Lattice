@@ -2,11 +2,10 @@ import 'dart:async';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lattice/features/notifications/services/inbox_controller.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-
-import 'package:lattice/features/notifications/services/inbox_controller.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -69,11 +68,11 @@ void main() {
       when(mockClient.getNotifications(
         limit: anyNamed('limit'),
         only: anyNamed('only'),
-      )).thenAnswer((_) async => _makeResponse([
+      ),).thenAnswer((_) async => _makeResponse([
             _makeNotification(eventId: 'e1', roomId: '!r1:x'),
             _makeNotification(eventId: 'e2', roomId: '!r1:x'),
             _makeNotification(eventId: 'e3', roomId: '!r2:x'),
-          ]));
+          ]),);
 
       expect(controller.isLoading, isFalse);
 
@@ -95,7 +94,7 @@ void main() {
       when(mockClient.getNotifications(
         limit: anyNamed('limit'),
         only: anyNamed('only'),
-      )).thenAnswer((_) {
+      ),).thenAnswer((_) {
         callCount++;
         if (callCount == 1) return completer1.future;
         return completer2.future;
@@ -110,7 +109,7 @@ void main() {
       // Complete second fetch first with new data
       completer2.complete(_makeResponse([
         _makeNotification(eventId: 'new1', roomId: '!new:x'),
-      ]));
+      ]),);
 
       // Wait for second fetch to finish
       // (setFilter calls fetch internally, we need to let it settle)
@@ -120,7 +119,7 @@ void main() {
       // Now complete the first (stale) fetch
       completer1.complete(_makeResponse([
         _makeNotification(eventId: 'old1', roomId: '!old:x'),
-      ]));
+      ]),);
 
       await future1;
 
@@ -133,7 +132,7 @@ void main() {
       when(mockClient.getNotifications(
         limit: anyNamed('limit'),
         only: anyNamed('only'),
-      )).thenThrow(Exception('network'));
+      ),).thenThrow(Exception('network'));
 
       await controller.fetch();
 
@@ -149,9 +148,9 @@ void main() {
       when(mockClient.getNotifications(
         limit: anyNamed('limit'),
         only: anyNamed('only'),
-      )).thenAnswer((_) async => _makeResponse([
+      ),).thenAnswer((_) async => _makeResponse([
             _makeNotification(eventId: 'e1', roomId: '!r1:x'),
-          ]));
+          ]),);
 
       await controller.fetch();
       expect(controller.grouped, hasLength(1));
@@ -160,9 +159,9 @@ void main() {
       when(mockClient.getNotifications(
         limit: anyNamed('limit'),
         only: 'highlight',
-      )).thenAnswer((_) async => _makeResponse([
+      ),).thenAnswer((_) async => _makeResponse([
             _makeNotification(eventId: 'e2', roomId: '!r2:x'),
-          ]));
+          ]),);
 
       controller.setFilter(InboxFilter.mentions);
 
@@ -191,10 +190,10 @@ void main() {
       when(mockClient.getNotifications(
         limit: anyNamed('limit'),
         only: anyNamed('only'),
-      )).thenAnswer((_) async => _makeResponse(
+      ),).thenAnswer((_) async => _makeResponse(
             [_makeNotification(eventId: 'e1', roomId: '!r1:x')],
             nextToken: 'page2',
-          ));
+          ),);
 
       await controller.fetch();
       expect(controller.hasMore, isTrue);
@@ -203,10 +202,10 @@ void main() {
         limit: anyNamed('limit'),
         from: 'page2',
         only: anyNamed('only'),
-      )).thenAnswer((_) async => _makeResponse([
+      ),).thenAnswer((_) async => _makeResponse([
             _makeNotification(eventId: 'e2', roomId: '!r1:x'),
             _makeNotification(eventId: 'e3', roomId: '!r2:x'),
-          ]));
+          ]),);
 
       await controller.loadMore();
 
@@ -218,10 +217,10 @@ void main() {
       when(mockClient.getNotifications(
         limit: anyNamed('limit'),
         only: anyNamed('only'),
-      )).thenAnswer((_) async => _makeResponse(
+      ),).thenAnswer((_) async => _makeResponse(
             [_makeNotification(eventId: 'e1', roomId: '!r1:x')],
             nextToken: 'page2',
-          ));
+          ),);
 
       await controller.fetch();
 
@@ -230,7 +229,7 @@ void main() {
         limit: anyNamed('limit'),
         from: 'page2',
         only: anyNamed('only'),
-      )).thenAnswer((_) => loadMoreCompleter.future);
+      ),).thenAnswer((_) => loadMoreCompleter.future);
 
       final loadFuture = controller.loadMore();
 
@@ -238,9 +237,9 @@ void main() {
       when(mockClient.getNotifications(
         limit: anyNamed('limit'),
         only: 'highlight',
-      )).thenAnswer((_) async => _makeResponse([
+      ),).thenAnswer((_) async => _makeResponse([
             _makeNotification(eventId: 'new1', roomId: '!new:x'),
-          ]));
+          ]),);
       controller.setFilter(InboxFilter.mentions);
       await Future.delayed(Duration.zero);
       await Future.delayed(Duration.zero);
@@ -248,7 +247,7 @@ void main() {
       // Complete the stale loadMore
       loadMoreCompleter.complete(_makeResponse([
         _makeNotification(eventId: 'stale1', roomId: '!stale:x'),
-      ]));
+      ]),);
       await loadFuture;
 
       // Stale results should be discarded
@@ -269,9 +268,9 @@ void main() {
       when(mockClient.getNotifications(
         limit: anyNamed('limit'),
         only: anyNamed('only'),
-      )).thenAnswer((_) async => _makeResponse([
+      ),).thenAnswer((_) async => _makeResponse([
             _makeNotification(eventId: 'e1', roomId: '!r1:x'),
-          ]));
+          ]),);
 
       await controller.fetch();
       await controller.markRoomAsRead('!r1:x');
@@ -288,7 +287,7 @@ void main() {
         when(mockClient.getNotifications(
           limit: anyNamed('limit'),
           only: anyNamed('only'),
-        )).thenAnswer((_) async => _makeResponse([]));
+        ),).thenAnswer((_) async => _makeResponse([]));
 
         controller.startPolling();
 
@@ -296,21 +295,21 @@ void main() {
         verifyNever(mockClient.getNotifications(
           limit: anyNamed('limit'),
           only: anyNamed('only'),
-        ));
+        ),);
 
         // Advance to 7s
         async.elapse(const Duration(seconds: 7));
         verify(mockClient.getNotifications(
           limit: anyNamed('limit'),
           only: anyNamed('only'),
-        )).called(1);
+        ),).called(1);
 
         // Advance to 14s
         async.elapse(const Duration(seconds: 7));
         verify(mockClient.getNotifications(
           limit: anyNamed('limit'),
           only: anyNamed('only'),
-        )).called(1);
+        ),).called(1);
 
         controller.stopPolling();
 
@@ -320,7 +319,7 @@ void main() {
         verifyNever(mockClient.getNotifications(
           limit: anyNamed('limit'),
           only: anyNamed('only'),
-        ));
+        ),);
       });
     });
   });
@@ -336,7 +335,7 @@ void main() {
       when(mockClient.getNotifications(
         limit: anyNamed('limit'),
         only: anyNamed('only'),
-      )).thenAnswer((_) => completer.future);
+      ),).thenAnswer((_) => completer.future);
 
       final future = disposableController.fetch();
       disposableController.dispose();
@@ -344,7 +343,7 @@ void main() {
       // Complete the fetch after dispose — should not throw
       completer.complete(_makeResponse([
         _makeNotification(eventId: 'e1', roomId: '!r1:x'),
-      ]));
+      ]),);
 
       await future; // No exception
     });
@@ -357,11 +356,11 @@ void main() {
       when(mockClient.getNotifications(
         limit: anyNamed('limit'),
         only: anyNamed('only'),
-      )).thenAnswer((_) async => _makeResponse([
-            _makeNotification(eventId: 'e1', roomId: '!r1:x', read: false),
+      ),).thenAnswer((_) async => _makeResponse([
+            _makeNotification(eventId: 'e1', roomId: '!r1:x'),
             _makeNotification(eventId: 'e2', roomId: '!r1:x', read: true),
-            _makeNotification(eventId: 'e3', roomId: '!r2:x', read: false),
-          ]));
+            _makeNotification(eventId: 'e3', roomId: '!r2:x'),
+          ]),);
 
       expect(controller.unreadCount, 0);
 
@@ -374,10 +373,10 @@ void main() {
       when(mockClient.getNotifications(
         limit: anyNamed('limit'),
         only: anyNamed('only'),
-      )).thenAnswer((_) async => _makeResponse(
-            [_makeNotification(eventId: 'e1', roomId: '!r1:x', read: false)],
+      ),).thenAnswer((_) async => _makeResponse(
+            [_makeNotification(eventId: 'e1', roomId: '!r1:x')],
             nextToken: 'page2',
-          ));
+          ),);
 
       await controller.fetch();
       expect(controller.unreadCount, 1);
@@ -386,9 +385,9 @@ void main() {
         limit: anyNamed('limit'),
         from: 'page2',
         only: anyNamed('only'),
-      )).thenAnswer((_) async => _makeResponse([
-            _makeNotification(eventId: 'e2', roomId: '!r2:x', read: false),
-          ]));
+      ),).thenAnswer((_) async => _makeResponse([
+            _makeNotification(eventId: 'e2', roomId: '!r2:x'),
+          ]),);
 
       await controller.loadMore();
       expect(controller.unreadCount, 2);
@@ -402,9 +401,9 @@ void main() {
       when(mockClient.getNotifications(
         limit: anyNamed('limit'),
         only: anyNamed('only'),
-      )).thenAnswer((_) async => _makeResponse([
+      ),).thenAnswer((_) async => _makeResponse([
             _makeNotification(eventId: 'e1', roomId: '!r1:x'),
-          ]));
+          ]),);
 
       await controller.fetch();
       expect(controller.grouped, hasLength(1));
@@ -414,9 +413,9 @@ void main() {
       when(newClient.getNotifications(
         limit: anyNamed('limit'),
         only: anyNamed('only'),
-      )).thenAnswer((_) async => _makeResponse([
+      ),).thenAnswer((_) async => _makeResponse([
             _makeNotification(eventId: 'new1', roomId: '!new:x'),
-          ]));
+          ]),);
 
       controller.updateClient(newClient);
 

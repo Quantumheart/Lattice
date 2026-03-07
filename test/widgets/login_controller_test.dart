@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lattice/core/models/server_auth_capabilities.dart';
+import 'package:lattice/core/services/client_manager.dart';
+import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/features/auth/widgets/login_controller.dart';
+import 'package:matrix/matrix.dart' hide LoginState;
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart' hide LoginState;
-import 'package:lattice/core/models/server_auth_capabilities.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/client_manager.dart';
-import 'package:lattice/features/auth/widgets/login_controller.dart';
 
 @GenerateNiceMocks([
   MockSpec<MatrixService>(),
@@ -76,7 +76,7 @@ void main() {
           homeserver: anyNamed('homeserver'),
           username: anyNamed('username'),
           password: anyNamed('password'),
-        )).thenAnswer((_) async => true);
+        ),).thenAnswer((_) async => true);
 
         final controller = createController();
 
@@ -96,7 +96,7 @@ void main() {
           homeserver: anyNamed('homeserver'),
           username: anyNamed('username'),
           password: anyNamed('password'),
-        )).thenAnswer((_) async => false);
+        ),).thenAnswer((_) async => false);
         when(mockMatrixService.loginError).thenReturn('Invalid password');
 
         final controller = createController();
@@ -119,7 +119,7 @@ void main() {
           homeserver: anyNamed('homeserver'),
           username: anyNamed('username'),
           password: anyNamed('password'),
-        )).thenAnswer((_) => loginCompleter.future);
+        ),).thenAnswer((_) => loginCompleter.future);
 
         final controller = createController();
 
@@ -156,7 +156,7 @@ void main() {
         controller.dispose();
 
         // Should not throw after dispose.
-        expect(() => controller.cancelSso(), returnsNormally);
+        expect(controller.cancelSso, returnsNormally);
       });
     });
   });

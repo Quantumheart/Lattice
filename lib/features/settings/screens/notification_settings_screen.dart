@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/shared/widgets/section_header.dart';
+import 'package:provider/provider.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -152,13 +151,13 @@ class _NotificationSettingsScreenState
                   subtitle:
                       const Text('Show system notifications for new messages'),
                   value: prefs.osNotificationsEnabled,
-                  onChanged: (v) => prefs.setOsNotificationsEnabled(v),
+                  onChanged: prefs.setOsNotificationsEnabled,
                 ),
                 SwitchListTile(
                   title: const Text('Notification sound'),
                   value: prefs.notificationSoundEnabled,
                   onChanged: prefs.osNotificationsEnabled
-                      ? (v) => prefs.setNotificationSoundEnabled(v)
+                      ? prefs.setNotificationSoundEnabled
                       : null,
                 ),
                 SwitchListTile(
@@ -166,7 +165,7 @@ class _NotificationSettingsScreenState
                   subtitle: const Text('No effect on desktop'),
                   value: prefs.notificationVibrationEnabled,
                   onChanged: prefs.osNotificationsEnabled
-                      ? (v) => prefs.setNotificationVibrationEnabled(v)
+                      ? prefs.setNotificationVibrationEnabled
                       : null,
                 ),
                 SwitchListTile(
@@ -176,7 +175,7 @@ class _NotificationSettingsScreenState
                   ),
                   value: prefs.foregroundNotificationsEnabled,
                   onChanged: prefs.osNotificationsEnabled
-                      ? (v) => prefs.setForegroundNotificationsEnabled(v)
+                      ? prefs.setForegroundNotificationsEnabled
                       : null,
                 ),
               ],

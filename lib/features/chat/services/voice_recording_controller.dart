@@ -2,9 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:lattice/features/chat/services/voice_recording_service.dart';
 import 'package:path_provider/path_provider.dart';
-
-import 'voice_recording_service.dart';
 
 enum VoiceRecordingState { idle, requesting, recording, stopping }
 

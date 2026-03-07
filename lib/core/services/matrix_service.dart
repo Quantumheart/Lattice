@@ -2,17 +2,17 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:lattice/core/services/client_manager.dart' show ClientManager;
+import 'package:lattice/core/services/mixins/auth_mixin.dart';
+import 'package:lattice/core/services/mixins/chat_backup_mixin.dart';
+import 'package:lattice/core/services/mixins/selection_mixin.dart';
+import 'package:lattice/core/services/mixins/sync_mixin.dart';
+import 'package:lattice/core/services/mixins/uia_mixin.dart';
+import 'package:lattice/core/services/session_backup.dart';
 import 'package:matrix/matrix.dart';
 // ignore: implementation_imports
 import 'package:matrix/src/utils/client_init_exception.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
-import 'session_backup.dart';
-import 'mixins/selection_mixin.dart';
-import 'mixins/chat_backup_mixin.dart';
-import 'mixins/uia_mixin.dart';
-import 'mixins/sync_mixin.dart';
-import 'mixins/auth_mixin.dart';
 
 /// Storage key helper shared across mixins.
 String latticeKey(String clientName, String suffix) =>

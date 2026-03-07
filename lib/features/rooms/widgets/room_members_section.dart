@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/utils/sender_color.dart';
+import 'package:matrix/matrix.dart';
+import 'package:provider/provider.dart';
 
 /// Displays a scrollable list of room members with role badges.
 /// Loads members asynchronously and shows the first 5 with an expand option.
 class RoomMembersSection extends StatefulWidget {
-  const RoomMembersSection({super.key, required this.room});
+  const RoomMembersSection({required this.room, super.key});
 
   final Room room;
 
@@ -159,7 +158,7 @@ class _MemberTileState extends State<_MemberTile> {
         overflow: TextOverflow.ellipsis,
       ),
       trailing: _roleBadge(powerLevel, cs),
-      onTap: () => _showMemberSheet(),
+      onTap: _showMemberSheet,
     );
   }
 

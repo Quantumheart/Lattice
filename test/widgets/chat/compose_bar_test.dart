@@ -3,16 +3,15 @@ import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:matrix/matrix.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/chat/services/typing_controller.dart';
 import 'package:lattice/features/chat/widgets/compose_bar.dart';
 import 'package:lattice/features/chat/widgets/mention_suggestion_overlay.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 @GenerateNiceMocks([
   MockSpec<Room>(),
@@ -70,11 +69,11 @@ void main() {
 
     testWidgets('Enter key sends message when text is non-empty',
         (tester) async {
-      int sendCount = 0;
+      var sendCount = 0;
       await tester.pumpWidget(_wrap(
         controller: controller,
         onSend: () => sendCount++,
-      ));
+      ),);
 
       // Type some text.
       await tester.enterText(find.byType(TextField), 'hello');
@@ -88,11 +87,11 @@ void main() {
     });
 
     testWidgets('Enter key does not send when text is empty', (tester) async {
-      int sendCount = 0;
+      var sendCount = 0;
       await tester.pumpWidget(_wrap(
         controller: controller,
         onSend: () => sendCount++,
-      ));
+      ),);
 
       // Press Enter with empty text.
       await tester.tap(find.byType(TextField));
@@ -105,11 +104,11 @@ void main() {
 
     testWidgets('Enter key does not send when text is only whitespace',
         (tester) async {
-      int sendCount = 0;
+      var sendCount = 0;
       await tester.pumpWidget(_wrap(
         controller: controller,
         onSend: () => sendCount++,
-      ));
+      ),);
 
       await tester.enterText(find.byType(TextField), '   ');
       await tester.pump();
@@ -121,11 +120,11 @@ void main() {
     });
 
     testWidgets('Shift+Enter does not trigger send', (tester) async {
-      int sendCount = 0;
+      var sendCount = 0;
       await tester.pumpWidget(_wrap(
         controller: controller,
         onSend: () => sendCount++,
-      ));
+      ),);
 
       await tester.enterText(find.byType(TextField), 'line one');
       await tester.pump();
@@ -141,11 +140,11 @@ void main() {
 
     testWidgets('send button calls onSend when text is present',
         (tester) async {
-      int sendCount = 0;
+      var sendCount = 0;
       await tester.pumpWidget(_wrap(
         controller: controller,
         onSend: () => sendCount++,
-      ));
+      ),);
 
       await tester.enterText(find.byType(TextField), 'hi');
       await tester.pump();
@@ -157,11 +156,11 @@ void main() {
     });
 
     testWidgets('send button is disabled when text is empty', (tester) async {
-      int sendCount = 0;
+      var sendCount = 0;
       await tester.pumpWidget(_wrap(
         controller: controller,
         onSend: () => sendCount++,
-      ));
+      ),);
 
       // Find the send IconButton wrapping the send icon.
       final button = tester.widget<IconButton>(
@@ -177,7 +176,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         controller: controller,
         onSend: () {},
-      ));
+      ),);
 
       await tester.enterText(find.byType(TextField), 'hello world');
       await tester.pump();
@@ -199,7 +198,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         controller: controller,
         onSend: () {},
-      ));
+      ),);
 
       await tester.enterText(find.byType(TextField), 'hello world');
       await tester.pump();
@@ -225,7 +224,7 @@ void main() {
       await tester.pumpWidget(_wrap(
         controller: controller,
         onSend: () {},
-      ));
+      ),);
 
       final textField = tester.widget<TextField>(find.byType(TextField));
       expect(textField.textInputAction, TextInputAction.newline);
@@ -243,7 +242,7 @@ void main() {
         onSend: () {},
         prefs: prefs,
         typingController: mockTyping,
-      ));
+      ),);
 
       await tester.enterText(find.byType(TextField), 'hello');
       await tester.pump();
@@ -285,7 +284,7 @@ void main() {
         onSend: () {},
         room: mockRoom,
         joinedRooms: [],
-      ));
+      ),);
 
       await tester.enterText(find.byType(TextField), '@');
       await tester.pump();
@@ -295,13 +294,13 @@ void main() {
 
     testWidgets('Enter sends when autocomplete is active but empty',
         (tester) async {
-      int sendCount = 0;
+      var sendCount = 0;
       await tester.pumpWidget(_wrap(
         controller: controller,
         onSend: () => sendCount++,
         room: mockRoom,
         joinedRooms: [],
-      ));
+      ),);
 
       // Type a query that matches nothing.
       await tester.enterText(find.byType(TextField), '@zzzznotamember');
@@ -319,13 +318,13 @@ void main() {
 
     testWidgets('Enter confirms selection when suggestions are visible',
         (tester) async {
-      int sendCount = 0;
+      var sendCount = 0;
       await tester.pumpWidget(_wrap(
         controller: controller,
         onSend: () => sendCount++,
         room: mockRoom,
         joinedRooms: [],
-      ));
+      ),);
 
       await tester.enterText(find.byType(TextField), '@ali');
       await tester.pump();
@@ -346,7 +345,7 @@ void main() {
         onSend: () {},
         room: mockRoom,
         joinedRooms: [],
-      ));
+      ),);
 
       await tester.enterText(find.byType(TextField), '@');
       await tester.pump();
@@ -364,7 +363,7 @@ void main() {
         onSend: () {},
         room: mockRoom,
         joinedRooms: [],
-      ));
+      ),);
 
       await tester.enterText(find.byType(TextField), '@');
       await tester.pump();

@@ -1,9 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart' hide Visibility;
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:matrix/matrix.dart';
 
 /// Dialog to create a new subspace within a parent space.
 ///
@@ -95,7 +94,7 @@ class _CreateSubspaceDialogState extends State<CreateSubspaceDialog> {
       debugPrint('[Lattice] Subspace creation timed out');
       if (!mounted) return;
       setState(() => _networkError =
-          'Timed out waiting for the server. The subspace may still be created.');
+          'Timed out waiting for the server. The subspace may still be created.',);
     } catch (e) {
       debugPrint('[Lattice] Subspace creation failed: $e');
       if (!mounted) return;

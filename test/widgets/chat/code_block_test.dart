@@ -18,7 +18,7 @@ void main() {
           code: 'print("hello")',
           isMe: false,
         ),
-      ));
+      ),);
 
       // Code is rendered via Text.rich with TextSpan children.
       // Find a RichText whose text tree contains 'print("hello")'.
@@ -38,7 +38,7 @@ void main() {
           language: 'dart',
           isMe: false,
         ),
-      ));
+      ),);
 
       // Language label is a plain Text widget with the language name.
       final textWidgets = tester.widgetList<Text>(find.byType(Text));
@@ -54,7 +54,7 @@ void main() {
           code: 'some code',
           isMe: false,
         ),
-      ));
+      ),);
 
       // There should be no Text widget for a language label.
       // All Text widgets should either be empty or part of the code rendering.
@@ -74,7 +74,7 @@ void main() {
           language: 'dart',
           isMe: false,
         ),
-      ));
+      ),);
 
       expect(find.byIcon(Icons.copy_rounded), findsOneWidget);
       expect(find.byTooltip('Copy code'), findsOneWidget);
@@ -85,7 +85,7 @@ void main() {
       String? clipboardContent;
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         SystemChannels.platform,
-        (MethodCall call) async {
+        (call) async {
           if (call.method == 'Clipboard.setData') {
             clipboardContent =
                 (call.arguments as Map<String, dynamic>)['text'] as String;
@@ -100,7 +100,7 @@ void main() {
           language: 'dart',
           isMe: false,
         ),
-      ));
+      ),);
 
       await tester.tap(find.byIcon(Icons.copy_rounded));
       await tester.pumpAndSettle();
@@ -122,7 +122,7 @@ void main() {
               'when it exceeds the container width',
           isMe: false,
         ),
-      ));
+      ),);
 
       final scrollViews = tester.widgetList<SingleChildScrollView>(
         find.byType(SingleChildScrollView),
@@ -140,7 +140,7 @@ void main() {
           language: 'rust',
           isMe: false,
         ),
-      ));
+      ),);
 
       // Find a RichText whose span tree contains monospace font.
       final richTexts =
@@ -164,7 +164,7 @@ void main() {
           code: 'hello',
           isMe: true,
         ),
-      ));
+      ),);
 
       // The outermost Container should have a background color.
       final containers = tester.widgetList<Container>(
@@ -172,10 +172,10 @@ void main() {
       );
       final codeContainer = containers.firstWhere(
         (c) => c.decoration is BoxDecoration &&
-            (c.decoration as BoxDecoration).borderRadius ==
+            (c.decoration! as BoxDecoration).borderRadius ==
                 BorderRadius.circular(8),
       );
-      final decoration = codeContainer.decoration as BoxDecoration;
+      final decoration = codeContainer.decoration! as BoxDecoration;
       expect(decoration.color, isNotNull);
     });
 
@@ -185,17 +185,17 @@ void main() {
           code: 'hello',
           isMe: false,
         ),
-      ));
+      ),);
 
       final containers = tester.widgetList<Container>(
         find.byType(Container),
       );
       final codeContainer = containers.firstWhere(
         (c) => c.decoration is BoxDecoration &&
-            (c.decoration as BoxDecoration).borderRadius ==
+            (c.decoration! as BoxDecoration).borderRadius ==
                 BorderRadius.circular(8),
       );
-      final decoration = codeContainer.decoration as BoxDecoration;
+      final decoration = codeContainer.decoration! as BoxDecoration;
       expect(decoration.color, isNotNull);
     });
 
@@ -205,7 +205,7 @@ void main() {
           code: '',
           isMe: false,
         ),
-      ));
+      ),);
 
       // Should render without crashing.
       expect(find.byType(CodeBlock), findsOneWidget);
@@ -219,7 +219,7 @@ void main() {
           language: 'dart',
           isMe: false,
         ),
-      ));
+      ),);
 
       // Collect all TextSpans from every RichText in the tree.
       final richTexts =

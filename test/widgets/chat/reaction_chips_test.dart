@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lattice/features/chat/widgets/reaction_chips.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-
-import 'package:lattice/features/chat/widgets/reaction_chips.dart';
 
 @GenerateNiceMocks([
   MockSpec<Event>(),
@@ -87,7 +86,7 @@ void main() {
       event: event,
       timeline: mockTimeline,
       client: mockClient,
-    ));
+    ),);
 
     final sizedBox = tester.widget<SizedBox>(find.byType(SizedBox).first);
     expect(sizedBox.width, 0);
@@ -111,7 +110,7 @@ void main() {
       event: event,
       timeline: mockTimeline,
       client: mockClient,
-    ));
+    ),);
 
     // Three different emojis → three chips (each with count 1, so just emoji)
     expect(find.text('\u{1F44D}'), findsOneWidget);
@@ -135,7 +134,7 @@ void main() {
       event: event,
       timeline: mockTimeline,
       client: mockClient,
-    ));
+    ),);
 
     // One emoji chip with count 3 (emoji and count are separate Text widgets)
     expect(find.text('\u{1F44D}'), findsOneWidget);
@@ -157,7 +156,7 @@ void main() {
       event: event,
       timeline: mockTimeline,
       client: mockClient,
-    ));
+    ),);
 
     // Find the chip container (has a BoxDecoration with borderRadius)
     final cs = Theme.of(
@@ -169,7 +168,7 @@ void main() {
           final d = c.decoration;
           return d is BoxDecoration && d.borderRadius != null;
         }).first;
-    final decoration = chipContainer.decoration as BoxDecoration;
+    final decoration = chipContainer.decoration! as BoxDecoration;
     expect(decoration.color, cs.primaryContainer);
     expect(decoration.border, isNotNull);
   });
@@ -188,7 +187,7 @@ void main() {
       event: event,
       timeline: mockTimeline,
       client: mockClient,
-    ));
+    ),);
 
     final cs = Theme.of(
       tester.element(find.byType(ReactionChips)),
@@ -199,10 +198,10 @@ void main() {
           final d = c.decoration;
           return d is BoxDecoration && d.borderRadius != null;
         }).first;
-    final decoration = chipContainer.decoration as BoxDecoration;
+    final decoration = chipContainer.decoration! as BoxDecoration;
     expect(decoration.color, cs.surfaceContainerHighest);
     // Non-mine chips have an outlineVariant border (not primary).
-    final border = decoration.border as Border;
+    final border = decoration.border! as Border;
     expect(border.top.color, isNot(cs.primary.withValues(alpha: 0.5)));
   });
 
@@ -222,7 +221,7 @@ void main() {
       timeline: mockTimeline,
       client: mockClient,
       onToggle: (emoji) => tappedEmoji = emoji,
-    ));
+    ),);
 
     await tester.tap(find.text('\u{1F44D}'));
     expect(tappedEmoji, '\u{1F44D}');
@@ -251,7 +250,7 @@ void main() {
       event: event,
       timeline: mockTimeline,
       client: mockClient,
-    ));
+    ),);
 
     await tester.longPress(find.text('\u{1F44D}'));
     await tester.pumpAndSettle();

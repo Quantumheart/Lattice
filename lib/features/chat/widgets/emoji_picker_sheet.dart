@@ -1,7 +1,7 @@
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart'
-    show EmojiPicker, Config, EmojiViewConfig, CategoryViewConfig,
-         SkinToneConfig, BottomActionBarConfig, SearchViewConfig,
-         DefaultEmojiTextStyle;
+    show BottomActionBarConfig, CategoryViewConfig, Config, DefaultEmojiTextStyle,
+         EmojiPicker, EmojiViewConfig, SearchViewConfig,
+         SkinToneConfig;
 import 'package:flutter/material.dart';
 
 /// Shows a floating emoji picker dialog near the center of the screen.
@@ -38,7 +38,6 @@ class _EmojiPickerDialog extends StatelessWidget {
             emojiTextStyle: DefaultEmojiTextStyle,
             emojiViewConfig: EmojiViewConfig(
               columns: 8,
-              emojiSizeMax: 28,
               backgroundColor: cs.surfaceContainer,
             ),
             categoryViewConfig: CategoryViewConfig(

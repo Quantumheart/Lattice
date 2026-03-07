@@ -1,8 +1,7 @@
-import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-
+import 'package:flutter/material.dart';
 import 'package:lattice/core/utils/media_auth.dart';
+import 'package:matrix/matrix.dart';
 
 /// Displays a user's Matrix avatar with a colored-initial fallback.
 ///
@@ -10,8 +9,7 @@ import 'package:lattice/core/utils/media_auth.dart';
 /// and passes auth headers for authenticated media endpoints.
 class UserAvatar extends StatefulWidget {
   const UserAvatar({
-    super.key,
-    required this.client,
+    required this.client, super.key,
     this.avatarUrl,
     this.userId,
     this.size = 44,

@@ -1,15 +1,14 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/cached_stream_controller.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/chat/screens/chat_screen.dart';
+import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:provider/provider.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -40,7 +39,7 @@ MockEvent _makeEvent({
   when(event.body).thenReturn(body);
   when(event.type).thenReturn(EventTypes.Message);
   when(event.messageType).thenReturn(MessageTypes.Text);
-  when(event.originServerTs).thenReturn(DateTime(2025, 1, 1, 12, 0));
+  when(event.originServerTs).thenReturn(DateTime(2025, 1, 1, 12));
   when(event.status).thenReturn(EventStatus.synced);
   when(event.content)
       .thenReturn(content ?? {'body': body, 'msgtype': 'm.text'});
@@ -124,12 +123,12 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      when(mockRoom.pinnedEventIds).thenReturn(['\$pin1', '\$pin2']);
+      when(mockRoom.pinnedEventIds).thenReturn([r'$pin1', r'$pin2']);
       when(mockRoom.canChangeStateEvent('m.room.pinned_events'))
           .thenReturn(true);
 
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'Test message',
       );
@@ -141,7 +140,7 @@ void main() {
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       expect(find.byIcon(Icons.push_pin_rounded), findsOneWidget);
@@ -161,7 +160,7 @@ void main() {
           .thenReturn(true);
 
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'Test message',
       );
@@ -173,7 +172,7 @@ void main() {
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // push_pin_rounded should not appear in the app bar
@@ -201,18 +200,18 @@ void main() {
       });
 
       final pinnedEvent = _makeEvent(
-        eventId: '\$pin1',
+        eventId: r'$pin1',
         senderId: '@alice:example.com',
         body: 'Pinned message body',
       );
-      when(mockRoom.pinnedEventIds).thenReturn(['\$pin1']);
+      when(mockRoom.pinnedEventIds).thenReturn([r'$pin1']);
       when(mockRoom.canChangeStateEvent('m.room.pinned_events'))
           .thenReturn(true);
-      when(mockRoom.getEventById('\$pin1'))
+      when(mockRoom.getEventById(r'$pin1'))
           .thenAnswer((_) async => pinnedEvent);
 
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'Test message',
       );
@@ -224,14 +223,14 @@ void main() {
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // Tap pin icon
       await tester.tap(find.descendant(
         of: find.byType(AppBar),
         matching: find.byIcon(Icons.push_pin_rounded),
-      ));
+      ),);
       await tester.pump();
 
       // Should see the popup header
@@ -253,14 +252,14 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      when(mockRoom.pinnedEventIds).thenReturn(['\$missing1']);
+      when(mockRoom.pinnedEventIds).thenReturn([r'$missing1']);
       when(mockRoom.canChangeStateEvent('m.room.pinned_events'))
           .thenReturn(true);
-      when(mockRoom.getEventById('\$missing1'))
+      when(mockRoom.getEventById(r'$missing1'))
           .thenThrow(Exception('Not found'));
 
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'Test message',
       );
@@ -272,14 +271,14 @@ void main() {
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // Tap pin icon
       await tester.tap(find.descendant(
         of: find.byType(AppBar),
         matching: find.byIcon(Icons.push_pin_rounded),
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       expect(find.text('No pinned messages'), findsOneWidget);
@@ -294,26 +293,26 @@ void main() {
       });
 
       final pinnedEvent1 = _makeEvent(
-        eventId: '\$pin1',
+        eventId: r'$pin1',
         senderId: '@alice:example.com',
         body: 'First pinned',
       );
       final pinnedEvent2 = _makeEvent(
-        eventId: '\$pin2',
+        eventId: r'$pin2',
         senderId: '@bob:example.com',
         body: 'Second pinned',
       );
-      when(mockRoom.pinnedEventIds).thenReturn(['\$pin1', '\$pin2']);
+      when(mockRoom.pinnedEventIds).thenReturn([r'$pin1', r'$pin2']);
       when(mockRoom.canChangeStateEvent('m.room.pinned_events'))
           .thenReturn(true);
-      when(mockRoom.getEventById('\$pin1'))
+      when(mockRoom.getEventById(r'$pin1'))
           .thenAnswer((_) async => pinnedEvent1);
-      when(mockRoom.getEventById('\$pin2'))
+      when(mockRoom.getEventById(r'$pin2'))
           .thenAnswer((_) async => pinnedEvent2);
       when(mockRoom.setPinnedEvents(any)).thenAnswer((_) async => '');
 
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'Test message',
       );
@@ -325,14 +324,14 @@ void main() {
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // Open popup
       await tester.tap(find.descendant(
         of: find.byType(AppBar),
         matching: find.byIcon(Icons.push_pin_rounded),
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       expect(find.text('First pinned'), findsOneWidget);
@@ -345,7 +344,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should have called setPinnedEvents with the first event removed
-      verify(mockRoom.setPinnedEvents(['\$pin2'])).called(1);
+      verify(mockRoom.setPinnedEvents([r'$pin2'])).called(1);
     });
   });
 
@@ -366,7 +365,7 @@ void main() {
           .thenReturn(true);
 
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'Pin this message',
       );
@@ -378,7 +377,7 @@ void main() {
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // Right-click
@@ -405,7 +404,7 @@ void main() {
           .thenReturn(false);
 
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'Cannot pin this',
       );
@@ -417,7 +416,7 @@ void main() {
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // Right-click
@@ -446,7 +445,7 @@ void main() {
       when(mockRoom.setPinnedEvents(any)).thenAnswer((_) async => '');
 
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'Pin me',
       );
@@ -458,7 +457,7 @@ void main() {
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // Right-click → Pin
@@ -470,7 +469,7 @@ void main() {
       await tester.tap(find.text('Pin'));
       await tester.pumpAndSettle();
 
-      verify(mockRoom.setPinnedEvents(['\$evt1'])).called(1);
+      verify(mockRoom.setPinnedEvents([r'$evt1'])).called(1);
     });
 
     testWidgets('unpinning calls setPinnedEvents with event removed',
@@ -482,13 +481,13 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      when(mockRoom.pinnedEventIds).thenReturn(['\$evt1']);
+      when(mockRoom.pinnedEventIds).thenReturn([r'$evt1']);
       when(mockRoom.canChangeStateEvent('m.room.pinned_events'))
           .thenReturn(true);
       when(mockRoom.setPinnedEvents(any)).thenAnswer((_) async => '');
 
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@me:example.com',
         body: 'Unpin me',
       );
@@ -500,7 +499,7 @@ void main() {
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // Right-click → Unpin
@@ -528,12 +527,12 @@ void main() {
         tester.view.resetDevicePixelRatio();
       });
 
-      when(mockRoom.pinnedEventIds).thenReturn(['\$evt1']);
+      when(mockRoom.pinnedEventIds).thenReturn([r'$evt1']);
       when(mockRoom.canChangeStateEvent('m.room.pinned_events'))
           .thenReturn(true);
 
       final event = _makeEvent(
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@alice:example.com',
         body: 'I am pinned',
       );
@@ -545,7 +544,7 @@ void main() {
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // The pin icon should appear in the message bubble timestamp row

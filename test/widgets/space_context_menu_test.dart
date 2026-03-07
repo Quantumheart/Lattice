@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/space_child.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/spaces/widgets/space_context_menu.dart';
+import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/space_child.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:provider/provider.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -110,7 +109,7 @@ void main() {
 
     testWidgets('Mark as read calls setReadMarker', (tester) async {
       final mockEvent = MockEvent();
-      when(mockEvent.eventId).thenReturn('\$last:example.com');
+      when(mockEvent.eventId).thenReturn(r'$last:example.com');
       when(mockSpace.lastEvent).thenReturn(mockEvent);
       when(mockSpace.setReadMarker(any)).thenAnswer((_) async {});
 
@@ -121,7 +120,7 @@ void main() {
       await tester.tap(find.text('Mark as read'));
       await tester.pumpAndSettle();
 
-      verify(mockSpace.setReadMarker('\$last:example.com')).called(1);
+      verify(mockSpace.setReadMarker(r'$last:example.com')).called(1);
     });
 
     testWidgets('Leave shows confirmation dialog with checkbox',
@@ -196,7 +195,7 @@ void main() {
           content: {'via': ['example.com']},
           stateKey: '!child:example.com',
           senderId: '@admin:example.com',
-        )),
+        ),),
       ]);
       when(mockSpace.leave()).thenAnswer((_) async {});
 
@@ -235,7 +234,7 @@ void main() {
           content: {'via': ['example.com']},
           stateKey: '!child:example.com',
           senderId: '@admin:example.com',
-        )),
+        ),),
       ]);
       when(mockSpace.leave()).thenAnswer((_) async {});
 

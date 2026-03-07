@@ -27,7 +27,7 @@ void main() {
           status: UploadStatus.uploading,
           fileName: 'photo.jpg',
         ),
-      ));
+      ),);
 
       expect(find.text('Uploading…'), findsOneWidget);
       expect(find.text('photo.jpg'), findsOneWidget);
@@ -42,7 +42,7 @@ void main() {
           fileName: 'document.pdf',
           error: 'Network error',
         ),
-      ));
+      ),);
 
       expect(find.text('Upload failed'), findsOneWidget);
       expect(find.text('document.pdf'), findsOneWidget);
@@ -58,7 +58,7 @@ void main() {
           fileName: 'file.txt',
         ),
         onCancel: () => cancelled = true,
-      ));
+      ),);
 
       await tester.tap(find.byIcon(Icons.close_rounded));
       expect(cancelled, isTrue);

@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart' hide Visibility;
-import 'package:matrix/matrix.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/utils/known_contacts.dart';
+import 'package:matrix/matrix.dart';
 
 // ── New Room dialog ───────────────────────────────────────────
 
@@ -196,7 +196,7 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
             fontWeight: FontWeight.w500,
           ),
         ),
-      ));
+      ),);
     }
     for (final p in filtered) {
       tiles.add(ListTile(
@@ -210,14 +210,14 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
           ),
         ),
         title: Text(p.displayName ?? p.userId,
-            overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14)),
+            overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14),),
         subtitle: p.displayName != null
             ? Text(p.userId,
                 style: const TextStyle(fontSize: 11),
-                overflow: TextOverflow.ellipsis)
+                overflow: TextOverflow.ellipsis,)
             : null,
         onTap: () => _addInviteFromProfile(p),
-      ));
+      ),);
     }
     return tiles;
   }
@@ -420,7 +420,7 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
                     children: suggestions,
                   ),
                 );
-              }),
+              },),
             ],
             if (_invitedUsers.isNotEmpty)
               Padding(
@@ -436,7 +436,7 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
                               onDeleted: _loading ? null : () => _removeInvite(u),
                               materialTapTargetSize:
                                   MaterialTapTargetSize.shrinkWrap,
-                            ))
+                            ),)
                         .toList(),
                   ),
                 ),

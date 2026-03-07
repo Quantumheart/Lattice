@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/features/chat/screens/chat_screen.dart';
+import 'package:lattice/features/rooms/widgets/room_details_panel.dart';
+import 'package:lattice/features/rooms/widgets/room_list.dart';
+import 'package:lattice/features/settings/screens/settings_screen.dart';
 import 'package:lattice/features/spaces/widgets/space_rail.dart';
 import 'package:lattice/features/spaces/widgets/space_reparent_controller.dart';
-import 'package:lattice/features/rooms/widgets/room_list.dart';
-import 'package:lattice/features/rooms/widgets/room_details_panel.dart';
-import 'package:lattice/features/chat/screens/chat_screen.dart';
-import 'package:lattice/features/settings/screens/settings_screen.dart';
+import 'package:provider/provider.dart';
 
 /// The root layout shell. On wide screens it shows the three-column
 /// Lattice layout (rail + room list + chat). On narrow screens it shows
@@ -21,9 +20,7 @@ import 'package:lattice/features/settings/screens/settings_screen.dart';
 /// so it can display the matched route's content in the appropriate pane.
 class HomeShell extends StatefulWidget {
   const HomeShell({
-    super.key,
-    required this.routerChild,
-    required this.routerState,
+    required this.routerChild, required this.routerState, super.key,
   });
 
   final Widget routerChild;
@@ -128,7 +125,7 @@ class _HomeShellState extends State<HomeShell> {
 
     // Ctrl+0 → clear space selection
     bindings[const SingleActivator(LogicalKeyboardKey.digit0,
-        control: true)] = () => matrix.clearSpaceSelection();
+        control: true,)] = () => matrix.clearSpaceSelection();
 
     // Ctrl+1..9 → select Nth space
     final digitKeys = [
@@ -287,7 +284,7 @@ class _HomeShellState extends State<HomeShell> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(Icons.chat_bubble_outline_rounded,
-              size: 56, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+              size: 56, color: cs.onSurfaceVariant.withValues(alpha: 0.3),),
           const SizedBox(height: 16),
           Text(
             'Select a conversation',

@@ -2,7 +2,7 @@
 /// from a message body, returning only the actual reply text.
 String stripReplyFallback(String body) {
   final lines = body.split('\n');
-  int i = 0;
+  var i = 0;
   while (i < lines.length && (lines[i].startsWith('> ') || lines[i] == '>')) {
     i++;
   }

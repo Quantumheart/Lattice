@@ -2,9 +2,9 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lattice/features/e2ee/widgets/key_verification_dialog.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
-import 'package:lattice/features/e2ee/widgets/key_verification_dialog.dart';
 
 /// A fake [KeyVerification] for testing. We cannot use Mockito because
 /// [onUpdate] and [state] are plain fields, not methods.
@@ -77,7 +77,7 @@ class FakeKeyVerification extends Fake implements KeyVerification {
 
   @override
   Future<void> continueVerification(String type,
-      {Uint8List? qrDataRawBytes}) async {
+      {Uint8List? qrDataRawBytes,}) async {
     continueVerificationMethod = type;
   }
 
@@ -114,7 +114,7 @@ void main() {
   }
 
   Future<void> openDialog(WidgetTester tester,
-      {required FakeKeyVerification verification}) async {
+      {required FakeKeyVerification verification,}) async {
     await tester.pumpWidget(buildTestApp(verification: verification));
     await tester.tap(find.text('Open'));
     // Use pump() not pumpAndSettle() because CircularProgressIndicator
@@ -125,13 +125,13 @@ void main() {
   group('KeyVerificationDialog', () {
     testWidgets('shows spinner in waitingAccept state', (tester) async {
       final verification = FakeKeyVerification(
-        state: KeyVerificationState.waitingAccept,
+        
       );
       await openDialog(tester, verification: verification);
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.text('Waiting for the other device to accept...'),
-          findsOneWidget);
+          findsOneWidget,);
     });
 
     testWidgets('renders SAS emoji with Semantics labels', (tester) async {
@@ -161,7 +161,7 @@ void main() {
 
     testWidgets('cancel calls verification.cancel() and pops', (tester) async {
       final verification = FakeKeyVerification(
-        state: KeyVerificationState.waitingAccept,
+        
       );
       await openDialog(tester, verification: verification);
 
@@ -209,7 +209,7 @@ void main() {
 
     testWidgets('askChoice auto-selects SAS verification', (tester) async {
       final verification = FakeKeyVerification(
-        state: KeyVerificationState.waitingAccept,
+        
       );
       verification.possibleMethods = [EventTypes.Sas, EventTypes.QRShow];
 
@@ -238,7 +238,7 @@ void main() {
 
     testWidgets('state transitions update the UI', (tester) async {
       final verification = FakeKeyVerification(
-        state: KeyVerificationState.waitingAccept,
+        
       );
       await openDialog(tester, verification: verification);
 

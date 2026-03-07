@@ -2,14 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lattice/features/home/widgets/inbox_screen.dart';
+import 'package:lattice/features/notifications/services/inbox_controller.dart';
+import 'package:matrix/matrix.dart' as matrix_sdk;
+import 'package:matrix/matrix.dart' show Client, GetNotificationsResponse, MatrixEvent;
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart' as matrix_sdk;
-import 'package:matrix/matrix.dart' show Client, MatrixEvent, GetNotificationsResponse;
 import 'package:provider/provider.dart';
-
-import 'package:lattice/features/notifications/services/inbox_controller.dart';
-import 'package:lattice/features/home/widgets/inbox_screen.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -83,7 +82,7 @@ void main() {
       limit: anyNamed('limit'),
       only: anyNamed('only'),
       from: anyNamed('from'),
-    )).thenAnswer((_) => Future.microtask(() => response));
+    ),).thenAnswer((_) => Future.microtask(() => response));
   }
 
   group('InboxScreen', () {
@@ -91,7 +90,7 @@ void main() {
         (tester) async {
       stubFetchAsync(_makeResponse([
         _makeNotification(eventId: 'e1', roomId: '!r1:x'),
-      ]));
+      ]),);
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -100,7 +99,7 @@ void main() {
         limit: anyNamed('limit'),
         only: anyNamed('only'),
         from: anyNamed('from'),
-      )).called(greaterThanOrEqualTo(1));
+      ),).called(greaterThanOrEqualTo(1));
     });
 
     testWidgets('loading state shows CircularProgressIndicator',
@@ -111,7 +110,7 @@ void main() {
         limit: anyNamed('limit'),
         only: anyNamed('only'),
         from: anyNamed('from'),
-      )).thenAnswer((_) => completer.future);
+      ),).thenAnswer((_) => completer.future);
 
       await tester.pumpWidget(buildTestWidget());
       // Pump once to let initState's fetch trigger isLoading
@@ -141,7 +140,7 @@ void main() {
           roomId: '!r1:x',
           body: 'Test message content',
         ),
-      ]));
+      ]),);
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -156,7 +155,7 @@ void main() {
         (tester) async {
       stubFetchAsync(_makeResponse([
         _makeNotification(eventId: 'e1', roomId: '!r1:x'),
-      ]));
+      ]),);
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -166,7 +165,7 @@ void main() {
         limit: anyNamed('limit'),
         only: 'highlight',
         from: anyNamed('from'),
-      )).thenAnswer((_) => Future.microtask(() => _makeResponse([])));
+      ),).thenAnswer((_) => Future.microtask(() => _makeResponse([])));
 
       await tester.tap(find.text('Mentions'));
       await tester.pumpAndSettle();

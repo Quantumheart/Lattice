@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-
-import 'package:lattice/shared/widgets/user_avatar.dart';
-import 'html_message_text.dart';
-import 'linkable_text.dart';
 import 'package:lattice/core/utils/reply_fallback.dart';
+import 'package:lattice/features/chat/widgets/html_message_text.dart';
+import 'package:lattice/features/chat/widgets/linkable_text.dart';
+import 'package:lattice/shared/widgets/user_avatar.dart';
+import 'package:matrix/matrix.dart';
 
 /// Shows a popup panel anchored below the pin icon listing pinned messages.
 void showPinnedMessagesPopup(
@@ -12,9 +11,9 @@ void showPinnedMessagesPopup(
   Room room, {
   required void Function(Event event) onTap,
 }) {
-  final button = context.findRenderObject() as RenderBox;
+  final button = context.findRenderObject()! as RenderBox;
   final overlay =
-      Overlay.of(context).context.findRenderObject() as RenderBox;
+      Overlay.of(context).context.findRenderObject()! as RenderBox;
   final buttonPos = button.localToGlobal(Offset.zero, ancestor: overlay);
   final anchor = Rect.fromLTWH(
     buttonPos.dx,

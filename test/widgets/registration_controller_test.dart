@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
 import 'package:lattice/core/models/server_auth_capabilities.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/auth/widgets/registration_controller.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -46,7 +46,7 @@ void main() {
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                   registrationStages: ['m.login.dummy'],
-                ));
+                ),);
 
         final controller = createController();
         await controller.checkServer();
@@ -60,8 +60,8 @@ void main() {
           () async {
         when(mockMatrixService.getServerAuthCapabilities(any))
             .thenAnswer((_) async => const ServerAuthCapabilities(
-                  supportsRegistration: false,
-                ));
+                  
+                ),);
 
         final controller = createController();
         await controller.checkServer();
@@ -87,7 +87,7 @@ void main() {
         when(mockMatrixService.getServerAuthCapabilities(any))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
-                ));
+                ),);
 
         final controller = createController();
         var notifyCount = 0;
@@ -105,11 +105,11 @@ void main() {
         when(mockMatrixService.getServerAuthCapabilities('example.com'))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
-                ));
+                ),);
         when(mockMatrixService.getServerAuthCapabilities('other.com'))
             .thenAnswer((_) async => const ServerAuthCapabilities(
-                  supportsRegistration: false,
-                ));
+                  
+                ),);
 
         final controller = createController();
         await controller.checkServer();
@@ -125,7 +125,7 @@ void main() {
         when(mockMatrixService.getServerAuthCapabilities(any))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
-                ));
+                ),);
 
         final controller = createController();
         await controller.checkServer();
@@ -148,7 +148,7 @@ void main() {
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                   registrationStages: ['m.login.dummy'],
-                ));
+                ),);
       });
 
       test('rejects empty username', () async {
@@ -187,7 +187,7 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenThrow(
+        ),).thenThrow(
           MatrixException.fromJson({
             'errcode': 'M_USER_IN_USE',
             'error': 'Desired user ID is already taken.',
@@ -197,7 +197,7 @@ void main() {
         final controller = createController();
         await controller.checkServer();
         await controller.submitForm(
-            username: 'takenuser', password: 'password123');
+            username: 'takenuser', password: 'password123',);
 
         expect(controller.state, RegistrationState.formReady);
         expect(controller.usernameError, contains('already taken'));
@@ -210,7 +210,7 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenThrow(
+        ),).thenThrow(
           MatrixException.fromJson({
             'errcode': 'M_INVALID_USERNAME',
             'error': 'User ID contains invalid characters.',
@@ -220,7 +220,7 @@ void main() {
         final controller = createController();
         await controller.checkServer();
         await controller.submitForm(
-            username: 'bad@user', password: 'password123');
+            username: 'bad@user', password: 'password123',);
 
         expect(controller.state, RegistrationState.formReady);
         expect(controller.usernameError, contains('invalid'));
@@ -235,7 +235,7 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenThrow(
+        ),).thenThrow(
           MatrixException.fromJson({
             'flows': [
               {
@@ -255,16 +255,16 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenAnswer((_) async => RegisterResponse(
+        ),).thenAnswer((_) async => RegisterResponse(
               userId: '@newuser:example.com',
               accessToken: 'token',
               deviceId: 'DEV1',
-            ));
+            ),);
         when(mockMatrixService.completeRegistration(any))
             .thenAnswer((_) async {});
 
         await controller.submitForm(
-            username: 'newuser', password: 'goodpass1');
+            username: 'newuser', password: 'goodpass1',);
 
         expect(controller.state, RegistrationState.done);
         controller.dispose();
@@ -276,7 +276,7 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenThrow(
+        ),).thenThrow(
           MatrixException.fromJson({
             'errcode': 'M_FORBIDDEN',
             'error': 'Registration is not allowed on this server',
@@ -286,7 +286,7 @@ void main() {
         final controller = createController();
         await controller.checkServer();
         await controller.submitForm(
-            username: 'user', password: 'password123');
+            username: 'user', password: 'password123',);
 
         expect(controller.state, RegistrationState.error);
         expect(controller.error, contains('not allowed'));
@@ -299,7 +299,7 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenThrow(
+        ),).thenThrow(
           MatrixException.fromJson({
             'flows': [
               {
@@ -313,7 +313,7 @@ void main() {
         final controller = createController();
         await controller.checkServer();
         await controller.submitForm(
-            username: 'user', password: 'password123');
+            username: 'user', password: 'password123',);
 
         expect(controller.state, RegistrationState.enterEmail);
         controller.dispose();
@@ -326,7 +326,7 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenThrow(
+        ),).thenThrow(
           MatrixException.fromJson({
             'flows': [
               {
@@ -340,7 +340,7 @@ void main() {
         final controller = createController();
         await controller.checkServer();
         await controller.submitForm(
-            username: 'user', password: 'password123');
+            username: 'user', password: 'password123',);
 
         expect(controller.state, RegistrationState.recaptcha);
         controller.dispose();
@@ -352,7 +352,7 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenThrow(
+        ),).thenThrow(
           MatrixException.fromJson({
             'flows': [
               {
@@ -366,7 +366,7 @@ void main() {
         final controller = createController();
         await controller.checkServer();
         await controller.submitForm(
-            username: 'user', password: 'password123');
+            username: 'user', password: 'password123',);
 
         expect(controller.state, RegistrationState.acceptTerms);
         controller.dispose();
@@ -378,7 +378,7 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenThrow(
+        ),).thenThrow(
           MatrixException.fromJson({
             'flows': [
               {
@@ -392,7 +392,7 @@ void main() {
         final controller = createController();
         await controller.checkServer();
         await controller.submitForm(
-            username: 'user', password: 'password123');
+            username: 'user', password: 'password123',);
 
         expect(controller.state, RegistrationState.error);
         expect(controller.error, contains('Unsupported'));
@@ -405,23 +405,23 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenAnswer((_) async => RegisterResponse(
+        ),).thenAnswer((_) async => RegisterResponse(
               userId: '@user:example.com',
               accessToken: 'tok',
               deviceId: 'D1',
-            ));
+            ),);
         when(mockMatrixService.completeRegistration(any))
             .thenAnswer((_) async {});
 
         final controller = createController();
         await controller.checkServer();
         await controller.submitForm(
-            username: 'user', password: 'password123');
+            username: 'user', password: 'password123',);
 
         verify(mockMatrixService.completeRegistration(
           any,
           password: anyNamed('password'),
-        )).called(1);
+        ),).called(1);
         controller.dispose();
       });
 
@@ -431,23 +431,23 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenAnswer((_) async => RegisterResponse(
+        ),).thenAnswer((_) async => RegisterResponse(
               userId: '@user:example.com',
               accessToken: 'tok',
               deviceId: 'D1',
-            ));
+            ),);
         when(mockMatrixService.completeRegistration(any))
             .thenAnswer((_) async {});
 
         final controller = createController();
         await controller.checkServer();
         await controller.submitForm(
-            username: 'user', password: 'mypassword123');
+            username: 'user', password: 'mypassword123',);
 
         final captured = verify(mockMatrixService.completeRegistration(
           any,
           password: captureAnyNamed('password'),
-        )).captured;
+        ),).captured;
         expect(captured.single, 'mypassword123');
         controller.dispose();
       });
@@ -458,11 +458,11 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenAnswer((_) async => RegisterResponse(
+        ),).thenAnswer((_) async => RegisterResponse(
               userId: '@user:example.com',
               accessToken: 'tok',
               deviceId: 'D1',
-            ));
+            ),);
         when(mockMatrixService.completeRegistration(any))
             .thenAnswer((_) async {});
 
@@ -471,9 +471,9 @@ void main() {
 
         // Fire two submits — second should be blocked by guard.
         final f1 = controller.submitForm(
-            username: 'user', password: 'password123');
+            username: 'user', password: 'password123',);
         final f2 = controller.submitForm(
-            username: 'user', password: 'password123');
+            username: 'user', password: 'password123',);
         await f1;
         await f2;
 
@@ -483,7 +483,7 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).called(1);
+        ),).called(1);
         controller.dispose();
       });
 
@@ -493,12 +493,12 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenThrow(const SocketException('Connection refused'));
+        ),).thenThrow(const SocketException('Connection refused'));
 
         final controller = createController();
         await controller.checkServer();
         await controller.submitForm(
-            username: 'user', password: 'password123');
+            username: 'user', password: 'password123',);
 
         expect(controller.state, RegistrationState.error);
         expect(controller.error, 'Could not reach server');
@@ -511,12 +511,12 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenThrow(TimeoutException('timed out'));
+        ),).thenThrow(TimeoutException('timed out'));
 
         final controller = createController();
         await controller.checkServer();
         await controller.submitForm(
-            username: 'user', password: 'password123');
+            username: 'user', password: 'password123',);
 
         expect(controller.state, RegistrationState.error);
         expect(controller.error, 'Connection timed out');
@@ -530,7 +530,7 @@ void main() {
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                   registrationStages: ['m.login.dummy'],
-                ));
+                ),);
       });
 
       test('resets from UIA stage to formReady', () async {
@@ -539,7 +539,7 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenThrow(
+        ),).thenThrow(
           MatrixException.fromJson({
             'flows': [
               {
@@ -553,7 +553,7 @@ void main() {
         final controller = createController();
         await controller.checkServer();
         await controller.submitForm(
-            username: 'user', password: 'password123');
+            username: 'user', password: 'password123',);
 
         expect(controller.state, RegistrationState.enterEmail);
 
@@ -572,7 +572,7 @@ void main() {
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                   registrationStages: ['m.login.registration_token'],
-                ));
+                ),);
 
         final controller = createController();
         await controller.checkServer();
@@ -587,7 +587,7 @@ void main() {
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                   registrationStages: ['m.login.dummy'],
-                ));
+                ),);
 
         final controller = createController();
         await controller.checkServer();
@@ -601,12 +601,12 @@ void main() {
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                   registrationStages: ['m.login.registration_token'],
-                ));
+                ),);
 
         final controller = createController();
         await controller.checkServer();
         await controller.submitForm(
-            username: 'user', password: 'password123', token: '');
+            username: 'user', password: 'password123',);
 
         expect(controller.tokenError, isNotNull);
         expect(controller.state, RegistrationState.formReady);
@@ -619,7 +619,7 @@ void main() {
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                   registrationStages: ['m.login.registration_token'],
-                ));
+                ),);
 
         final controller = createController();
         await controller.checkServer();
@@ -634,7 +634,7 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenAnswer((invocation) {
+        ),).thenAnswer((invocation) {
           callCount++;
           if (callCount == 1) {
             throw MatrixException.fromJson({
@@ -650,11 +650,11 @@ void main() {
             userId: '@user:example.com',
             accessToken: 'tok',
             deviceId: 'D1',
-          ));
+          ),);
         });
 
         await controller.submitForm(
-            username: 'user', password: 'password123', token: 'mytoken');
+            username: 'user', password: 'password123', token: 'mytoken',);
 
         // _advanceToNextStage fires _attemptRegister without await,
         // so pump the event loop to let the recursive call complete.
@@ -669,7 +669,7 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: captureAnyNamed('auth'),
-        )).captured;
+        ),).captured;
         // Find the non-null auth argument (second call with token auth).
         final tokenAuth = captured.whereType<AuthenticationData>().last;
         final json = tokenAuth.toJson();
@@ -685,7 +685,7 @@ void main() {
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                   registrationStages: ['m.login.dummy'],
-                ));
+                ),);
       });
 
       test('extracts recaptchaPublicKey from UIA params', () async {
@@ -694,7 +694,7 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenThrow(
+        ),).thenThrow(
           MatrixException.fromJson({
             'flows': [
               {
@@ -711,7 +711,7 @@ void main() {
         final controller = createController();
         await controller.checkServer();
         await controller.submitForm(
-            username: 'user', password: 'password123');
+            username: 'user', password: 'password123',);
 
         expect(controller.state, RegistrationState.recaptcha);
         expect(controller.recaptchaPublicKey, 'test_site_key_123');
@@ -724,7 +724,7 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenThrow(
+        ),).thenThrow(
           MatrixException.fromJson({
             'flows': [
               {
@@ -738,7 +738,7 @@ void main() {
         final controller = createController();
         await controller.checkServer();
         await controller.submitForm(
-            username: 'user', password: 'password123');
+            username: 'user', password: 'password123',);
 
         expect(controller.state, RegistrationState.recaptcha);
         expect(controller.recaptchaPublicKey, isNull);
@@ -751,7 +751,7 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenThrow(
+        ),).thenThrow(
           MatrixException.fromJson({
             'flows': [
               {
@@ -785,7 +785,7 @@ void main() {
         final controller = createController();
         await controller.checkServer();
         await controller.submitForm(
-            username: 'user', password: 'password123');
+            username: 'user', password: 'password123',);
 
         expect(controller.state, RegistrationState.acceptTerms);
         final policies = controller.termsOfServicePolicies;
@@ -801,7 +801,7 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenThrow(
+        ),).thenThrow(
           MatrixException.fromJson({
             'flows': [
               {
@@ -815,7 +815,7 @@ void main() {
         final controller = createController();
         await controller.checkServer();
         await controller.submitForm(
-            username: 'user', password: 'password123');
+            username: 'user', password: 'password123',);
 
         expect(controller.termsOfServicePolicies, isEmpty);
         controller.dispose();
@@ -828,7 +828,7 @@ void main() {
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                   registrationStages: ['m.login.dummy'],
-                ));
+                ),);
       });
 
       test('submits m.login.terms auth and advances', () async {
@@ -838,7 +838,7 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenAnswer((invocation) {
+        ),).thenAnswer((invocation) {
           callCount++;
           if (callCount == 1) {
             throw MatrixException.fromJson({
@@ -867,7 +867,7 @@ void main() {
             userId: '@user:example.com',
             accessToken: 'tok',
             deviceId: 'D1',
-          ));
+          ),);
         });
         when(mockMatrixService.completeRegistration(any))
             .thenAnswer((_) async {});
@@ -875,7 +875,7 @@ void main() {
         final controller = createController();
         await controller.checkServer();
         await controller.submitForm(
-            username: 'user', password: 'password123');
+            username: 'user', password: 'password123',);
 
         expect(controller.state, RegistrationState.acceptTerms);
 
@@ -889,7 +889,7 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: captureAnyNamed('auth'),
-        )).captured;
+        ),).captured;
         final termsAuth = captured.whereType<AuthenticationData>().last;
         expect(termsAuth.toJson()['type'], 'm.login.terms');
         controller.dispose();
@@ -912,7 +912,7 @@ void main() {
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                   registrationStages: ['m.login.dummy'],
-                ));
+                ),);
       });
 
       test('clears uiaParams and recaptcha state on cancel', () async {
@@ -921,7 +921,7 @@ void main() {
           password: anyNamed('password'),
           initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
           auth: anyNamed('auth'),
-        )).thenThrow(
+        ),).thenThrow(
           MatrixException.fromJson({
             'flows': [
               {
@@ -938,7 +938,7 @@ void main() {
         final controller = createController();
         await controller.checkServer();
         await controller.submitForm(
-            username: 'user', password: 'password123');
+            username: 'user', password: 'password123',);
 
         expect(controller.state, RegistrationState.recaptcha);
         expect(controller.recaptchaPublicKey, 'key123');
@@ -963,7 +963,7 @@ void main() {
 
         // Submit should be a no-op in error state.
         await controller.submitForm(
-            username: 'user', password: 'password123');
+            username: 'user', password: 'password123',);
         expect(controller.state, RegistrationState.error);
         controller.dispose();
       });
@@ -974,7 +974,7 @@ void main() {
         when(mockMatrixService.getServerAuthCapabilities(any))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
-                ));
+                ),);
 
         final controller = createController();
         await controller.checkServer();

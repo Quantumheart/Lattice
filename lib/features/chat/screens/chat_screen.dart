@@ -1,43 +1,42 @@
 import 'dart:async';
 import 'dart:io' show Platform;
+
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import 'package:matrix/matrix.dart';
-import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
-
 import 'package:lattice/core/models/upload_state.dart';
-import 'package:lattice/features/chat/services/chat_search_controller.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/utils/reply_fallback.dart';
+import 'package:lattice/features/chat/services/chat_search_controller.dart';
+import 'package:lattice/features/chat/services/media_playback_service.dart';
 import 'package:lattice/features/chat/services/typing_controller.dart';
 import 'package:lattice/features/chat/services/voice_recording_controller.dart';
-import 'package:lattice/features/chat/services/media_playback_service.dart';
-import 'package:lattice/features/chat/widgets/voice_send_handler.dart';
 import 'package:lattice/features/chat/widgets/chat_app_bar.dart';
 import 'package:lattice/features/chat/widgets/compose_bar.dart';
 import 'package:lattice/features/chat/widgets/delete_event_dialog.dart';
-import 'package:lattice/features/chat/widgets/emoji_picker_sheet.dart';
 import 'package:lattice/features/chat/widgets/drop_confirm_dialog.dart';
 import 'package:lattice/features/chat/widgets/drop_send_handler.dart';
 import 'package:lattice/features/chat/widgets/drop_zone_overlay.dart';
+import 'package:lattice/features/chat/widgets/emoji_picker_sheet.dart';
 import 'package:lattice/features/chat/widgets/file_send_handler.dart';
 import 'package:lattice/features/chat/widgets/long_press_wrapper.dart';
 import 'package:lattice/features/chat/widgets/message_action_sheet.dart';
-import 'package:lattice/core/utils/reply_fallback.dart';
 import 'package:lattice/features/chat/widgets/message_bubble.dart' show MessageBubble;
 import 'package:lattice/features/chat/widgets/reaction_chips.dart';
 import 'package:lattice/features/chat/widgets/read_receipts.dart';
 import 'package:lattice/features/chat/widgets/search_results_body.dart';
 import 'package:lattice/features/chat/widgets/swipeable_message.dart';
 import 'package:lattice/features/chat/widgets/typing_indicator.dart';
+import 'package:lattice/features/chat/widgets/voice_send_handler.dart';
+import 'package:matrix/matrix.dart';
+import 'package:provider/provider.dart';
+import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({
-    super.key,
-    required this.roomId,
+    required this.roomId, super.key,
     this.onBack,
     this.onShowDetails,
   });
@@ -191,7 +190,7 @@ class _ChatScreenState extends State<ChatScreen> {
     _cachedVisibleEvents = events
         .where((e) =>
             (e.type == EventTypes.Message || e.type == EventTypes.Encrypted) &&
-            e.relationshipType != RelationshipTypes.edit)
+            e.relationshipType != RelationshipTypes.edit,)
         .toList();
     return _cachedVisibleEvents!;
   }
@@ -293,7 +292,7 @@ class _ChatScreenState extends State<ChatScreen> {
             e.content
                     .tryGetMap<String, Object?>('m.relates_to')
                     ?.tryGet<String>('key') ==
-                emoji)
+                emoji,)
         .firstOrNull;
 
     try {
@@ -307,7 +306,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
               content: Text(
-                  'Failed to react: ${MatrixService.friendlyAuthError(e)}')),
+                  'Failed to react: ${MatrixService.friendlyAuthError(e)}',),),
         );
       }
     }
@@ -332,7 +331,7 @@ class _ChatScreenState extends State<ChatScreen> {
           SnackBar(
             content: Text(wasPinned
                 ? 'Failed to unpin message'
-                : 'Failed to pin message'),
+                : 'Failed to pin message',),
           ),
         );
       }
@@ -610,7 +609,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildMessageList(
-      List<Event> events, MatrixService matrix, Room room) {
+      List<Event> events, MatrixService matrix, Room room,) {
     final isMobile = MediaQuery.sizeOf(context).width < 720;
     final showReceipts = context.watch<PreferencesService>().readReceipts;
     final receiptMap = showReceipts
@@ -638,7 +637,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildMessageItem(
       List<Event> events, int i, MatrixService matrix, bool isMobile,
-      Map<String, List<Receipt>> receiptMap) {
+      Map<String, List<Receipt>> receiptMap,) {
     final event = events[i];
     final isMe = event.senderId == matrix.client.userID;
 
@@ -678,7 +677,7 @@ class _ChatScreenState extends State<ChatScreen> {
       );
     }
 
-    Widget content = MessageBubble(
+    final Widget content = MessageBubble(
       event: event,
       isMe: isMe,
       isFirst: isFirst,

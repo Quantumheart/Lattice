@@ -1,15 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/e2ee/widgets/key_verification_dialog.dart';
+import 'package:lattice/features/rooms/widgets/admin_settings_section.dart';
+import 'package:lattice/features/rooms/widgets/room_members_section.dart';
+import 'package:lattice/features/rooms/widgets/shared_media_section.dart';
 import 'package:lattice/shared/widgets/avatar_edit_overlay.dart';
-import 'room_members_section.dart';
-import 'shared_media_section.dart';
-import 'admin_settings_section.dart';
+import 'package:matrix/matrix.dart';
+import 'package:provider/provider.dart';
 
 /// Displays room details: header, actions, members, encryption,
 /// media gallery, notification settings, and admin controls.
@@ -19,8 +18,7 @@ import 'admin_settings_section.dart';
 /// (for the desktop side panel).
 class RoomDetailsPanel extends StatefulWidget {
   const RoomDetailsPanel({
-    super.key,
-    required this.roomId,
+    required this.roomId, super.key,
     this.isFullPage = false,
   });
 
@@ -178,7 +176,7 @@ class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
       );
     }
 
-    return Container(
+    return ColoredBox(
       color: cs.surface,
       child: content,
     );
@@ -224,7 +222,7 @@ class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
       padding: const EdgeInsets.all(20),
       child: Column(
         children: [
-          AvatarEditOverlay(room: room, size: 72),
+          AvatarEditOverlay(room: room),
           const SizedBox(height: 12),
           Text(
             room.getLocalizedDisplayname(),

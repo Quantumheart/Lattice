@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/shared/widgets/room_avatar.dart';
+import 'package:matrix/matrix.dart';
 
 /// Wraps a [RoomAvatarWidget] with avatar editing controls.
 ///
@@ -11,8 +10,7 @@ import 'package:lattice/shared/widgets/room_avatar.dart';
 /// Only shows controls if the user has permission to change the avatar.
 class AvatarEditOverlay extends StatefulWidget {
   const AvatarEditOverlay({
-    super.key,
-    required this.room,
+    required this.room, super.key,
     this.size = 72,
   });
 
@@ -46,7 +44,7 @@ class _AvatarEditOverlayState extends State<AvatarEditOverlay> {
           MouseRegion(
             cursor: _busy ? SystemMouseCursors.basic : SystemMouseCursors.click,
             child: GestureDetector(
-              onTap: _busy ? null : () => _uploadAvatar(),
+              onTap: _busy ? null : _uploadAvatar,
               child: RoomAvatarWidget(room: widget.room, size: widget.size),
             ),
           ),
@@ -57,7 +55,7 @@ class _AvatarEditOverlayState extends State<AvatarEditOverlay> {
               child: MouseRegion(
                 cursor: _busy ? SystemMouseCursors.basic : SystemMouseCursors.click,
                 child: GestureDetector(
-                  onTap: _busy ? null : () => _removeAvatar(),
+                  onTap: _busy ? null : _removeAvatar,
                   child: Container(
                     width: badgeSize,
                     height: badgeSize,

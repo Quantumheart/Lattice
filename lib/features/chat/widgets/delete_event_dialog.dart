@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:lattice/core/services/matrix_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
-
-import 'package:lattice/core/services/matrix_service.dart';
 
 /// Shows a confirmation dialog and redacts [event] if the user confirms.
 Future<void> confirmAndDeleteEvent(BuildContext context, Event event) async {

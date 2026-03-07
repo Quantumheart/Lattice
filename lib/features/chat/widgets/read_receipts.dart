@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/shared/widgets/user_avatar.dart';
+import 'package:matrix/matrix.dart';
 
 // ── Receipt map builder ──────────────────────────────────────
 
@@ -43,10 +42,7 @@ Map<String, List<Receipt>> buildReceiptMap(Room room, String? myUserId) {
 /// with a "+N" badge when more than 3 users have read it.
 class ReadReceiptsRow extends StatelessWidget {
   const ReadReceiptsRow({
-    super.key,
-    required this.receipts,
-    required this.client,
-    required this.isMe,
+    required this.receipts, required this.client, required this.isMe, super.key,
   });
 
   final List<Receipt> receipts;

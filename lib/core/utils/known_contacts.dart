@@ -14,7 +14,7 @@ List<Profile> knownContacts(Client client) {
       userId: mxid,
       displayName: room.getLocalizedDisplayname(),
       avatarUrl: room.avatar,
-    ));
+    ),);
   }
   return contacts;
 }

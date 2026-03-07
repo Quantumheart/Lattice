@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-import 'package:provider/provider.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/settings/screens/devices_screen.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:provider/provider.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -81,7 +81,7 @@ void main() {
               displayName: 'Element Web',
               lastSeenTs: now - 7200000,
             ),
-          ]);
+          ],);
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -100,7 +100,7 @@ void main() {
               deviceId: 'THISDEVICE',
               displayName: 'Lattice Flutter',
             ),
-          ]);
+          ],);
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -113,7 +113,7 @@ void main() {
       when(mockMatrix.chatBackupNeeded).thenReturn(true);
       when(mockClient.getDevices()).thenAnswer((_) async => [
             Device(deviceId: 'THISDEVICE', displayName: 'Lattice Flutter'),
-          ]);
+          ],);
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -131,7 +131,7 @@ void main() {
               deviceId: 'THISDEVICE',
               displayName: 'Lattice Flutter',
             ),
-          ]);
+          ],);
       when(mockClient.updateDevice(any, displayName: anyNamed('displayName')))
           .thenAnswer((_) async {});
 
@@ -162,7 +162,7 @@ void main() {
               displayName: 'Old Phone',
               lastSeenTs: now,
             ),
-          ]);
+          ],);
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -176,7 +176,7 @@ void main() {
         // Find it by widget type within the DeviceListItem for 'Old Phone'.
         await tester.tap(find.byWidgetPredicate(
           (widget) => widget is PopupMenuButton,
-        ));
+        ),);
       }
       await tester.pumpAndSettle();
 

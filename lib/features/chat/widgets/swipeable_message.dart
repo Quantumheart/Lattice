@@ -3,9 +3,7 @@ import 'package:flutter/services.dart';
 
 class SwipeableMessage extends StatefulWidget {
   const SwipeableMessage({
-    super.key,
-    required this.onReply,
-    required this.child,
+    required this.onReply, required this.child, super.key,
   });
 
   final VoidCallback onReply;

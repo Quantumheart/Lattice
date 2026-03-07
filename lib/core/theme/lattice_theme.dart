@@ -13,7 +13,6 @@ class LatticeTheme {
     final colorScheme = dynamic ??
         ColorScheme.fromSeed(
           seedColor: _seedColor,
-          brightness: Brightness.light,
         );
 
     return _build(colorScheme, Brightness.light);

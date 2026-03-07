@@ -2,19 +2,18 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:matrix/matrix.dart' hide Visibility;
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/client_manager.dart';
-import 'package:lattice/features/notifications/services/inbox_controller.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/core/utils/media_auth.dart';
+import 'package:lattice/features/notifications/services/inbox_controller.dart';
 import 'package:lattice/features/rooms/widgets/invite_dialog.dart';
-import 'space_action_dialog.dart';
-import 'space_context_menu.dart';
+import 'package:lattice/features/spaces/widgets/space_action_dialog.dart';
+import 'package:lattice/features/spaces/widgets/space_context_menu.dart';
 import 'package:lattice/shared/widgets/user_avatar.dart';
+import 'package:matrix/matrix.dart' hide Visibility;
+import 'package:provider/provider.dart';
 
 /// A vertical icon rail showing the user's Matrix spaces.
 /// Modelled after Discord / Slack's sidebar.
@@ -64,7 +63,7 @@ class _SpaceRailState extends State<SpaceRail> {
             tooltip: 'Home',
             isSelected: matrix.selectedSpaceIds.isEmpty,
             color: cs.primary,
-            onTap: () => matrix.clearSpaceSelection(),
+            onTap: matrix.clearSpaceSelection,
           ),
 
           Padding(
@@ -124,7 +123,7 @@ class _SpaceRailState extends State<SpaceRail> {
                           final keys =
                               HardwareKeyboard.instance.logicalKeysPressed;
                           final isModifier = keys.contains(
-                                  LogicalKeyboardKey.controlLeft) ||
+                                  LogicalKeyboardKey.controlLeft,) ||
                               keys.contains(LogicalKeyboardKey.controlRight) ||
                               keys.contains(LogicalKeyboardKey.metaLeft) ||
                               keys.contains(LogicalKeyboardKey.metaRight);
@@ -136,7 +135,7 @@ class _SpaceRailState extends State<SpaceRail> {
                         },
                         onLongPress: () {
                           final box =
-                              iconContext.findRenderObject() as RenderBox;
+                              iconContext.findRenderObject()! as RenderBox;
                           final pos = box.localToGlobal(Offset.zero);
                           showSpaceContextMenu(
                             iconContext,
@@ -151,7 +150,7 @@ class _SpaceRailState extends State<SpaceRail> {
                         },
                         onSecondaryTapUp: (details) {
                           final box =
-                              iconContext.findRenderObject() as RenderBox;
+                              iconContext.findRenderObject()! as RenderBox;
                           final pos = box.localToGlobal(Offset.zero);
                           showSpaceContextMenu(
                             iconContext,
@@ -184,7 +183,7 @@ class _SpaceRailState extends State<SpaceRail> {
                 color: cs.outlineVariant,
                 outlined: true,
                 onTap: () {
-                  final box = btnContext.findRenderObject() as RenderBox;
+                  final box = btnContext.findRenderObject()! as RenderBox;
                   final position = box.localToGlobal(Offset.zero);
                   showSpaceActionMenu(
                     btnContext,
@@ -210,7 +209,7 @@ class _SpaceRailState extends State<SpaceRail> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 4),
+                        horizontal: 16, vertical: 4,),
                     child: Divider(height: 1, color: cs.outlineVariant),
                   ),
                   Flexible(
@@ -245,14 +244,14 @@ class _SpaceRailState extends State<SpaceRail> {
                               ),
                             ),
                           );
-                          }),
+                          },),
                       ],
                     ),
                   ),
                 ],
               ),
             );
-          }),
+          },),
 
           // Divider + Inbox icon with badge
           Padding(
@@ -430,7 +429,6 @@ class _RailIconState extends State<_RailIcon> {
                   ? Border.all(
                       color: cs.outlineVariant,
                       width: 1.5,
-                      strokeAlign: BorderSide.strokeAlignInside,
                     )
                   : null,
             ),

@@ -2,11 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lattice/features/rooms/widgets/shared_media_section.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-
-import 'package:lattice/features/rooms/widgets/shared_media_section.dart';
 
 @GenerateNiceMocks([
   MockSpec<Room>(),
@@ -57,7 +56,7 @@ void main() {
         searchFunc: anyNamed('searchFunc'),
         nextBatch: anyNamed('nextBatch'),
         limit: anyNamed('limit'),
-      )).thenAnswer((_) => completer.future);
+      ),).thenAnswer((_) => completer.future);
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pump();
@@ -74,7 +73,7 @@ void main() {
         searchFunc: anyNamed('searchFunc'),
         nextBatch: anyNamed('nextBatch'),
         limit: anyNamed('limit'),
-      )).thenAnswer((_) async => _result());
+      ),).thenAnswer((_) async => _result());
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -93,7 +92,7 @@ void main() {
         searchFunc: anyNamed('searchFunc'),
         nextBatch: anyNamed('nextBatch'),
         limit: anyNamed('limit'),
-      )).thenAnswer((_) async => _result(events: [fileEvent]));
+      ),).thenAnswer((_) async => _result(events: [fileEvent]));
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -114,7 +113,7 @@ void main() {
         searchFunc: anyNamed('searchFunc'),
         nextBatch: anyNamed('nextBatch'),
         limit: anyNamed('limit'),
-      )).thenAnswer((_) async => _result(events: [audioEvent]));
+      ),).thenAnswer((_) async => _result(events: [audioEvent]));
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -131,7 +130,7 @@ void main() {
         searchFunc: anyNamed('searchFunc'),
         nextBatch: anyNamed('nextBatch'),
         limit: anyNamed('limit'),
-      )).thenAnswer((_) async => _result(events: [fileEvent], nextBatch: 'batch2'));
+      ),).thenAnswer((_) async => _result(events: [fileEvent], nextBatch: 'batch2'));
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -146,7 +145,7 @@ void main() {
         searchFunc: anyNamed('searchFunc'),
         nextBatch: anyNamed('nextBatch'),
         limit: anyNamed('limit'),
-      )).thenAnswer((_) async => _result(events: [fileEvent]));
+      ),).thenAnswer((_) async => _result(events: [fileEvent]));
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -159,7 +158,7 @@ void main() {
         searchFunc: anyNamed('searchFunc'),
         nextBatch: anyNamed('nextBatch'),
         limit: anyNamed('limit'),
-      )).thenThrow(Exception('Network error'));
+      ),).thenThrow(Exception('Network error'));
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -178,7 +177,7 @@ void main() {
         searchFunc: anyNamed('searchFunc'),
         nextBatch: anyNamed('nextBatch'),
         limit: anyNamed('limit'),
-      )).thenAnswer((_) async => _result(events: [imageEvent]));
+      ),).thenAnswer((_) async => _result(events: [imageEvent]));
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();

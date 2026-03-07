@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 // ── Speed dial mini-FAB ─────────────────────────────────────
 class SpeedDialItem extends StatelessWidget {
   const SpeedDialItem({
-    super.key,
-    required this.label,
-    required this.icon,
-    required this.onTap,
+    required this.label, required this.icon, required this.onTap, super.key,
   });
 
   final String label;
@@ -26,7 +23,7 @@ class SpeedDialItem extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Text(label,
-                style: TextStyle(fontSize: 13, color: cs.onSurface)),
+                style: TextStyle(fontSize: 13, color: cs.onSurface),),
           ),
         ),
         const SizedBox(width: 12),

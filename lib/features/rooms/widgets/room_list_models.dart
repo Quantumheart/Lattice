@@ -1,6 +1,5 @@
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/features/rooms/services/room_list_search_controller.dart';
+import 'package:matrix/matrix.dart';
 
 // ── List item types for the flat interleaved list ──────────
 sealed class ListItem {}
@@ -48,8 +47,7 @@ class MessageSearchHeaderItem extends ListItem {
   final String? error;
 
   MessageSearchHeaderItem({
-    this.resultCount,
-    required this.isLoading,
+    required this.isLoading, this.resultCount,
     this.error,
   });
 }

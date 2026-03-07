@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/core/extensions/device_extension.dart';
+import 'package:matrix/matrix.dart';
 
 /// A list tile displaying a single Matrix device with its verification status.
 class DeviceListItem extends StatelessWidget {
   const DeviceListItem({
-    super.key,
-    required this.device,
-    required this.isCurrentDevice,
+    required this.device, required this.isCurrentDevice, super.key,
     this.deviceKeys,
     this.onRename,
     this.onVerify,
@@ -72,7 +69,7 @@ class DeviceListItem extends StatelessWidget {
                     dense: true,
                   ),
                 ),
-                if (deviceKeys != null && !(deviceKeys!.blocked))
+                if (deviceKeys != null && !deviceKeys!.blocked)
                   const PopupMenuItem(
                     value: _DeviceAction.verify,
                     child: ListTile(

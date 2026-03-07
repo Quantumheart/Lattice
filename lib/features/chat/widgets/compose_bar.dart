@@ -1,30 +1,24 @@
-import 'package:flutter/foundation.dart' show defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:matrix/matrix.dart';
-
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/models/upload_state.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/chat/services/typing_controller.dart';
 import 'package:lattice/features/chat/services/voice_recording_controller.dart';
-import 'mention_autocomplete_controller.dart';
-import 'mention_suggestion_overlay.dart';
-import 'edit_preview_banner.dart';
-import 'recording_indicator.dart';
-import 'reply_preview_banner.dart';
-import 'upload_progress_banner.dart';
+import 'package:lattice/features/chat/widgets/edit_preview_banner.dart';
+import 'package:lattice/features/chat/widgets/mention_autocomplete_controller.dart';
+import 'package:lattice/features/chat/widgets/mention_suggestion_overlay.dart';
+import 'package:lattice/features/chat/widgets/recording_indicator.dart';
+import 'package:lattice/features/chat/widgets/reply_preview_banner.dart';
+import 'package:lattice/features/chat/widgets/upload_progress_banner.dart';
+import 'package:matrix/matrix.dart';
+import 'package:provider/provider.dart';
 
 class ComposeBar extends StatefulWidget {
   const ComposeBar({
-    super.key,
-    required this.controller,
-    required this.onSend,
+    required this.controller, required this.onSend, required this.onCancelReply, required this.onCancelEdit, super.key,
     this.replyEvent,
-    required this.onCancelReply,
     this.editEvent,
-    required this.onCancelEdit,
     this.onAttach,
     this.uploadNotifier,
     this.room,
@@ -196,7 +190,6 @@ class _ComposeBarState extends State<ComposeBar> {
       padding: EdgeInsets.only(
         left: 12,
         right: 8,
-        top: 0,
         bottom: MediaQuery.paddingOf(context).bottom + 8,
       ),
       decoration: BoxDecoration(
@@ -278,9 +271,9 @@ class _ComposeBarState extends State<ComposeBar> {
               bindings: {
                 const SingleActivator(LogicalKeyboardKey.enter): _handleSend,
                 SingleActivator(LogicalKeyboardKey.arrowUp,
-                    meta: _isMacOS, control: !_isMacOS): _jumpToStart,
+                    meta: _isMacOS, control: !_isMacOS,): _jumpToStart,
                 SingleActivator(LogicalKeyboardKey.arrowDown,
-                    meta: _isMacOS, control: !_isMacOS): _jumpToEnd,
+                    meta: _isMacOS, control: !_isMacOS,): _jumpToEnd,
               },
               child: Focus(
                 onKeyEvent: _handleKeyEvent,
@@ -294,7 +287,7 @@ class _ComposeBarState extends State<ComposeBar> {
                         : 'Type a message…',
                     isDense: true,
                     contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 10),
+                        horizontal: 16, vertical: 10,),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(24),
                       borderSide: BorderSide.none,

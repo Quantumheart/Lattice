@@ -1,15 +1,14 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/core/utils/media_auth.dart';
 import 'package:lattice/shared/widgets/full_image_view.dart';
+import 'package:matrix/matrix.dart';
 
 // ── Image bubble (async URI resolution) ──────────────────────
 
 class ImageBubble extends StatefulWidget {
-  const ImageBubble({super.key, required this.event});
+  const ImageBubble({required this.event, super.key});
 
   final Event event;
 
@@ -56,7 +55,6 @@ class _ImageBubbleState extends State<ImageBubble> {
           getThumbnail: true,
           width: 280,
           height: 260,
-          method: ThumbnailMethod.scale,
         );
         if (mounted) {
           setState(() {

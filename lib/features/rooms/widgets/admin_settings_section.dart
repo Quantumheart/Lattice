@@ -1,14 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:matrix/matrix.dart';
 
 /// Admin settings for a room: edit name, topic, encryption,
 /// and power levels. Only rendered when the user has sufficient power level.
 class AdminSettingsSection extends StatefulWidget {
-  const AdminSettingsSection({super.key, required this.room});
+  const AdminSettingsSection({required this.room, super.key});
 
   final Room room;
 
@@ -278,7 +277,7 @@ class _AdminSettingsSectionState extends State<AdminSettingsSection> {
                   for (final entry in events.entries)
                     _plRow(
                       _friendlyEventType(entry.key),
-                      entry.value is int ? entry.value as int : 0,
+                      entry.value is int ? entry.value! as int : 0,
                     ),
                 ],
               ),

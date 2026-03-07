@@ -7,8 +7,7 @@ import 'package:matrix/matrix.dart';
 /// Pass [onChanged] as `null` to disable interaction (tiles appear dimmed).
 class NotificationRadioGroup extends StatelessWidget {
   const NotificationRadioGroup({
-    super.key,
-    required this.groupValue,
+    required this.groupValue, super.key,
     this.onChanged,
   });
 

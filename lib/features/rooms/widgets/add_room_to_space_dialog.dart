@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart' hide Visibility;
-
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/shared/widgets/room_avatar.dart';
+import 'package:matrix/matrix.dart' hide Visibility;
 
 // ── Add Room to Space Dialog ─────────────────────────────────────
 
@@ -43,7 +42,7 @@ class _AddRoomToSpaceDialogState extends State<AddRoomToSpaceDialog> {
     return widget.matrixService.spaces
         .where((s) =>
             s.canChangeStateEvent('m.space.child') &&
-            !memberships.contains(s.id))
+            !memberships.contains(s.id),)
         .toList();
   }
 
@@ -120,7 +119,7 @@ class _AddRoomToSpaceDialogState extends State<AddRoomToSpaceDialog> {
                             value: _suggested[space.id] == true,
                             onChanged: checked && !_loading
                                 ? (v) => setState(
-                                    () => _suggested[space.id] = v)
+                                    () => _suggested[space.id] = v,)
                                 : null,
                           ),
                         ),

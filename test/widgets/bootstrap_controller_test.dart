@@ -1,11 +1,11 @@
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-import 'package:matrix/encryption.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/e2ee/widgets/bootstrap_controller.dart';
+import 'package:matrix/encryption.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -101,7 +101,7 @@ void main() {
         setupMasterKey: true,
         setupSelfSigningKey: true,
         setupUserSigningKey: true,
-      )).called(1);
+      ),).called(1);
       controller.dispose();
     });
 

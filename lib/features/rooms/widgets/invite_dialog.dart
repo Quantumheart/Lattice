@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/shared/widgets/room_avatar.dart';
+import 'package:matrix/matrix.dart';
+import 'package:provider/provider.dart';
 
 /// Shared dialog for accepting or declining a room/space invitation.
 ///
 /// Returns `true` if accepted, `false` if declined, `null` if dismissed.
 class InviteDialog extends StatefulWidget {
-  const InviteDialog({super.key, required this.room});
+  const InviteDialog({required this.room, super.key});
 
   final Room room;
 

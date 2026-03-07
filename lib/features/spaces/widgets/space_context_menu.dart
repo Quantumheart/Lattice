@@ -2,9 +2,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:matrix/matrix.dart' hide Visibility;
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/rooms/widgets/add_existing_rooms_dialog.dart';
@@ -12,6 +9,9 @@ import 'package:lattice/features/rooms/widgets/invite_user_dialog.dart';
 import 'package:lattice/features/rooms/widgets/new_room_dialog.dart';
 import 'package:lattice/features/spaces/widgets/create_subspace_dialog.dart';
 import 'package:lattice/features/spaces/widgets/notification_radio_group.dart';
+import 'package:lattice/features/spaces/widgets/space_details_panel.dart' show SpaceDetailsPanel;
+import 'package:matrix/matrix.dart' hide Visibility;
+import 'package:provider/provider.dart';
 
 // ── Space Context Menu ──────────────────────────────────────────────
 
@@ -261,7 +261,7 @@ Future<void> _handleMarkAsRead(Room space) async {
     final batch = roomsToMark.sublist(i, min(i + batchSize, roomsToMark.length));
     await Future.wait(batch.map((r) => r.room.setReadMarker(r.eventId).catchError((e) {
       debugPrint('[Lattice] Failed to mark room ${r.room.id} as read: $e');
-    })));
+    }),),);
   }
 }
 

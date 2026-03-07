@@ -1,12 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lattice/features/chat/widgets/swipeable_message.dart' show SwipeableMessage;
 
 /// Detects long press using raw pointer events so it does not participate in
 /// the gesture arena and therefore does not interfere with the horizontal drag
 /// recogniser in [SwipeableMessage].
 class LongPressWrapper extends StatefulWidget {
-  const LongPressWrapper({super.key, required this.onLongPress, required this.child});
+  const LongPressWrapper({required this.onLongPress, required this.child, super.key});
 
   final void Function(Rect bubbleRect) onLongPress;
   final Widget child;

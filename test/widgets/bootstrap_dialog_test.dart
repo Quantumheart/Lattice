@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-import 'package:matrix/encryption.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/e2ee/widgets/bootstrap_dialog.dart';
+import 'package:matrix/encryption.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -64,7 +64,7 @@ void main() {
   }
 
   Future<void> openDialog(WidgetTester tester,
-      {bool wipeExisting = false}) async {
+      {bool wipeExisting = false,}) async {
     await tester.pumpWidget(buildTestWidget(wipeExisting: wipeExisting));
     await tester.tap(find.text('Open'));
     // Pump twice: once for the dialog to appear, once for the async
@@ -185,7 +185,7 @@ void main() {
 
       expect(find.text('Backup error'), findsOneWidget);
       expect(find.textContaining('Failed to generate recovery key'),
-          findsOneWidget);
+          findsOneWidget,);
     });
 
     testWidgets('save-to-device checkbox present in existing-key unlock flow',
@@ -269,7 +269,7 @@ void main() {
       // resets state, and restarts bootstrap (which shows a loading spinner).
       await tester.tap(find.text('Create new backup'));
       // Pump several frames to allow the confirmation dialog to animate out
-      for (int i = 0; i < 10; i++) {
+      for (var i = 0; i < 10; i++) {
         await tester.pump(const Duration(milliseconds: 50));
       }
 
@@ -282,7 +282,7 @@ void main() {
       final clipboardCalls = <String>[];
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
         SystemChannels.platform,
-        (MethodCall methodCall) async {
+        (methodCall) async {
           if (methodCall.method == 'Clipboard.setData') {
             final text =
                 (methodCall.arguments as Map)['text'] as String? ?? '';

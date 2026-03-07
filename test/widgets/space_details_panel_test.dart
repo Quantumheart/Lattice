@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-import 'package:provider/provider.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/spaces/widgets/space_details_panel.dart';
+import 'package:matrix/matrix.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
+import 'package:provider/provider.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -41,7 +41,7 @@ void main() {
     when(mockSpace.summary).thenReturn(RoomSummary.fromJson({
       'm.joined_member_count': 5,
       'm.invited_member_count': 0,
-    }));
+    }),);
     when(mockSpace.requestParticipants(any)).thenAnswer((_) async => []);
   });
 
@@ -111,7 +111,7 @@ void main() {
             isFullPage: true,
           ),
         ),
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       expect(find.widgetWithText(AppBar, 'Test Space'), findsOneWidget);

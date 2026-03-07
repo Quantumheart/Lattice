@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-
 import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/features/rooms/services/room_list_search_controller.dart';
 import 'package:lattice/core/utils/text_highlight.dart';
 import 'package:lattice/core/utils/time_format.dart';
-import 'room_list_models.dart';
+import 'package:lattice/features/rooms/services/room_list_search_controller.dart';
+import 'package:lattice/features/rooms/widgets/room_list_models.dart';
 
 // ── Message search header ────────────────────────────────────
 class MessageSearchHeader extends StatelessWidget {
-  const MessageSearchHeader({super.key, required this.item});
+  const MessageSearchHeader({required this.item, super.key});
   final MessageSearchHeaderItem item;
 
   @override
@@ -64,9 +63,7 @@ class MessageSearchHeader extends StatelessWidget {
 // ── Message search result tile ───────────────────────────────
 class MessageSearchResultTile extends StatelessWidget {
   const MessageSearchResultTile({
-    super.key,
-    required this.result,
-    required this.query,
+    required this.result, required this.query, super.key,
   });
 
   final MessageSearchResult result;
@@ -162,9 +159,7 @@ class MessageSearchResultTile extends StatelessWidget {
 // ── Load more button ─────────────────────────────────────────
 class LoadMoreButton extends StatelessWidget {
   const LoadMoreButton({
-    super.key,
-    required this.isLoading,
-    required this.onPressed,
+    required this.isLoading, required this.onPressed, super.key,
   });
 
   final bool isLoading;

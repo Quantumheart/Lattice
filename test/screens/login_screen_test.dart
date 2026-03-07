@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lattice/core/models/server_auth_capabilities.dart';
+import 'package:lattice/core/services/client_manager.dart';
+import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/features/auth/screens/login_screen.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
-import 'package:lattice/features/auth/screens/login_screen.dart';
-import 'package:lattice/core/models/server_auth_capabilities.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/client_manager.dart';
 
 import '../services/matrix_service_test.mocks.dart';
 
@@ -90,7 +90,7 @@ void main() {
             SsoIdentityProvider(id: 'google', name: 'Google'),
           ],
         ),
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       expect(find.text('Sign in with Google'), findsOneWidget);
@@ -108,7 +108,7 @@ void main() {
             SsoIdentityProvider(id: 'oidc', name: 'OIDC Provider'),
           ],
         ),
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       expect(find.text('Sign in with OIDC Provider'), findsOneWidget);

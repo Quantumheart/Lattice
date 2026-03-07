@@ -1,13 +1,13 @@
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
+import 'package:lattice/core/services/matrix_service.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/encryption/cross_signing.dart';
+import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:matrix/src/utils/space_child.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:lattice/core/services/matrix_service.dart';
+import 'package:mockito/annotations.dart';
+import 'package:mockito/mockito.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -126,8 +126,8 @@ void main() {
       when(olderRoom.id).thenReturn('!old:example.com');
       when(olderRoom.lastEvent).thenReturn(_fakeEvent(
         room: olderRoom,
-        ts: DateTime(2024, 1, 1),
-      ));
+        ts: DateTime(2024),
+      ),);
 
       final newerRoom = MockRoom();
       when(newerRoom.isSpace).thenReturn(false);
@@ -135,8 +135,8 @@ void main() {
       when(newerRoom.id).thenReturn('!new:example.com');
       when(newerRoom.lastEvent).thenReturn(_fakeEvent(
         room: newerRoom,
-        ts: DateTime(2024, 6, 1),
-      ));
+        ts: DateTime(2024, 6),
+      ),);
 
       when(mockClient.rooms).thenReturn([space, olderRoom, newerRoom]);
 
@@ -186,17 +186,17 @@ void main() {
             GetVersionsResponse.fromJson({'versions': ['v1.1']}),
             <LoginFlow>[],
             null,
-          ));
+          ),);
       when(mockClient.login(
         any,
         identifier: anyNamed('identifier'),
         password: anyNamed('password'),
         initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
-      )).thenAnswer((_) async => LoginResponse.fromJson({
+      ),).thenAnswer((_) async => LoginResponse.fromJson({
             'access_token': 'token123',
             'device_id': 'DEV1',
             'user_id': '@user:example.com',
-          }));
+          }),);
       when(mockClient.accessToken).thenReturn('token123');
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
@@ -224,22 +224,22 @@ void main() {
 
       // Verify namespaced storage keys.
       verify(mockStorage.write(
-              key: 'lattice_test_access_token', value: 'token123'))
+              key: 'lattice_test_access_token', value: 'token123',),)
           .called(1);
       verify(mockStorage.write(
-              key: 'lattice_test_user_id', value: '@user:example.com'))
+              key: 'lattice_test_user_id', value: '@user:example.com',),)
           .called(1);
       verify(mockStorage.write(
-              key: 'lattice_test_homeserver', value: 'https://example.com'))
+              key: 'lattice_test_homeserver', value: 'https://example.com',),)
           .called(1);
       verify(mockStorage.write(
-              key: 'lattice_test_device_id', value: 'DEV1'))
+              key: 'lattice_test_device_id', value: 'DEV1',),)
           .called(1);
       // Verify session backup is saved.
       verify(mockStorage.write(
         key: 'lattice_session_backup_test',
         value: anyNamed('value'),
-      )).called(1);
+      ),).called(1);
     });
 
     test('returns false on failure and sets loginError', () async {
@@ -266,17 +266,17 @@ void main() {
             GetVersionsResponse.fromJson({'versions': ['v1.1']}),
             <LoginFlow>[],
             null,
-          ));
+          ),);
       when(mockClient.login(
         any,
         identifier: anyNamed('identifier'),
         password: anyNamed('password'),
         initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
-      )).thenAnswer((_) async => LoginResponse.fromJson({
+      ),).thenAnswer((_) async => LoginResponse.fromJson({
             'access_token': 'token123',
             'device_id': 'DEV1',
             'user_id': '@user:example.com',
-          }));
+          }),);
       when(mockClient.accessToken).thenReturn('token123');
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
@@ -325,17 +325,17 @@ void main() {
             GetVersionsResponse.fromJson({'versions': ['v1.1']}),
             <LoginFlow>[],
             null,
-          ));
+          ),);
       when(mockClient.login(
         any,
         identifier: anyNamed('identifier'),
         password: anyNamed('password'),
         initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
-      )).thenAnswer((_) async => LoginResponse.fromJson({
+      ),).thenAnswer((_) async => LoginResponse.fromJson({
             'access_token': 'token123',
             'device_id': 'DEV1',
             'user_id': '@user:example.com',
-          }));
+          }),);
       when(mockClient.accessToken).thenReturn('token123');
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
@@ -400,17 +400,17 @@ void main() {
             GetVersionsResponse.fromJson({'versions': ['v1.1']}),
             <LoginFlow>[],
             null,
-          ));
+          ),);
       when(mockClient.login(
         any,
         identifier: anyNamed('identifier'),
         password: anyNamed('password'),
         initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
-      )).thenAnswer((_) async => LoginResponse.fromJson({
+      ),).thenAnswer((_) async => LoginResponse.fromJson({
             'access_token': 'token123',
             'device_id': 'DEV1',
             'user_id': '@user:example.com',
-          }));
+          }),);
       when(mockClient.accessToken).thenReturn('token123');
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
@@ -446,7 +446,7 @@ void main() {
       verify(mockStorage.write(
         key: 'ssss_recovery_key_@user:example.com',
         value: 'my-recovery-key',
-      )).called(1);
+      ),).called(1);
     });
 
     test('getStoredRecoveryKey reads from secure storage', () async {
@@ -474,7 +474,7 @@ void main() {
 
       verify(mockStorage.delete(
         key: 'ssss_recovery_key_@user:example.com',
-      )).called(1);
+      ),).called(1);
     });
   });
 
@@ -566,7 +566,7 @@ void main() {
               count: 0,
               etag: '1',
               version: '1',
-            ));
+            ),);
         when(mockClient.deleteRoomKeysVersion('1'))
             .thenAnswer((_) async {});
 
@@ -575,7 +575,7 @@ void main() {
         verify(mockClient.deleteRoomKeysVersion('1')).called(1);
         verify(mockStorage.delete(
           key: 'ssss_recovery_key_@user:example.com',
-        )).called(1);
+        ),).called(1);
       });
 
       test('sets user-friendly error on failure', () async {
@@ -586,7 +586,7 @@ void main() {
         await service.disableChatBackup();
 
         expect(service.chatBackupError,
-            'Failed to disable chat backup. Please try again.');
+            'Failed to disable chat backup. Please try again.',);
       });
     });
   });
@@ -686,11 +686,11 @@ void main() {
           'session_id': 'sess123',
           'sender_key': 'key456',
         },
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@alice:example.com',
         originServerTs: DateTime.now(),
         room: room,
-      ));
+      ),);
 
       when(mockClient.rooms).thenReturn([room]);
 
@@ -700,7 +700,7 @@ void main() {
         '!room:example.com',
         'sess123',
         'key456',
-      )).called(1);
+      ),).called(1);
     });
 
     test('skips rooms with decryptable last events', () {
@@ -711,11 +711,11 @@ void main() {
       when(room.lastEvent).thenReturn(Event(
         type: EventTypes.Message,
         content: {'body': 'hello', 'msgtype': 'm.text'},
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@alice:example.com',
         originServerTs: DateTime.now(),
         room: room,
-      ));
+      ),);
 
       when(mockClient.rooms).thenReturn([room]);
 
@@ -736,11 +736,11 @@ void main() {
           'session_id': 'sess123',
           'sender_key': 'key456',
         },
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@alice:example.com',
         originServerTs: DateTime.now(),
         room: room,
-      ));
+      ),);
 
       when(mockClient.rooms).thenReturn([room]);
 
@@ -761,11 +761,11 @@ void main() {
           'can_request_session': true,
           // Missing session_id and sender_key
         },
-        eventId: '\$evt1',
+        eventId: r'$evt1',
         senderId: '@alice:example.com',
         originServerTs: DateTime.now(),
         room: room,
-      ));
+      ),);
 
       when(mockClient.rooms).thenReturn([room]);
 
@@ -897,7 +897,7 @@ void main() {
       final inviteEvent = Event(
         type: EventTypes.RoomMember,
         content: {'membership': 'invite'},
-        eventId: '\$invite1',
+        eventId: r'$invite1',
         senderId: '@alice:example.com',
         originServerTs: DateTime.now(),
         room: room,
@@ -1183,7 +1183,7 @@ void main() {
 
       final tree = service.spaceTree;
       final aSubs = tree.firstWhere(
-          (n) => n.room.id == '!spaceA:example.com').subspaces;
+          (n) => n.room.id == '!spaceA:example.com',).subspaces;
       expect(aSubs[0].room.getLocalizedDisplayname(), 'A Sub');
       expect(aSubs[1].room.getLocalizedDisplayname(), 'Sub Space');
     });
@@ -1259,17 +1259,17 @@ void main() {
             GetVersionsResponse.fromJson({'versions': ['v1.1']}),
             <LoginFlow>[],
             null,
-          ));
+          ),);
       when(mockClient.login(
         any,
         identifier: anyNamed('identifier'),
         password: anyNamed('password'),
         initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
-      )).thenAnswer((_) async => LoginResponse.fromJson({
+      ),).thenAnswer((_) async => LoginResponse.fromJson({
             'access_token': 'token123',
             'device_id': 'DEV1',
             'user_id': '@user:example.com',
-          }));
+          }),);
       when(mockClient.accessToken).thenReturn('token123');
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
@@ -1312,7 +1312,7 @@ SpaceChild _fakeSpaceChild(String roomId) {
     content: {'via': ['example.com']},
     senderId: '@admin:example.com',
     stateKey: roomId,
-  ));
+  ),);
 }
 
 /// Creates a [SpaceChild] with a specific order string.
@@ -1322,5 +1322,5 @@ SpaceChild _fakeSpaceChildWithOrder(String roomId, String order) {
     content: {'via': ['example.com'], 'order': order},
     senderId: '@admin:example.com',
     stateKey: roomId,
-  ));
+  ),);
 }

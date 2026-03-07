@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-
-import 'package:lattice/core/utils/sender_color.dart';
 import 'package:lattice/core/utils/reply_fallback.dart';
+import 'package:lattice/core/utils/sender_color.dart';
+import 'package:matrix/matrix.dart';
 
 class ReplyPreviewBanner extends StatelessWidget {
   const ReplyPreviewBanner({
-    super.key,
-    required this.event,
-    required this.onCancel,
+    required this.event, required this.onCancel, super.key,
   });
 
   final Event event;

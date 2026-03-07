@@ -1,15 +1,14 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/core/utils/media_auth.dart';
 import 'package:lattice/shared/widgets/full_image_view.dart';
+import 'package:matrix/matrix.dart';
 
 /// Displays a grid of images/videos and a list of files shared in a room.
 /// Loads media lazily using room search with pagination.
 class SharedMediaSection extends StatefulWidget {
-  const SharedMediaSection({super.key, required this.room});
+  const SharedMediaSection({required this.room, super.key});
 
   final Room room;
 
@@ -82,12 +81,12 @@ class _SharedMediaSectionState extends State<SharedMediaSection> {
     final images = _mediaEvents
         .where((e) =>
             e.messageType == MessageTypes.Image ||
-            e.messageType == MessageTypes.Video)
+            e.messageType == MessageTypes.Video,)
         .toList();
     final files = _mediaEvents
         .where((e) =>
             e.messageType == MessageTypes.File ||
-            e.messageType == MessageTypes.Audio)
+            e.messageType == MessageTypes.Audio,)
         .toList();
 
     return Column(
@@ -259,7 +258,7 @@ class _MediaThumbnailState extends State<_MediaThumbnail> {
       onTap: () => _showFullImage(context),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: Container(
+        child: ColoredBox(
           color: cs.surfaceContainerHighest,
           child: _loading
               ? const Center(child: CircularProgressIndicator(strokeWidth: 2))

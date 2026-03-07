@@ -1,10 +1,9 @@
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lattice/features/chat/services/typing_controller.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:matrix/matrix.dart';
-
-import 'package:lattice/features/chat/services/typing_controller.dart';
 
 @GenerateNiceMocks([MockSpec<Room>()])
 import 'typing_controller_test.mocks.dart';

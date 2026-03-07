@@ -4,11 +4,10 @@ import 'dart:io';
 import 'package:desktop_notifications/desktop_notifications.dart' as dn;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:matrix/matrix.dart';
-
-import 'package:lattice/core/utils/notification_filter.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/utils/notification_filter.dart';
+import 'package:matrix/matrix.dart';
 
 bool get _isLinux => !kIsWeb && Platform.isLinux;
 
@@ -71,9 +70,7 @@ class NotificationService {
     const androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const darwinSettings = DarwinInitializationSettings(
-      requestAlertPermission: true,
-      requestBadgePermission: true,
-      requestSoundPermission: true,
+      
     );
 
     const settings = InitializationSettings(
@@ -186,7 +183,7 @@ class NotificationService {
       final roomName = room?.getLocalizedDisplayname() ?? roomId;
 
       // Find who sent the invite from the invite state.
-      String inviterName = 'Someone';
+      var inviterName = 'Someone';
       final inviteEvents = update.inviteState;
       if (inviteEvents != null) {
         for (final event in inviteEvents) {
@@ -238,7 +235,7 @@ class NotificationService {
     // clear any existing notification and stop processing.
     final hasOwnMessage = events.any((e) =>
         (e.type == EventTypes.Message || e.type == EventTypes.Encrypted) &&
-        e.senderId == client.userID);
+        e.senderId == client.userID,);
     if (hasOwnMessage) {
       cancelForRoom(roomId);
       return;
@@ -393,7 +390,7 @@ class NotificationService {
       });
       _linuxNotifications[roomId] = notification;
       debugPrint(
-          '[Lattice] Linux notification shown for room $roomId (id=${notification.id})');
+          '[Lattice] Linux notification shown for room $roomId (id=${notification.id})',);
     } catch (e) {
       debugPrint('[Lattice] Failed to show Linux notification: $e');
     }

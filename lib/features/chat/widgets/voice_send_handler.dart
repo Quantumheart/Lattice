@@ -1,11 +1,10 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-import 'package:provider/provider.dart';
-
 import 'package:lattice/core/models/upload_state.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:matrix/matrix.dart';
+import 'package:provider/provider.dart';
 
 Future<void> sendVoiceMessage(
   BuildContext context,
@@ -56,7 +55,7 @@ Future<void> sendVoiceMessage(
     scaffold.showSnackBar(
       SnackBar(
           content: Text(
-              'Upload failed: ${MatrixService.friendlyAuthError(e)}')),
+              'Upload failed: ${MatrixService.friendlyAuthError(e)}',),),
     );
   } finally {
     try {

@@ -3,9 +3,8 @@ import 'dart:async';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart'
     show DefaultEmojiTextStyle;
 import 'package:flutter/material.dart';
-import 'package:matrix/matrix.dart';
-
 import 'package:lattice/shared/widgets/user_avatar.dart';
+import 'package:matrix/matrix.dart';
 
 // ── ReactionChips ────────────────────────────────────────────
 
@@ -16,11 +15,7 @@ import 'package:lattice/shared/widgets/user_avatar.dart';
 /// opens a bottom sheet listing who reacted.
 class ReactionChips extends StatefulWidget {
   const ReactionChips({
-    super.key,
-    required this.event,
-    required this.timeline,
-    required this.client,
-    required this.isMe,
+    required this.event, required this.timeline, required this.client, required this.isMe, super.key,
     this.onToggle,
   });
 
@@ -109,7 +104,6 @@ class _ReactionChipsState extends State<ReactionChips> {
                 color: isMine
                     ? cs.primary.withValues(alpha: 0.5)
                     : cs.outlineVariant.withValues(alpha: 0.5),
-                width: 1,
               ),
               boxShadow: [
                 BoxShadow(

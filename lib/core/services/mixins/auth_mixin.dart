@@ -2,13 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:matrix/matrix.dart';
-// ignore: implementation_imports
-import 'package:matrix/src/utils/client_init_exception.dart';
-
 import 'package:lattice/core/models/server_auth_capabilities.dart';
 import 'package:lattice/core/services/matrix_service.dart' show latticeKey;
 import 'package:lattice/core/services/session_backup.dart';
+import 'package:matrix/matrix.dart';
+// ignore: implementation_imports
+import 'package:matrix/src/utils/client_init_exception.dart';
 
 /// Authentication flows: login, SSO, registration, logout, credential
 /// persistence, server capability probing, and login-state monitoring.
@@ -50,7 +49,7 @@ mixin AuthMixin on ChangeNotifier {
   /// restores it afterwards. Returns an empty [ServerAuthCapabilities]
   /// if called while logged in to avoid racing with sync.
   Future<ServerAuthCapabilities> getServerAuthCapabilities(
-      String homeserver) async {
+      String homeserver,) async {
     if (isLoggedIn) {
       debugPrint('[Lattice] getServerAuthCapabilities called while logged in, '
           'skipping to avoid mutating shared client state');
@@ -94,7 +93,7 @@ mixin AuthMixin on ChangeNotifier {
                 id: p['id'] as String,
                 name: p['name'] as String,
                 icon: p['icon'] as String?,
-              ));
+              ),);
             }
           }
         }
@@ -325,14 +324,14 @@ mixin AuthMixin on ChangeNotifier {
     await Future.wait([
       storage.write(
           key: latticeKey(clientName, 'access_token'),
-          value: client.accessToken),
+          value: client.accessToken,),
       storage.write(
-          key: latticeKey(clientName, 'user_id'), value: client.userID),
+          key: latticeKey(clientName, 'user_id'), value: client.userID,),
       storage.write(
           key: latticeKey(clientName, 'homeserver'),
-          value: client.homeserver.toString()),
+          value: client.homeserver.toString(),),
       storage.write(
-          key: latticeKey(clientName, 'device_id'), value: client.deviceID),
+          key: latticeKey(clientName, 'device_id'), value: client.deviceID,),
     ]);
   }
 
@@ -374,7 +373,7 @@ mixin AuthMixin on ChangeNotifier {
       // Update stored token + session backup with new token.
       await storage.write(
           key: latticeKey(clientName, 'access_token'),
-          value: client.accessToken);
+          value: client.accessToken,);
       await saveSessionBackup();
       debugPrint('[Lattice] Token refreshed successfully');
     } catch (e) {
