@@ -55,8 +55,9 @@ bool shouldNotifyForEvent({
   required String? ownUserId,
   required Room room,
   required PreferencesService prefs,
+  String? cachedLowerUserId,
+  String? cachedLowerDisplayName,
 }) {
-  // Never notify for own messages
   if (senderId == ownUserId) return false;
 
   switch (prefs.notificationLevel) {
@@ -66,22 +67,22 @@ bool shouldNotifyForEvent({
       return true;
     case NotificationLevel.mentionsOnly:
       final lower = eventBody.toLowerCase();
-      // Check if the event mentions the current user by Matrix ID or display name.
-      if (ownUserId != null && lower.contains(ownUserId.toLowerCase())) {
+      final lowerUserId = cachedLowerUserId ?? ownUserId?.toLowerCase();
+      if (lowerUserId != null && lower.contains(lowerUserId)) {
         return true;
       }
-      final displayName = room.client.userID != null
-          ? room
-              .unsafeGetUserFromMemoryOrFallback(room.client.userID!)
-              .calcDisplayname()
-              .toLowerCase()
-          : null;
+      final displayName = cachedLowerDisplayName ??
+          (room.client.userID != null
+              ? room
+                  .unsafeGetUserFromMemoryOrFallback(room.client.userID!)
+                  .calcDisplayname()
+                  .toLowerCase()
+              : null);
       if (displayName != null &&
           displayName.length >= 2 &&
           _containsWord(lower, displayName)) {
         return true;
       }
-      // Check custom keywords.
       for (final kw in prefs.notificationKeywords) {
         if (kw.isNotEmpty && lower.contains(kw)) return true;
       }
