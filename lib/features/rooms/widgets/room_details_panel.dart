@@ -50,16 +50,16 @@ class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
   @override
   void dispose() {
     _syncDebounce?.cancel();
-    _syncSub?.cancel();
+    unawaited(_syncSub?.cancel());
     super.dispose();
   }
 
   void _refreshDeviceKeys() {
     final client = context.read<MatrixService>().client;
-    client.updateUserDeviceKeys().then((_) {
+    unawaited(client.updateUserDeviceKeys().then((_) {
       if (mounted) setState(() {});
-    });
-    _syncSub?.cancel();
+    },),);
+    unawaited(_syncSub?.cancel());
     _syncSub = client.onSync.stream.listen((_) {
       _syncDebounce?.cancel();
       _syncDebounce = Timer(const Duration(seconds: 2), () {

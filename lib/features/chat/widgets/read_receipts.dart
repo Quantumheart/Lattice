@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:lattice/shared/widgets/user_avatar.dart';
 import 'package:matrix/matrix.dart';
@@ -150,7 +152,7 @@ void showReadersSheet(
   List<Receipt> receipts,
   Client client,
 ) {
-  showModalBottomSheet(
+  unawaited(showModalBottomSheet(
     context: context,
     builder: (context) {
       final localizations = MaterialLocalizations.of(context);
@@ -201,5 +203,5 @@ void showReadersSheet(
         ),
       );
     },
-  );
+  ),);
 }

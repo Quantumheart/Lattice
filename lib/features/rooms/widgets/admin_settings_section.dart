@@ -249,7 +249,7 @@ class _AdminSettingsSectionState extends State<AdminSettingsSection> {
     final content = plEvent.content;
     final events = content.tryGetMap<String, Object?>('events') ?? {};
 
-    showDialog(
+    unawaited(showDialog(
       context: context,
       builder: (ctx) {
         final cs = Theme.of(ctx).colorScheme;
@@ -291,7 +291,7 @@ class _AdminSettingsSectionState extends State<AdminSettingsSection> {
           ],
         );
       },
-    );
+    ),);
   }
 
   Widget _plRow(String label, int level) {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:lattice/features/chat/services/opengraph_service.dart';
 import 'package:provider/provider.dart';
@@ -34,7 +36,7 @@ class _LinkPreviewCardState extends State<LinkPreviewCard>
       parent: _fadeController,
       curve: Curves.easeIn,
     );
-    _fetch();
+    unawaited(_fetch());
   }
 
   @override
@@ -46,7 +48,7 @@ class _LinkPreviewCardState extends State<LinkPreviewCard>
         _data = null;
         _loading = true;
       });
-      _fetch();
+      unawaited(_fetch());
     }
   }
 
@@ -59,7 +61,7 @@ class _LinkPreviewCardState extends State<LinkPreviewCard>
       _loading = false;
     });
     if (data != null) {
-      _fadeController.forward();
+      await _fadeController.forward();
     }
   }
 
@@ -106,7 +108,7 @@ class _LinkPreviewCardState extends State<LinkPreviewCard>
               onTap: () {
                 final uri = Uri.tryParse(data.url);
                 if (uri != null) {
-                  launchUrl(uri, mode: LaunchMode.externalApplication);
+                  unawaited(launchUrl(uri, mode: LaunchMode.externalApplication));
                 }
               },
               child: Container(

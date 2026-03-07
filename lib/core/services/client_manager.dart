@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:lattice/core/services/client_factory.dart';
@@ -124,7 +126,7 @@ class ClientManager extends ChangeNotifier {
     _services.removeAt(index);
     final client = _clientMap.remove(service);
     service.dispose();
-    client?.dispose();
+    unawaited(client?.dispose());
 
     if (_services.isEmpty) {
       // Last account removed — create a fresh default for login screen.
@@ -188,7 +190,7 @@ class ClientManager extends ChangeNotifier {
   @override
   void dispose() {
     for (final service in _services) {
-      _clientMap[service]?.dispose();
+      unawaited(_clientMap[service]?.dispose());
       service.dispose();
     }
     super.dispose();

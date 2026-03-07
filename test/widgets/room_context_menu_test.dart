@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/matrix_service.dart';
@@ -57,13 +59,13 @@ void main() {
           body: Builder(
             builder: (context) => ElevatedButton(
               onPressed: () {
-                showRoomContextMenu(
+                unawaited(showRoomContextMenu(
                   context,
                   const RelativeRect.fromLTRB(100, 100, 100, 100),
                   mockRoom,
                   parentSpaceId: parentSpaceId,
                   sectionRooms: sectionRooms,
-                );
+                ));
               },
               child: const Text('Open Menu'),
             ),

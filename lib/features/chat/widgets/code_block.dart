@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:highlight/highlight_core.dart' as hi;
@@ -128,7 +130,7 @@ class CodeBlock extends StatelessWidget {
                     padding: EdgeInsets.zero,
                     tooltip: 'Copy code',
                     onPressed: () {
-                      Clipboard.setData(ClipboardData(text: code));
+                      unawaited(Clipboard.setData(ClipboardData(text: code)));
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Copied to clipboard'),

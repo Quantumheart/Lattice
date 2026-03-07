@@ -87,7 +87,7 @@ class OpenGraphService {
       _putCache(url, result);
       return result;
     } finally {
-      _inFlight.remove(url);
+      unawaited(_inFlight.remove(url));
     }
   }
 
@@ -229,11 +229,11 @@ class OpenGraphService {
       late final StreamSubscription<List<int>> subscription;
       subscription = response.stream.listen((chunk) {
         bytes.addAll(chunk);
-        if (bytes.length >= _maxBytes) subscription.cancel();
+        if (bytes.length >= _maxBytes) unawaited(subscription.cancel());
       });
       await subscription.asFuture<void>().timeout(
         _fetchTimeout,
-        onTimeout: () => subscription.cancel(),
+        onTimeout: () { unawaited(subscription.cancel()); },
       );
     } catch (_) {
       // Stream cancelled or timed out — parse whatever we have.

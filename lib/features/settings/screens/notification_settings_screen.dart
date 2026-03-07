@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/shared/widgets/section_header.dart';
@@ -28,7 +30,7 @@ class _NotificationSettingsScreenState
   void _addKeyword() {
     final text = _keywordController.text;
     if (text.trim().isEmpty) return;
-    context.read<PreferencesService>().addNotificationKeyword(text);
+    unawaited(context.read<PreferencesService>().addNotificationKeyword(text));
     _keywordController.clear();
     _keywordFocus.requestFocus();
   }

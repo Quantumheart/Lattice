@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart'
@@ -33,7 +34,7 @@ void showMessageActionSheet({
   required Timeline? timeline,
   void Function(String emoji)? onQuickReact,
 }) {
-  Navigator.of(context).push(
+  unawaited(Navigator.of(context).push(
     _MessageActionSheetRoute(
       event: event,
       isMe: isMe,
@@ -43,7 +44,8 @@ void showMessageActionSheet({
       capturedTheme: Theme.of(context),
       onQuickReact: onQuickReact,
     ),
-  );
+  ),);
+
 }
 
 // ── Route ───────────────────────────────────────────────

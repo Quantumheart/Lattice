@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -82,7 +84,7 @@ class _SpaceRailState extends State<SpaceRail> {
                 final ids = spaces.map((s) => s.id).toList();
                 final id = ids.removeAt(oldIndex);
                 ids.insert(newIndex, id);
-                context.read<PreferencesService>().setSpaceOrder(ids);
+                unawaited(context.read<PreferencesService>().setSpaceOrder(ids));
                 matrix.updateSpaceOrder(ids);
               },
               proxyDecorator: (child, index, animation) {
@@ -137,7 +139,7 @@ class _SpaceRailState extends State<SpaceRail> {
                           final box =
                               iconContext.findRenderObject()! as RenderBox;
                           final pos = box.localToGlobal(Offset.zero);
-                          showSpaceContextMenu(
+                          unawaited(showSpaceContextMenu(
                             iconContext,
                             RelativeRect.fromLTRB(
                               pos.dx + box.size.width,
@@ -146,13 +148,13 @@ class _SpaceRailState extends State<SpaceRail> {
                               pos.dy + box.size.height,
                             ),
                             space,
-                          );
+                          ),);
                         },
                         onSecondaryTapUp: (details) {
                           final box =
                               iconContext.findRenderObject()! as RenderBox;
                           final pos = box.localToGlobal(Offset.zero);
-                          showSpaceContextMenu(
+                          unawaited(showSpaceContextMenu(
                             iconContext,
                             RelativeRect.fromLTRB(
                               pos.dx + box.size.width,
@@ -161,7 +163,7 @@ class _SpaceRailState extends State<SpaceRail> {
                               details.globalPosition.dy,
                             ),
                             space,
-                          );
+                          ),);
                         },
                       );
                       },
@@ -185,7 +187,7 @@ class _SpaceRailState extends State<SpaceRail> {
                 onTap: () {
                   final box = btnContext.findRenderObject()! as RenderBox;
                   final position = box.localToGlobal(Offset.zero);
-                  showSpaceActionMenu(
+                  unawaited(showSpaceActionMenu(
                     btnContext,
                     RelativeRect.fromLTRB(
                       position.dx + box.size.width,
@@ -193,7 +195,7 @@ class _SpaceRailState extends State<SpaceRail> {
                       position.dx + box.size.width,
                       position.dy + box.size.height,
                     ),
-                  );
+                  ),);
                 },
               ),
             ),
@@ -332,7 +334,7 @@ class _RailIconState extends State<_RailIcon> {
   @override
   void initState() {
     super.initState();
-    _resolveThumbnail();
+    unawaited(_resolveThumbnail());
   }
 
   @override
@@ -340,7 +342,7 @@ class _RailIconState extends State<_RailIcon> {
     super.didUpdateWidget(oldWidget);
     if (widget.room?.avatar != _lastAvatarUri) {
       _resolvedUrl = null;
-      _resolveThumbnail();
+      unawaited(_resolveThumbnail());
     }
   }
 
@@ -528,7 +530,7 @@ class _AccountButtonState extends State<_AccountButton> {
     final userId = context.read<MatrixService>().client.userID;
     if (userId != _lastUserId) {
       _lastUserId = userId;
-      _fetchProfile();
+      unawaited(_fetchProfile());
     }
   }
 

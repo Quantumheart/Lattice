@@ -42,7 +42,7 @@ class _VideoBubbleState extends State<VideoBubble> {
   @override
   void initState() {
     super.initState();
-    _loadThumbnail();
+    unawaited(_loadThumbnail());
   }
 
   @override
@@ -54,11 +54,11 @@ class _VideoBubbleState extends State<VideoBubble> {
   @override
   void dispose() {
     for (final sub in _subs) {
-      sub.cancel();
+      unawaited(sub.cancel());
     }
     if (_player != null) {
       _playbackService.unregisterPlayer(widget.event.eventId);
-      _player!.dispose();
+      unawaited(_player!.dispose());
     }
     super.dispose();
   }
@@ -118,8 +118,8 @@ class _VideoBubbleState extends State<VideoBubble> {
       }),);
       _subs.add(_player!.stream.completed.listen((completed) {
         if (completed && mounted) {
-          _player!.seek(Duration.zero);
-          _player!.pause();
+          unawaited(_player!.seek(Duration.zero));
+          unawaited(_player!.pause());
         }
       }),);
 
@@ -139,13 +139,13 @@ class _VideoBubbleState extends State<VideoBubble> {
 
   void _retry() {
     for (final sub in _subs) {
-      sub.cancel();
+      unawaited(sub.cancel());
     }
     _subs.clear();
-    _player?.dispose();
+    if (_player != null) unawaited(_player!.dispose());
     _player = null;
     _controller = null;
-    _initPlayer();
+    unawaited(_initPlayer());
   }
 
   void _openFullscreen() {
@@ -257,10 +257,10 @@ class _VideoBubbleState extends State<VideoBubble> {
   void _togglePlayPause() {
     if (_player == null) return;
     if (_isPlaying) {
-      _player!.pause();
+      unawaited(_player!.pause());
     } else {
       _playbackService.registerPlayer(widget.event.eventId, _player!);
-      _player!.play();
+      unawaited(_player!.play());
     }
   }
 

@@ -53,15 +53,15 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
     );
     _controller.addListener(_onControllerChanged);
     _uiaSub = widget.matrixService.onUiaRequest.listen(_showUiaPasswordPrompt);
-    _controller.startBootstrap();
+    unawaited(_controller.startBootstrap());
   }
 
   @override
   void dispose() {
     if (_controller.keyCopied) {
-      Clipboard.setData(const ClipboardData(text: ''));
+      unawaited(Clipboard.setData(const ClipboardData(text: '')));
     }
-    _uiaSub?.cancel();
+    unawaited(_uiaSub?.cancel());
     _controller.removeListener(_onControllerChanged);
     _controller.dispose();
     _recoveryKeyController.dispose();
@@ -131,14 +131,14 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
         if (!mounted) return;
         switch (action) {
           case BootstrapAction.startVerification:
-            _showVerificationDialog();
+            unawaited(_showVerificationDialog());
           case BootstrapAction.confirmLostKey:
             _showLostKeyConfirmation();
           case BootstrapAction.confirmCancel:
             _showCancelConfirmation();
           case BootstrapAction.done:
             if (_controller.keyCopied) {
-              Clipboard.setData(const ClipboardData(text: ''));
+              unawaited(Clipboard.setData(const ClipboardData(text: '')));
             }
             Navigator.pop(context, true);
           case BootstrapAction.none:
@@ -218,7 +218,7 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
   }
 
   void _showCancelConfirmation() {
-    showDialog(
+    unawaited(showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Skip backup setup?'),
@@ -240,11 +240,11 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
           ),
         ],
       ),
-    );
+    ));
   }
 
   void _showLostKeyConfirmation() {
-    showDialog(
+    unawaited(showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Lost recovery key?'),
@@ -267,7 +267,7 @@ class _BootstrapDialogState extends State<BootstrapDialog> {
           ),
         ],
       ),
-    );
+    ));
   }
 
   @override

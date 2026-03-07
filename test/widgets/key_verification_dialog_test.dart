@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -98,12 +99,12 @@ void main() {
           builder: (context) => Center(
             child: ElevatedButton(
               onPressed: () {
-                showDialog(
+                unawaited(showDialog(
                   context: context,
                   barrierDismissible: false,
                   builder: (_) =>
                       KeyVerificationDialog(verification: verification),
-                );
+                ));
               },
               child: const Text('Open'),
             ),

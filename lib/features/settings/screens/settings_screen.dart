@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -34,7 +36,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _fetchProfile();
+    unawaited(_fetchProfile());
   }
 
   @override
@@ -447,7 +449,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: 'Source code',
                   subtitle: 'View on GitHub',
                   onTap: () {
-                    launchUrl(Uri.parse('https://github.com/Quantumheart/Lattice'));
+                    unawaited(launchUrl(Uri.parse('https://github.com/Quantumheart/Lattice')));
                   },
                 ),
               ],
@@ -478,11 +480,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   void _confirmDisableBackup(BuildContext context) {
     final matrix = context.read<MatrixService>();
-    showDialog(
+    unawaited(showDialog(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => _DisableBackupDialog(matrix: matrix),
-    );
+    ),);
   }
 
   Future<void> _addAccount(BuildContext context, ClientManager manager) async {
@@ -496,7 +498,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final manager = context.read<ClientManager>();
     final backupMissing = !matrix.chatBackupEnabled;
 
-    showDialog(
+    unawaited(showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Sign out?'),
@@ -536,7 +538,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             TextButton(
               onPressed: () {
                 Navigator.pop(ctx);
-                BootstrapDialog.show(context);
+                unawaited(BootstrapDialog.show(context));
               },
               child: const Text('Set up backup first'),
             ),
@@ -558,7 +560,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
-    );
+    ),);
   }
 
 }

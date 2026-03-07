@@ -39,7 +39,7 @@ class TypingController {
 
     _isTyping = true;
     _lastSentAt = now;
-    _sendTyping(true);
+    unawaited(_sendTyping(true));
   }
 
   /// Stop broadcasting typing. Idempotent.
@@ -49,7 +49,7 @@ class TypingController {
     if (!_isTyping) return;
     _isTyping = false;
     _lastSentAt = null;
-    _sendTyping(false);
+    unawaited(_sendTyping(false));
   }
 
   void dispose() {

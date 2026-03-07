@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lattice/core/services/preferences_service.dart';
@@ -492,7 +494,7 @@ class _MessageBubbleState extends State<MessageBubble> {
       final displayEvent = widget.timeline != null
           ? widget.event.getDisplayEvent(widget.timeline!)
           : widget.event;
-      Clipboard.setData(ClipboardData(text: stripReplyFallback(displayEvent.body)));
+      await Clipboard.setData(ClipboardData(text: stripReplyFallback(displayEvent.body)));
     }
     if (value == 'delete') widget.onDelete?.call();
   }

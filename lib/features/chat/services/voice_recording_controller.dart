@@ -92,7 +92,7 @@ class VoiceRecordingController extends ChangeNotifier {
   @override
   void dispose() {
     _timer?.cancel();
-    _service.dispose();
+    unawaited(_service.dispose());
     super.dispose();
   }
 }

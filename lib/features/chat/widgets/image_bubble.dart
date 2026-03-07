@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -24,7 +25,7 @@ class _ImageBubbleState extends State<ImageBubble> {
   @override
   void initState() {
     super.initState();
-    _loadImage();
+    unawaited(_loadImage());
   }
 
   @override
@@ -34,7 +35,7 @@ class _ImageBubbleState extends State<ImageBubble> {
       _imageBytes = null;
       _imageUrl = null;
       _loading = true;
-      _loadImage();
+      unawaited(_loadImage());
     }
   }
 

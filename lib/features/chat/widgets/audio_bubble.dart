@@ -52,11 +52,11 @@ class _AudioBubbleState extends State<AudioBubble> {
   @override
   void dispose() {
     for (final sub in _subs) {
-      sub.cancel();
+      unawaited(sub.cancel());
     }
     if (_player != null) {
       _playbackService.unregisterPlayer(widget.event.eventId);
-      _player!.dispose();
+      unawaited(_player!.dispose());
     }
     super.dispose();
   }
@@ -116,13 +116,13 @@ class _AudioBubbleState extends State<AudioBubble> {
   void _togglePlayPause() {
     if (_player == null) return;
     if (_playing) {
-      _player!.pause();
+      unawaited(_player!.pause());
     } else {
       _playbackService.registerPlayer(
             widget.event.eventId,
             _player!,
           );
-      _player!.play();
+      unawaited(_player!.play());
     }
   }
 
@@ -131,17 +131,17 @@ class _AudioBubbleState extends State<AudioBubble> {
     final target = Duration(
       milliseconds: (fraction * _duration.inMilliseconds).round(),
     );
-    _player!.seek(target);
+    unawaited(_player!.seek(target));
   }
 
   void _retry() {
     for (final sub in _subs) {
-      sub.cancel();
+      unawaited(sub.cancel());
     }
     _subs.clear();
-    _player?.dispose();
+    unawaited(_player?.dispose());
     _player = null;
-    _initAndPlay();
+    unawaited(_initAndPlay());
   }
 
   @override

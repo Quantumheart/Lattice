@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -27,8 +28,7 @@ void main() {
         expect(html, contains('g-recaptcha'));
       } finally {
         client.close();
-        // Catch the cancelled error from tokenFuture since we never posted a token.
-        server.tokenFuture.catchError((_) => '');
+        unawaited(server.tokenFuture.catchError((_) => ''));
         server.dispose();
       }
     });
@@ -70,7 +70,7 @@ void main() {
         expect(response.statusCode, HttpStatus.badRequest);
       } finally {
         client.close();
-        server.tokenFuture.catchError((_) => '');
+        unawaited(server.tokenFuture.catchError((_) => ''));
         server.dispose();
       }
     });
@@ -87,7 +87,7 @@ void main() {
         expect(response.statusCode, HttpStatus.notFound);
       } finally {
         client.close();
-        server.tokenFuture.catchError((_) => '');
+        unawaited(server.tokenFuture.catchError((_) => ''));
         server.dispose();
       }
     });
@@ -105,10 +105,8 @@ void main() {
       final server = RecaptchaServer(siteKey: 'testkey');
       await server.start();
 
-      // Catch the error from tokenFuture before disposing.
-      server.tokenFuture.catchError((_) => '');
+      unawaited(server.tokenFuture.catchError((_) => ''));
 
-      // Should not throw when called multiple times.
       server.dispose();
       server.dispose();
     });

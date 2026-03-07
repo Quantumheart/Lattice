@@ -46,14 +46,14 @@ void main() {
           builder: (context) => Center(
             child: ElevatedButton(
               onPressed: () {
-                showDialog(
+                unawaited(showDialog(
                   context: context,
                   barrierDismissible: false,
                   builder: (_) => BootstrapDialog(
                     matrixService: mockMatrixService,
                     wipeExisting: wipeExisting,
                   ),
-                );
+                ));
               },
               child: const Text('Open'),
             ),

@@ -231,10 +231,10 @@ class BootstrapController extends ChangeNotifier {
 
     _state = state;
     if (state == BootstrapState.askNewSsss) {
-      _generateNewSsssKey();
+      unawaited(_generateNewSsssKey());
     }
     if (state == BootstrapState.openExistingSsss) {
-      _loadStoredRecoveryKey();
+      unawaited(_loadStoredRecoveryKey());
     }
     _notify();
   }
@@ -363,13 +363,13 @@ class BootstrapController extends ChangeNotifier {
 
   void retry() {
     _resetState();
-    startBootstrap();
+    unawaited(startBootstrap());
   }
 
   void restartWithWipe() {
     _wipeExisting = true;
     _resetState();
-    startBootstrap();
+    unawaited(startBootstrap());
   }
 
   void _resetState() {

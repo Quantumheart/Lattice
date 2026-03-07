@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -26,7 +27,7 @@ class _SharedMediaSectionState extends State<SharedMediaSection> {
   @override
   void initState() {
     super.initState();
-    _loadMedia();
+    unawaited(_loadMedia());
   }
 
   @override
@@ -38,7 +39,7 @@ class _SharedMediaSectionState extends State<SharedMediaSection> {
       _nextBatch = null;
       _hasMore = true;
       _loading = false;
-      _loadMedia();
+      unawaited(_loadMedia());
     }
   }
 
@@ -211,7 +212,7 @@ class _MediaThumbnailState extends State<_MediaThumbnail> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_loadStarted) {
         _loadStarted = true;
-        _loadThumbnail();
+        unawaited(_loadThumbnail());
       }
     });
   }

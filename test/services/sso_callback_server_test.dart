@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -12,7 +13,7 @@ void main() {
       expect(url, startsWith('http://127.0.0.1:'));
       expect(url, endsWith('/callback'));
 
-      server.tokenFuture.catchError((_) => '');
+      unawaited(server.tokenFuture.catchError((_) => ''));
       server.dispose();
     });
 
@@ -62,7 +63,7 @@ void main() {
         expect(html, contains('Login failed'));
       } finally {
         client.close();
-        server.tokenFuture.catchError((_) => '');
+        unawaited(server.tokenFuture.catchError((_) => ''));
         server.dispose();
       }
     });
@@ -82,7 +83,7 @@ void main() {
         expect(response.statusCode, HttpStatus.notFound);
       } finally {
         client.close();
-        server.tokenFuture.catchError((_) => '');
+        unawaited(server.tokenFuture.catchError((_) => ''));
         server.dispose();
       }
     });
@@ -100,7 +101,7 @@ void main() {
       final server = SsoCallbackServer();
       await server.start();
 
-      server.tokenFuture.catchError((_) => '');
+      unawaited(server.tokenFuture.catchError((_) => ''));
 
       server.dispose();
       server.dispose();

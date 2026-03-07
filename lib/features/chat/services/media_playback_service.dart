@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
 
@@ -11,7 +13,7 @@ class MediaPlaybackService extends ChangeNotifier {
 
   void registerPlayer(String eventId, Player player) {
     if (_activeEventId != null && _activeEventId != eventId) {
-      _activePlayer?.pause();
+      unawaited(_activePlayer?.pause());
     }
     _activeEventId = eventId;
     _activePlayer = player;
@@ -27,12 +29,12 @@ class MediaPlaybackService extends ChangeNotifier {
   }
 
   void pauseActive() {
-    _activePlayer?.pause();
+    unawaited(_activePlayer?.pause());
   }
 
   @override
   void dispose() {
-    _activePlayer?.pause();
+    unawaited(_activePlayer?.pause());
     _activePlayer = null;
     _activeEventId = null;
     super.dispose();

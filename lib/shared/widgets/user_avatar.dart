@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:lattice/core/utils/media_auth.dart';
@@ -30,7 +32,7 @@ class _UserAvatarState extends State<UserAvatar> {
   @override
   void initState() {
     super.initState();
-    _resolveThumbnail();
+    unawaited(_resolveThumbnail());
   }
 
   @override
@@ -38,7 +40,7 @@ class _UserAvatarState extends State<UserAvatar> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.avatarUrl != widget.avatarUrl) {
       _resolvedUrl = null;
-      _resolveThumbnail();
+      unawaited(_resolveThumbnail());
     }
   }
 

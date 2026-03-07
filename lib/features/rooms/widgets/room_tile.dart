@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -36,13 +37,13 @@ class RoomTile extends StatelessWidget {
 
   void _openContextMenu(BuildContext context, RelativeRect position) {
     if (!hasContextMenu) return;
-    showRoomContextMenu(
+    unawaited(showRoomContextMenu(
       context,
       position,
       room,
       parentSpaceId: parentSpaceId,
       sectionRooms: sectionRooms,
-    );
+    ),);
   }
 
   @override
@@ -388,7 +389,7 @@ class _ReorderDragTargetState extends State<_ReorderDragTarget> {
         });
         final data = details.data;
         if (data is! RoomDragData) return;
-        _handleReorderDrop(context, data, insertAbove: insertAbove);
+        unawaited(_handleReorderDrop(context, data, insertAbove: insertAbove));
       },
       onLeave: (_) => setState(() {
         _showAbove = false;

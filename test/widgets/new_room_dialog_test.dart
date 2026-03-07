@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/matrix_service.dart';
@@ -30,7 +32,7 @@ void main() {
           builder: (context) => Center(
             child: ElevatedButton(
               onPressed: () {
-                NewRoomDialog.show(context, matrixService: mockMatrixService);
+                unawaited(NewRoomDialog.show(context, matrixService: mockMatrixService));
               },
               child: const Text('Open'),
             ),

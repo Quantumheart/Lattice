@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:html/dom.dart' as dom;
@@ -305,7 +307,7 @@ class _HtmlMessageTextState extends State<HtmlMessageText> {
             recognizer: _createRecognizer(() {
               final uri = Uri.tryParse(href);
               if (uri != null) {
-                launchUrl(uri, mode: LaunchMode.externalApplication);
+                unawaited(launchUrl(uri, mode: LaunchMode.externalApplication));
               }
             }),
           ),);
@@ -449,7 +451,7 @@ class _HtmlMessageTextState extends State<HtmlMessageText> {
         recognizer: _createRecognizer(() {
           final uri = Uri.tryParse(cleanedUrl);
           if (uri != null) {
-            launchUrl(uri, mode: LaunchMode.externalApplication);
+            unawaited(launchUrl(uri, mode: LaunchMode.externalApplication));
           }
         }),
       ),);
@@ -528,14 +530,14 @@ class _MxcImageState extends State<_MxcImage> {
   @override
   void initState() {
     super.initState();
-    _resolve();
+    unawaited(_resolve());
   }
 
   @override
   void didUpdateWidget(_MxcImage old) {
     super.didUpdateWidget(old);
     if (old.mxcUrl != widget.mxcUrl) {
-      _resolve();
+      unawaited(_resolve());
     }
   }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:lattice/core/utils/media_auth.dart';
@@ -27,7 +29,7 @@ class _RoomAvatarWidgetState extends State<RoomAvatarWidget> {
   @override
   void initState() {
     super.initState();
-    _resolveThumbnail();
+    unawaited(_resolveThumbnail());
   }
 
   @override
@@ -35,7 +37,7 @@ class _RoomAvatarWidgetState extends State<RoomAvatarWidget> {
     super.didUpdateWidget(oldWidget);
     if (widget.room.avatar != _lastAvatarUri) {
       _resolvedUrl = null;
-      _resolveThumbnail();
+      unawaited(_resolveThumbnail());
     }
   }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
@@ -121,7 +123,7 @@ class RoomSectionHeader extends StatelessWidget {
       },
       onAcceptWithDetails: (details) {
         reparent.setHoveredHeader(null);
-        _handleDrop(context, details.data);
+        unawaited(_handleDrop(context, details.data));
       },
       onLeave: (_) => reparent.setHoveredHeader(null),
       builder: (context, candidateData, rejectedData) => header,
@@ -174,7 +176,7 @@ class RoomSectionHeader extends StatelessWidget {
     final pos = box.localToGlobal(Offset.zero);
     final cs = Theme.of(context).colorScheme;
 
-    showMenu<_HeaderAddAction>(
+    unawaited(showMenu<_HeaderAddAction>(
       context: context,
       position: RelativeRect.fromLTRB(
         pos.dx,
@@ -209,22 +211,22 @@ class RoomSectionHeader extends StatelessWidget {
       if (action == null || !context.mounted) return;
       switch (action) {
         case _HeaderAddAction.createRoom:
-          NewRoomDialog.show(
+          unawaited(NewRoomDialog.show(
             context,
             matrixService: matrix,
             parentSpaceIds: {item.sectionKey},
-          );
+          ),);
         case _HeaderAddAction.createSubspace:
           final spaceRoom = matrix.client.getRoomById(item.sectionKey);
           if (spaceRoom != null) {
-            CreateSubspaceDialog.show(
+            unawaited(CreateSubspaceDialog.show(
               context,
               matrixService: matrix,
               parentSpace: spaceRoom,
-            );
+            ),);
           }
       }
-    });
+    },),);
   }
 
   Future<void> _handleDrop(BuildContext context, ReparentDragData data) async {

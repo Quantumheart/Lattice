@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
@@ -24,7 +26,7 @@ class _InboxScreenState extends State<InboxScreen> {
     _controller = context.read<InboxController>();
     if (_controller.grouped.isEmpty && !_controller.isLoading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _controller.fetch();
+        if (mounted) unawaited(_controller.fetch());
       });
     }
     _controller.startPolling();

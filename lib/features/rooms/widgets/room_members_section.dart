@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/utils/sender_color.dart';
@@ -25,7 +27,7 @@ class _RoomMembersSectionState extends State<RoomMembersSection> {
   @override
   void initState() {
     super.initState();
-    _loadMembers();
+    unawaited(_loadMembers());
   }
 
   @override
@@ -33,7 +35,7 @@ class _RoomMembersSectionState extends State<RoomMembersSection> {
     super.didUpdateWidget(oldWidget);
     final currentCount = widget.room.summary.mJoinedMemberCount;
     if (currentCount != _lastMemberCount) {
-      _loadMembers();
+      unawaited(_loadMembers());
     }
   }
 
@@ -200,7 +202,7 @@ class _MemberTileState extends State<_MemberTile> {
     final displayName = widget.user.displayName ?? widget.user.id;
     final isMe = widget.user.id == widget.room.client.userID;
 
-    showModalBottomSheet(
+    unawaited(showModalBottomSheet(
       context: context,
       builder: (ctx) => SafeArea(
         child: Padding(
@@ -339,7 +341,7 @@ class _MemberTileState extends State<_MemberTile> {
           ),
         ),
       ),
-    );
+    ),);
   }
 
   String _powerLevelLabel(int level) {

@@ -98,13 +98,13 @@ class NotificationService {
 
   void startListening() {
     _firstSyncDone = false;
-    _syncSub?.cancel();
+    unawaited(_syncSub?.cancel());
     _syncSub = matrixService.client.onSync.stream.listen(_onSync);
     debugPrint('[Lattice] NotificationService listening to sync stream');
   }
 
   void stopListening() {
-    _syncSub?.cancel();
+    unawaited(_syncSub?.cancel());
     _syncSub = null;
     _firstSyncDone = false;
     _notifiedInvites.clear();
@@ -132,9 +132,9 @@ class NotificationService {
         if (events == null || events.isEmpty) continue;
         final roomId = entry.key;
         if (_processingRooms.contains(roomId)) continue;
-        _processRoomEvents(roomId, events).catchError((e) {
+        unawaited(_processRoomEvents(roomId, events).catchError((Object e) {
           debugPrint('[Lattice] Error processing room $roomId: $e');
-        });
+        },),);
       }
     }
 
@@ -152,9 +152,9 @@ class NotificationService {
       for (final entry in inviteRooms.entries) {
         final roomId = entry.key;
         if (_processingRooms.contains(roomId)) continue;
-        _processInvite(roomId, entry.value).catchError((e) {
+        unawaited(_processInvite(roomId, entry.value).catchError((Object e) {
           debugPrint('[Lattice] Error processing invite $roomId: $e');
-        });
+        },),);
       }
     }
   }
@@ -237,7 +237,7 @@ class NotificationService {
         (e.type == EventTypes.Message || e.type == EventTypes.Encrypted) &&
         e.senderId == client.userID,);
     if (hasOwnMessage) {
-      cancelForRoom(roomId);
+      await cancelForRoom(roomId);
       return;
     }
 
@@ -383,11 +383,11 @@ class NotificationService {
         appName: 'Lattice',
         hints: [dn.NotificationHint.soundName('message-new-instant')],
       );
-      notification.action.then((_) {
+      unawaited(notification.action.then((_) {
         if (_disposed) return;
         debugPrint('[Lattice] Linux notification tapped for room $roomId');
         matrixService.selectRoom(roomId);
-      });
+      },),);
       _linuxNotifications[roomId] = notification;
       debugPrint(
           '[Lattice] Linux notification shown for room $roomId (id=${notification.id})',);
@@ -448,9 +448,9 @@ class NotificationService {
     stopListening();
     // Fire-and-forget but log failures — cancelAll() is async but dispose()
     // must be synchronous to match the widget lifecycle.
-    cancelAll().catchError((e) {
+    unawaited(cancelAll().catchError((Object e) {
       debugPrint('[Lattice] Error cancelling notifications during dispose: $e');
-    });
-    _linuxClient?.close();
+    },),);
+    unawaited(_linuxClient?.close());
   }
 }

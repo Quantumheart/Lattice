@@ -135,7 +135,7 @@ class InboxController extends ChangeNotifier {
     _nextToken = null;
     _updateUnreadCount();
     if (!_disposed) notifyListeners();
-    fetch().catchError((e) => debugPrint('[Lattice] Inbox fetch error: $e'));
+    unawaited(fetch().catchError((Object e) => debugPrint('[Lattice] Inbox fetch error: $e')));
   }
 
   // ── Polling ────────────────────────────────────────────────
@@ -234,7 +234,7 @@ class InboxController extends ChangeNotifier {
     _updateUnreadCount();
     stopPolling();
     if (!_disposed) notifyListeners();
-    fetch().catchError((e) => debugPrint('[Lattice] Inbox fetch error: $e'));
+    unawaited(fetch().catchError((Object e) => debugPrint('[Lattice] Inbox fetch error: $e')));
   }
 
   // ── Helpers ────────────────────────────────────────────────

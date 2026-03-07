@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
@@ -76,10 +78,10 @@ class _RoomListState extends State<RoomList>
   void _toggleSearch() {
     setState(() => _searchOpen = !_searchOpen);
     if (_searchOpen) {
-      _searchAnimCtrl.forward();
+      unawaited(_searchAnimCtrl.forward());
       _searchFocus.requestFocus();
     } else {
-      _searchAnimCtrl.reverse();
+      unawaited(_searchAnimCtrl.reverse());
       _searchCtrl.clear();
       _query = '';
       _messageSearch.clear();
@@ -94,7 +96,7 @@ class _RoomListState extends State<RoomList>
         _query = '';
       });
       _searchFocus.unfocus();
-      _searchAnimCtrl.reverse();
+      unawaited(_searchAnimCtrl.reverse());
       _messageSearch.clear();
     }
   }
@@ -102,16 +104,16 @@ class _RoomListState extends State<RoomList>
   void _toggleFab() {
     setState(() => _fabOpen = !_fabOpen);
     if (_fabOpen) {
-      _fabAnimCtrl.forward();
+      unawaited(_fabAnimCtrl.forward());
     } else {
-      _fabAnimCtrl.reverse();
+      unawaited(_fabAnimCtrl.reverse());
     }
   }
 
   void _closeFab() {
     if (_fabOpen) {
       setState(() => _fabOpen = false);
-      _fabAnimCtrl.reverse();
+      unawaited(_fabAnimCtrl.reverse());
     }
   }
 
@@ -333,7 +335,7 @@ class _RoomListState extends State<RoomList>
                           icon: Icons.group_add_rounded,
                           onTap: () {
                             _closeFab();
-                            NewRoomDialog.show(context, matrixService: matrix);
+                            unawaited(NewRoomDialog.show(context, matrixService: matrix));
                           },
                         ),
                         const SizedBox(height: 8),
@@ -342,8 +344,10 @@ class _RoomListState extends State<RoomList>
                           icon: Icons.chat_bubble_outline_rounded,
                           onTap: () {
                             _closeFab();
-                            NewDirectMessageDialog.show(context,
-                                matrixService: matrix,);
+                            unawaited(NewDirectMessageDialog.show(
+                                context,
+                                matrixService: matrix,
+                            ),);
                           },
                         ),
                       ],

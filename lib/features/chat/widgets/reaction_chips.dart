@@ -151,7 +151,7 @@ void showReactorsSheet(
   List<Event> reactionEvents,
   Room room,
 ) {
-  showModalBottomSheet(
+  unawaited(showModalBottomSheet(
     context: context,
     builder: (context) {
       return SafeArea(
@@ -193,5 +193,5 @@ void showReactorsSheet(
         ),
       );
     },
-  );
+  ),);
 }

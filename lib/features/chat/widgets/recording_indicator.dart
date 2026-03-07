@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'package:lattice/core/utils/format_duration.dart';
@@ -80,7 +82,8 @@ class _PulsingDotState extends State<_PulsingDot>
     _anim = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
-    )..repeat(reverse: true);
+    );
+    unawaited(_anim.repeat(reverse: true));
   }
 
   @override

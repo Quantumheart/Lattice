@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
@@ -45,11 +47,11 @@ void main() {
           body: Builder(
             builder: (context) => ElevatedButton(
               onPressed: () {
-                showSpaceContextMenu(
+                unawaited(showSpaceContextMenu(
                   context,
                   const RelativeRect.fromLTRB(100, 100, 100, 100),
                   mockSpace,
-                );
+                ));
               },
               child: const Text('Open Menu'),
             ),
@@ -267,11 +269,11 @@ void main() {
                 body: Builder(
                   builder: (context) => ElevatedButton(
                     onPressed: () {
-                      showSpaceContextMenu(
+                      unawaited(showSpaceContextMenu(
                         context,
                         const RelativeRect.fromLTRB(100, 100, 100, 100),
                         mockSpace,
-                      );
+                      ));
                     },
                     child: const Text('Open Menu'),
                   ),

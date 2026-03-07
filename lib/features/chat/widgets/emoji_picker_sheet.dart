@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart'
     show BottomActionBarConfig, CategoryViewConfig, Config, DefaultEmojiTextStyle,
          EmojiPicker, EmojiViewConfig, SearchViewConfig,
@@ -6,11 +8,11 @@ import 'package:flutter/material.dart';
 
 /// Shows a floating emoji picker dialog near the center of the screen.
 void showEmojiPickerSheet(BuildContext context, void Function(String emoji) onSelected) {
-  showDialog(
+  unawaited(showDialog(
     context: context,
     barrierColor: Colors.black26,
     builder: (context) => _EmojiPickerDialog(onSelected: onSelected),
-  );
+  ));
 }
 
 class _EmojiPickerDialog extends StatelessWidget {

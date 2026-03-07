@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:lattice/core/utils/emoji_spans.dart';
@@ -79,7 +81,7 @@ class LinkableText extends StatelessWidget {
           ..onTap = () {
             final uri = Uri.tryParse(cleanedUrl);
             if (uri != null) {
-              launchUrl(uri, mode: LaunchMode.externalApplication);
+              unawaited(launchUrl(uri, mode: LaunchMode.externalApplication));
             }
           },
       ),);

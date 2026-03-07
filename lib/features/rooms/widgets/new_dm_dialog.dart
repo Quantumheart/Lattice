@@ -66,7 +66,7 @@ class _NewDirectMessageDialogState extends State<NewDirectMessageDialog> {
     }
     setState(() {}); // Rebuild to update button state
     _debounce = Timer(const Duration(milliseconds: 500), () {
-      _searchDirectory(query.trim());
+      unawaited(_searchDirectory(query.trim()));
     });
   }
 
@@ -131,7 +131,7 @@ class _NewDirectMessageDialogState extends State<NewDirectMessageDialog> {
   void _submitFromField() {
     final text = _searchController.text.trim();
     if (_mxidRegex.hasMatch(text)) {
-      _startChat(text);
+      unawaited(_startChat(text));
     }
   }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
@@ -33,7 +35,7 @@ class _KeyVerificationDialogState extends State<KeyVerificationDialog> {
     widget.verification.onUpdate = _onUpdate;
     _state = widget.verification.state;
     if (_state == KeyVerificationState.askChoice) {
-      _autoSelectSas();
+      unawaited(_autoSelectSas());
     }
   }
 
@@ -44,7 +46,7 @@ class _KeyVerificationDialogState extends State<KeyVerificationDialog> {
     // Auto-select SAS when the SDK asks the user to choose a method.
     // QR verification is not yet supported, so skip the choice screen.
     if (newState == KeyVerificationState.askChoice) {
-      _autoSelectSas();
+      unawaited(_autoSelectSas());
     }
 
     setState(() {
@@ -222,7 +224,7 @@ class _KeyVerificationDialogState extends State<KeyVerificationDialog> {
         return [
           TextButton(
             onPressed: () {
-              widget.verification.cancel();
+              unawaited(widget.verification.cancel());
               Navigator.pop(context, false);
             },
             child: const Text('Cancel'),
@@ -233,7 +235,7 @@ class _KeyVerificationDialogState extends State<KeyVerificationDialog> {
         return [
           TextButton(
             onPressed: () {
-              widget.verification.cancel();
+              unawaited(widget.verification.cancel());
               Navigator.pop(context, false);
             },
             child: const Text('Reject'),
@@ -260,7 +262,7 @@ class _KeyVerificationDialogState extends State<KeyVerificationDialog> {
         return [
           TextButton(
             onPressed: () {
-              widget.verification.cancel();
+              unawaited(widget.verification.cancel());
               Navigator.pop(context, false);
             },
             child: const Text('No'),

@@ -294,10 +294,10 @@ mixin AuthMixin on ChangeNotifier {
     _postLoginSyncError = null;
     final completer = Completer<void>();
     _postLoginSyncCompleter = completer;
-    _runPostLoginSync().whenComplete(() {
+    unawaited(_runPostLoginSync().whenComplete(() {
       completer.complete();
       _postLoginSyncCompleter = null;
-    });
+    }));
   }
 
   Future<void> _runPostLoginSync() async {
@@ -340,7 +340,7 @@ mixin AuthMixin on ChangeNotifier {
     // Cancel subscriptions first to prevent concurrent state changes
     // (e.g. listenForLoginState calling clearSessionKeys) while we
     // await the background sync future.
-    _loginStateSub?.cancel();
+    unawaited(_loginStateSub?.cancel());
     cancelSyncSub();
     isLoggedIn = false;
     await _postLoginSyncCompleter?.future;
@@ -379,7 +379,7 @@ mixin AuthMixin on ChangeNotifier {
     } catch (e) {
       debugPrint('[Lattice] Token refresh failed: $e');
       // Cancel subscriptions first to prevent concurrent state changes.
-      _loginStateSub?.cancel();
+      unawaited(_loginStateSub?.cancel());
       cancelSyncSub();
       isLoggedIn = false;
       // Wait for any in-flight background sync to finish before clearing
@@ -407,7 +407,7 @@ mixin AuthMixin on ChangeNotifier {
 
   @protected
   void listenForLoginState() {
-    _loginStateSub?.cancel();
+    unawaited(_loginStateSub?.cancel());
     _loginStateSub = client.onLoginStateChanged.stream.listen((state) async {
       if (state == LoginState.loggedOut && isLoggedIn) {
         debugPrint('[Lattice] Server-side logout detected');
@@ -486,6 +486,6 @@ mixin AuthMixin on ChangeNotifier {
   /// Cancel login-state subscription (e.g. on dispose).
   @protected
   void cancelLoginStateSub() {
-    _loginStateSub?.cancel();
+    unawaited(_loginStateSub?.cancel());
   }
 }

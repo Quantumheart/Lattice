@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:lattice/core/utils/reply_fallback.dart';
 import 'package:lattice/features/chat/widgets/html_message_text.dart';
@@ -22,14 +24,14 @@ void showPinnedMessagesPopup(
     button.size.height,
   );
 
-  Navigator.of(context).push(
+  unawaited(Navigator.of(context).push(
     _PinnedMessagesPopupRoute(
       anchor: anchor,
       overlaySize: overlay.size,
       room: room,
       onTap: onTap,
     ),
-  );
+  ),);
 }
 
 class _PinnedMessagesPopupRoute extends PopupRoute<void> {
@@ -147,7 +149,7 @@ class _PinnedMessagesPanelState extends State<_PinnedMessagesPanel> {
   @override
   void initState() {
     super.initState();
-    _loadPinnedEvents();
+    unawaited(_loadPinnedEvents());
   }
 
   Future<void> _loadPinnedEvents() async {

@@ -54,8 +54,8 @@ class SsoCallbackServer {
             request.response
               ..statusCode = HttpStatus.ok
               ..headers.contentType = ContentType.html
-              ..write(_buildSuccessPage())
-              ..close();
+              ..write(_buildSuccessPage());
+            unawaited(request.response.close());
 
             if (!_tokenCompleter.isCompleted) {
               _tokenCompleter.complete(loginToken);
@@ -68,20 +68,20 @@ class SsoCallbackServer {
             request.response
               ..statusCode = HttpStatus.badRequest
               ..headers.contentType = ContentType.html
-              ..write(_buildErrorPage())
-              ..close();
+              ..write(_buildErrorPage());
+            unawaited(request.response.close());
           }
           return;
         }
 
         request.response
           ..statusCode = HttpStatus.notFound
-          ..write('Not found')
-          ..close();
+          ..write('Not found');
+        unawaited(request.response.close());
       } catch (e) {
         debugPrint('[Lattice] SsoCallbackServer request error: $e');
         try {
-          request.response.close();
+          unawaited(request.response.close());
         } catch (_) {}
       }
     });
@@ -144,9 +144,9 @@ class SsoCallbackServer {
   void dispose() {
     _timeout?.cancel();
     _timeout = null;
-    _server?.close(force: true).then((_) {
+    unawaited(_server?.close(force: true).then((_) {
       debugPrint('[Lattice] SsoCallbackServer shut down');
-    });
+    }),);
     _server = null;
     if (!_tokenCompleter.isCompleted) {
       _tokenCompleter.completeError(

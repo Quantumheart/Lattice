@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -32,7 +33,7 @@ class _FullImageContentState extends State<_FullImageContent> {
   @override
   void initState() {
     super.initState();
-    _loadFullImage();
+    unawaited(_loadFullImage());
   }
 
   Future<void> _loadFullImage() async {

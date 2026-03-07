@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/matrix_service.dart';
@@ -31,10 +33,10 @@ void main() {
           builder: (context) => Center(
             child: ElevatedButton(
               onPressed: () {
-                NewDirectMessageDialog.show(
+                unawaited(NewDirectMessageDialog.show(
                   context,
                   matrixService: mockMatrixService,
-                );
+                ));
               },
               child: const Text('Open'),
             ),

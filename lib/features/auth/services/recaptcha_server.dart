@@ -63,8 +63,8 @@ class RecaptchaServer {
           request.response
             ..statusCode = HttpStatus.ok
             ..headers.contentType = ContentType.html
-            ..write(_buildHtmlPage())
-            ..close();
+            ..write(_buildHtmlPage());
+          unawaited(request.response.close());
           return;
         }
 
@@ -78,8 +78,8 @@ class RecaptchaServer {
             request.response
               ..statusCode = HttpStatus.ok
               ..headers.contentType = ContentType.html
-              ..write(_buildSuccessPage())
-              ..close();
+              ..write(_buildSuccessPage());
+            unawaited(request.response.close());
 
             if (!_tokenCompleter.isCompleted) {
               _tokenCompleter.complete(token);
@@ -91,20 +91,20 @@ class RecaptchaServer {
           } else {
             request.response
               ..statusCode = HttpStatus.badRequest
-              ..write('Missing token')
-              ..close();
+              ..write('Missing token');
+            unawaited(request.response.close());
           }
           return;
         }
 
         request.response
           ..statusCode = HttpStatus.notFound
-          ..write('Not found')
-          ..close();
+          ..write('Not found');
+        unawaited(request.response.close());
       } catch (e) {
         debugPrint('[Lattice] RecaptchaServer request error: $e');
         try {
-          request.response.close();
+          unawaited(request.response.close());
         } catch (_) {}
       }
     });
@@ -182,9 +182,9 @@ class RecaptchaServer {
   void dispose() {
     _timeout?.cancel();
     _timeout = null;
-    _server?.close(force: true).then((_) {
+    unawaited(_server?.close(force: true).then((_) {
       debugPrint('[Lattice] RecaptchaServer shut down');
-    });
+    }),);
     _server = null;
     if (!_tokenCompleter.isCompleted) {
       _tokenCompleter.completeError(

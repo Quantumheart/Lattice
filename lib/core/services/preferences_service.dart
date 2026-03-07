@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -40,7 +42,7 @@ class PreferencesService extends ChangeNotifier {
   /// Must be called (and awaited) before reading any values.
   Future<void> init() async {
     _prefs ??= await SharedPreferences.getInstance();
-    _prefs?.remove('room_filter');
+    await _prefs?.remove('room_filter');
     notifyListeners();
   }
 

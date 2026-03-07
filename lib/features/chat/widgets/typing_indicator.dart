@@ -54,7 +54,7 @@ class _TypingIndicatorState extends State<TypingIndicator> {
   void didUpdateWidget(TypingIndicator old) {
     super.didUpdateWidget(old);
     if (old.syncStream != widget.syncStream) {
-      _sub?.cancel();
+      if (_sub != null) unawaited(_sub!.cancel());
       _sub = widget.syncStream.listen((_) => _checkTypers());
     }
     if (old.room != widget.room || old.myUserId != widget.myUserId) {
@@ -74,7 +74,7 @@ class _TypingIndicatorState extends State<TypingIndicator> {
 
   @override
   void dispose() {
-    _sub?.cancel();
+    if (_sub != null) unawaited(_sub!.cancel());
     super.dispose();
   }
 
@@ -137,7 +137,8 @@ class _AnimatedDotsState extends State<_AnimatedDots>
     _ctrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
-    )..repeat();
+    );
+    unawaited(_ctrl.repeat());
   }
 
   @override

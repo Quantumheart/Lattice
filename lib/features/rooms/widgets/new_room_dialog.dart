@@ -111,7 +111,7 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
       return;
     }
     _debounce = Timer(const Duration(milliseconds: 500), () {
-      _searchInviteDirectory(query.trim());
+      unawaited(_searchInviteDirectory(query.trim()));
     });
   }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
@@ -30,7 +32,7 @@ class _HomeserverScreenState extends State<HomeserverScreen>
       duration: const Duration(milliseconds: 800),
     );
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
-    _fadeCtrl.forward();
+    unawaited(_fadeCtrl.forward());
 
     _controller = HomeserverController(
       matrixService: context.read<MatrixService>(),

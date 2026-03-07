@@ -97,7 +97,7 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _search = _createSearchController();
-    _initTimeline();
+    unawaited(_initTimeline());
     _itemPosListener.itemPositions.addListener(_onScroll);
     _composeFocusNode.requestFocus();
   }
@@ -117,7 +117,7 @@ class _ChatScreenState extends State<ChatScreen> {
       _search.removeListener(_onSearchChanged);
       _search.dispose();
       _search = _createSearchController();
-      _initTimeline();
+      unawaited(_initTimeline());
       _composeFocusNode.requestFocus();
     }
   }
@@ -173,10 +173,12 @@ class _ChatScreenState extends State<ChatScreen> {
           event.messageType == MessageTypes.BadEncrypted) {
         final sessionId = event.content.tryGet<String>('session_id');
         if (sessionId != null) {
-          encryption.keyManager.loadSingleKey(room.id, sessionId).catchError(
-            (Object e) {
-              debugPrint('[Lattice] Key load failed for $sessionId: $e');
-            },
+          unawaited(
+            encryption.keyManager.loadSingleKey(room.id, sessionId).catchError(
+              (Object e) {
+                debugPrint('[Lattice] Key load failed for $sessionId: $e');
+              },
+            ),
           );
         }
       }
@@ -219,7 +221,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (positions.isEmpty) return;
     final maxIndex = positions.map((p) => p.index).reduce((a, b) => a > b ? a : b);
     if (maxIndex >= _visibleEvents.length - _historyLoadThreshold && !_loadingHistory) {
-      _loadMore();
+      unawaited(_loadMore());
     }
   }
 
@@ -441,11 +443,13 @@ class _ChatScreenState extends State<ChatScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_itemScrollCtrl.isAttached) {
-        _itemScrollCtrl.scrollTo(
-          index: index,
-          duration: _scrollAnimationDuration,
-          curve: Curves.easeInOut,
-          alignment: 0.5,
+        unawaited(
+          _itemScrollCtrl.scrollTo(
+            index: index,
+            duration: _scrollAnimationDuration,
+            curve: Curves.easeInOut,
+            alignment: 0.5,
+          ),
         );
       }
     });
@@ -744,8 +748,10 @@ class _ChatScreenState extends State<ChatScreen> {
           final displayEvent = _timeline != null
               ? event.getDisplayEvent(_timeline!)
               : event;
-          Clipboard.setData(
-            ClipboardData(text: stripReplyFallback(displayEvent.body)),
+          unawaited(
+            Clipboard.setData(
+              ClipboardData(text: stripReplyFallback(displayEvent.body)),
+            ),
           );
         },
       ),

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:lattice/core/utils/reply_fallback.dart';
 import 'package:lattice/core/utils/sender_color.dart';
@@ -28,7 +30,7 @@ class _InlineReplyPreviewState extends State<InlineReplyPreview> {
   @override
   void initState() {
     super.initState();
-    _loadParent();
+    unawaited(_loadParent());
   }
 
   @override
@@ -38,7 +40,7 @@ class _InlineReplyPreviewState extends State<InlineReplyPreview> {
       _generation++;
       _loaded = false;
       _parentEvent = null;
-      _loadParent();
+      unawaited(_loadParent());
     }
   }
 

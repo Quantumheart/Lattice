@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart' hide Visibility;
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:matrix/matrix.dart';
@@ -44,9 +46,9 @@ Future<void> showSpaceActionMenu(
   final matrix = context.read<MatrixService>();
   switch (action) {
     case _SpaceAction.create:
-      CreateSpaceDialog.show(context, matrixService: matrix);
+      await CreateSpaceDialog.show(context, matrixService: matrix);
     case _SpaceAction.join:
-      JoinSpaceDialog.show(context, matrixService: matrix);
+      await JoinSpaceDialog.show(context, matrixService: matrix);
   }
 }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:matrix/matrix.dart';
 
@@ -145,7 +147,7 @@ class MentionAutocompleteController extends ChangeNotifier {
       // Start with locally known members, then fetch full list.
       _cachedMembers = room.getParticipants();
       _loadingMembers = true;
-      room.requestParticipants().then((members) {
+      unawaited(room.requestParticipants().then((members) {
         if (_disposed) return;
         _cachedMembers = members;
         _loadingMembers = false;
@@ -156,7 +158,7 @@ class MentionAutocompleteController extends ChangeNotifier {
       }).catchError((_) {
         if (_disposed) return;
         _loadingMembers = false;
-      });
+      }));
     }
 
     final members = _cachedMembers;

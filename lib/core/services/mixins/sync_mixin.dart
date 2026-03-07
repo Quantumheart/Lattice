@@ -35,7 +35,7 @@ mixin SyncMixin on ChangeNotifier {
     // Wait for the first sync so account data & device keys are available,
     // then keep notifying on subsequent syncs.
     final firstSync = Completer<void>();
-    _syncSub?.cancel();
+    unawaited(_syncSub?.cancel());
     _syncSub = client.onSync.stream.listen((_) {
       if (!firstSync.isCompleted) firstSync.complete();
       invalidateSpaceTree();
@@ -56,7 +56,7 @@ mixin SyncMixin on ChangeNotifier {
 
     // Run E2EE auto-unlock in background — don't block sync return.
     _autoUnlockError = null;
-    checkChatBackupStatus().then((_) {
+    unawaited(checkChatBackupStatus().then((_) {
       if (chatBackupNeeded == true) {
         return tryAutoUnlockBackup();
       }
@@ -64,12 +64,12 @@ mixin SyncMixin on ChangeNotifier {
       debugPrint('[Lattice] Background E2EE auto-unlock error: $e');
       _autoUnlockError = e.toString();
       notifyListeners();
-    });
+    }));
   }
 
   /// Cancel sync subscription (e.g. on dispose).
   @protected
   void cancelSyncSub() {
-    _syncSub?.cancel();
+    unawaited(_syncSub?.cancel());
   }
 }

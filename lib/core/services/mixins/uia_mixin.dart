@@ -22,7 +22,7 @@ mixin UiaMixin on ChangeNotifier {
   /// Start listening for UIA requests from the client.
   @protected
   void listenForUia() {
-    _uiaSub?.cancel();
+    unawaited(_uiaSub?.cancel());
     _uiaSub = client.onUiaRequest.stream.listen(_handleUiaRequest);
   }
 
@@ -71,13 +71,13 @@ mixin UiaMixin on ChangeNotifier {
     final userId = client.userID;
     if (userId == null) return;
     setCachedPassword(password);
-    request.completeStage(
+    unawaited(request.completeStage(
       AuthenticationPassword(
         session: request.session,
         password: password,
         identifier: AuthenticationUserIdentifier(user: userId),
       ),
-    );
+    ));
   }
 
   /// Cache the password with an auto-expiry so it doesn't linger in memory
@@ -103,13 +103,13 @@ mixin UiaMixin on ChangeNotifier {
   /// Cancel UIA subscription (e.g. on logout or dispose).
   @protected
   void cancelUiaSub() {
-    _uiaSub?.cancel();
+    unawaited(_uiaSub?.cancel());
   }
 
   /// Close the UIA stream controller (on dispose).
   @protected
   void disposeUiaController() {
-    _uiaController.close();
+    unawaited(_uiaController.close());
     _passwordExpiryTimer?.cancel();
   }
 }

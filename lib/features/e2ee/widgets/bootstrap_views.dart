@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lattice/features/e2ee/widgets/bootstrap_controller.dart';
@@ -159,8 +161,8 @@ Widget _buildNewSsss(BuildContext context, BootstrapController controller) {
               ? null
               : () {
                   if (controller.newRecoveryKey != null) {
-                    Clipboard.setData(
-                        ClipboardData(text: controller.newRecoveryKey!),);
+                    unawaited(Clipboard.setData(
+                        ClipboardData(text: controller.newRecoveryKey!),));
                     controller.setKeyCopied();
                   }
                 },

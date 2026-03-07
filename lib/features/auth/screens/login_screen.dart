@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/models/server_auth_capabilities.dart';
@@ -37,7 +39,7 @@ class _LoginScreenState extends State<LoginScreen>
       duration: const Duration(milliseconds: 800),
     );
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
-    _fadeCtrl.forward();
+    unawaited(_fadeCtrl.forward());
 
     _controller = LoginController(
       matrixService: context.read<MatrixService>(),

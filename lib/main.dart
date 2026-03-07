@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
@@ -59,7 +61,11 @@ class _LatticeAppState extends State<LatticeApp> {
       providers: [
         ChangeNotifierProvider<ClientManager>.value(
             value: widget.clientManager,),
-        ChangeNotifierProvider(create: (_) => PreferencesService()..init()),
+        ChangeNotifierProvider(create: (_) {
+          final prefs = PreferencesService();
+          unawaited(prefs.init());
+          return prefs;
+        },),
         ChangeNotifierProvider(create: (_) => MediaPlaybackService()),
         Provider(
           create: (_) => OpenGraphService(),
@@ -142,7 +148,7 @@ class _NotificationServiceHolderState
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     widget.matrixService.addListener(_onMatrixChanged);
-    _initNotifications();
+    unawaited(_initNotifications());
   }
 
   Future<void> _initNotifications() async {
@@ -169,7 +175,7 @@ class _NotificationServiceHolderState
     // been stored yet when the sync triggers notifyListeners).
     final roomId = widget.matrixService.selectedRoomId;
     if (roomId != null && roomId != _lastSelectedRoomId) {
-      _notificationService?.cancelForRoom(roomId);
+      unawaited(_notificationService?.cancelForRoom(roomId));
     }
     _lastSelectedRoomId = roomId;
   }
@@ -180,7 +186,7 @@ class _NotificationServiceHolderState
     if (state == AppLifecycleState.resumed) {
       final roomId = widget.matrixService.selectedRoomId;
       if (roomId != null) {
-        _notificationService?.cancelForRoom(roomId);
+        unawaited(_notificationService?.cancelForRoom(roomId));
       }
     }
   }
@@ -193,7 +199,7 @@ class _NotificationServiceHolderState
       widget.matrixService.addListener(_onMatrixChanged);
       _notificationService?.dispose();
       _notificationService = null;
-      _initNotifications();
+      unawaited(_initNotifications());
       return;
     }
     // Only start/stop on actual login state transitions.
@@ -204,7 +210,7 @@ class _NotificationServiceHolderState
         _notificationService?.startListening();
       } else {
         _notificationService?.stopListening();
-        _notificationService?.cancelAll();
+        unawaited(_notificationService?.cancelAll());
       }
     }
   }

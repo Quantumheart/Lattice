@@ -29,12 +29,12 @@ class _DevicesScreenState extends State<DevicesScreen> {
     super.initState();
     final matrix = context.read<MatrixService>();
     _uiaSub = matrix.onUiaRequest.listen(_showUiaPasswordPrompt);
-    _loadDevices();
+    unawaited(_loadDevices());
   }
 
   @override
   void dispose() {
-    _uiaSub?.cancel();
+    unawaited(_uiaSub?.cancel());
     super.dispose();
   }
 

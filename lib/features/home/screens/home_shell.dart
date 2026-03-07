@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -174,7 +176,7 @@ class _HomeShellState extends State<HomeShell> {
                   tooltip: 'Expand room list',
                   onPressed: () {
                     setState(() => _dragPanelWidth = null);
-                    prefs.setPanelWidth(PreferencesService.defaultPanelWidth);
+                    unawaited(prefs.setPanelWidth(PreferencesService.defaultPanelWidth));
                   },
                 ),
               ),
@@ -209,7 +211,7 @@ class _HomeShellState extends State<HomeShell> {
                   onHorizontalDragEnd: (_) {
                     final w = _dragPanelWidth ?? prefs.panelWidth;
                     setState(() => _dragPanelWidth = null);
-                    prefs.setPanelWidth(w < _collapseThreshold ? 0 : w);
+                    unawaited(prefs.setPanelWidth(w < _collapseThreshold ? 0 : w));
                   },
                   child: Container(
                     width: 5,

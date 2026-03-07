@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:provider/provider.dart';
@@ -24,7 +26,7 @@ class DensityPickerDialog extends StatelessWidget {
         groupValue: prefs.messageDensity,
         onChanged: (value) {
           if (value != null) {
-            prefs.setMessageDensity(value);
+            unawaited(prefs.setMessageDensity(value));
             Navigator.pop(context);
           }
         },

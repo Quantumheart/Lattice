@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -50,7 +52,7 @@ class _SwipeableMessageState extends State<SwipeableMessage>
     });
     if (!_triggered && _dragExtent >= _triggerThreshold) {
       _triggered = true;
-      HapticFeedback.mediumImpact();
+      unawaited(HapticFeedback.mediumImpact());
     }
   }
 
@@ -61,7 +63,7 @@ class _SwipeableMessageState extends State<SwipeableMessage>
     _triggered = false;
     _snapBack = Tween<double>(begin: _dragExtent, end: 0)
         .animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut));
-    _animCtrl.forward(from: 0);
+    unawaited(_animCtrl.forward(from: 0));
   }
 
   @override

@@ -14,7 +14,7 @@ void showMediaViewer(
   required Event event,
   required Widget child,
 }) {
-  showGeneralDialog(
+  unawaited(showGeneralDialog(
     context: context,
     barrierColor: Colors.black,
     barrierDismissible: true,
@@ -27,7 +27,7 @@ void showMediaViewer(
         child: MediaViewerShell(event: event, child: child),
       ),
     ),
-  );
+  ),);
 }
 
 class MediaViewerShell extends StatefulWidget {

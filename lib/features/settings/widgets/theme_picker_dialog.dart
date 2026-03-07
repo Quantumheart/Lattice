@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:provider/provider.dart';
@@ -30,7 +32,7 @@ class ThemePickerDialog extends StatelessWidget {
         groupValue: prefs.themeMode,
         onChanged: (value) {
           if (value != null) {
-            prefs.setThemeMode(value);
+            unawaited(prefs.setThemeMode(value));
             Navigator.pop(context);
           }
         },
