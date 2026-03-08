@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -9,12 +11,14 @@ import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/auth/screens/homeserver_screen.dart';
 import 'package:lattice/features/auth/screens/login_screen.dart';
 import 'package:lattice/features/auth/screens/registration_screen.dart';
+import 'package:lattice/features/rooms/widgets/new_room_dialog.dart';
+import 'package:lattice/features/rooms/widgets/room_details_panel.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
 
-import 'mocks.dart';
+import 'mocks.dart' show MockClient, MockRoom;
 
 // ── FixedServiceFactory ─────────────────────────────────────────────────────
 
@@ -176,6 +180,137 @@ Widget buildTestApp({
         path: '/',
         builder: (context, state) =>
             const Scaffold(body: Center(child: Text('Home'))),
+      ),
+    ],
+  );
+
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider<MatrixService>.value(value: matrixService),
+      ChangeNotifierProvider<ClientManager>.value(value: clientManager),
+    ],
+    child: MaterialApp.router(routerConfig: router),
+  );
+}
+
+// ── Room stubs ───────────────────────────────────────────────────────────────
+
+void stubLoggedInClient(
+  MockClient mockClient,
+  CachedStreamController<SyncUpdate> syncController,
+) {
+  when(mockClient.userID).thenReturn('@alice:matrix.org');
+  when(mockClient.homeserver).thenReturn(Uri.parse('https://matrix.org'));
+  when(mockClient.accessToken).thenReturn('token_123');
+  when(mockClient.encryption).thenReturn(null);
+  when(mockClient.encryptionEnabled).thenReturn(false);
+  when(mockClient.updateUserDeviceKeys()).thenAnswer((_) async {});
+  when(mockClient.userDeviceKeys).thenReturn({});
+  when(mockClient.onLoginStateChanged)
+      .thenReturn(CachedStreamController<LoginState>());
+  when(mockClient.onUiaRequest)
+      .thenReturn(CachedStreamController<UiaRequest>());
+  when(mockClient.onSync).thenReturn(syncController);
+}
+
+void stubRoomDefaults(MockRoom mockRoom, MockClient mockClient) {
+  when(mockRoom.id).thenReturn('!room:example.com');
+  when(mockRoom.getLocalizedDisplayname()).thenReturn('Test Room');
+  when(mockRoom.client).thenReturn(mockClient);
+  when(mockRoom.topic).thenReturn('');
+  when(mockRoom.avatar).thenReturn(null);
+  when(mockRoom.encrypted).thenReturn(false);
+  when(mockRoom.isDirectChat).thenReturn(false);
+  when(mockRoom.isFavourite).thenReturn(false);
+  when(mockRoom.pushRuleState).thenReturn(PushRuleState.notify);
+  when(mockRoom.canChangeStateEvent(any)).thenReturn(false);
+  when(mockRoom.canChangePowerLevel).thenReturn(false);
+  when(mockRoom.canKick).thenReturn(false);
+  when(mockRoom.canBan).thenReturn(false);
+  when(mockRoom.summary).thenReturn(
+    RoomSummary.fromJson({'m.joined_member_count': 3}),
+  );
+  when(mockRoom.requestParticipants(any)).thenAnswer((_) async => []);
+  when(mockRoom.getPowerLevelByUserId(any)).thenReturn(0);
+}
+
+void stubCreateRoom(MockClient mockClient, {String newRoomId = '!newroom:example.com'}) {
+  when(mockClient.createRoom(
+    name: anyNamed('name'),
+    topic: anyNamed('topic'),
+    visibility: anyNamed('visibility'),
+    initialState: anyNamed('initialState'),
+    invite: anyNamed('invite'),
+  )).thenAnswer((_) async => newRoomId);
+  when(mockClient.waitForRoomInSync(any, join: anyNamed('join')))
+      .thenAnswer((_) async => SyncUpdate(nextBatch: ''));
+}
+
+// ── Room test app builder ────────────────────────────────────────────────────
+
+Widget buildRoomTestApp({
+  required MatrixService matrixService,
+  required ClientManager clientManager,
+}) {
+  final router = GoRouter(
+    refreshListenable: matrixService,
+    initialLocation: '/',
+    redirect: (context, state) {
+      final roomId = matrixService.selectedRoomId;
+      if (roomId != null && state.matchedLocation == '/') {
+        return '/rooms/$roomId';
+      }
+      if (roomId == null && state.matchedLocation.startsWith('/rooms/')) {
+        return '/';
+      }
+      return null;
+    },
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => Scaffold(
+          appBar: AppBar(title: const Text('Home')),
+          floatingActionButton: Builder(
+            builder: (context) => FloatingActionButton(
+              onPressed: () {
+                unawaited(NewRoomDialog.show(
+                  context,
+                  matrixService: matrixService,
+                ));
+              },
+              child: const Icon(Icons.add),
+            ),
+          ),
+        ),
+      ),
+      GoRoute(
+        path: '/rooms/:roomId',
+        builder: (context, state) {
+          final roomId = state.pathParameters['roomId']!;
+          final room = matrixService.client.getRoomById(roomId);
+          final name = room?.getLocalizedDisplayname() ?? 'Unknown';
+          return Scaffold(
+            appBar: AppBar(
+              title: Text(name),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.info_outline),
+                  onPressed: () => context.go('/rooms/$roomId/details'),
+                ),
+              ],
+            ),
+            body: Center(child: Text(name)),
+          );
+        },
+        routes: [
+          GoRoute(
+            path: 'details',
+            builder: (context, state) {
+              final roomId = state.pathParameters['roomId']!;
+              return RoomDetailsPanel(roomId: roomId, isFullPage: true);
+            },
+          ),
+        ],
       ),
     ],
   );
