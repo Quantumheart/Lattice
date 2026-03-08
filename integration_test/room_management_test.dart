@@ -56,7 +56,7 @@ void main() {
 
   group('Room management integration', () {
     testWidgets('create room navigates to room screen', (tester) async {
-      stubCreateRoom(mockClient, newRoomId: _newRoomId);
+      stubCreateRoom(mockClient);
       final newRoom = MockRoom();
       stubRoomDefaults(newRoom, mockClient);
       when(newRoom.id).thenReturn(_newRoomId);
@@ -66,7 +66,7 @@ void main() {
       await tester.pumpWidget(buildRoomTestApp(
         matrixService: matrixService,
         clientManager: clientManager,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       expect(find.text('Home'), findsOneWidget);
@@ -93,7 +93,7 @@ void main() {
       await tester.pumpWidget(buildRoomTestApp(
         matrixService: matrixService,
         clientManager: clientManager,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       expect(find.text('Test Room'), findsWidgets);
@@ -119,7 +119,7 @@ void main() {
       await tester.pumpWidget(buildRoomTestApp(
         matrixService: matrixService,
         clientManager: clientManager,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       await tester.tap(find.byIcon(Icons.info_outline));
@@ -142,7 +142,7 @@ void main() {
 
     testWidgets('full flow — create room, view details, invite user, leave',
         (tester) async {
-      stubCreateRoom(mockClient, newRoomId: _newRoomId);
+      stubCreateRoom(mockClient);
       final newRoom = MockRoom();
       stubRoomDefaults(newRoom, mockClient);
       when(newRoom.id).thenReturn(_newRoomId);
@@ -154,7 +154,7 @@ void main() {
       await tester.pumpWidget(buildRoomTestApp(
         matrixService: matrixService,
         clientManager: clientManager,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       // Create room

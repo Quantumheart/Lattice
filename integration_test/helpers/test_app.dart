@@ -38,15 +38,17 @@ class FixedServiceFactory extends MatrixServiceFactory {
 // ── Stubs ────────────────────────────────────────────────────────────────────
 
 void stubPasswordServer(MockClient mockClient) {
-  when(mockClient.checkHomeserver(any)).thenAnswer((_) async => (
-        null,
-        GetVersionsResponse.fromJson({'versions': ['v1.1']}),
-        <LoginFlow>[],
-        null,
-      ));
-  when(mockClient.getLoginFlows()).thenAnswer((_) async => [
-        LoginFlow(type: AuthenticationTypes.password),
-      ]);
+  when(mockClient.checkHomeserver(any)).thenAnswer(
+    (_) async => (
+      null,
+      GetVersionsResponse.fromJson({'versions': ['v1.1']}),
+      <LoginFlow>[],
+      null,
+    ),
+  );
+  when(mockClient.getLoginFlows()).thenAnswer(
+    (_) async => [LoginFlow(type: AuthenticationTypes.password)],
+  );
   when(mockClient.register()).thenThrow(
     MatrixException.fromJson({
       'errcode': 'M_FORBIDDEN',
@@ -59,20 +61,24 @@ void stubSsoServer(
   MockClient mockClient, {
   List<Map<String, String>> providers = const [],
 }) {
-  when(mockClient.checkHomeserver(any)).thenAnswer((_) async => (
-        null,
-        GetVersionsResponse.fromJson({'versions': ['v1.1']}),
-        <LoginFlow>[],
-        null,
-      ));
-  when(mockClient.getLoginFlows()).thenAnswer((_) async => [
-        LoginFlow(
-          type: AuthenticationTypes.sso,
-          additionalProperties: {
-            if (providers.isNotEmpty) 'identity_providers': providers,
-          },
-        ),
-      ]);
+  when(mockClient.checkHomeserver(any)).thenAnswer(
+    (_) async => (
+      null,
+      GetVersionsResponse.fromJson({'versions': ['v1.1']}),
+      <LoginFlow>[],
+      null,
+    ),
+  );
+  when(mockClient.getLoginFlows()).thenAnswer(
+    (_) async => [
+      LoginFlow(
+        type: AuthenticationTypes.sso,
+        additionalProperties: {
+          if (providers.isNotEmpty) 'identity_providers': providers,
+        },
+      ),
+    ],
+  );
   when(mockClient.register()).thenThrow(
     MatrixException.fromJson({
       'errcode': 'M_FORBIDDEN',
@@ -90,11 +96,13 @@ void stubSuccessfulLogin(
     identifier: anyNamed('identifier'),
     password: anyNamed('password'),
     initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
-  )).thenAnswer((_) async => LoginResponse(
-        accessToken: 'token_123',
-        deviceId: 'DEVICE_1',
-        userId: '@alice:matrix.org',
-      ));
+  ),).thenAnswer(
+    (_) async => LoginResponse(
+      accessToken: 'token_123',
+      deviceId: 'DEVICE_1',
+      userId: '@alice:matrix.org',
+    ),
+  );
   when(mockClient.userID).thenReturn('@alice:matrix.org');
   when(mockClient.deviceID).thenReturn('DEVICE_1');
   when(mockClient.accessToken).thenReturn('token_123');
@@ -104,7 +112,7 @@ void stubSuccessfulLogin(
   when(mockClient.onLoginStateChanged)
       .thenReturn(CachedStreamController<LoginState>());
   when(mockClient.onUiaRequest)
-      .thenReturn(CachedStreamController<UiaRequest>());
+      .thenReturn(CachedStreamController<UiaRequest<dynamic>>());
   when(mockClient.onSync).thenReturn(syncController);
 }
 
@@ -114,7 +122,7 @@ void stubFailedLogin(MockClient mockClient) {
     identifier: anyNamed('identifier'),
     password: anyNamed('password'),
     initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
-  )).thenThrow(
+  ),).thenThrow(
     MatrixException.fromJson({
       'errcode': 'M_FORBIDDEN',
       'error': 'Invalid username or password',
@@ -209,7 +217,7 @@ void stubLoggedInClient(
   when(mockClient.onLoginStateChanged)
       .thenReturn(CachedStreamController<LoginState>());
   when(mockClient.onUiaRequest)
-      .thenReturn(CachedStreamController<UiaRequest>());
+      .thenReturn(CachedStreamController<UiaRequest<dynamic>>());
   when(mockClient.onSync).thenReturn(syncController);
 }
 
@@ -241,7 +249,7 @@ void stubCreateRoom(MockClient mockClient, {String newRoomId = '!newroom:example
     visibility: anyNamed('visibility'),
     initialState: anyNamed('initialState'),
     invite: anyNamed('invite'),
-  )).thenAnswer((_) async => newRoomId);
+  ),).thenAnswer((_) async => newRoomId);
   when(mockClient.waitForRoomInSync(any, join: anyNamed('join')))
       .thenAnswer((_) async => SyncUpdate(nextBatch: ''));
 }
@@ -276,7 +284,7 @@ Widget buildRoomTestApp({
                 unawaited(NewRoomDialog.show(
                   context,
                   matrixService: matrixService,
-                ));
+                ),);
               },
               child: const Icon(Icons.add),
             ),
