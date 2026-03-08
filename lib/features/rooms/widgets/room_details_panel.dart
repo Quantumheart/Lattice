@@ -96,12 +96,10 @@ class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
   });
 
   Future<void> _showInviteDialog(Room room) async {
-    final controller = TextEditingController();
     final result = await showDialog<String>(
       context: context,
-      builder: (ctx) => _InviteUserDialog(room: room, controller: controller),
+      builder: (ctx) => _InviteUserDialog(room: room),
     );
-    controller.dispose();
     if (result == null || !mounted) return;
 
     final scaffold = ScaffoldMessenger.of(context);
@@ -497,10 +495,9 @@ class _ActionButton extends StatelessWidget {
 // ── Invite dialog ──────────────────────────────────────────────
 
 class _InviteUserDialog extends StatefulWidget {
-  const _InviteUserDialog({required this.room, required this.controller});
+  const _InviteUserDialog({required this.room});
 
   final Room room;
-  final TextEditingController controller;
 
   @override
   State<_InviteUserDialog> createState() => _InviteUserDialogState();
@@ -508,7 +505,14 @@ class _InviteUserDialog extends StatefulWidget {
 
 class _InviteUserDialogState extends State<_InviteUserDialog> {
   static final _mxidRegex = RegExp(r'^@[^:]+:.+$');
+  final _controller = TextEditingController();
   String? _error;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -521,7 +525,7 @@ class _InviteUserDialogState extends State<_InviteUserDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-              controller: widget.controller,
+              controller: _controller,
               autofocus: true,
               decoration: const InputDecoration(
                 labelText: 'Matrix ID',
@@ -552,7 +556,7 @@ class _InviteUserDialogState extends State<_InviteUserDialog> {
   }
 
   void _submit() {
-    final mxid = widget.controller.text.trim();
+    final mxid = _controller.text.trim();
     if (mxid.isEmpty) {
       setState(() => _error = 'Please enter a Matrix ID');
       return;
