@@ -54,40 +54,30 @@ class ComposeBarSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<Event?>(
-      valueListenable: replyNotifier,
-      builder: (context, replyEvent, _) {
-        return ValueListenableBuilder<Event?>(
-          valueListenable: editNotifier,
-          builder: (context, editEvent, _) {
-            return ValueListenableBuilder<List<PendingAttachment>>(
-              valueListenable: pendingAttachments,
-              builder: (context, attachments, _) {
-                return ComposeBar(
-                  controller: controller,
-                  onSend: onSend,
-                  replyEvent: replyEvent,
-                  onCancelReply: onCancelReply,
-                  editEvent: editEvent,
-                  onCancelEdit: onCancelEdit,
-                  onAttach: onAttach,
-                  onPasteImage: onPasteImage,
-                  uploadNotifier: uploadNotifier,
-                  room: room,
-                  joinedRooms: joinedRooms,
-                  typingController: typingController,
-                  focusNode: focusNode,
-                  voiceController: voiceController,
-                  onMicTap: onMicTap,
-                  onVoiceStop: onVoiceStop,
-                  onVoiceCancel: onVoiceCancel,
-                  pendingAttachments: attachments,
-                  onRemoveAttachment: onRemoveAttachment,
-                  onClearAttachments: onClearAttachments,
-                );
-              },
-            );
-          },
+    return ListenableBuilder(
+      listenable: Listenable.merge([replyNotifier, editNotifier, pendingAttachments]),
+      builder: (context, _) {
+        return ComposeBar(
+          controller: controller,
+          onSend: onSend,
+          replyEvent: replyNotifier.value,
+          onCancelReply: onCancelReply,
+          editEvent: editNotifier.value,
+          onCancelEdit: onCancelEdit,
+          onAttach: onAttach,
+          onPasteImage: onPasteImage,
+          uploadNotifier: uploadNotifier,
+          room: room,
+          joinedRooms: joinedRooms,
+          typingController: typingController,
+          focusNode: focusNode,
+          voiceController: voiceController,
+          onMicTap: onMicTap,
+          onVoiceStop: onVoiceStop,
+          onVoiceCancel: onVoiceCancel,
+          pendingAttachments: pendingAttachments.value,
+          onRemoveAttachment: onRemoveAttachment,
+          onClearAttachments: onClearAttachments,
         );
       },
     );
