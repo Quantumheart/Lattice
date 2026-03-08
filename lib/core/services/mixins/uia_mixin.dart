@@ -71,13 +71,15 @@ mixin UiaMixin on ChangeNotifier {
     final userId = client.userID;
     if (userId == null) return;
     setCachedPassword(password);
-    unawaited(request.completeStage(
-      AuthenticationPassword(
-        session: request.session,
-        password: password,
-        identifier: AuthenticationUserIdentifier(user: userId),
+    unawaited(
+      request.completeStage(
+        AuthenticationPassword(
+          session: request.session,
+          password: password,
+          identifier: AuthenticationUserIdentifier(user: userId),
+        ),
       ),
-    ),);
+    );
   }
 
   /// Cache the password with an auto-expiry so it doesn't linger in memory
@@ -86,7 +88,7 @@ mixin UiaMixin on ChangeNotifier {
   void setCachedPassword(String password) {
     _cachedPassword = password;
     _passwordExpiryTimer?.cancel();
-    _passwordExpiryTimer = Timer(const Duration(minutes: 5), () {
+    _passwordExpiryTimer = Timer(const Duration(seconds: 30), () {
       _cachedPassword = null;
       _passwordExpiryTimer = null;
     });
