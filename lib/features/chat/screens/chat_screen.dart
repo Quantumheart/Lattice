@@ -247,29 +247,26 @@ class _ChatScreenState extends State<ChatScreen>
   // ── Attachments ─────────────────────────────────────────
 
   void _addAttachment(PendingAttachment attachment) {
-    final result = _compose.addAttachment(attachment);
-    if (result == AddAttachmentResult.tooMany) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Maximum ${ComposeStateController.maxAttachments} attachments allowed')),
-      );
-    } else if (result == AddAttachmentResult.tooLarge) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('File exceeds 25 MB limit')),
-      );
-    }
+    _showAttachmentError(_compose.addAttachment(attachment));
   }
 
   Future<void> _handlePasteImage() async {
     final result = await _compose.handlePasteImage();
-    if (!mounted || result == null || result == AddAttachmentResult.ok) return;
-    if (result == AddAttachmentResult.tooMany) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Maximum ${ComposeStateController.maxAttachments} attachments allowed')),
-      );
-    } else if (result == AddAttachmentResult.tooLarge) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('File exceeds 25 MB limit')),
-      );
+    if (mounted && result != null) _showAttachmentError(result);
+  }
+
+  void _showAttachmentError(AddAttachmentResult result) {
+    switch (result) {
+      case AddAttachmentResult.ok:
+        return;
+      case AddAttachmentResult.tooMany:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Maximum ${ComposeStateController.maxAttachments} attachments allowed')),
+        );
+      case AddAttachmentResult.tooLarge:
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('File exceeds 25 MB limit')),
+        );
     }
   }
 

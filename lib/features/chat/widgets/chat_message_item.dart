@@ -49,6 +49,7 @@ class ChatMessageItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final isRedacted = event.redacted;
     final room = event.room;
+    final isPinned = room.pinnedEventIds.contains(event.eventId);
     final canPin = !isRedacted &&
         room.canChangeStateEvent('m.room.pinned_events');
 
@@ -83,7 +84,7 @@ class ChatMessageItem extends StatelessWidget {
       isMe: isMe,
       isFirst: isFirst,
       highlighted: event.eventId == highlightedEventId,
-      isPinned: room.pinnedEventIds.contains(event.eventId),
+      isPinned: isPinned,
       timeline: timeline,
       onTapReply: isRedacted ? null : onTapReply,
       onReply: isRedacted ? null : () => onReply?.call(event),
@@ -109,7 +110,8 @@ class ChatMessageItem extends StatelessWidget {
       return SwipeableMessage(
         onReply: () => onReply?.call(event),
         child: LongPressWrapper(
-          onLongPress: (rect) => _showMobileActions(context, rect),
+          onLongPress: (rect) =>
+              _showMobileActions(context, rect, isPinned, canPin),
           child: content,
         ),
       );
@@ -117,11 +119,15 @@ class ChatMessageItem extends StatelessWidget {
     return content;
   }
 
-  void _showMobileActions(BuildContext context, Rect bubbleRect) {
+  void _showMobileActions(
+    BuildContext context,
+    Rect bubbleRect,
+    bool isPinned,
+    bool canPin,
+  ) {
     if (event.redacted) return;
 
     final cs = Theme.of(context).colorScheme;
-    final isPinned = event.room.pinnedEventIds.contains(event.eventId);
     final actions = <MessageAction>[
       MessageAction(
         label: 'Reply',
@@ -142,7 +148,7 @@ class ChatMessageItem extends StatelessWidget {
           (emoji) => onToggleReaction(event, emoji),
         ),
       ),
-      if (event.room.canChangeStateEvent('m.room.pinned_events'))
+      if (canPin)
         MessageAction(
           label: isPinned ? 'Unpin' : 'Pin',
           icon: isPinned
