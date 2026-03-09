@@ -1,13 +1,32 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart' as flutter_webrtc;
+import 'package:http/http.dart' as http;
+import 'package:livekit_client/livekit_client.dart' as livekit;
 import 'package:matrix/matrix.dart';
 import 'package:webrtc_interface/webrtc_interface.dart' as webrtc;
 
 // ── Call State ──────────────────────────────────────────────
 
-enum LatticeCallState { idle, joining, connected, reconnecting, failed }
+enum LatticeCallState {
+  idle,
+  joining,
+  connected,
+  reconnecting,
+  disconnecting,
+  failed,
+}
+
+// ── Types ──────────────────────────────────────────────────
+
+typedef LiveKitRoomFactory = livekit.Room Function();
+typedef HttpPostFunction = Future<http.Response> Function(
+  Uri url, {
+  Map<String, String>? headers,
+  Object? body,
+});
 
 // ── WebRTC Delegate ─────────────────────────────────────────
 
@@ -101,6 +120,7 @@ class CallService extends ChangeNotifier {
   }
 
   void _resetState() {
+    _cleanupLiveKit();
     _activeGroupCall = null;
     _callState = LatticeCallState.idle;
     _voip = null;
@@ -124,6 +144,40 @@ class CallService extends ChangeNotifier {
   String? get activeCallRoomId => _activeGroupCall?.room.id;
 
   StreamSubscription<MatrixRTCCallEvent>? _callEventSub;
+
+  // ── LiveKit State ───────────────────────────────────────
+
+  livekit.Room? _livekitRoom;
+  livekit.Room? get livekitRoom => _livekitRoom;
+
+  livekit.EventsListener<livekit.RoomEvent>? _livekitListener;
+
+  List<livekit.RemoteParticipant> _participants = [];
+  List<livekit.RemoteParticipant> get participants =>
+      List.unmodifiable(_participants);
+
+  bool _isMicEnabled = false;
+  bool get isMicEnabled => _isMicEnabled;
+
+  bool _isCameraEnabled = false;
+  bool get isCameraEnabled => _isCameraEnabled;
+
+  bool _isScreenShareEnabled = false;
+  bool get isScreenShareEnabled => _isScreenShareEnabled;
+
+  List<livekit.Participant> _activeSpeakers = [];
+  List<livekit.Participant> get activeSpeakers =>
+      List.unmodifiable(_activeSpeakers);
+
+  LiveKitRoomFactory _roomFactory = livekit.Room.new;
+
+  @visibleForTesting
+  set roomFactoryForTest(LiveKitRoomFactory factory) => _roomFactory = factory;
+
+  HttpPostFunction _httpPost = http.post;
+
+  @visibleForTesting
+  set httpPostForTest(HttpPostFunction fn) => _httpPost = fn;
 
   // ── Queries ─────────────────────────────────────────────
 
@@ -195,6 +249,10 @@ class CallService extends ChangeNotifier {
 
       await groupCall.enter();
 
+      if (resolvedBackend is LiveKitBackend) {
+        await _connectLiveKit(resolvedBackend);
+      }
+
       _callState = LatticeCallState.connected;
       notifyListeners();
       debugPrint(
@@ -202,6 +260,7 @@ class CallService extends ChangeNotifier {
       );
     } catch (e) {
       debugPrint('[Lattice] Failed to join call: $e');
+      _cleanupLiveKit();
       _callState = LatticeCallState.failed;
       _activeGroupCall = null;
       unawaited(_callEventSub?.cancel());
@@ -216,6 +275,11 @@ class CallService extends ChangeNotifier {
     final callId = _activeGroupCall!.groupCallId;
     debugPrint('[Lattice] Leaving call $callId');
 
+    _callState = LatticeCallState.disconnecting;
+    notifyListeners();
+
+    await _disconnectLiveKit();
+
     try {
       await _activeGroupCall!.leave();
     } catch (e) {
@@ -227,6 +291,56 @@ class CallService extends ChangeNotifier {
     _activeGroupCall = null;
     _callState = LatticeCallState.idle;
     notifyListeners();
+  }
+
+  // ── Track Toggles ─────────────────────────────────────────
+
+  Future<void> toggleMicrophone() async {
+    final localParticipant = _livekitRoom?.localParticipant;
+    if (localParticipant == null) return;
+
+    _isMicEnabled = !_isMicEnabled;
+    notifyListeners();
+
+    try {
+      await localParticipant.setMicrophoneEnabled(_isMicEnabled);
+    } catch (e) {
+      debugPrint('[Lattice] Failed to toggle microphone: $e');
+      _isMicEnabled = !_isMicEnabled;
+      notifyListeners();
+    }
+  }
+
+  Future<void> toggleCamera() async {
+    final localParticipant = _livekitRoom?.localParticipant;
+    if (localParticipant == null) return;
+
+    _isCameraEnabled = !_isCameraEnabled;
+    notifyListeners();
+
+    try {
+      await localParticipant.setCameraEnabled(_isCameraEnabled);
+    } catch (e) {
+      debugPrint('[Lattice] Failed to toggle camera: $e');
+      _isCameraEnabled = !_isCameraEnabled;
+      notifyListeners();
+    }
+  }
+
+  Future<void> toggleScreenShare() async {
+    final localParticipant = _livekitRoom?.localParticipant;
+    if (localParticipant == null) return;
+
+    _isScreenShareEnabled = !_isScreenShareEnabled;
+    notifyListeners();
+
+    try {
+      await localParticipant.setScreenShareEnabled(_isScreenShareEnabled);
+    } catch (e) {
+      debugPrint('[Lattice] Failed to toggle screen share: $e');
+      _isScreenShareEnabled = !_isScreenShareEnabled;
+      notifyListeners();
+    }
   }
 
   // ── TURN Server ─────────────────────────────────────────
@@ -252,6 +366,122 @@ class CallService extends ChangeNotifier {
   @override
   void notifyListeners() {
     if (!_disposed) super.notifyListeners();
+  }
+
+  // ── LiveKit Private ─────────────────────────────────────
+
+  Future<({String url, String token})> _fetchLiveKitToken(
+    LiveKitBackend backend,
+  ) async {
+    final openId = await _client.requestOpenIdToken(
+      _client.userID!,
+      {},
+    );
+
+    final response = await _httpPost(
+      Uri.parse(backend.livekitServiceUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'access_token': openId.accessToken,
+        'token_type': openId.tokenType,
+        'matrix_server_name': openId.matrixServerName,
+        'expires_in': openId.expiresIn,
+        'room_alias': backend.livekitAlias,
+        'device_id': _client.deviceID,
+      }),
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(
+        'LiveKit token exchange failed: ${response.statusCode} ${response.body}',
+      );
+    }
+
+    final json = jsonDecode(response.body) as Map<String, dynamic>;
+    return (url: json['url'] as String, token: json['token'] as String);
+  }
+
+  Future<void> _connectLiveKit(LiveKitBackend backend) async {
+    final credentials = await _fetchLiveKitToken(backend);
+
+    _livekitRoom = _roomFactory();
+    _livekitListener = _livekitRoom!.createListener();
+    _subscribeLiveKitEvents();
+
+    await _livekitRoom!.connect(credentials.url, credentials.token);
+
+    _isMicEnabled = false;
+    _isCameraEnabled = false;
+    _isScreenShareEnabled = false;
+    _syncParticipants();
+  }
+
+  void _subscribeLiveKitEvents() {
+    final listener = _livekitListener!;
+
+    listener.on<livekit.RoomReconnectingEvent>((_) {
+      _callState = LatticeCallState.reconnecting;
+      notifyListeners();
+    });
+
+    listener.on<livekit.RoomReconnectedEvent>((_) {
+      _callState = LatticeCallState.connected;
+      notifyListeners();
+    });
+
+    listener.on<livekit.RoomDisconnectedEvent>((_) {
+      _cleanupLiveKit();
+      _callState = LatticeCallState.failed;
+      notifyListeners();
+    });
+
+    listener.on<livekit.ParticipantConnectedEvent>((_) {
+      _syncParticipants();
+      notifyListeners();
+    });
+
+    listener.on<livekit.ParticipantDisconnectedEvent>((_) {
+      _syncParticipants();
+      notifyListeners();
+    });
+
+    listener.on<livekit.ActiveSpeakersChangedEvent>((event) {
+      _activeSpeakers = event.speakers.toList();
+      notifyListeners();
+    });
+
+    listener.on<livekit.TrackMutedEvent>((_) => notifyListeners());
+    listener.on<livekit.TrackUnmutedEvent>((_) => notifyListeners());
+    listener.on<livekit.TrackSubscribedEvent>((_) => notifyListeners());
+    listener.on<livekit.TrackUnsubscribedEvent>((_) => notifyListeners());
+  }
+
+  void _syncParticipants() {
+    _participants =
+        _livekitRoom?.remoteParticipants.values.toList() ?? [];
+  }
+
+  Future<void> _disconnectLiveKit() async {
+    try {
+      await _livekitRoom?.disconnect();
+    } catch (e) {
+      debugPrint('[Lattice] Error disconnecting LiveKit: $e');
+    }
+    _cleanupLiveKit();
+  }
+
+  void _cleanupLiveKit() {
+    final listener = _livekitListener;
+    final room = _livekitRoom;
+    _livekitListener = null;
+    _livekitRoom = null;
+    if (listener != null) unawaited(listener.dispose());
+    if (room != null) unawaited(room.dispose());
+    _participants = [];
+    _activeSpeakers = [];
+    _isMicEnabled = false;
+    _isCameraEnabled = false;
+    _isScreenShareEnabled = false;
   }
 
   // ── Private ─────────────────────────────────────────────
