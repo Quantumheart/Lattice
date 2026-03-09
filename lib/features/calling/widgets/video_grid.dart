@@ -55,20 +55,18 @@ class _VideoGridState extends State<VideoGrid> {
     if (participants.isEmpty) return const SizedBox.shrink();
 
     final (columns, rows) = _computeGrid(participants.length, width, height);
-    var index = 0;
 
     return Column(
       children: List.generate(rows, (row) {
         return Expanded(
           child: Row(
             children: List.generate(columns, (col) {
-              if (index < participants.length) {
-                final tile = ParticipantTile(participant: participants[index]);
-                index++;
+              final i = row * columns + col;
+              if (i < participants.length) {
                 return Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(2),
-                    child: tile,
+                    child: ParticipantTile(participant: participants[i]),
                   ),
                 );
               }

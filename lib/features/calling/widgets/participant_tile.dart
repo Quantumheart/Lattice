@@ -76,7 +76,6 @@ class ParticipantTile extends StatelessWidget {
   }
 
   Widget _buildBottomOverlay(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final showAudioBar = participant.audioLevel > _audioLevelThreshold;
 
     return Positioned(
@@ -102,7 +101,7 @@ class ParticipantTile extends StatelessWidget {
                           (_maxAudioBarWidth - _minAudioBarWidth),
                   height: 4,
                   decoration: BoxDecoration(
-                    color: cs.tertiary,
+                    color: Colors.greenAccent,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -116,12 +115,12 @@ class ParticipantTile extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .bodySmall
-                      ?.copyWith(color: cs.onSurface),
+                      ?.copyWith(color: Colors.white),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (participant.isMuted)
-                Icon(Icons.mic_off, size: 14, color: cs.error),
+                const Icon(Icons.mic_off, size: 14, color: Colors.redAccent),
             ],
           ),
         ),

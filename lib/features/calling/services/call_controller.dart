@@ -57,6 +57,10 @@ class CallController extends ChangeNotifier {
   void hangUp() {
     debugPrint('[Lattice] CallController: hanging up');
     _participants = [];
+    _isMicMuted = false;
+    _isCameraOff = false;
+    _isFrontCamera = true;
+    _isScreenSharing = false;
     _stopTimer();
     _state = CallState.ended;
     _notify();
@@ -108,7 +112,7 @@ class CallController extends ChangeNotifier {
   void toggleCamera() {
     _isCameraOff = !_isCameraOff;
     _updateLocalParticipant(
-      (p) => p.copyWith(isAudioOnly: _isCameraOff, isCameraOff: _isCameraOff),
+      (p) => p.copyWith(isAudioOnly: _isCameraOff),
     );
   }
 

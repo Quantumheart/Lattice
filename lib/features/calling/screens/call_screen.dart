@@ -19,6 +19,7 @@ class CallScreen extends StatefulWidget {
 
 class _CallScreenState extends State<CallScreen> {
   late final CallController _controller;
+  Timer? _popTimer;
 
   @override
   void initState() {
@@ -33,6 +34,7 @@ class _CallScreenState extends State<CallScreen> {
 
   @override
   void dispose() {
+    _popTimer?.cancel();
     _controller.removeListener(_onControllerChanged);
     _controller.dispose();
     super.dispose();
@@ -52,7 +54,7 @@ class _CallScreenState extends State<CallScreen> {
     if (!mounted) return;
     if (_controller.state == CallState.ended) {
       setState(() {});
-      Future<void>.delayed(const Duration(seconds: 2), () {
+      _popTimer ??= Timer(const Duration(seconds: 2), () {
         if (mounted) context.pop();
       });
       return;
@@ -72,38 +74,21 @@ class _CallScreenState extends State<CallScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    final darkScheme = ColorScheme.fromSeed(
-      seedColor: cs.primary,
-      brightness: Brightness.dark,
-    );
-
-    return Theme(
-      data: Theme.of(context).copyWith(
-        brightness: Brightness.dark,
-        colorScheme: darkScheme,
-        scaffoldBackgroundColor: darkScheme.surface,
-        appBarTheme: AppBarTheme(
-          backgroundColor: darkScheme.surface,
-          foregroundColor: darkScheme.onSurface,
+    return PopScope(
+      canPop: _controller.state != CallState.connected &&
+          _controller.state != CallState.reconnecting,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.displayName),
         ),
-      ),
-      child: PopScope(
-        canPop: _controller.state != CallState.connected &&
-            _controller.state != CallState.reconnecting,
-        child: Scaffold(
-          appBar: AppBar(
-            title: Text(widget.displayName),
-          ),
-          body: switch (_controller.state) {
-            CallState.joining => _buildJoining(tt),
-            CallState.connected => _buildConnected(tt),
-            CallState.reconnecting => _buildReconnecting(tt),
-            CallState.ended => _buildEnded(tt),
-          },
-        ),
+        body: switch (_controller.state) {
+          CallState.joining => _buildJoining(tt),
+          CallState.connected => _buildConnected(tt),
+          CallState.reconnecting => _buildReconnecting(tt),
+          CallState.ended => _buildEnded(tt),
+        },
       ),
     );
   }

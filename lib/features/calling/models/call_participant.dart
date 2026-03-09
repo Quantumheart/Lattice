@@ -5,7 +5,6 @@ class CallParticipant {
     this.isLocal = false,
     this.isAudioOnly = false,
     this.isMuted = false,
-    this.isCameraOff = false,
     this.isSpeaking = false,
     this.audioLevel = 0.0,
   });
@@ -15,7 +14,6 @@ class CallParticipant {
   final bool isLocal;
   final bool isAudioOnly;
   final bool isMuted;
-  final bool isCameraOff;
   final bool isSpeaking;
   final double audioLevel;
 
@@ -25,7 +23,6 @@ class CallParticipant {
     bool? isLocal,
     bool? isAudioOnly,
     bool? isMuted,
-    bool? isCameraOff,
     bool? isSpeaking,
     double? audioLevel,
   }) {
@@ -35,7 +32,6 @@ class CallParticipant {
       isLocal: isLocal ?? this.isLocal,
       isAudioOnly: isAudioOnly ?? this.isAudioOnly,
       isMuted: isMuted ?? this.isMuted,
-      isCameraOff: isCameraOff ?? this.isCameraOff,
       isSpeaking: isSpeaking ?? this.isSpeaking,
       audioLevel: audioLevel ?? this.audioLevel,
     );
