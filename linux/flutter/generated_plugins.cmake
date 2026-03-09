@@ -8,11 +8,12 @@ list(APPEND FLUTTER_PLUGIN_LIST
   emoji_picker_flutter
   file_selector_linux
   flutter_secure_storage_linux
-  irondash_engine_context
+  flutter_webrtc
+  livekit_client
   media_kit_libs_linux
   media_kit_video
+  pasteboard
   record_linux
-  super_native_extensions
   url_launcher_linux
 )
 
