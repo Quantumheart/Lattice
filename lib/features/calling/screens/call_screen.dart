@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/features/calling/services/call_controller.dart';
 import 'package:lattice/features/calling/services/call_permission_service.dart';
+import 'package:lattice/features/calling/widgets/call_control_bar.dart';
 import 'package:lattice/features/calling/widgets/video_grid.dart';
 
 class CallScreen extends StatefulWidget {
@@ -95,13 +96,6 @@ class _CallScreenState extends State<CallScreen> {
         child: Scaffold(
           appBar: AppBar(
             title: Text(widget.displayName),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.call_end),
-                color: darkScheme.error,
-                onPressed: _controller.hangUp,
-              ),
-            ],
           ),
           body: switch (_controller.state) {
             CallState.joining => _buildJoining(tt),
@@ -138,19 +132,13 @@ class _CallScreenState extends State<CallScreen> {
           child: VideoGrid(participants: _controller.participants),
         ),
         Padding(
-          padding: const EdgeInsets.only(bottom: 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _formatElapsed(_controller.elapsed),
-                style: tt.titleMedium,
-              ),
-              const SizedBox(height: 16),
-              Text('Controls placeholder', style: tt.bodyMedium),
-            ],
+          padding: const EdgeInsets.only(bottom: 8),
+          child: Text(
+            _formatElapsed(_controller.elapsed),
+            style: tt.titleMedium,
           ),
         ),
+        CallControlBar(controller: _controller),
       ],
     );
   }
