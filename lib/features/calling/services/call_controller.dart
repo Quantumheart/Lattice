@@ -20,12 +20,21 @@ class CallController extends ChangeNotifier {
   Timer? _timer;
   List<CallParticipant> _participants = [];
 
+  bool _isMicMuted = false;
+  bool _isCameraOff = false;
+  bool _isFrontCamera = true;
+  bool _isScreenSharing = false;
+
   // ── Public getters ────────────────────────────────────────────
 
   CallState get state => _state;
   String? get error => _error;
   Duration get elapsed => _elapsed;
   List<CallParticipant> get participants => List.unmodifiable(_participants);
+  bool get isMicMuted => _isMicMuted;
+  bool get isCameraOff => _isCameraOff;
+  bool get isFrontCamera => _isFrontCamera;
+  bool get isScreenSharing => _isScreenSharing;
 
   // ── Join / hang up ────────────────────────────────────────────
 
@@ -87,6 +96,40 @@ class CallController extends ChangeNotifier {
         isMuted: true,
       ),
     ];
+  }
+
+  // ── Media controls ───────────────────────────────────────────
+
+  void toggleMic() {
+    _isMicMuted = !_isMicMuted;
+    _updateLocalParticipant((p) => p.copyWith(isMuted: _isMicMuted));
+  }
+
+  void toggleCamera() {
+    _isCameraOff = !_isCameraOff;
+    _updateLocalParticipant(
+      (p) => p.copyWith(isAudioOnly: _isCameraOff, isCameraOff: _isCameraOff),
+    );
+  }
+
+  void flipCamera() {
+    _isFrontCamera = !_isFrontCamera;
+    _notify();
+  }
+
+  void toggleScreenShare() {
+    _isScreenSharing = !_isScreenSharing;
+    _notify();
+  }
+
+  void _updateLocalParticipant(
+    CallParticipant Function(CallParticipant) updater,
+  ) {
+    _participants = [
+      for (final p in _participants)
+        if (p.isLocal) updater(p) else p,
+    ];
+    _notify();
   }
 
   // ── Elapsed timer ─────────────────────────────────────────────
