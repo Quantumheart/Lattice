@@ -11,8 +11,9 @@ abstract class CallNavigator {
     required String displayName,
   }) async {
     final callService = context.read<CallService>();
+    if (callService.isStarting) return;
     await callService.startCall(roomId, displayName);
-    if (context.mounted) {
+    if (context.mounted && callService.hasActiveCall) {
       context.goNamed(
         Routes.call,
         pathParameters: {'roomId': roomId},

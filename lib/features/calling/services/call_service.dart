@@ -18,7 +18,13 @@ class CallService extends ChangeNotifier {
 
   // ── Lifecycle ─────────────────────────────────────────────────
 
+  bool get isStarting => _isStarting;
+  bool _isStarting = false;
+
   Future<void> startCall(String roomId, String displayName) async {
+    if (_isStarting) return;
+    _isStarting = true;
+
     if (_activeCall != null) {
       debugPrint('[Lattice] CallService: ending existing call before starting new one');
       await endCall();
@@ -32,10 +38,12 @@ class CallService extends ChangeNotifier {
 
     final granted = await CallPermissionService.request();
     if (!granted) {
-      _activeCall?.endWithError('Camera and microphone permissions are required');
+      await endCall();
+      _isStarting = false;
       return;
     }
     await _activeCall?.join();
+    _isStarting = false;
   }
 
   Future<void> endCall() async {

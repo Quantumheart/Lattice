@@ -47,7 +47,6 @@ class _VideoGridState extends State<VideoGrid> {
       2 => width > 720 ? (2, 1) : (1, 2),
       3 => isLandscape ? (3, 1) : (1, 3),
       4 => (2, 2),
-      5 || 6 => isLandscape ? (3, 2) : (2, 3),
       _ => isLandscape ? (3, 2) : (2, 3),
     };
   }

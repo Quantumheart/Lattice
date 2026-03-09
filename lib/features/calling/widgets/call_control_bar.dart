@@ -1,13 +1,41 @@
-import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lattice/features/calling/services/call_controller.dart';
 
 class CallControlBar extends StatelessWidget {
-  const CallControlBar({required this.controller, super.key});
+  const CallControlBar({
+    required this.isMicMuted,
+    required this.isCameraOff,
+    required this.isScreenSharing,
+    required this.onToggleMic,
+    required this.onToggleCamera,
+    required this.onToggleScreenShare,
+    required this.onHangUp,
+    this.onFlipCamera,
+    super.key,
+  });
 
-  final CallController controller;
+  factory CallControlBar.fromController(CallController controller) {
+    return CallControlBar(
+      isMicMuted: controller.isMicMuted,
+      isCameraOff: controller.isCameraOff,
+      isScreenSharing: controller.isScreenSharing,
+      onToggleMic: controller.toggleMic,
+      onToggleCamera: controller.toggleCamera,
+      onToggleScreenShare: controller.toggleScreenShare,
+      onFlipCamera: controller.flipCamera,
+      onHangUp: controller.hangUp,
+    );
+  }
+
+  final bool isMicMuted;
+  final bool isCameraOff;
+  final bool isScreenSharing;
+  final VoidCallback onToggleMic;
+  final VoidCallback onToggleCamera;
+  final VoidCallback onToggleScreenShare;
+  final VoidCallback onHangUp;
+  final VoidCallback? onFlipCamera;
 
   @override
   Widget build(BuildContext context) {
@@ -21,28 +49,27 @@ class CallControlBar extends StatelessWidget {
             _ControlButton(
               icon: Icons.mic,
               activeIcon: Icons.mic_off,
-              isActive: controller.isMicMuted,
-              onPressed: controller.toggleMic,
-              tooltip: controller.isMicMuted ? 'Unmute' : 'Mute',
+              isActive: isMicMuted,
+              onPressed: onToggleMic,
+              tooltip: isMicMuted ? 'Unmute' : 'Mute',
             ),
             const SizedBox(width: 12),
             _ControlButton(
               icon: Icons.videocam,
               activeIcon: Icons.videocam_off,
-              isActive: controller.isCameraOff,
-              onPressed: controller.toggleCamera,
-              tooltip: controller.isCameraOff
-                  ? 'Turn on camera'
-                  : 'Turn off camera',
+              isActive: isCameraOff,
+              onPressed: onToggleCamera,
+              tooltip: isCameraOff ? 'Turn on camera' : 'Turn off camera',
             ),
-            if (defaultTargetPlatform == TargetPlatform.android ||
-                defaultTargetPlatform == TargetPlatform.iOS) ...[
+            if (onFlipCamera != null &&
+                (defaultTargetPlatform == TargetPlatform.android ||
+                    defaultTargetPlatform == TargetPlatform.iOS)) ...[
               const SizedBox(width: 12),
               _ControlButton(
                 icon: Icons.cameraswitch,
                 activeIcon: Icons.cameraswitch,
                 isActive: false,
-                onPressed: controller.flipCamera,
+                onPressed: onFlipCamera!,
                 tooltip: 'Flip camera',
               ),
             ],
@@ -50,54 +77,16 @@ class CallControlBar extends StatelessWidget {
             _ControlButton(
               icon: Icons.screen_share,
               activeIcon: Icons.stop_screen_share,
-              isActive: controller.isScreenSharing,
-              onPressed: controller.toggleScreenShare,
-              tooltip: controller.isScreenSharing
-                  ? 'Stop sharing'
-                  : 'Share screen',
-            ),
-            const SizedBox(width: 12),
-            _ControlButton(
-              icon: Icons.volume_up,
-              activeIcon: Icons.volume_up,
-              isActive: false,
-              onPressed: () => _showAudioDeviceSheet(context),
-              tooltip: 'Audio device',
+              isActive: isScreenSharing,
+              onPressed: onToggleScreenShare,
+              tooltip: isScreenSharing ? 'Stop sharing' : 'Share screen',
             ),
             const SizedBox(width: 16),
-            _HangUpButton(onPressed: controller.hangUp),
+            _HangUpButton(onPressed: onHangUp),
           ],
         ),
       ),
     );
-  }
-
-  void _showAudioDeviceSheet(BuildContext context) {
-    unawaited(showModalBottomSheet<void>(
-      context: context,
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.speaker),
-              title: const Text('Speaker'),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.hearing),
-              title: const Text('Earpiece'),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.bluetooth),
-              title: const Text('Bluetooth'),
-              onTap: () => Navigator.pop(context),
-            ),
-          ],
-        ),
-      ),
-    ),);
   }
 }
 

@@ -16,57 +16,68 @@ class PipSelfView extends StatefulWidget {
 }
 
 class _PipSelfViewState extends State<PipSelfView> {
-  double? _x;
-  double? _y;
+  Offset? _position;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final maxX = constraints.maxWidth - PipSelfView.width - PipSelfView._margin;
-        final maxY = constraints.maxHeight - PipSelfView.height - PipSelfView._margin;
-        final x = _x ?? maxX;
-        final y = _y ?? maxY;
+    return Positioned.fill(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final maxX = constraints.maxWidth - PipSelfView.width - PipSelfView._margin;
+          final maxY = constraints.maxHeight - PipSelfView.height - PipSelfView._margin;
+          final x = (_position?.dx ?? maxX).clamp(PipSelfView._margin, maxX);
+          final y = (_position?.dy ?? maxY).clamp(PipSelfView._margin, maxY);
 
-        return Positioned(
-          left: x.clamp(PipSelfView._margin, maxX),
-          top: y.clamp(PipSelfView._margin, maxY),
-          child: GestureDetector(
-            onPanUpdate: (details) {
-              setState(() {
-                _x = ((_x ?? maxX) + details.delta.dx).clamp(PipSelfView._margin, maxX);
-                _y = ((_y ?? maxY) + details.delta.dy).clamp(PipSelfView._margin, maxY);
-              });
-            },
-            onPanEnd: (_) => _snapToCorner(constraints),
-            child: SizedBox(
-              width: PipSelfView.width,
-              height: PipSelfView.height,
-              child: Material(
-                elevation: 8,
-                borderRadius: BorderRadius.circular(12),
-                clipBehavior: Clip.antiAlias,
-                child: ParticipantTile(participant: widget.participant),
+          return Stack(
+            children: [
+              Positioned(
+                left: x,
+                top: y,
+                child: GestureDetector(
+                  onPanUpdate: (details) {
+                    setState(() {
+                      _position = Offset(
+                        ((_position?.dx ?? maxX) + details.delta.dx)
+                            .clamp(PipSelfView._margin, maxX),
+                        ((_position?.dy ?? maxY) + details.delta.dy)
+                            .clamp(PipSelfView._margin, maxY),
+                      );
+                    });
+                  },
+                  onPanEnd: (_) => _snapToCorner(constraints),
+                  child: SizedBox(
+                    width: PipSelfView.width,
+                    height: PipSelfView.height,
+                    child: Material(
+                      elevation: 8,
+                      borderRadius: BorderRadius.circular(12),
+                      clipBehavior: Clip.antiAlias,
+                      child: ParticipantTile(participant: widget.participant),
+                    ),
+                  ),
+                ),
               ),
-            ),
-          ),
-        );
-      },
+            ],
+          );
+        },
+      ),
     );
   }
 
   void _snapToCorner(BoxConstraints constraints) {
     final maxX = constraints.maxWidth - PipSelfView.width - PipSelfView._margin;
     final maxY = constraints.maxHeight - PipSelfView.height - PipSelfView._margin;
-    final cx = _x ?? maxX;
-    final cy = _y ?? maxY;
+    final cx = _position?.dx ?? maxX;
+    final cy = _position?.dy ?? maxY;
 
     final midX = constraints.maxWidth / 2;
     final midY = constraints.maxHeight / 2;
 
     setState(() {
-      _x = cx < midX ? PipSelfView._margin : maxX;
-      _y = cy < midY ? PipSelfView._margin : maxY;
+      _position = Offset(
+        cx < midX ? PipSelfView._margin : maxX,
+        cy < midY ? PipSelfView._margin : maxY,
+      );
     });
   }
 }

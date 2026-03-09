@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+
+@immutable
 class CallParticipant {
   const CallParticipant({
     required this.id,
@@ -40,4 +43,29 @@ class CallParticipant {
       audioLevel: audioLevel ?? this.audioLevel,
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CallParticipant &&
+          id == other.id &&
+          displayName == other.displayName &&
+          isLocal == other.isLocal &&
+          isAudioOnly == other.isAudioOnly &&
+          isMuted == other.isMuted &&
+          isSpeaking == other.isSpeaking &&
+          isScreenSharing == other.isScreenSharing &&
+          audioLevel == other.audioLevel;
+
+  @override
+  int get hashCode => Object.hash(
+        id,
+        displayName,
+        isLocal,
+        isAudioOnly,
+        isMuted,
+        isSpeaking,
+        isScreenSharing,
+        audioLevel,
+      );
 }

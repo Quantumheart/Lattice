@@ -1,12 +1,12 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/features/calling/services/call_navigator.dart';
+import 'package:lattice/features/calling/services/call_service.dart';
 import 'package:lattice/features/chat/widgets/pinned_messages_popup.dart';
 import 'package:lattice/shared/widgets/room_avatar.dart';
 import 'package:matrix/matrix.dart';
+import 'package:provider/provider.dart';
 
 /// Default app bar for the chat screen showing room name, avatar, and actions.
 class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -85,17 +85,7 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
           ),
-        IconButton(
-          icon: const Icon(Icons.call_rounded),
-          tooltip: 'Call',
-          onPressed: () => unawaited(
-            CallNavigator.startCall(
-              context,
-              roomId: room.id,
-              displayName: room.getLocalizedDisplayname(),
-            ),
-          ),
-        ),
+        _CallButton(room: room),
         IconButton(
           icon: const Icon(Icons.search_rounded),
           onPressed: onSearch,
@@ -122,6 +112,43 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
     if (count == 0) return '';
     if (count == 1) return '1 member';
     return '$count members';
+  }
+}
+
+class _CallButton extends StatefulWidget {
+  const _CallButton({required this.room});
+
+  final Room room;
+
+  @override
+  State<_CallButton> createState() => _CallButtonState();
+}
+
+class _CallButtonState extends State<_CallButton> {
+  bool _starting = false;
+
+  Future<void> _onPressed() async {
+    if (_starting) return;
+    setState(() => _starting = true);
+    try {
+      await CallNavigator.startCall(
+        context,
+        roomId: widget.room.id,
+        displayName: widget.room.getLocalizedDisplayname(),
+      );
+    } finally {
+      if (mounted) setState(() => _starting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final callService = context.watch<CallService>();
+    return IconButton(
+      icon: const Icon(Icons.call_rounded),
+      tooltip: 'Call',
+      onPressed: _starting || callService.isStarting ? null : _onPressed,
+    );
   }
 }
 

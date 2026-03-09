@@ -5,6 +5,7 @@ import 'package:lattice/features/calling/services/call_controller.dart';
 import 'package:lattice/features/calling/services/call_navigator.dart';
 import 'package:lattice/features/calling/services/call_service.dart';
 import 'package:lattice/features/calling/widgets/call_control_bar.dart';
+import 'package:lattice/features/calling/widgets/call_state_views.dart';
 import 'package:lattice/features/calling/widgets/pip_self_view.dart';
 import 'package:lattice/features/calling/widgets/video_grid.dart';
 import 'package:provider/provider.dart';
@@ -20,12 +21,12 @@ class CallScreen extends StatefulWidget {
 }
 
 class _CallScreenState extends State<CallScreen> {
+  late final CallService _callService;
   Timer? _popTimer;
 
   void _onControllerChanged() {
     if (!mounted) return;
-    final callService = context.read<CallService>();
-    final controller = callService.activeCall;
+    final controller = _callService.activeCall;
     if (controller == null || controller.state == CallState.ended) {
       _popTimer ??= Timer(const Duration(seconds: 2), () {
         if (mounted) unawaited(CallNavigator.endCall(context));
@@ -37,23 +38,15 @@ class _CallScreenState extends State<CallScreen> {
   @override
   void initState() {
     super.initState();
-    final callService = context.read<CallService>();
-    callService.addListener(_onControllerChanged);
+    _callService = context.read<CallService>();
+    _callService.addListener(_onControllerChanged);
   }
 
   @override
   void dispose() {
     _popTimer?.cancel();
-    context.read<CallService>().removeListener(_onControllerChanged);
+    _callService.removeListener(_onControllerChanged);
     super.dispose();
-  }
-
-  String _formatElapsed(Duration d) {
-    final hours = d.inHours;
-    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    if (hours > 0) return '$hours:$minutes:$seconds';
-    return '$minutes:$seconds';
   }
 
   // ── Build ─────────────────────────────────────────────────────
@@ -73,33 +66,18 @@ class _CallScreenState extends State<CallScreen> {
           title: Text(widget.displayName),
         ),
         body: controller == null
-            ? _buildEnded(tt, null)
+            ? const CallEndedView()
             : switch (controller.state) {
-                CallState.joining => _buildJoining(tt),
+                CallState.joining => CallJoiningView(displayName: widget.displayName),
                 CallState.connected => _buildConnected(tt, controller),
-                CallState.reconnecting => _buildReconnecting(tt),
-                CallState.ended => _buildEnded(tt, controller),
+                CallState.reconnecting => const CallReconnectingView(),
+                CallState.ended => CallEndedView(error: controller.error),
               },
       ),
     );
   }
 
-  // ── State views ───────────────────────────────────────────────
-
-  Widget _buildJoining(TextTheme tt) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const CircularProgressIndicator(),
-          const SizedBox(height: 24),
-          Text('Connecting...', style: tt.titleMedium),
-          const SizedBox(height: 8),
-          Text(widget.displayName, style: tt.bodyMedium),
-        ],
-      ),
-    );
-  }
+  // ── Connected view ──────────────────────────────────────────
 
   Widget _buildConnected(TextTheme tt, CallController controller) {
     final remoteParticipants = controller.participants
@@ -119,52 +97,16 @@ class _CallScreenState extends State<CallScreen> {
             Padding(
               padding: const EdgeInsets.only(bottom: 8),
               child: Text(
-                _formatElapsed(controller.elapsed),
+                formatCallElapsed(controller.elapsed),
                 style: tt.titleMedium,
               ),
             ),
-            CallControlBar(controller: controller),
+            CallControlBar.fromController(controller),
           ],
         ),
         if (localParticipant != null)
           PipSelfView(participant: localParticipant),
       ],
-    );
-  }
-
-  Widget _buildReconnecting(TextTheme tt) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.warning_amber_rounded, size: 48),
-          const SizedBox(height: 16),
-          Text('Reconnecting...', style: tt.titleMedium),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEnded(TextTheme tt, CallController? controller) {
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.call_end, size: 48),
-          const SizedBox(height: 16),
-          Text('Call ended', style: tt.titleMedium),
-          if (controller?.error != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              controller!.error!,
-              style: tt.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.error,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ],
-      ),
     );
   }
 }

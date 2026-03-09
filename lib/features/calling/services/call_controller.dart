@@ -41,7 +41,6 @@ class CallController extends ChangeNotifier {
   Future<void> join() async {
     if (_state != CallState.joining) return;
     debugPrint('[Lattice] CallController: joining room $roomId');
-    _notify();
 
     // TODO(lattice): replace with real WebRTC/LiveKit connection
     await Future<void>.delayed(const Duration(milliseconds: 500));
