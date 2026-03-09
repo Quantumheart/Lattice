@@ -231,7 +231,9 @@ class CallService extends ChangeNotifier {
       final hasLocalVideo = localStream != null && !localStream.isVideoMuted();
       result.add(ui.CallParticipant(
         id: myUserId,
-        displayName: _client.userID ?? 'You',
+        displayName: _activeGroupCall!.room
+            .unsafeGetUserFromMemoryOrFallback(myUserId)
+            .calcDisplayname(),
         isLocal: true,
         isMuted: !_isMicEnabled,
         isAudioOnly: !hasLocalVideo,
