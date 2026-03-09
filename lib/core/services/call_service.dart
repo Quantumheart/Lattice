@@ -138,6 +138,8 @@ class CallService extends ChangeNotifier {
   LatticeCallState _callState = LatticeCallState.idle;
   LatticeCallState get callState => _callState;
 
+  bool _joining = false;
+
   GroupCallSession? _activeGroupCall;
   GroupCallSession? get activeGroupCall => _activeGroupCall;
 
@@ -218,7 +220,7 @@ class CallService extends ChangeNotifier {
     String? groupCallId,
   }) async {
     if (_voip == null) return;
-    if (_callState != LatticeCallState.idle) {
+    if (_callState != LatticeCallState.idle || _joining) {
       debugPrint('[Lattice] Cannot join call: already in state $_callState');
       return;
     }
@@ -229,6 +231,7 @@ class CallService extends ChangeNotifier {
       return;
     }
 
+    _joining = true;
     _callState = LatticeCallState.joining;
     notifyListeners();
 
@@ -266,6 +269,8 @@ class CallService extends ChangeNotifier {
       unawaited(_callEventSub?.cancel());
       _callEventSub = null;
       notifyListeners();
+    } finally {
+      _joining = false;
     }
   }
 
@@ -431,8 +436,19 @@ class CallService extends ChangeNotifier {
 
     listener.on<livekit.RoomDisconnectedEvent>((_) {
       _cleanupLiveKit();
+      final groupCall = _activeGroupCall;
+      _activeGroupCall = null;
+      unawaited(_callEventSub?.cancel());
+      _callEventSub = null;
       _callState = LatticeCallState.failed;
       notifyListeners();
+      if (groupCall != null) {
+        unawaited(
+          groupCall.leave().catchError(
+            (Object e) => debugPrint('[Lattice] Error leaving group call after disconnect: $e'),
+          ),
+        );
+      }
     });
 
     listener.on<livekit.ParticipantConnectedEvent>((_) {
@@ -462,12 +478,27 @@ class CallService extends ChangeNotifier {
   }
 
   Future<void> _disconnectLiveKit() async {
+    final listener = _livekitListener;
+    final room = _livekitRoom;
+    _livekitListener = null;
+    _livekitRoom = null;
+    _participants = [];
+    _activeSpeakers = [];
+    _isMicEnabled = false;
+    _isCameraEnabled = false;
+    _isScreenShareEnabled = false;
+
     try {
-      await _livekitRoom?.disconnect();
+      await room?.disconnect();
     } catch (e) {
       debugPrint('[Lattice] Error disconnecting LiveKit: $e');
     }
-    _cleanupLiveKit();
+    try {
+      await listener?.dispose();
+    } catch (_) {}
+    try {
+      await room?.dispose();
+    } catch (_) {}
   }
 
   void _cleanupLiveKit() {
@@ -539,6 +570,7 @@ class CallService extends ChangeNotifier {
     switch (event) {
       case GroupCallStateChanged(:final state):
         if (state == GroupCallState.ended) {
+          _cleanupLiveKit();
           _callState = LatticeCallState.idle;
           _activeGroupCall = null;
           unawaited(_callEventSub?.cancel());

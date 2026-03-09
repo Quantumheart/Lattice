@@ -80,7 +80,6 @@ class ComposeStateController {
   // ── Clipboard paste ─────────────────────────────────────
 
   Future<AddAttachmentResult?> handlePasteImage() async {
-    if (!await clipboardHasImage()) return null;
     final imageData = await readClipboardImage();
     if (imageData == null) return null;
 
