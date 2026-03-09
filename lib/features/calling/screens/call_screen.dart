@@ -50,9 +50,11 @@ class _CallScreenState extends State<CallScreen> {
   void _onControllerChanged() {
     if (!mounted) return;
     if (_controller.state == CallState.ended) {
+      setState(() {});
       Future<void>.delayed(const Duration(seconds: 2), () {
         if (mounted) context.pop();
       });
+      return;
     }
     setState(() {});
   }
@@ -87,23 +89,27 @@ class _CallScreenState extends State<CallScreen> {
           foregroundColor: darkScheme.onSurface,
         ),
       ),
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(widget.displayName),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.call_end),
-              color: Colors.red,
-              onPressed: _controller.hangUp,
-            ),
-          ],
+      child: PopScope(
+        canPop: _controller.state != CallState.connected &&
+            _controller.state != CallState.reconnecting,
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(widget.displayName),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.call_end),
+                color: darkScheme.error,
+                onPressed: _controller.hangUp,
+              ),
+            ],
+          ),
+          body: switch (_controller.state) {
+            CallState.joining => _buildJoining(tt),
+            CallState.connected => _buildConnected(tt),
+            CallState.reconnecting => _buildReconnecting(tt),
+            CallState.ended => _buildEnded(tt),
+          },
         ),
-        body: switch (_controller.state) {
-          CallState.joining => _buildJoining(tt),
-          CallState.connected => _buildConnected(tt),
-          CallState.reconnecting => _buildReconnecting(tt),
-          CallState.ended => _buildEnded(tt),
-        },
       ),
     );
   }
@@ -174,7 +180,9 @@ class _CallScreenState extends State<CallScreen> {
             const SizedBox(height: 8),
             Text(
               _controller.error!,
-              style: tt.bodyMedium?.copyWith(color: Colors.red.shade300),
+              style: tt.bodyMedium?.copyWith(
+                color: Theme.of(context).colorScheme.error,
+              ),
               textAlign: TextAlign.center,
             ),
           ],

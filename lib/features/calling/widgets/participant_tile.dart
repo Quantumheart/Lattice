@@ -10,33 +10,21 @@ class ParticipantTile extends StatelessWidget {
   static const _maxAudioBarWidth = 20.0;
   static const _audioLevelThreshold = 0.05;
 
-  Color _avatarColor() {
-    const colors = [
-      Colors.blue,
-      Colors.red,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.teal,
-      Colors.pink,
-      Colors.indigo,
-    ];
-    return colors[participant.id.hashCode.abs() % colors.length];
-  }
-
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: participant.isSpeaking ? Colors.blue : Colors.transparent,
+          color: participant.isSpeaking ? cs.primary : Colors.transparent,
           width: 2,
         ),
         boxShadow: participant.isSpeaking
             ? [
                 BoxShadow(
-                  color: Colors.blue.withValues(alpha: 0.3),
+                  color: cs.primary.withValues(alpha: 0.3),
                   blurRadius: 8,
                   spreadRadius: 1,
                 ),
@@ -57,20 +45,22 @@ class ParticipantTile extends StatelessWidget {
   }
 
   Widget _buildVideoArea(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
     if (participant.isAudioOnly) {
       return ColoredBox(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: cs.surfaceContainerHighest,
         child: Center(
           child: CircleAvatar(
             radius: 32,
-            backgroundColor: _avatarColor(),
+            backgroundColor: cs.primaryContainer,
             child: Text(
               participant.displayName.isNotEmpty
                   ? participant.displayName[0].toUpperCase()
                   : '?',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 28,
-                color: Colors.white,
+                color: cs.onPrimaryContainer,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -80,14 +70,13 @@ class ParticipantTile extends StatelessWidget {
     }
 
     return ColoredBox(
-      color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      child: const Center(
-        child: Icon(Icons.videocam, size: 48, color: Colors.white54),
-      ),
+      color: cs.surfaceContainerHighest,
+      child: Icon(Icons.videocam, size: 48, color: cs.onSurfaceVariant),
     );
   }
 
   Widget _buildBottomOverlay(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final showAudioBar = participant.audioLevel > _audioLevelThreshold;
 
     return Positioned(
@@ -113,7 +102,7 @@ class ParticipantTile extends StatelessWidget {
                           (_maxAudioBarWidth - _minAudioBarWidth),
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.green,
+                    color: cs.tertiary,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -127,12 +116,12 @@ class ParticipantTile extends StatelessWidget {
                   style: Theme.of(context)
                       .textTheme
                       .bodySmall
-                      ?.copyWith(color: Colors.white),
+                      ?.copyWith(color: cs.onSurface),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (participant.isMuted)
-                const Icon(Icons.mic_off, size: 14, color: Colors.red),
+                Icon(Icons.mic_off, size: 14, color: cs.error),
             ],
           ),
         ),

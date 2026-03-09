@@ -12,6 +12,7 @@ class VideoGrid extends StatefulWidget {
 }
 
 class _VideoGridState extends State<VideoGrid> {
+  final PageController _pageController = PageController();
   int _currentPage = 0;
 
   static const _maxPerPage = 6;
@@ -21,8 +22,20 @@ class _VideoGridState extends State<VideoGrid> {
     super.didUpdateWidget(oldWidget);
     final pageCount = (widget.participants.length / _maxPerPage).ceil();
     if (_currentPage >= pageCount && pageCount > 0) {
-      _currentPage = pageCount - 1;
+      final clamped = pageCount - 1;
+      _currentPage = clamped;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_pageController.hasClients) {
+          _pageController.jumpToPage(clamped);
+        }
+      });
     }
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
   }
 
   (int columns, int rows) _computeGrid(int count, double width, double height) {
@@ -85,6 +98,7 @@ class _VideoGridState extends State<VideoGrid> {
       children: [
         Expanded(
           child: PageView.builder(
+            controller: _pageController,
             itemCount: pageCount,
             onPageChanged: (page) => setState(() => _currentPage = page),
             itemBuilder: (context, page) {
@@ -115,7 +129,12 @@ class _VideoGridState extends State<VideoGrid> {
                 margin: const EdgeInsets.symmetric(horizontal: 3),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: i == _currentPage ? Colors.white : Colors.white38,
+                  color: i == _currentPage
+                      ? Theme.of(context).colorScheme.onSurface
+                      : Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.38),
                 ),
               );
             }),
