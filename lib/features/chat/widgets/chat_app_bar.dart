@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
@@ -160,10 +162,39 @@ class _CallButtonState extends State<_CallButton> {
     }
 
     if (isInCall) {
-      return const IconButton(
-        icon: Icon(Icons.call_rounded),
-        tooltip: 'Already in call',
-        onPressed: null,
+      return PopupMenuButton<String>(
+        icon: Icon(Icons.call_rounded, color: Colors.green.shade400),
+        tooltip: 'In call',
+        onSelected: (value) {
+          if (value == 'go') {
+            context.goNamed(
+              Routes.call,
+              pathParameters: {'roomId': widget.room.id},
+            );
+          } else if (value == 'leave') {
+            unawaited(CallNavigator.endCall(context));
+          }
+        },
+        itemBuilder: (_) => const [
+          PopupMenuItem(
+            value: 'go',
+            child: ListTile(
+              leading: Icon(Icons.open_in_new_rounded),
+              title: Text('Go to call'),
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+          PopupMenuItem(
+            value: 'leave',
+            child: ListTile(
+              leading: Icon(Icons.call_end_rounded, color: Colors.red),
+              title: Text('Leave call'),
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
+        ],
       );
     }
 

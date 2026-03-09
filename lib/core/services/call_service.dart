@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart' as flutter_webrtc;
 import 'package:http/http.dart' as http;
+import 'package:lattice/features/calling/models/call_participant.dart' as ui;
 import 'package:lattice/features/calling/models/incoming_call_info.dart' as model;
 import 'package:lattice/features/calling/services/ringtone_service.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
@@ -199,6 +200,50 @@ class CallService extends ChangeNotifier {
   @visibleForTesting
   set httpPostForTest(HttpPostFunction fn) => _httpPost = fn;
 
+  // ── Participant Aggregation ─────────────────────────────
+
+  List<ui.CallParticipant> get allParticipants {
+    final result = <ui.CallParticipant>[];
+
+    if (_livekitRoom != null) {
+      final local = _livekitRoom!.localParticipant;
+      if (local != null) {
+        result.add(ui.CallParticipant(
+          id: local.identity,
+          displayName: local.name.isNotEmpty ? local.name : local.identity,
+          isLocal: true,
+          isMuted: local.isMuted,
+        ),);
+      }
+      for (final p in _participants) {
+        result.add(ui.CallParticipant.fromRemote(p, activeSpeakers: _activeSpeakers));
+      }
+    } else if (_activeGroupCall != null) {
+      final myUserId = _client.userID ?? '';
+      result.add(ui.CallParticipant(
+        id: myUserId,
+        displayName: _client.userID ?? 'You',
+        isLocal: true,
+        isMuted: !_isMicEnabled,
+      ),);
+
+      final memberships = callMembershipsForRoom(_activeGroupCall!.room.id);
+      for (final mem in memberships) {
+        final userId = mem.userId;
+        if (userId == myUserId && mem.deviceId == _client.deviceID) continue;
+        final room = _activeGroupCall!.room;
+        final user = room.unsafeGetUserFromMemoryOrFallback(userId);
+        result.add(ui.CallParticipant(
+          id: '$userId:${mem.deviceId}',
+          displayName: user.calcDisplayname(),
+          isAudioOnly: true,
+        ),);
+      }
+    }
+
+    return result;
+  }
+
   // ── Queries ─────────────────────────────────────────────
 
   bool roomHasActiveCall(String roomId) {
@@ -236,12 +281,22 @@ class CallService extends ChangeNotifier {
     if (_callState != LatticeCallState.idle) return;
 
     final room = session.room;
-    final caller = room.unsafeGetUserFromMemoryOrFallback(session.remoteUserId ?? '');
+    final remoteId = session.remoteUserId;
+    String callerName;
+    Uri? callerAvatar;
+
+    if (remoteId != null && remoteId.isNotEmpty) {
+      final caller = room.unsafeGetUserFromMemoryOrFallback(remoteId);
+      callerName = caller.calcDisplayname();
+      callerAvatar = caller.avatarUrl;
+    } else {
+      callerName = room.getLocalizedDisplayname();
+    }
 
     _incomingCall = model.IncomingCallInfo(
       roomId: room.id,
-      callerName: caller.calcDisplayname(),
-      callerAvatarUrl: caller.avatarUrl,
+      callerName: callerName,
+      callerAvatarUrl: callerAvatar,
       isVideo: session.type == CallType.kVideo,
     );
     _callState = LatticeCallState.ringingIncoming;
@@ -431,13 +486,21 @@ class CallService extends ChangeNotifier {
 
   Future<void> toggleMicrophone() async {
     final localParticipant = _livekitRoom?.localParticipant;
-    if (localParticipant == null) return;
+    if (localParticipant == null && _activeGroupCall == null) return;
 
     _isMicEnabled = !_isMicEnabled;
     notifyListeners();
 
     try {
-      await localParticipant.setMicrophoneEnabled(_isMicEnabled);
+      if (localParticipant != null) {
+        await localParticipant.setMicrophoneEnabled(_isMicEnabled);
+      } else {
+        await _activeGroupCall!.backend.setDeviceMuted(
+          _activeGroupCall!,
+          !_isMicEnabled,
+          MediaInputKind.audioinput,
+        );
+      }
     } catch (e) {
       debugPrint('[Lattice] Failed to toggle microphone: $e');
       _isMicEnabled = !_isMicEnabled;
@@ -447,13 +510,21 @@ class CallService extends ChangeNotifier {
 
   Future<void> toggleCamera() async {
     final localParticipant = _livekitRoom?.localParticipant;
-    if (localParticipant == null) return;
+    if (localParticipant == null && _activeGroupCall == null) return;
 
     _isCameraEnabled = !_isCameraEnabled;
     notifyListeners();
 
     try {
-      await localParticipant.setCameraEnabled(_isCameraEnabled);
+      if (localParticipant != null) {
+        await localParticipant.setCameraEnabled(_isCameraEnabled);
+      } else {
+        await _activeGroupCall!.backend.setDeviceMuted(
+          _activeGroupCall!,
+          !_isCameraEnabled,
+          MediaInputKind.videoinput,
+        );
+      }
     } catch (e) {
       debugPrint('[Lattice] Failed to toggle camera: $e');
       _isCameraEnabled = !_isCameraEnabled;

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lattice/core/services/call_service.dart';
-import 'package:lattice/features/calling/models/call_participant.dart';
 import 'package:lattice/features/calling/services/call_navigator.dart';
 import 'package:lattice/features/calling/widgets/call_control_bar.dart';
 import 'package:lattice/features/calling/widgets/call_state_views.dart';
@@ -34,10 +33,7 @@ class CallPane extends StatelessWidget {
 
   Widget _buildConnected(BuildContext context, CallService callService) {
     final tt = Theme.of(context).textTheme;
-    final speakers = callService.activeSpeakers;
-    final tiles = callService.participants
-        .map((p) => CallParticipant.fromRemote(p, activeSpeakers: speakers))
-        .toList();
+    final tiles = callService.allParticipants;
     return Column(
       children: [
         Expanded(
