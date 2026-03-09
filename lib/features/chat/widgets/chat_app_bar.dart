@@ -11,7 +11,6 @@ import 'package:lattice/shared/widgets/room_avatar.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
-/// Default app bar for the chat screen showing room name, avatar, and actions.
 class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
   const ChatAppBar({
     required this.room, required this.onSearch, super.key,
@@ -227,7 +226,6 @@ class _CallButtonState extends State<_CallButton> {
   }
 }
 
-/// Search-mode app bar with a text field and clear button.
 class ChatSearchAppBar extends StatelessWidget implements PreferredSizeWidget {
   const ChatSearchAppBar({
     required this.controller, required this.focusNode, required this.onChanged, required this.onClose, super.key,
