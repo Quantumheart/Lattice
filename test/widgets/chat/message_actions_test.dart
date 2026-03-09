@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/chat/screens/chat_screen.dart';
@@ -72,6 +73,7 @@ Widget _buildChatWidget({
   return MultiProvider(
     providers: [
       ChangeNotifierProvider<MatrixService>.value(value: mockMatrix),
+      ChangeNotifierProvider(create: (ctx) => CallService(client: ctx.read<MatrixService>().client)),
       ChangeNotifierProvider<PreferencesService>.value(value: prefsService),
     ],
     child: MaterialApp(

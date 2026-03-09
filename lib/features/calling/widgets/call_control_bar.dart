@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:lattice/features/calling/services/call_controller.dart';
 
 class CallControlBar extends StatelessWidget {
   const CallControlBar({
@@ -14,19 +13,6 @@ class CallControlBar extends StatelessWidget {
     this.onFlipCamera,
     super.key,
   });
-
-  factory CallControlBar.fromController(CallController controller) {
-    return CallControlBar(
-      isMicMuted: controller.isMicMuted,
-      isCameraOff: controller.isCameraOff,
-      isScreenSharing: controller.isScreenSharing,
-      onToggleMic: controller.toggleMic,
-      onToggleCamera: controller.toggleCamera,
-      onToggleScreenShare: controller.toggleScreenShare,
-      onFlipCamera: controller.flipCamera,
-      onHangUp: controller.hangUp,
-    );
-  }
 
   final bool isMicMuted;
   final bool isCameraOff;

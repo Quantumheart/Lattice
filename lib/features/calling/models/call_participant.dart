@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:livekit_client/livekit_client.dart' as livekit;
 
 @immutable
 class CallParticipant {
@@ -12,6 +13,26 @@ class CallParticipant {
     this.isScreenSharing = false,
     this.audioLevel = 0.0,
   });
+
+  factory CallParticipant.fromRemote(
+    livekit.RemoteParticipant p, {
+    List<livekit.Participant> activeSpeakers = const [],
+  }) {
+    final hasVideo = p.videoTrackPublications.any(
+      (pub) => pub.subscribed && !pub.muted,
+    );
+    final hasScreenShare = p.videoTrackPublications.any(
+      (pub) => pub.source == livekit.TrackSource.screenShareVideo && pub.subscribed,
+    );
+    return CallParticipant(
+      id: p.identity,
+      displayName: p.name.isNotEmpty ? p.name : p.identity,
+      isAudioOnly: !hasVideo,
+      isMuted: p.isMuted,
+      isSpeaking: activeSpeakers.any((s) => s.identity == p.identity),
+      isScreenSharing: hasScreenShare,
+    );
+  }
 
   final String id;
   final String displayName;
