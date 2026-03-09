@@ -51,7 +51,7 @@ void main() {
         matrixService: matrixService,
         clientManager: clientManager,
         navigatedToHome: navigatedToHome,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       expect(find.byType(HomeserverScreen), findsOneWidget);
@@ -86,7 +86,7 @@ void main() {
         matrixService: matrixService,
         clientManager: clientManager,
         navigatedToHome: navigatedToHome,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       await tester.enterText(find.byType(TextField), 'custom-server.org');
@@ -106,7 +106,7 @@ void main() {
         matrixService: matrixService,
         clientManager: clientManager,
         navigatedToHome: navigatedToHome,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Continue'));
@@ -125,7 +125,7 @@ void main() {
         matrixService: matrixService,
         clientManager: clientManager,
         navigatedToHome: navigatedToHome,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Continue'));
@@ -152,13 +152,13 @@ void main() {
         (tester) async {
       stubSsoServer(mockClient, providers: [
         {'id': 'google', 'name': 'Google'},
-      ]);
+      ],);
 
       await tester.pumpWidget(buildTestApp(
         matrixService: matrixService,
         clientManager: clientManager,
         navigatedToHome: navigatedToHome,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Continue'));
@@ -177,7 +177,7 @@ void main() {
         matrixService: matrixService,
         clientManager: clientManager,
         navigatedToHome: navigatedToHome,
-      ));
+      ),);
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Continue'));
