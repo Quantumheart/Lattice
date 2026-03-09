@@ -5,7 +5,7 @@ import 'package:permission_handler/permission_handler.dart';
 
 abstract class CallPermissionService {
   static bool get _needsPermissionRequest =>
-      !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+      !kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS);
 
   static Future<bool> request() async {
     if (!_needsPermissionRequest) return true;

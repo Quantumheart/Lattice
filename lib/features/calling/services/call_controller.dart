@@ -34,12 +34,13 @@ class CallController extends ChangeNotifier {
     debugPrint('[Lattice] CallController: joining room $roomId');
     _notify();
 
+    // TODO(lattice): replace with real WebRTC/LiveKit connection
     await Future<void>.delayed(const Duration(milliseconds: 500));
     if (_isDisposed) return;
 
     debugPrint('[Lattice] CallController: connected');
     _state = CallState.connected;
-    _initMockParticipants();
+    _participants = _buildMockParticipants();
     _startTimer();
     _notify();
   }
@@ -58,10 +59,10 @@ class CallController extends ChangeNotifier {
     _notify();
   }
 
-  // ── Mock participants ────────────────────────────────────────
+  // ── Mock participants (TODO(lattice): replace with real tracking) ──
 
-  void _initMockParticipants() {
-    _participants = [
+  List<CallParticipant> _buildMockParticipants() {
+    return [
       CallParticipant(
         id: 'local',
         displayName: displayName,
