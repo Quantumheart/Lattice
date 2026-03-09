@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lattice/features/calling/services/call_permission_service.dart';
 import 'package:lattice/features/calling/widgets/call_controller.dart';
+import 'package:lattice/features/calling/widgets/video_grid.dart';
 
 class CallScreen extends StatefulWidget {
   const CallScreen({required this.roomId, required this.displayName, super.key});
@@ -117,9 +118,7 @@ class _CallScreenState extends State<CallScreen> {
     return Column(
       children: [
         Expanded(
-          child: Center(
-            child: Text('Video grid placeholder', style: tt.bodyLarge),
-          ),
+          child: VideoGrid(participants: _controller.participants),
         ),
         Padding(
           padding: const EdgeInsets.only(bottom: 32),
