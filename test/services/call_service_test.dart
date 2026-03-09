@@ -791,6 +791,66 @@ void main() {
     });
   });
 
+  group('ringing states', () {
+    test('initiateCall transitions to ringingOutgoing', () async {
+      injectVoip();
+      when(mockClient.getRoomById('!room:example.com')).thenReturn(null);
+
+      final states = <LatticeCallState>[];
+      service.addListener(() => states.add(service.callState));
+
+      await service.initiateCall('!room:example.com');
+
+      expect(states.first, LatticeCallState.ringingOutgoing);
+    });
+
+    test('initiateCall with no room stays in ringingOutgoing briefly', () async {
+      injectVoip();
+      when(mockClient.getRoomById('!room:example.com')).thenReturn(null);
+
+      final states = <LatticeCallState>[];
+      service.addListener(() => states.add(service.callState));
+
+      await service.initiateCall('!room:example.com');
+      expect(states.first, LatticeCallState.ringingOutgoing);
+    });
+
+    test('cancelOutgoingCall does nothing when not ringing', () async {
+      injectVoip();
+
+      service.cancelOutgoingCall();
+      expect(service.callState, LatticeCallState.idle);
+    });
+
+    test('acceptCall transitions from ringingIncoming to joining', () {
+      injectVoip();
+
+      final states = <LatticeCallState>[];
+      service.addListener(() => states.add(service.callState));
+
+      service.acceptCall();
+      expect(states, isEmpty);
+    });
+
+    test('declineCall from ringingIncoming resets to idle', () {
+      injectVoip();
+
+      service.declineCall();
+      expect(service.callState, LatticeCallState.idle);
+    });
+
+    test('callElapsed returns null when not connected', () {
+      expect(service.callElapsed, isNull);
+    });
+
+    test('incomingCallStream emits events', () async {
+      final events = <Object>[];
+      service.incomingCallStream.listen(events.add);
+
+      expect(events, isEmpty);
+    });
+  });
+
   group('dispose', () {
     test('resets call state', () {
       injectVoip();

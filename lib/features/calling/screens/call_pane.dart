@@ -16,6 +16,11 @@ class CallPane extends StatelessWidget {
     final state = callService.callState;
 
     return switch (state) {
+      LatticeCallState.ringingOutgoing => CallRingingOutgoingView(
+          displayName: 'Call',
+          onCancel: callService.cancelOutgoingCall,
+        ),
+      LatticeCallState.ringingIncoming ||
       LatticeCallState.joining => const CallJoiningView(displayName: 'Call'),
       LatticeCallState.connected => _buildConnected(context, callService),
       LatticeCallState.reconnecting => const CallReconnectingView(),

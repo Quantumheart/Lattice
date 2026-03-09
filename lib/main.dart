@@ -10,6 +10,7 @@ import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/core/theme/lattice_theme.dart';
+import 'package:lattice/features/calling/widgets/incoming_call_overlay.dart';
 import 'package:lattice/features/chat/services/media_playback_service.dart';
 import 'package:lattice/features/chat/services/opengraph_service.dart';
 import 'package:lattice/features/notifications/services/inbox_controller.dart';
@@ -113,6 +114,9 @@ class _LatticeAppState extends State<LatticeApp> {
                             darkTheme: darkTheme,
                             themeMode: prefs.themeMode,
                             routerConfig: router,
+                            builder: (context, child) => IncomingCallOverlay(
+                              child: child ?? const SizedBox.shrink(),
+                            ),
                           );
                         },
                       ),

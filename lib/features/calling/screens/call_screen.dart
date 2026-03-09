@@ -63,6 +63,11 @@ class _CallScreenState extends State<CallScreen> {
           title: Text(widget.displayName),
         ),
         body: switch (state) {
+          LatticeCallState.ringingOutgoing => CallRingingOutgoingView(
+              displayName: widget.displayName,
+              onCancel: callService.cancelOutgoingCall,
+            ),
+          LatticeCallState.ringingIncoming => const CallEndedView(),
           LatticeCallState.joining => CallJoiningView(displayName: widget.displayName),
           LatticeCallState.connected => _buildConnected(callService),
           LatticeCallState.reconnecting => const CallReconnectingView(),

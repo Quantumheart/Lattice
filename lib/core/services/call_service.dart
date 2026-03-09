@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart' as flutter_webrtc;
 import 'package:http/http.dart' as http;
+import 'package:lattice/features/calling/models/incoming_call_info.dart' as model;
+import 'package:lattice/features/calling/services/ringtone_service.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
 import 'package:matrix/matrix.dart';
 import 'package:webrtc_interface/webrtc_interface.dart' as webrtc;
@@ -12,6 +14,8 @@ import 'package:webrtc_interface/webrtc_interface.dart' as webrtc;
 
 enum LatticeCallState {
   idle,
+  ringingOutgoing,
+  ringingIncoming,
   joining,
   connected,
   reconnecting,
@@ -31,9 +35,9 @@ typedef HttpPostFunction = Future<http.Response> Function(
 // ── WebRTC Delegate ─────────────────────────────────────────
 
 class _LatticeWebRTCDelegate implements WebRTCDelegate {
-  _LatticeWebRTCDelegate(this._onCallStateChanged);
+  _LatticeWebRTCDelegate(this._callService);
 
-  final VoidCallback _onCallStateChanged;
+  final CallService _callService;
 
   bool _inCall = false;
 
@@ -48,10 +52,14 @@ class _LatticeWebRTCDelegate implements WebRTCDelegate {
       flutter_webrtc.createPeerConnection(configuration, constraints);
 
   @override
-  Future<void> playRingtone() async {}
+  Future<void> playRingtone() async {
+    await _callService._ringtoneService?.playRingtone();
+  }
 
   @override
-  Future<void> stopRingtone() async {}
+  Future<void> stopRingtone() async {
+    await _callService._ringtoneService?.stop();
+  }
 
   @override
   Future<void> registerListeners(CallSession session) async {}
@@ -59,28 +67,30 @@ class _LatticeWebRTCDelegate implements WebRTCDelegate {
   @override
   Future<void> handleNewCall(CallSession session) async {
     _inCall = true;
-    _onCallStateChanged();
+    _callService._handleIncomingCall(session);
   }
 
   @override
   Future<void> handleCallEnded(CallSession session) async {
     _inCall = false;
-    _onCallStateChanged();
+    _callService._handleCallEnded();
   }
 
   @override
-  Future<void> handleMissedCall(CallSession session) async {}
+  Future<void> handleMissedCall(CallSession session) async {
+    _callService._handleCallEnded();
+  }
 
   @override
   Future<void> handleNewGroupCall(GroupCallSession groupCall) async {
     _inCall = true;
-    _onCallStateChanged();
+    _callService._handleIncomingGroupCall(groupCall);
   }
 
   @override
   Future<void> handleGroupCallEnded(GroupCallSession groupCall) async {
     _inCall = false;
-    _onCallStateChanged();
+    _callService._handleCallEnded();
   }
 
   @override
@@ -114,24 +124,16 @@ class CallService extends ChangeNotifier {
   _LatticeWebRTCDelegate? _webrtcDelegate;
 
   void initVoip() {
-    _webrtcDelegate = _LatticeWebRTCDelegate(notifyListeners);
+    _webrtcDelegate = _LatticeWebRTCDelegate(this);
     _voip = VoIP(_client, _webrtcDelegate!);
     debugPrint('[Lattice] VoIP initialized');
   }
 
-  void _resetState() {
-    unawaited(_cleanupLiveKit());
-    _activeGroupCall = null;
-    _callState = LatticeCallState.idle;
-    _voip = null;
-    _webrtcDelegate = null;
-  }
+  // ── Ringtone ───────────────────────────────────────────
 
-  void updateClient(Client newClient) {
-    if (identical(_client, newClient)) return;
-    _resetState();
-    _client = newClient;
-  }
+  RingtoneService? _ringtoneService;
+
+  set ringtoneService(RingtoneService? service) => _ringtoneService = service;
 
   // ── State ───────────────────────────────────────────────
 
@@ -146,6 +148,22 @@ class CallService extends ChangeNotifier {
   String? get activeCallRoomId => _activeGroupCall?.room.id;
 
   StreamSubscription<MatrixRTCCallEvent>? _callEventSub;
+
+  // ── Ringing State ─────────────────────────────────────────
+
+  model.IncomingCallInfo? _incomingCall;
+  model.IncomingCallInfo? get incomingCall => _incomingCall;
+
+  Timer? _ringingTimer;
+  DateTime? _callStartTime;
+
+  final StreamController<model.IncomingCallInfo> _incomingCallController =
+      StreamController<model.IncomingCallInfo>.broadcast();
+  Stream<model.IncomingCallInfo> get incomingCallStream =>
+      _incomingCallController.stream;
+
+  Duration? get callElapsed =>
+      _callStartTime != null ? DateTime.now().difference(_callStartTime!) : null;
 
   // ── LiveKit State ───────────────────────────────────────
 
@@ -212,6 +230,102 @@ class CallService extends ChangeNotifier {
     return memberships.values.expand((list) => list).toList();
   }
 
+  // ── Incoming Call Handling ─────────────────────────────────
+
+  void _handleIncomingCall(CallSession session) {
+    if (_callState != LatticeCallState.idle) return;
+
+    final room = session.room;
+    final caller = room.unsafeGetUserFromMemoryOrFallback(session.remoteUserId ?? '');
+
+    _incomingCall = model.IncomingCallInfo(
+      roomId: room.id,
+      callerName: caller.calcDisplayname(),
+      callerAvatarUrl: caller.avatarUrl,
+      isVideo: session.type == CallType.kVideo,
+    );
+    _callState = LatticeCallState.ringingIncoming;
+    _incomingCallController.add(_incomingCall!);
+    notifyListeners();
+  }
+
+  void _handleIncomingGroupCall(GroupCallSession groupCall) {
+    if (_callState != LatticeCallState.idle) return;
+
+    final room = groupCall.room;
+    _incomingCall = model.IncomingCallInfo(
+      roomId: room.id,
+      callerName: room.getLocalizedDisplayname(),
+      isGroupCall: true,
+    );
+    _callState = LatticeCallState.ringingIncoming;
+    _incomingCallController.add(_incomingCall!);
+    notifyListeners();
+  }
+
+  void _handleCallEnded() {
+    if (_callState == LatticeCallState.ringingIncoming ||
+        _callState == LatticeCallState.ringingOutgoing) {
+      _incomingCall = null;
+      _ringingTimer?.cancel();
+      _ringingTimer = null;
+      _callState = LatticeCallState.idle;
+      unawaited(_ringtoneService?.stop());
+      notifyListeners();
+    }
+  }
+
+  // ── Ringing Actions ────────────────────────────────────────
+
+  void acceptCall({bool withVideo = false}) {
+    if (_callState != LatticeCallState.ringingIncoming) return;
+    final info = _incomingCall;
+    if (info == null) return;
+
+    _incomingCall = null;
+    _callState = LatticeCallState.joining;
+    unawaited(_ringtoneService?.stop());
+    notifyListeners();
+
+    unawaited(joinCall(info.roomId));
+  }
+
+  void declineCall() {
+    if (_callState != LatticeCallState.ringingIncoming) return;
+    _incomingCall = null;
+    _callState = LatticeCallState.idle;
+    unawaited(_ringtoneService?.stop());
+    notifyListeners();
+  }
+
+  void cancelOutgoingCall() {
+    if (_callState != LatticeCallState.ringingOutgoing) return;
+    _ringingTimer?.cancel();
+    _ringingTimer = null;
+    _callState = LatticeCallState.idle;
+    unawaited(_ringtoneService?.stop());
+    notifyListeners();
+    unawaited(leaveCall());
+  }
+
+  Future<void> initiateCall(String roomId, {model.CallType type = model.CallType.voice}) async {
+    if (_voip == null) initVoip();
+    if (_callState != LatticeCallState.idle) return;
+
+    _callState = LatticeCallState.ringingOutgoing;
+    notifyListeners();
+
+    unawaited(_ringtoneService?.playDialtone());
+
+    _ringingTimer = Timer(const Duration(seconds: 60), () {
+      if (_callState == LatticeCallState.ringingOutgoing) {
+        cancelOutgoingCall();
+      }
+    });
+
+    await joinCall(roomId);
+  }
+
   // ── Actions ─────────────────────────────────────────────
 
   Future<void> joinCall(
@@ -220,7 +334,10 @@ class CallService extends ChangeNotifier {
     String? groupCallId,
   }) async {
     if (_voip == null) return;
-    if (_callState != LatticeCallState.idle || _joining) {
+    if (_callState != LatticeCallState.idle &&
+        _callState != LatticeCallState.joining &&
+        _callState != LatticeCallState.ringingOutgoing) {
+      if (_joining) return;
       debugPrint('[Lattice] Cannot join call: already in state $_callState');
       return;
     }
@@ -232,7 +349,9 @@ class CallService extends ChangeNotifier {
     }
 
     _joining = true;
-    _callState = LatticeCallState.joining;
+    if (_callState != LatticeCallState.ringingOutgoing) {
+      _callState = LatticeCallState.joining;
+    }
     notifyListeners();
 
     try {
@@ -256,7 +375,12 @@ class CallService extends ChangeNotifier {
         await _connectLiveKit(resolvedBackend);
       }
 
+      _ringingTimer?.cancel();
+      _ringingTimer = null;
+
+      _callStartTime = DateTime.now();
       _callState = LatticeCallState.connected;
+      unawaited(_ringtoneService?.stop());
       notifyListeners();
       debugPrint(
         '[Lattice] Joined call ${groupCall.groupCallId} in room $roomId',
@@ -266,8 +390,12 @@ class CallService extends ChangeNotifier {
       await _cleanupLiveKit();
       _callState = LatticeCallState.failed;
       _activeGroupCall = null;
+      _ringingTimer?.cancel();
+      _ringingTimer = null;
+
       unawaited(_callEventSub?.cancel());
       _callEventSub = null;
+      unawaited(_ringtoneService?.stop());
       notifyListeners();
     } finally {
       _joining = false;
@@ -294,6 +422,7 @@ class CallService extends ChangeNotifier {
     unawaited(_callEventSub?.cancel());
     _callEventSub = null;
     _activeGroupCall = null;
+    _callStartTime = null;
     _callState = LatticeCallState.idle;
     notifyListeners();
   }
@@ -361,10 +490,30 @@ class CallService extends ChangeNotifier {
 
   // ── Lifecycle ───────────────────────────────────────────
 
+  void _resetState() {
+    unawaited(_cleanupLiveKit());
+    _activeGroupCall = null;
+    _callState = LatticeCallState.idle;
+    _voip = null;
+    _webrtcDelegate = null;
+    _incomingCall = null;
+    _ringingTimer?.cancel();
+    _ringingTimer = null;
+    _callStartTime = null;
+    unawaited(_ringtoneService?.stop());
+  }
+
+  void updateClient(Client newClient) {
+    if (identical(_client, newClient)) return;
+    _resetState();
+    _client = newClient;
+  }
+
   @override
   void dispose() {
     _disposed = true;
     _resetState();
+    unawaited(_incomingCallController.close());
     super.dispose();
   }
 
@@ -440,6 +589,7 @@ class CallService extends ChangeNotifier {
       _activeGroupCall = null;
       unawaited(_callEventSub?.cancel());
       _callEventSub = null;
+      _callStartTime = null;
       _callState = LatticeCallState.failed;
       notifyListeners();
       if (groupCall != null) {
@@ -562,6 +712,7 @@ class CallService extends ChangeNotifier {
           unawaited(_cleanupLiveKit());
           _callState = LatticeCallState.idle;
           _activeGroupCall = null;
+          _callStartTime = null;
           unawaited(_callEventSub?.cancel());
           _callEventSub = null;
         }

@@ -5,13 +5,16 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:lattice/core/models/pending_attachment.dart';
 import 'package:lattice/core/models/upload_state.dart';
+import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/features/calling/services/call_navigator.dart';
 import 'package:lattice/features/chat/services/chat_search_controller.dart';
 import 'package:lattice/features/chat/services/compose_state_controller.dart';
 import 'package:lattice/features/chat/services/typing_controller.dart';
 import 'package:lattice/features/chat/services/voice_recording_controller.dart';
 import 'package:lattice/features/chat/services/voice_recording_mixin.dart';
+import 'package:lattice/features/chat/widgets/call_event_tile.dart';
 import 'package:lattice/features/chat/widgets/chat_app_bar.dart';
 import 'package:lattice/features/chat/widgets/chat_message_item.dart';
 import 'package:lattice/features/chat/widgets/compose_bar_section.dart';
@@ -175,10 +178,12 @@ class _ChatScreenState extends State<ChatScreen>
     if (_cachedVisibleEvents != null) return _cachedVisibleEvents!;
     final events = _timeline?.events;
     if (events == null) return [];
+    const callEventTypes = {'m.call.invite', 'm.call.hangup', 'm.call.reject'};
     _cachedVisibleEvents = events
         .where((e) =>
-            (e.type == EventTypes.Message || e.type == EventTypes.Encrypted) &&
-            e.relationshipType != RelationshipTypes.edit,)
+            ((e.type == EventTypes.Message || e.type == EventTypes.Encrypted) &&
+                e.relationshipType != RelationshipTypes.edit) ||
+            callEventTypes.contains(e.type),)
         .toList();
     return _cachedVisibleEvents!;
   }
@@ -506,8 +511,14 @@ class _ChatScreenState extends State<ChatScreen>
     final tt = Theme.of(context).textTheme;
     final events = _visibleEvents;
 
+    final callService = context.watch<CallService>();
+    final roomHasCall = callService.roomHasActiveCall(room.id);
+    final isInCall = callService.activeCallRoomId == room.id;
+
     final column = Column(
       children: [
+        if (roomHasCall && !isInCall)
+          _JoinCallBanner(room: room, callService: callService),
         Expanded(
           child: _timeline == null
               ? const Center(child: CircularProgressIndicator())
@@ -563,6 +574,11 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
+  static bool _isCallEvent(Event event) {
+    const types = {'m.call.invite', 'm.call.hangup', 'm.call.reject'};
+    return types.contains(event.type);
+  }
+
   Widget _buildMessageList(
       List<Event> events, MatrixService matrix, Room room,) {
     final isMobile = MediaQuery.sizeOf(context).width < 720;
@@ -586,6 +602,9 @@ class _ChatScreenState extends State<ChatScreen>
           );
         }
         final event = events[i];
+        if (_isCallEvent(event)) {
+          return CallEventTile(event: event);
+        }
         final prevSender = i + 1 < events.length ? events[i + 1].senderId : null;
         return ChatMessageItem(
           event: event,
@@ -603,6 +622,48 @@ class _ChatScreenState extends State<ChatScreen>
           onTapReply: _navigateToEvent,
         );
       },
+    );
+  }
+}
+
+class _JoinCallBanner extends StatelessWidget {
+  const _JoinCallBanner({required this.room, required this.callService});
+
+  final Room room;
+  final CallService callService;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final callIds = callService.activeCallIdsForRoom(room.id);
+    final participantCount = callIds.isNotEmpty
+        ? callService.callParticipantCount(room.id, callIds.first)
+        : 0;
+
+    return Material(
+      color: cs.primaryContainer,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Row(
+          children: [
+            Icon(Icons.call_rounded, size: 18, color: cs.onPrimaryContainer),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Call in progress${participantCount > 0 ? ' \u2014 $participantCount participant${participantCount == 1 ? '' : 's'}' : ''}',
+                style: TextStyle(color: cs.onPrimaryContainer),
+              ),
+            ),
+            FilledButton.tonal(
+              onPressed: () => CallNavigator.startCall(
+                context,
+                roomId: room.id,
+              ),
+              child: const Text('Join'),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

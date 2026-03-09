@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
+import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/core/utils/notification_filter.dart';
@@ -129,7 +130,7 @@ class RoomTile extends StatelessWidget {
                               ),
                             ),
                           ),
-                          // Multi-space membership dots
+                          _CallIndicator(roomId: room.id),
                           if (memberships.length >= 2) ...[
                             const SizedBox(width: 6),
                             for (var j = 0;
@@ -300,6 +301,12 @@ class RoomTile extends StatelessWidget {
 
   String _lastMessagePreview(Event? event, String? myUserId) {
     if (event == null) return 'No messages yet';
+    if (event.type == 'm.call.invite') return 'Call in progress';
+    if (event.type == 'm.call.hangup') {
+      final reason = event.content.tryGet<String>('reason');
+      if (reason == 'invite_timeout') return 'Missed call';
+      return 'Call ended';
+    }
     if (event.redacted) {
       final isMe = event.senderId == myUserId;
       if (isMe) return 'You deleted this message';
@@ -334,6 +341,26 @@ class RoomTile extends StatelessWidget {
     if (diff.inHours < 24) return '${diff.inHours}h';
     if (diff.inDays < 7) return '${diff.inDays}d';
     return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}';
+  }
+}
+
+// ── Call indicator ────────────────────────────────────────────
+class _CallIndicator extends StatelessWidget {
+  const _CallIndicator({required this.roomId});
+
+  final String roomId;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasCall = context.select<CallService, bool>(
+      (s) => s.roomHasActiveCall(roomId),
+    );
+    if (!hasCall) return const SizedBox.shrink();
+
+    return const Padding(
+      padding: EdgeInsets.only(left: 6),
+      child: Icon(Icons.call_rounded, size: 14, color: Colors.green),
+    );
   }
 }
 

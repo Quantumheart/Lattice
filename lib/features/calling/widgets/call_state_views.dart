@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 String formatCallElapsed(Duration d) {
@@ -44,6 +46,84 @@ class CallReconnectingView extends StatelessWidget {
           const Icon(Icons.warning_amber_rounded, size: 48),
           const SizedBox(height: 16),
           Text('Reconnecting...', style: tt.titleMedium),
+        ],
+      ),
+    );
+  }
+}
+
+class CallRingingOutgoingView extends StatefulWidget {
+  const CallRingingOutgoingView({required this.displayName, required this.onCancel, super.key});
+
+  final String displayName;
+  final VoidCallback onCancel;
+
+  @override
+  State<CallRingingOutgoingView> createState() => _CallRingingOutgoingViewState();
+}
+
+class _CallRingingOutgoingViewState extends State<CallRingingOutgoingView>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulseCtrl;
+  late final Animation<double> _pulseAnim;
+  Timer? _elapsedTimer;
+  int _elapsedSeconds = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
+    unawaited(_pulseCtrl.repeat(reverse: true));
+    _pulseAnim = Tween<double>(begin: 1, end: 1.1).animate(
+      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
+    );
+    _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() => _elapsedSeconds++);
+    });
+  }
+
+  @override
+  void dispose() {
+    _pulseCtrl.dispose();
+    _elapsedTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+    final elapsed = formatCallElapsed(Duration(seconds: _elapsedSeconds));
+
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ScaleTransition(
+            scale: _pulseAnim,
+            child: CircleAvatar(
+              radius: 48,
+              child: Text(
+                widget.displayName.isNotEmpty
+                    ? widget.displayName[0].toUpperCase()
+                    : '?',
+                style: tt.headlineLarge,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text('Calling ${widget.displayName}...', style: tt.titleMedium),
+          const SizedBox(height: 8),
+          Text(elapsed, style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+          const SizedBox(height: 32),
+          FloatingActionButton(
+            backgroundColor: cs.error,
+            onPressed: widget.onCancel,
+            child: const Icon(Icons.call_end_rounded, color: Colors.white),
+          ),
         ],
       ),
     );

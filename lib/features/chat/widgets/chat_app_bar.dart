@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/call_service.dart';
+import 'package:lattice/features/calling/models/incoming_call_info.dart' as model;
 import 'package:lattice/features/calling/services/call_navigator.dart';
 import 'package:lattice/features/chat/widgets/pinned_messages_popup.dart';
 import 'package:lattice/shared/widgets/room_avatar.dart';
@@ -127,13 +128,14 @@ class _CallButton extends StatefulWidget {
 class _CallButtonState extends State<_CallButton> {
   bool _starting = false;
 
-  Future<void> _onPressed() async {
+  Future<void> _startCall(model.CallType type) async {
     if (_starting) return;
     setState(() => _starting = true);
     try {
       await CallNavigator.startCall(
         context,
         roomId: widget.room.id,
+        type: type,
       );
     } finally {
       if (mounted) setState(() => _starting = false);
@@ -142,14 +144,54 @@ class _CallButtonState extends State<_CallButton> {
 
   @override
   Widget build(BuildContext context) {
-    final callState = context.select<CallService, LatticeCallState>(
-      (s) => s.callState,
-    );
-    final busy = _starting || callState != LatticeCallState.idle;
-    return IconButton(
+    final callService = context.watch<CallService>();
+    final callState = callService.callState;
+    final roomHasCall = callService.roomHasActiveCall(widget.room.id);
+    final isInCall = callService.activeCallRoomId == widget.room.id;
+    final busy = _starting || (callState != LatticeCallState.idle && !roomHasCall);
+
+    if (roomHasCall && !isInCall) {
+      return TextButton.icon(
+        icon: const Icon(Icons.call_rounded),
+        label: const Text('Join'),
+        style: TextButton.styleFrom(foregroundColor: Colors.green),
+        onPressed: busy ? null : () => _startCall(model.CallType.voice),
+      );
+    }
+
+    if (isInCall) {
+      return const IconButton(
+        icon: Icon(Icons.call_rounded),
+        tooltip: 'Already in call',
+        onPressed: null,
+      );
+    }
+
+    return PopupMenuButton<model.CallType>(
       icon: const Icon(Icons.call_rounded),
       tooltip: 'Call',
-      onPressed: busy ? null : _onPressed,
+      enabled: !busy,
+      onSelected: _startCall,
+      itemBuilder: (_) => const [
+        PopupMenuItem(
+          value: model.CallType.voice,
+          child: ListTile(
+            leading: Icon(Icons.call_rounded),
+            title: Text('Voice call'),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+        PopupMenuItem(
+          value: model.CallType.video,
+          child: ListTile(
+            leading: Icon(Icons.videocam_rounded),
+            title: Text('Video call'),
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+      ],
     );
   }
 }
