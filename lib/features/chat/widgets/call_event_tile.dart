@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lattice/features/calling/models/call_constants.dart';
 import 'package:matrix/matrix.dart';
 
 class CallEventTile extends StatelessWidget {
@@ -40,17 +41,17 @@ class CallEventTile extends StatelessWidget {
     final sender = event.senderFromMemoryOrFallback.calcDisplayname();
 
     switch (event.type) {
-      case 'm.call.invite':
+      case kCallInvite:
         return (Icons.call_rounded, '$sender started a call');
 
-      case 'm.call.hangup':
+      case kCallHangup:
         final reason = event.content.tryGet<String>('reason');
         if (reason == 'invite_timeout') {
           return (Icons.call_missed_rounded, 'Missed call from $sender');
         }
         return (Icons.call_end_rounded, 'Call ended');
 
-      case 'm.call.reject':
+      case kCallReject:
         return (Icons.call_end_rounded, '$sender declined the call');
 
       default:

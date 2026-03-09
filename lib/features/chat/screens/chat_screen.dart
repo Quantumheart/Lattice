@@ -8,6 +8,7 @@ import 'package:lattice/core/models/upload_state.dart';
 import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/features/calling/models/call_constants.dart';
 import 'package:lattice/features/calling/services/call_navigator.dart';
 import 'package:lattice/features/chat/services/chat_search_controller.dart';
 import 'package:lattice/features/chat/services/compose_state_controller.dart';
@@ -178,7 +179,6 @@ class _ChatScreenState extends State<ChatScreen>
     if (_cachedVisibleEvents != null) return _cachedVisibleEvents!;
     final events = _timeline?.events;
     if (events == null) return [];
-    const callEventTypes = {'m.call.invite', 'm.call.hangup', 'm.call.reject'};
     _cachedVisibleEvents = events
         .where((e) =>
             ((e.type == EventTypes.Message || e.type == EventTypes.Encrypted) &&
@@ -574,10 +574,7 @@ class _ChatScreenState extends State<ChatScreen>
     );
   }
 
-  static bool _isCallEvent(Event event) {
-    const types = {'m.call.invite', 'm.call.hangup', 'm.call.reject'};
-    return types.contains(event.type);
-  }
+  static bool _isCallEvent(Event event) => callEventTypes.contains(event.type);
 
   Widget _buildMessageList(
       List<Event> events, MatrixService matrix, Room room,) {

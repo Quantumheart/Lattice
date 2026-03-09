@@ -11,6 +11,7 @@ import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/core/utils/notification_filter.dart';
 import 'package:lattice/core/utils/order_utils.dart' as order_utils;
 import 'package:lattice/core/utils/reply_fallback.dart';
+import 'package:lattice/features/calling/models/call_constants.dart';
 import 'package:lattice/features/chat/widgets/typing_indicator.dart' show TypingIndicator;
 import 'package:lattice/features/rooms/widgets/room_context_menu.dart';
 import 'package:lattice/features/spaces/widgets/space_reparent_controller.dart';
@@ -301,8 +302,8 @@ class RoomTile extends StatelessWidget {
 
   String _lastMessagePreview(Event? event, String? myUserId) {
     if (event == null) return 'No messages yet';
-    if (event.type == 'm.call.invite') return 'Call in progress';
-    if (event.type == 'm.call.hangup') {
+    if (event.type == kCallInvite) return 'Call in progress';
+    if (event.type == kCallHangup) {
       final reason = event.content.tryGet<String>('reason');
       if (reason == 'invite_timeout') return 'Missed call';
       return 'Call ended';
