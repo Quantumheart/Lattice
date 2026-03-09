@@ -1,14 +1,17 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/features/calling/models/incoming_call_info.dart';
 import 'package:provider/provider.dart';
 
 class IncomingCallOverlay extends StatefulWidget {
-  const IncomingCallOverlay({required this.child, super.key});
+  const IncomingCallOverlay({required this.child, required this.router, super.key});
 
   final Widget child;
+  final GoRouter router;
 
   @override
   State<IncomingCallOverlay> createState() => _IncomingCallOverlayState();
@@ -67,8 +70,15 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay> {
   }
 
   void _accept({required bool withVideo}) {
+    final roomId = _incoming?.roomId;
     _callService?.acceptCall(withVideo: withVideo);
     setState(() => _incoming = null);
+    if (roomId != null) {
+      widget.router.goNamed(
+        Routes.call,
+        pathParameters: {'roomId': roomId},
+      );
+    }
   }
 
   void _decline() {

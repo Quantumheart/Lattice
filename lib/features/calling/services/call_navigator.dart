@@ -40,13 +40,12 @@ abstract class CallNavigator {
     }
   }
 
-  static void acceptIncoming(BuildContext context) {
-    final callService = context.read<CallService>();
-    final roomId = callService.activeCallRoomId;
-    if (roomId != null && context.mounted) {
+  static void acceptIncoming(BuildContext context, {String? roomId}) {
+    final id = roomId ?? context.read<CallService>().activeCallRoomId;
+    if (id != null && context.mounted) {
       context.goNamed(
         Routes.call,
-        pathParameters: {'roomId': roomId},
+        pathParameters: {'roomId': id},
       );
     }
   }

@@ -10,6 +10,7 @@ import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/core/theme/lattice_theme.dart';
+import 'package:lattice/features/calling/services/ringtone_service.dart';
 import 'package:lattice/features/calling/widgets/incoming_call_overlay.dart';
 import 'package:lattice/features/chat/services/media_playback_service.dart';
 import 'package:lattice/features/chat/services/opengraph_service.dart';
@@ -96,10 +97,23 @@ class _LatticeAppState extends State<LatticeApp> {
                       return previous;
                     },
                     child: ChangeNotifierProxyProvider<MatrixService, CallService>(
-                      create: (ctx) => CallService(client: ctx.read<MatrixService>().client),
+                      create: (ctx) {
+                        final cs = CallService(client: ctx.read<MatrixService>().client)
+                          ..ringtoneService = RingtoneService();
+                        if (ctx.read<MatrixService>().isLoggedIn) cs.initVoip();
+                        return cs;
+                      },
                       update: (_, matrix, previous) {
-                        if (previous == null) return CallService(client: matrix.client);
+                        if (previous == null) {
+                          final cs = CallService(client: matrix.client)
+                            ..ringtoneService = RingtoneService();
+                          if (matrix.isLoggedIn) cs.initVoip();
+                          return cs;
+                        }
                         previous.updateClient(matrix.client);
+                        if (matrix.isLoggedIn && previous.voip == null) {
+                          previous.initVoip();
+                        }
                         return previous;
                       },
                       child: Builder(
@@ -115,6 +129,7 @@ class _LatticeAppState extends State<LatticeApp> {
                             themeMode: prefs.themeMode,
                             routerConfig: router,
                             builder: (context, child) => IncomingCallOverlay(
+                              router: router,
                               child: child ?? const SizedBox.shrink(),
                             ),
                           );
