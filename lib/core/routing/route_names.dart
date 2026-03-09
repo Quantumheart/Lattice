@@ -12,4 +12,5 @@ abstract class Routes {
   static const settingsDevices = 'settings-devices';
   static const inbox = 'inbox';
   static const spaceDetails = 'space-details';
+  static const call = 'call';
 }

@@ -6,6 +6,7 @@ import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/auth/screens/homeserver_screen.dart';
 import 'package:lattice/features/auth/screens/login_screen.dart';
 import 'package:lattice/features/auth/screens/registration_screen.dart';
+import 'package:lattice/features/calling/screens/call_screen.dart';
 import 'package:lattice/features/chat/screens/chat_screen.dart';
 import 'package:lattice/features/home/screens/home_shell.dart';
 import 'package:lattice/features/home/widgets/inbox_screen.dart';
@@ -61,6 +62,17 @@ GoRouter buildRouter(MatrixService matrixService) {
         builder: (context, state) {
           final homeserver = state.extra as String? ?? 'matrix.org';
           return RegistrationScreen(initialHomeserver: homeserver);
+        },
+      ),
+
+      // ── Call route ────────────────────────────────────────────
+      GoRoute(
+        path: '/call/:roomId',
+        name: Routes.call,
+        builder: (context, state) {
+          final roomId = state.pathParameters['roomId']!;
+          final displayName = state.extra as String? ?? 'Call';
+          return CallScreen(roomId: roomId, displayName: displayName);
         },
       ),
 

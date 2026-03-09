@@ -83,6 +83,15 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
           ),
         IconButton(
+          icon: const Icon(Icons.call_rounded),
+          tooltip: 'Call',
+          onPressed: () => context.pushNamed(
+            Routes.call,
+            pathParameters: {'roomId': room.id},
+            extra: room.getLocalizedDisplayname(),
+          ),
+        ),
+        IconButton(
           icon: const Icon(Icons.search_rounded),
           onPressed: onSearch,
         ),
