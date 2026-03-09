@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
+import 'package:webrtc_interface/webrtc_interface.dart' as webrtc;
 
 @immutable
 class CallParticipant {
@@ -12,25 +13,33 @@ class CallParticipant {
     this.isSpeaking = false,
     this.isScreenSharing = false,
     this.audioLevel = 0.0,
+    this.videoTrack,
+    this.mediaStream,
   });
 
-  factory CallParticipant.fromRemote(
-    livekit.RemoteParticipant p, {
+  factory CallParticipant.fromLiveKit(
+    livekit.Participant p, {
     List<livekit.Participant> activeSpeakers = const [],
+    bool isLocal = false,
   }) {
-    final hasVideo = p.videoTrackPublications.any(
-      (pub) => pub.subscribed && !pub.muted,
-    );
+    final cameraPub = p.videoTrackPublications
+        .where((pub) => pub.source != livekit.TrackSource.screenShareVideo)
+        .firstOrNull;
+    final hasVideo = cameraPub != null && cameraPub.subscribed && !cameraPub.muted;
+    final videoTrack = hasVideo ? cameraPub.track as livekit.VideoTrack? : null;
+
     final hasScreenShare = p.videoTrackPublications.any(
       (pub) => pub.source == livekit.TrackSource.screenShareVideo && pub.subscribed,
     );
     return CallParticipant(
       id: p.identity,
       displayName: p.name.isNotEmpty ? p.name : p.identity,
+      isLocal: isLocal,
       isAudioOnly: !hasVideo,
       isMuted: p.isMuted,
       isSpeaking: activeSpeakers.any((s) => s.identity == p.identity),
       isScreenSharing: hasScreenShare,
+      videoTrack: videoTrack,
     );
   }
 
@@ -42,6 +51,8 @@ class CallParticipant {
   final bool isSpeaking;
   final bool isScreenSharing;
   final double audioLevel;
+  final livekit.VideoTrack? videoTrack;
+  final webrtc.MediaStream? mediaStream;
 
   CallParticipant copyWith({
     String? id,
@@ -52,6 +63,8 @@ class CallParticipant {
     bool? isSpeaking,
     bool? isScreenSharing,
     double? audioLevel,
+    livekit.VideoTrack? videoTrack,
+    webrtc.MediaStream? mediaStream,
   }) {
     return CallParticipant(
       id: id ?? this.id,
@@ -62,8 +75,12 @@ class CallParticipant {
       isSpeaking: isSpeaking ?? this.isSpeaking,
       isScreenSharing: isScreenSharing ?? this.isScreenSharing,
       audioLevel: audioLevel ?? this.audioLevel,
+      videoTrack: videoTrack ?? this.videoTrack,
+      mediaStream: mediaStream ?? this.mediaStream,
     );
   }
+
+  bool get hasVideo => videoTrack != null || mediaStream != null;
 
   @override
   bool operator ==(Object other) =>
@@ -76,7 +93,9 @@ class CallParticipant {
           isMuted == other.isMuted &&
           isSpeaking == other.isSpeaking &&
           isScreenSharing == other.isScreenSharing &&
-          audioLevel == other.audioLevel;
+          audioLevel == other.audioLevel &&
+          videoTrack == other.videoTrack &&
+          mediaStream == other.mediaStream;
 
   @override
   int get hashCode => Object.hash(
@@ -88,5 +107,7 @@ class CallParticipant {
         isSpeaking,
         isScreenSharing,
         audioLevel,
+        videoTrack,
+        mediaStream,
       );
 }

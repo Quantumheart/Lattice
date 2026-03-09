@@ -1,14 +1,64 @@
-import 'package:flutter/material.dart';
-import 'package:lattice/features/calling/models/call_participant.dart';
+import 'dart:async';
 
-class ParticipantTile extends StatelessWidget {
+import 'package:flutter/material.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart' as rtc;
+import 'package:lattice/features/calling/models/call_participant.dart';
+import 'package:livekit_client/livekit_client.dart' as livekit;
+
+class ParticipantTile extends StatefulWidget {
   const ParticipantTile({required this.participant, super.key});
 
   final CallParticipant participant;
 
+  @override
+  State<ParticipantTile> createState() => _ParticipantTileState();
+}
+
+class _ParticipantTileState extends State<ParticipantTile> {
   static const _minAudioBarWidth = 4.0;
   static const _maxAudioBarWidth = 20.0;
   static const _audioLevelThreshold = 0.05;
+
+  rtc.RTCVideoRenderer? _renderer;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_setupRenderer());
+  }
+
+  @override
+  void didUpdateWidget(covariant ParticipantTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.participant.mediaStream != oldWidget.participant.mediaStream) {
+      unawaited(_setupRenderer());
+    }
+  }
+
+  Future<void> _setupRenderer() async {
+    final stream = widget.participant.mediaStream;
+    if (stream == null) {
+      if (_renderer != null) {
+        _renderer!.srcObject = null;
+        await _renderer!.dispose();
+        _renderer = null;
+        if (mounted) setState(() {});
+      }
+      return;
+    }
+
+    _renderer ??= rtc.RTCVideoRenderer();
+    await _renderer!.initialize();
+    _renderer!.srcObject = stream;
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _renderer?.srcObject = null;
+    unawaited(_renderer?.dispose());
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,10 +68,10 @@ class ParticipantTile extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: participant.isSpeaking ? cs.primary : Colors.transparent,
+          color: widget.participant.isSpeaking ? cs.primary : Colors.transparent,
           width: 2,
         ),
-        boxShadow: participant.isSpeaking
+        boxShadow: widget.participant.isSpeaking
             ? [
                 BoxShadow(
                   color: cs.primary.withValues(alpha: 0.3),
@@ -47,36 +97,51 @@ class ParticipantTile extends StatelessWidget {
   Widget _buildVideoArea(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    if (participant.isAudioOnly) {
+    final livekitTrack = widget.participant.videoTrack;
+    if (livekitTrack != null) {
       return ColoredBox(
         color: cs.surfaceContainerHighest,
-        child: Center(
-          child: CircleAvatar(
-            radius: 32,
-            backgroundColor: cs.primaryContainer,
-            child: Text(
-              participant.displayName.isNotEmpty
-                  ? participant.displayName[0].toUpperCase()
-                  : '?',
-              style: TextStyle(
-                fontSize: 28,
-                color: cs.onPrimaryContainer,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
+        child: livekit.VideoTrackRenderer(
+          livekitTrack,
+          fit: livekit.VideoViewFit.cover,
+        ),
+      );
+    }
+
+    if (_renderer?.srcObject != null) {
+      return ColoredBox(
+        color: cs.surfaceContainerHighest,
+        child: rtc.RTCVideoView(
+          _renderer!,
+          objectFit: rtc.RTCVideoViewObjectFit.RTCVideoViewObjectFitCover,
+          mirror: widget.participant.isLocal,
         ),
       );
     }
 
     return ColoredBox(
       color: cs.surfaceContainerHighest,
-      child: Icon(Icons.videocam, size: 48, color: cs.onSurfaceVariant),
+      child: Center(
+        child: CircleAvatar(
+          radius: 32,
+          backgroundColor: cs.primaryContainer,
+          child: Text(
+            widget.participant.displayName.isNotEmpty
+                ? widget.participant.displayName[0].toUpperCase()
+                : '?',
+            style: TextStyle(
+              fontSize: 28,
+              color: cs.onPrimaryContainer,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildBottomOverlay(BuildContext context) {
-    final showAudioBar = participant.audioLevel > _audioLevelThreshold;
+    final showAudioBar = widget.participant.audioLevel > _audioLevelThreshold;
 
     return Positioned(
       left: 0,
@@ -97,7 +162,7 @@ class ParticipantTile extends StatelessWidget {
               if (showAudioBar) ...[
                 Container(
                   width: _minAudioBarWidth +
-                      participant.audioLevel *
+                      widget.participant.audioLevel *
                           (_maxAudioBarWidth - _minAudioBarWidth),
                   height: 4,
                   decoration: BoxDecoration(
@@ -109,9 +174,9 @@ class ParticipantTile extends StatelessWidget {
               ],
               Expanded(
                 child: Text(
-                  participant.isLocal
-                      ? '${participant.displayName} (You)'
-                      : participant.displayName,
+                  widget.participant.isLocal
+                      ? '${widget.participant.displayName} (You)'
+                      : widget.participant.displayName,
                   style: Theme.of(context)
                       .textTheme
                       .bodySmall
@@ -119,7 +184,7 @@ class ParticipantTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              if (participant.isMuted)
+              if (widget.participant.isMuted)
                 const Icon(Icons.mic_off, size: 14, color: Colors.redAccent),
             ],
           ),

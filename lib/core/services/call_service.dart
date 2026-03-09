@@ -127,6 +127,7 @@ class CallService extends ChangeNotifier {
   void initVoip() {
     _webrtcDelegate = _LatticeWebRTCDelegate(this);
     _voip = VoIP(_client, _webrtcDelegate!);
+    unawaited(fetchWellKnownLiveKit());
     debugPrint('[Lattice] VoIP initialized');
   }
 
@@ -208,35 +209,49 @@ class CallService extends ChangeNotifier {
     if (_livekitRoom != null) {
       final local = _livekitRoom!.localParticipant;
       if (local != null) {
-        result.add(ui.CallParticipant(
-          id: local.identity,
-          displayName: local.name.isNotEmpty ? local.name : local.identity,
+        result.add(ui.CallParticipant.fromLiveKit(
+          local,
+          activeSpeakers: _activeSpeakers,
           isLocal: true,
-          isMuted: local.isMuted,
         ),);
       }
       for (final p in _participants) {
-        result.add(ui.CallParticipant.fromRemote(p, activeSpeakers: _activeSpeakers));
+        result.add(ui.CallParticipant.fromLiveKit(p, activeSpeakers: _activeSpeakers));
       }
     } else if (_activeGroupCall != null) {
+      final backend = _activeGroupCall!.backend;
       final myUserId = _client.userID ?? '';
+
+      final localStream = backend.localUserMediaStream;
+      final hasLocalVideo = localStream != null && !localStream.isVideoMuted();
       result.add(ui.CallParticipant(
         id: myUserId,
         displayName: _client.userID ?? 'You',
         isLocal: true,
         isMuted: !_isMicEnabled,
+        isAudioOnly: !hasLocalVideo,
+        mediaStream: hasLocalVideo ? localStream.stream : null,
       ),);
 
+      final userStreams = backend.userMediaStreams;
       final memberships = callMembershipsForRoom(_activeGroupCall!.room.id);
       for (final mem in memberships) {
         final userId = mem.userId;
         if (userId == myUserId && mem.deviceId == _client.deviceID) continue;
         final room = _activeGroupCall!.room;
         final user = room.unsafeGetUserFromMemoryOrFallback(userId);
+        final participantId = '$userId:${mem.deviceId}';
+
+        final remoteStream = userStreams
+            .where((s) => !s.isLocal() && s.participant.id == participantId)
+            .firstOrNull;
+        final hasVideo = remoteStream != null && !remoteStream.isVideoMuted();
+
         result.add(ui.CallParticipant(
-          id: '$userId:${mem.deviceId}',
+          id: participantId,
           displayName: user.calcDisplayname(),
-          isAudioOnly: true,
+          isAudioOnly: !hasVideo,
+          mediaStream: hasVideo ? remoteStream.stream : null,
         ),);
       }
     }
@@ -525,6 +540,7 @@ class CallService extends ChangeNotifier {
           MediaInputKind.videoinput,
         );
       }
+      notifyListeners();
     } catch (e) {
       debugPrint('[Lattice] Failed to toggle camera: $e');
       _isCameraEnabled = !_isCameraEnabled;
@@ -541,6 +557,7 @@ class CallService extends ChangeNotifier {
 
     try {
       await localParticipant.setScreenShareEnabled(_isScreenShareEnabled);
+      notifyListeners();
     } catch (e) {
       debugPrint('[Lattice] Failed to toggle screen share: $e');
       _isScreenShareEnabled = !_isScreenShareEnabled;
@@ -764,10 +781,48 @@ class CallService extends ChangeNotifier {
         }
       }
     }
+
+    final wellKnownBackend = _resolveBackendFromWellKnown(room);
+    if (wellKnownBackend != null) return wellKnownBackend;
+
     debugPrint(
-      '[Lattice] No active membership found for call $callId, falling back to MeshBackend',
+      '[Lattice] No LiveKit config found for call $callId, falling back to MeshBackend',
     );
     return MeshBackend();
+  }
+
+  String? _cachedLivekitServiceUrl;
+
+  CallBackend? _resolveBackendFromWellKnown(Room room) {
+    if (_cachedLivekitServiceUrl == null) return null;
+    return LiveKitBackend(
+      livekitServiceUrl: _cachedLivekitServiceUrl!,
+      livekitAlias: room.canonicalAlias.isNotEmpty
+          ? room.canonicalAlias
+          : room.id,
+    );
+  }
+
+  Future<void> fetchWellKnownLiveKit() async {
+    try {
+      final wellKnown = await _client.getWellknown();
+      final fociList =
+          wellKnown.additionalProperties['org.matrix.msc4143.rtc_foci'] as List?;
+      if (fociList == null || fociList.isEmpty) return;
+
+      for (final foci in fociList) {
+        if (foci is Map<String, Object?> && foci['type'] == 'livekit') {
+          final serviceUrl = foci['livekit_service_url'] as String?;
+          if (serviceUrl != null) {
+            _cachedLivekitServiceUrl = serviceUrl;
+            debugPrint('[Lattice] LiveKit service URL: $serviceUrl');
+            return;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[Lattice] Failed to fetch LiveKit well-known: $e');
+    }
   }
 
   String? _resolveGroupCallId(Room room) {
