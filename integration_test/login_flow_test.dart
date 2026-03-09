@@ -6,9 +6,10 @@ import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/auth/screens/homeserver_screen.dart';
 import 'package:lattice/features/auth/screens/login_screen.dart';
 import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mockito/mockito.dart';
 
+import '../test/helpers/matrix_sdk_internals.dart';
+import '../test/helpers/test_utils.dart';
 import 'helpers/mocks.dart';
 import 'helpers/test_app.dart';
 

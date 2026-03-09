@@ -6,19 +6,11 @@ import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/rooms/widgets/new_room_dialog.dart';
 import 'package:lattice/features/rooms/widgets/room_details_panel.dart';
 import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/cached_stream_controller.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
 
-import '../services/matrix_service_test.mocks.dart' show MockFlutterSecureStorage;
-import 'room_management_test.mocks.dart';
-
-@GenerateNiceMocks([
-  MockSpec<Client>(),
-  MockSpec<Room>(),
-  MockSpec<User>(),
-])
+import '../helpers/matrix_sdk_internals.dart';
+import '../helpers/shared_mocks.dart';
 
 // ── Constants ─────────────────────────────────────────────────────────
 
@@ -107,6 +99,10 @@ void main() {
       storage: mockStorage,
       clientName: 'test',
     );
+  });
+
+  tearDown(() {
+    matrixService.dispose();
   });
 
   // ── New Room Dialog builder ─────────────────────────────────────

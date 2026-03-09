@@ -1,43 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/settings/screens/settings_screen.dart';
 import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/cached_stream_controller.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
 
-import '../services/matrix_service_test.mocks.dart' show MockFlutterSecureStorage;
-import 'settings_screen_test.mocks.dart';
-
-@GenerateNiceMocks([
-  MockSpec<Client>(),
-  MockSpec<Room>(),
-])
+import '../helpers/matrix_sdk_internals.dart';
+import '../helpers/shared_mocks.dart';
+import '../helpers/test_utils.dart';
 
 // ── Constants ─────────────────────────────────────────────────────────
 
 const _myUserId = '@alice:matrix.org';
 const _homeserver = 'https://matrix.org';
-
-// ── Helpers ───────────────────────────────────────────────────────────
-
-class _FixedServiceFactory extends MatrixServiceFactory {
-  _FixedServiceFactory(this._service);
-  final MatrixService _service;
-
-  @override
-  Future<(Client, MatrixService)> create({
-    required String clientName,
-    FlutterSecureStorage? storage,
-  }) async {
-    return (_service.client, _service);
-  }
-}
 
 void stubProfile(
   MockClient mockClient, {
@@ -88,8 +66,12 @@ void main() {
 
     clientManager = ClientManager(
       storage: mockStorage,
-      serviceFactory: _FixedServiceFactory(matrixService),
+      serviceFactory: FixedServiceFactory(matrixService),
     );
+  });
+
+  tearDown(() {
+    matrixService.dispose();
   });
 
   // ── Test app builder ──────────────────────────────────────────────

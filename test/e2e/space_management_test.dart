@@ -6,19 +6,11 @@ import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/notifications/services/inbox_controller.dart';
 import 'package:lattice/features/spaces/widgets/space_rail.dart';
 import 'package:matrix/matrix.dart' hide Visibility;
-import 'package:matrix/src/utils/cached_stream_controller.dart';
-import 'package:matrix/src/utils/space_child.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
 
-import '../services/matrix_service_test.mocks.dart' show MockFlutterSecureStorage;
-import 'space_management_test.mocks.dart';
-
-@GenerateNiceMocks([
-  MockSpec<Client>(),
-  MockSpec<Room>(),
-])
+import '../helpers/matrix_sdk_internals.dart';
+import '../helpers/shared_mocks.dart';
 
 // ── Constants ─────────────────────────────────────────────────────────
 
@@ -114,6 +106,10 @@ void main() {
     clientManager = ClientManager(storage: mockStorage);
 
     inboxController = InboxController(client: mockClient);
+  });
+
+  tearDown(() {
+    matrixService.dispose();
   });
 
   // ── Test app builder ──────────────────────────────────────────────

@@ -1,5 +1,1 @@
-export '../../test/e2e/chat_screen_test.mocks.dart' show MockTimeline;
-export '../../test/e2e/room_management_test.mocks.dart'
-    show MockRoom, MockUser;
-export '../../test/services/matrix_service_test.mocks.dart'
-    show MockClient, MockFlutterSecureStorage;
+export '../../test/helpers/shared_mocks.dart';

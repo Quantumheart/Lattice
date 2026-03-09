@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/models/server_auth_capabilities.dart';
@@ -14,26 +13,11 @@ import 'package:lattice/features/auth/screens/registration_screen.dart';
 import 'package:lattice/features/rooms/widgets/new_room_dialog.dart';
 import 'package:lattice/features/rooms/widgets/room_details_panel.dart';
 import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
 
+import '../../test/helpers/matrix_sdk_internals.dart';
 import 'mocks.dart' show MockClient, MockRoom;
-
-// ── FixedServiceFactory ─────────────────────────────────────────────────────
-
-class FixedServiceFactory extends MatrixServiceFactory {
-  FixedServiceFactory(this._service);
-  final MatrixService _service;
-
-  @override
-  Future<(Client, MatrixService)> create({
-    required String clientName,
-    FlutterSecureStorage? storage,
-  }) async {
-    return (_service.client, _service);
-  }
-}
 
 // ── Stubs ────────────────────────────────────────────────────────────────────
 
@@ -87,6 +71,22 @@ void stubSsoServer(
   );
 }
 
+void _stubClientSession(
+  MockClient mockClient,
+  CachedStreamController<SyncUpdate> syncController,
+) {
+  when(mockClient.userID).thenReturn('@alice:matrix.org');
+  when(mockClient.accessToken).thenReturn('token_123');
+  when(mockClient.homeserver).thenReturn(Uri.parse('https://matrix.org'));
+  when(mockClient.encryption).thenReturn(null);
+  when(mockClient.encryptionEnabled).thenReturn(false);
+  when(mockClient.onLoginStateChanged)
+      .thenReturn(CachedStreamController<LoginState>());
+  when(mockClient.onUiaRequest)
+      .thenReturn(CachedStreamController<UiaRequest<dynamic>>());
+  when(mockClient.onSync).thenReturn(syncController);
+}
+
 void stubSuccessfulLogin(
   MockClient mockClient,
   CachedStreamController<SyncUpdate> syncController,
@@ -103,17 +103,8 @@ void stubSuccessfulLogin(
       userId: '@alice:matrix.org',
     ),
   );
-  when(mockClient.userID).thenReturn('@alice:matrix.org');
   when(mockClient.deviceID).thenReturn('DEVICE_1');
-  when(mockClient.accessToken).thenReturn('token_123');
-  when(mockClient.homeserver).thenReturn(Uri.parse('https://matrix.org'));
-  when(mockClient.encryption).thenReturn(null);
-  when(mockClient.encryptionEnabled).thenReturn(false);
-  when(mockClient.onLoginStateChanged)
-      .thenReturn(CachedStreamController<LoginState>());
-  when(mockClient.onUiaRequest)
-      .thenReturn(CachedStreamController<UiaRequest<dynamic>>());
-  when(mockClient.onSync).thenReturn(syncController);
+  _stubClientSession(mockClient, syncController);
 }
 
 void stubFailedLogin(MockClient mockClient) {
@@ -207,18 +198,9 @@ void stubLoggedInClient(
   MockClient mockClient,
   CachedStreamController<SyncUpdate> syncController,
 ) {
-  when(mockClient.userID).thenReturn('@alice:matrix.org');
-  when(mockClient.homeserver).thenReturn(Uri.parse('https://matrix.org'));
-  when(mockClient.accessToken).thenReturn('token_123');
-  when(mockClient.encryption).thenReturn(null);
-  when(mockClient.encryptionEnabled).thenReturn(false);
+  _stubClientSession(mockClient, syncController);
   when(mockClient.updateUserDeviceKeys()).thenAnswer((_) async {});
   when(mockClient.userDeviceKeys).thenReturn({});
-  when(mockClient.onLoginStateChanged)
-      .thenReturn(CachedStreamController<LoginState>());
-  when(mockClient.onUiaRequest)
-      .thenReturn(CachedStreamController<UiaRequest<dynamic>>());
-  when(mockClient.onSync).thenReturn(syncController);
 }
 
 void stubRoomDefaults(MockRoom mockRoom, MockClient mockClient) {
@@ -342,5 +324,5 @@ Future<void> completePostLoginSync(
   syncController.add(SyncUpdate(nextBatch: 'batch_1', rooms: RoomsUpdate()));
   await tester.pumpAndSettle();
   await matrixService.postLoginSyncFuture;
-  matrixService.dispose();
+  matrixService.clearCachedPassword();
 }

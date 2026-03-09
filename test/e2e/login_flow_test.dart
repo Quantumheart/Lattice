@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/models/server_auth_capabilities.dart';
@@ -10,24 +9,12 @@ import 'package:lattice/features/auth/screens/homeserver_screen.dart';
 import 'package:lattice/features/auth/screens/login_screen.dart';
 import 'package:lattice/features/auth/screens/registration_screen.dart';
 import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
 
-import '../services/matrix_service_test.mocks.dart';
-
-class _FixedServiceFactory extends MatrixServiceFactory {
-  _FixedServiceFactory(this._service);
-  final MatrixService _service;
-
-  @override
-  Future<(Client, MatrixService)> create({
-    required String clientName,
-    FlutterSecureStorage? storage,
-  }) async {
-    return (_service.client, _service);
-  }
-}
+import '../helpers/matrix_sdk_internals.dart';
+import '../helpers/shared_mocks.dart';
+import '../helpers/test_utils.dart';
 
 void main() {
   late MockClient mockClient;
@@ -48,9 +35,13 @@ void main() {
     );
     clientManager = ClientManager(
       storage: mockStorage,
-      serviceFactory: _FixedServiceFactory(matrixService),
+      serviceFactory: FixedServiceFactory(matrixService),
     );
     syncController = CachedStreamController<SyncUpdate>();
+  });
+
+  tearDown(() {
+    matrixService.dispose();
   });
 
   // ── Stubs ────────────────────────────────────────────────────────────────
@@ -241,7 +232,7 @@ void main() {
     syncController.add(SyncUpdate(nextBatch: 'batch_1', rooms: RoomsUpdate()));
     await tester.pumpAndSettle();
     await matrixService.postLoginSyncFuture;
-    matrixService.dispose();
+    matrixService.clearCachedPassword();
   }
 
   // ── E2E Tests ────────────────────────────────────────────────────────────

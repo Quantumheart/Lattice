@@ -8,19 +8,12 @@ import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/chat/screens/chat_screen.dart';
 import 'package:lattice/features/chat/services/media_playback_service.dart';
 import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/cached_stream_controller.dart';
-import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
 
-import '../services/matrix_service_test.mocks.dart' show MockFlutterSecureStorage;
-import 'chat_screen_test.mocks.dart';
-
-@GenerateNiceMocks([
-  MockSpec<Client>(),
-  MockSpec<Room>(),
-  MockSpec<Timeline>(),
-])
+import '../helpers/matrix_sdk_internals.dart';
+import '../helpers/shared_mocks.dart';
+import '../helpers/test_utils.dart';
 
 // ── Constants ─────────────────────────────────────────────────────────
 
@@ -41,7 +34,7 @@ Event makeFakeEvent({
   return Event(
     type: type,
     content: {'body': body, 'msgtype': msgtype},
-    eventId: eventId ?? '\$evt_${Object().hashCode}',
+    eventId: eventId ?? nextEventId(),
     senderId: senderId,
     originServerTs: originServerTs ?? DateTime(2024),
     room: room,
@@ -119,6 +112,10 @@ void main() {
       storage: mockStorage,
       clientName: 'test',
     );
+  });
+
+  tearDown(() {
+    matrixService.dispose();
   });
 
   // ── Test app builder ──────────────────────────────────────────────
@@ -253,7 +250,11 @@ void main() {
       await tester.tap(find.byIcon(Icons.send_rounded));
       await tester.pumpAndSettle();
 
-      verify(mockRoom.sendTextEvent('Hello world')).called(1);
+      verify(mockRoom.sendTextEvent(
+        'Hello world',
+        inReplyTo: anyNamed('inReplyTo'),
+        editEventId: anyNamed('editEventId'),
+      ),).called(1);
     });
 
     testWidgets('empty compose bar shows mic instead of send',
