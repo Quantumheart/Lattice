@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
+import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/features/calling/services/call_navigator.dart';
-import 'package:lattice/features/calling/services/call_service.dart';
 import 'package:lattice/features/chat/widgets/pinned_messages_popup.dart';
 import 'package:lattice/shared/widgets/room_avatar.dart';
 import 'package:matrix/matrix.dart';
@@ -134,7 +134,6 @@ class _CallButtonState extends State<_CallButton> {
       await CallNavigator.startCall(
         context,
         roomId: widget.room.id,
-        displayName: widget.room.getLocalizedDisplayname(),
       );
     } finally {
       if (mounted) setState(() => _starting = false);
@@ -143,11 +142,14 @@ class _CallButtonState extends State<_CallButton> {
 
   @override
   Widget build(BuildContext context) {
-    final callService = context.watch<CallService>();
+    final callState = context.select<CallService, LatticeCallState>(
+      (s) => s.callState,
+    );
+    final busy = _starting || callState != LatticeCallState.idle;
     return IconButton(
       icon: const Icon(Icons.call_rounded),
       tooltip: 'Call',
-      onPressed: _starting || callService.isStarting ? null : _onPressed,
+      onPressed: busy ? null : _onPressed,
     );
   }
 }
