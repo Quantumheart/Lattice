@@ -15,6 +15,9 @@ import 'package:matrix/matrix_api_lite/generated/fixed_model.dart' as _i6;
 import 'package:matrix/src/models/timeline_chunk.dart' as _i12;
 import 'package:matrix/src/utils/cached_stream_controller.dart' as _i3;
 import 'package:matrix/src/utils/space_child.dart' as _i11;
+import 'package:matrix/src/voip/models/call_options.dart' as _i16;
+import 'package:matrix/src/voip/models/delayed_event_canceller.dart' as _i15;
+import 'package:matrix/src/voip/models/voip_id.dart' as _i14;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i9;
 
@@ -829,6 +832,79 @@ class _FakeWebOptions_74 extends _i1.SmartFake implements _i7.WebOptions {
 
 class _FakeAppleOptions_75 extends _i1.SmartFake implements _i7.AppleOptions {
   _FakeAppleOptions_75(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeWebRTCDelegate_76 extends _i1.SmartFake
+    implements _i2.WebRTCDelegate {
+  _FakeWebRTCDelegate_76(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeStreamController_77<T> extends _i1.SmartFake
+    implements _i5.StreamController<T> {
+  _FakeStreamController_77(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeCallSession_78 extends _i1.SmartFake implements _i2.CallSession {
+  _FakeCallSession_78(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeGroupCallSession_79 extends _i1.SmartFake
+    implements _i2.GroupCallSession {
+  _FakeGroupCallSession_79(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeVoIP_80 extends _i1.SmartFake implements _i2.VoIP {
+  _FakeVoIP_80(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeRoom_81 extends _i1.SmartFake implements _i2.Room {
+  _FakeRoom_81(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeCallBackend_82 extends _i1.SmartFake implements _i2.CallBackend {
+  _FakeCallBackend_82(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -9698,4 +9774,848 @@ class MockFlutterSecureStorage extends _i1.Mock
         returnValue: _i5.Future<bool?>.value(),
         returnValueForMissingStub: _i5.Future<bool?>.value(),
       ) as _i5.Future<bool?>);
+}
+
+/// A class which mocks [VoIP].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockVoIP extends _i1.Mock implements _i2.VoIP {
+  @override
+  bool get enableSFUE2EEKeyRatcheting => (super.noSuchMethod(
+        Invocation.getter(#enableSFUE2EEKeyRatcheting),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  bool get useUnprotectedPerDeviceStateKeys => (super.noSuchMethod(
+        Invocation.getter(#useUnprotectedPerDeviceStateKeys),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  Map<_i14.VoipId, _i2.CallSession> get calls => (super.noSuchMethod(
+        Invocation.getter(#calls),
+        returnValue: <_i14.VoipId, _i2.CallSession>{},
+        returnValueForMissingStub: <_i14.VoipId, _i2.CallSession>{},
+      ) as Map<_i14.VoipId, _i2.CallSession>);
+
+  @override
+  Map<_i14.VoipId, _i2.GroupCallSession> get groupCalls => (super.noSuchMethod(
+        Invocation.getter(#groupCalls),
+        returnValue: <_i14.VoipId, _i2.GroupCallSession>{},
+        returnValueForMissingStub: <_i14.VoipId, _i2.GroupCallSession>{},
+      ) as Map<_i14.VoipId, _i2.GroupCallSession>);
+
+  @override
+  Map<String, _i15.DelayedEventCanceller> get delayedEventCancellers =>
+      (super.noSuchMethod(
+        Invocation.getter(#delayedEventCancellers),
+        returnValue: <String, _i15.DelayedEventCanceller>{},
+        returnValueForMissingStub: <String, _i15.DelayedEventCanceller>{},
+      ) as Map<String, _i15.DelayedEventCanceller>);
+
+  @override
+  _i3.CachedStreamController<_i2.CallSession> get onIncomingCallSetup =>
+      (super.noSuchMethod(
+        Invocation.getter(#onIncomingCallSetup),
+        returnValue: _FakeCachedStreamController_6<_i2.CallSession>(
+          this,
+          Invocation.getter(#onIncomingCallSetup),
+        ),
+        returnValueForMissingStub:
+            _FakeCachedStreamController_6<_i2.CallSession>(
+          this,
+          Invocation.getter(#onIncomingCallSetup),
+        ),
+      ) as _i3.CachedStreamController<_i2.CallSession>);
+
+  @override
+  _i3.CachedStreamController<_i2.CallSession> get onIncomingCallStart =>
+      (super.noSuchMethod(
+        Invocation.getter(#onIncomingCallStart),
+        returnValue: _FakeCachedStreamController_6<_i2.CallSession>(
+          this,
+          Invocation.getter(#onIncomingCallStart),
+        ),
+        returnValueForMissingStub:
+            _FakeCachedStreamController_6<_i2.CallSession>(
+          this,
+          Invocation.getter(#onIncomingCallStart),
+        ),
+      ) as _i3.CachedStreamController<_i2.CallSession>);
+
+  @override
+  String get localPartyId => (super.noSuchMethod(
+        Invocation.getter(#localPartyId),
+        returnValue: _i9.dummyValue<String>(
+          this,
+          Invocation.getter(#localPartyId),
+        ),
+        returnValueForMissingStub: _i9.dummyValue<String>(
+          this,
+          Invocation.getter(#localPartyId),
+        ),
+      ) as String);
+
+  @override
+  _i2.Client get client => (super.noSuchMethod(
+        Invocation.getter(#client),
+        returnValue: _FakeClient_66(
+          this,
+          Invocation.getter(#client),
+        ),
+        returnValueForMissingStub: _FakeClient_66(
+          this,
+          Invocation.getter(#client),
+        ),
+      ) as _i2.Client);
+
+  @override
+  _i2.WebRTCDelegate get delegate => (super.noSuchMethod(
+        Invocation.getter(#delegate),
+        returnValue: _FakeWebRTCDelegate_76(
+          this,
+          Invocation.getter(#delegate),
+        ),
+        returnValueForMissingStub: _FakeWebRTCDelegate_76(
+          this,
+          Invocation.getter(#delegate),
+        ),
+      ) as _i2.WebRTCDelegate);
+
+  @override
+  _i5.StreamController<_i2.GroupCallSession> get onIncomingGroupCall =>
+      (super.noSuchMethod(
+        Invocation.getter(#onIncomingGroupCall),
+        returnValue: _FakeStreamController_77<_i2.GroupCallSession>(
+          this,
+          Invocation.getter(#onIncomingGroupCall),
+        ),
+        returnValueForMissingStub:
+            _FakeStreamController_77<_i2.GroupCallSession>(
+          this,
+          Invocation.getter(#onIncomingGroupCall),
+        ),
+      ) as _i5.StreamController<_i2.GroupCallSession>);
+
+  @override
+  Map<String, String> get incomingCallRoomId => (super.noSuchMethod(
+        Invocation.getter(#incomingCallRoomId),
+        returnValue: <String, String>{},
+        returnValueForMissingStub: <String, String>{},
+      ) as Map<String, String>);
+
+  @override
+  String get currentSessionId => (super.noSuchMethod(
+        Invocation.getter(#currentSessionId),
+        returnValue: _i9.dummyValue<String>(
+          this,
+          Invocation.getter(#currentSessionId),
+        ),
+        returnValueForMissingStub: _i9.dummyValue<String>(
+          this,
+          Invocation.getter(#currentSessionId),
+        ),
+      ) as String);
+
+  @override
+  int get keyRingSize => (super.noSuchMethod(
+        Invocation.getter(#keyRingSize),
+        returnValue: 0,
+        returnValueForMissingStub: 0,
+      ) as int);
+
+  @override
+  set currentCID(_i14.VoipId? value) => super.noSuchMethod(
+        Invocation.setter(
+          #currentCID,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  set currentGroupCID(_i14.VoipId? value) => super.noSuchMethod(
+        Invocation.setter(
+          #currentGroupCID,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  set currentSessionId(String? value) => super.noSuchMethod(
+        Invocation.setter(
+          #currentSessionId,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  set timeouts(_i2.CallTimeouts? value) => super.noSuchMethod(
+        Invocation.setter(
+          #timeouts,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  _i5.Future<void> onCallInvite(
+    _i2.Room? room,
+    String? remoteUserId,
+    String? remoteDeviceId,
+    Map<String, dynamic>? content,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #onCallInvite,
+          [
+            room,
+            remoteUserId,
+            remoteDeviceId,
+            content,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> onCallAnswer(
+    _i2.Room? room,
+    String? remoteUserId,
+    String? remoteDeviceId,
+    Map<String, dynamic>? content,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #onCallAnswer,
+          [
+            room,
+            remoteUserId,
+            remoteDeviceId,
+            content,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> onCallCandidates(
+    _i2.Room? room,
+    Map<String, dynamic>? content,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #onCallCandidates,
+          [
+            room,
+            content,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> onCallHangup(
+    _i2.Room? room,
+    Map<String, dynamic>? content,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #onCallHangup,
+          [
+            room,
+            content,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> onCallReject(
+    _i2.Room? room,
+    Map<String, dynamic>? content,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #onCallReject,
+          [
+            room,
+            content,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> onCallSelectAnswer(
+    _i2.Room? room,
+    Map<String, dynamic>? content,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #onCallSelectAnswer,
+          [
+            room,
+            content,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> onSDPStreamMetadataChangedReceived(
+    _i2.Room? room,
+    Map<String, dynamic>? content,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #onSDPStreamMetadataChangedReceived,
+          [
+            room,
+            content,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> onAssertedIdentityReceived(
+    _i2.Room? room,
+    Map<String, dynamic>? content,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #onAssertedIdentityReceived,
+          [
+            room,
+            content,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> onCallNegotiate(
+    _i2.Room? room,
+    Map<String, dynamic>? content,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #onCallNegotiate,
+          [
+            room,
+            content,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i2.CallType getCallType(String? sdp) => (super.noSuchMethod(
+        Invocation.method(
+          #getCallType,
+          [sdp],
+        ),
+        returnValue: _i2.CallType.kVoice,
+        returnValueForMissingStub: _i2.CallType.kVoice,
+      ) as _i2.CallType);
+
+  @override
+  _i5.Future<List<Map<String, dynamic>>> getIceServers() => (super.noSuchMethod(
+        Invocation.method(
+          #getIceServers,
+          [],
+        ),
+        returnValue: _i5.Future<List<Map<String, dynamic>>>.value(
+            <Map<String, dynamic>>[]),
+        returnValueForMissingStub: _i5.Future<List<Map<String, dynamic>>>.value(
+            <Map<String, dynamic>>[]),
+      ) as _i5.Future<List<Map<String, dynamic>>>);
+
+  @override
+  _i5.Future<_i2.CallSession> inviteToCall(
+    _i2.Room? room,
+    _i2.CallType? type, {
+    String? userId,
+    String? deviceId,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #inviteToCall,
+          [
+            room,
+            type,
+          ],
+          {
+            #userId: userId,
+            #deviceId: deviceId,
+          },
+        ),
+        returnValue: _i5.Future<_i2.CallSession>.value(_FakeCallSession_78(
+          this,
+          Invocation.method(
+            #inviteToCall,
+            [
+              room,
+              type,
+            ],
+            {
+              #userId: userId,
+              #deviceId: deviceId,
+            },
+          ),
+        )),
+        returnValueForMissingStub:
+            _i5.Future<_i2.CallSession>.value(_FakeCallSession_78(
+          this,
+          Invocation.method(
+            #inviteToCall,
+            [
+              room,
+              type,
+            ],
+            {
+              #userId: userId,
+              #deviceId: deviceId,
+            },
+          ),
+        )),
+      ) as _i5.Future<_i2.CallSession>);
+
+  @override
+  _i2.CallSession createNewCall(_i16.CallOptions? opts) => (super.noSuchMethod(
+        Invocation.method(
+          #createNewCall,
+          [opts],
+        ),
+        returnValue: _FakeCallSession_78(
+          this,
+          Invocation.method(
+            #createNewCall,
+            [opts],
+          ),
+        ),
+        returnValueForMissingStub: _FakeCallSession_78(
+          this,
+          Invocation.method(
+            #createNewCall,
+            [opts],
+          ),
+        ),
+      ) as _i2.CallSession);
+
+  @override
+  _i5.Future<_i2.GroupCallSession> fetchOrCreateGroupCall(
+    String? groupCallId,
+    _i2.Room? room,
+    _i2.CallBackend? backend,
+    String? application,
+    String? scope, {
+    bool? preShareKey = true,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #fetchOrCreateGroupCall,
+          [
+            groupCallId,
+            room,
+            backend,
+            application,
+            scope,
+          ],
+          {#preShareKey: preShareKey},
+        ),
+        returnValue:
+            _i5.Future<_i2.GroupCallSession>.value(_FakeGroupCallSession_79(
+          this,
+          Invocation.method(
+            #fetchOrCreateGroupCall,
+            [
+              groupCallId,
+              room,
+              backend,
+              application,
+              scope,
+            ],
+            {#preShareKey: preShareKey},
+          ),
+        )),
+        returnValueForMissingStub:
+            _i5.Future<_i2.GroupCallSession>.value(_FakeGroupCallSession_79(
+          this,
+          Invocation.method(
+            #fetchOrCreateGroupCall,
+            [
+              groupCallId,
+              room,
+              backend,
+              application,
+              scope,
+            ],
+            {#preShareKey: preShareKey},
+          ),
+        )),
+      ) as _i5.Future<_i2.GroupCallSession>);
+
+  @override
+  _i2.GroupCallSession? getGroupCallById(
+    String? roomId,
+    String? groupCallId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getGroupCallById,
+          [
+            roomId,
+            groupCallId,
+          ],
+        ),
+        returnValueForMissingStub: null,
+      ) as _i2.GroupCallSession?);
+
+  @override
+  void setGroupCallById(_i2.GroupCallSession? groupCallSession) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #setGroupCallById,
+          [groupCallSession],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  _i5.Future<void> createGroupCallFromRoomStateEvent(
+    _i2.CallMembership? membership, {
+    bool? emitHandleNewGroupCall = true,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #createGroupCallFromRoomStateEvent,
+          [membership],
+          {#emitHandleNewGroupCall: emitHandleNewGroupCall},
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  bool hasActiveCall(_i2.Room? room) => (super.noSuchMethod(
+        Invocation.method(
+          #hasActiveCall,
+          [room],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+}
+
+/// A class which mocks [GroupCallSession].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockGroupCallSession extends _i1.Mock implements _i2.GroupCallSession {
+  @override
+  _i2.Client get client => (super.noSuchMethod(
+        Invocation.getter(#client),
+        returnValue: _FakeClient_66(
+          this,
+          Invocation.getter(#client),
+        ),
+        returnValueForMissingStub: _FakeClient_66(
+          this,
+          Invocation.getter(#client),
+        ),
+      ) as _i2.Client);
+
+  @override
+  _i2.VoIP get voip => (super.noSuchMethod(
+        Invocation.getter(#voip),
+        returnValue: _FakeVoIP_80(
+          this,
+          Invocation.getter(#voip),
+        ),
+        returnValueForMissingStub: _FakeVoIP_80(
+          this,
+          Invocation.getter(#voip),
+        ),
+      ) as _i2.VoIP);
+
+  @override
+  _i2.Room get room => (super.noSuchMethod(
+        Invocation.getter(#room),
+        returnValue: _FakeRoom_81(
+          this,
+          Invocation.getter(#room),
+        ),
+        returnValueForMissingStub: _FakeRoom_81(
+          this,
+          Invocation.getter(#room),
+        ),
+      ) as _i2.Room);
+
+  @override
+  _i2.CallBackend get backend => (super.noSuchMethod(
+        Invocation.getter(#backend),
+        returnValue: _FakeCallBackend_82(
+          this,
+          Invocation.getter(#backend),
+        ),
+        returnValueForMissingStub: _FakeCallBackend_82(
+          this,
+          Invocation.getter(#backend),
+        ),
+      ) as _i2.CallBackend);
+
+  @override
+  _i2.GroupCallState get state => (super.noSuchMethod(
+        Invocation.getter(#state),
+        returnValue: _i2.GroupCallState.localCallFeedUninitialized,
+        returnValueForMissingStub:
+            _i2.GroupCallState.localCallFeedUninitialized,
+      ) as _i2.GroupCallState);
+
+  @override
+  List<_i2.CallParticipant> get participants => (super.noSuchMethod(
+        Invocation.getter(#participants),
+        returnValue: <_i2.CallParticipant>[],
+        returnValueForMissingStub: <_i2.CallParticipant>[],
+      ) as List<_i2.CallParticipant>);
+
+  @override
+  String get groupCallId => (super.noSuchMethod(
+        Invocation.getter(#groupCallId),
+        returnValue: _i9.dummyValue<String>(
+          this,
+          Invocation.getter(#groupCallId),
+        ),
+        returnValueForMissingStub: _i9.dummyValue<String>(
+          this,
+          Invocation.getter(#groupCallId),
+        ),
+      ) as String);
+
+  @override
+  _i3.CachedStreamController<_i2.GroupCallState> get onGroupCallState =>
+      (super.noSuchMethod(
+        Invocation.getter(#onGroupCallState),
+        returnValue: _FakeCachedStreamController_6<_i2.GroupCallState>(
+          this,
+          Invocation.getter(#onGroupCallState),
+        ),
+        returnValueForMissingStub:
+            _FakeCachedStreamController_6<_i2.GroupCallState>(
+          this,
+          Invocation.getter(#onGroupCallState),
+        ),
+      ) as _i3.CachedStreamController<_i2.GroupCallState>);
+
+  @override
+  _i3.CachedStreamController<_i2.GroupCallStateChange> get onGroupCallEvent =>
+      (super.noSuchMethod(
+        Invocation.getter(#onGroupCallEvent),
+        returnValue: _FakeCachedStreamController_6<_i2.GroupCallStateChange>(
+          this,
+          Invocation.getter(#onGroupCallEvent),
+        ),
+        returnValueForMissingStub:
+            _FakeCachedStreamController_6<_i2.GroupCallStateChange>(
+          this,
+          Invocation.getter(#onGroupCallEvent),
+        ),
+      ) as _i3.CachedStreamController<_i2.GroupCallStateChange>);
+
+  @override
+  _i3.CachedStreamController<_i2.MatrixRTCCallEvent> get matrixRTCEventStream =>
+      (super.noSuchMethod(
+        Invocation.getter(#matrixRTCEventStream),
+        returnValue: _FakeCachedStreamController_6<_i2.MatrixRTCCallEvent>(
+          this,
+          Invocation.getter(#matrixRTCEventStream),
+        ),
+        returnValueForMissingStub:
+            _FakeCachedStreamController_6<_i2.MatrixRTCCallEvent>(
+          this,
+          Invocation.getter(#matrixRTCEventStream),
+        ),
+      ) as _i3.CachedStreamController<_i2.MatrixRTCCallEvent>);
+
+  @override
+  String get avatarName => (super.noSuchMethod(
+        Invocation.getter(#avatarName),
+        returnValue: _i9.dummyValue<String>(
+          this,
+          Invocation.getter(#avatarName),
+        ),
+        returnValueForMissingStub: _i9.dummyValue<String>(
+          this,
+          Invocation.getter(#avatarName),
+        ),
+      ) as String);
+
+  @override
+  set state(_i2.GroupCallState? value) => super.noSuchMethod(
+        Invocation.setter(
+          #state,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  set groupCallId(String? value) => super.noSuchMethod(
+        Invocation.setter(
+          #groupCallId,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void setState(_i2.GroupCallState? newState) => super.noSuchMethod(
+        Invocation.method(
+          #setState,
+          [newState],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  bool hasLocalParticipant() => (super.noSuchMethod(
+        Invocation.method(
+          #hasLocalParticipant,
+          [],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  _i5.Future<void> enter({_i2.WrappedMediaStream? stream}) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #enter,
+          [],
+          {#stream: stream},
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> leave() => (super.noSuchMethod(
+        Invocation.method(
+          #leave,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<String?> sendMemberStateEvent() => (super.noSuchMethod(
+        Invocation.method(
+          #sendMemberStateEvent,
+          [],
+        ),
+        returnValue: _i5.Future<String?>.value(),
+        returnValueForMissingStub: _i5.Future<String?>.value(),
+      ) as _i5.Future<String?>);
+
+  @override
+  _i5.Future<void> removeMemberStateEvent() => (super.noSuchMethod(
+        Invocation.method(
+          #removeMemberStateEvent,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> onMemberStateChanged() => (super.noSuchMethod(
+        Invocation.method(
+          #onMemberStateChanged,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<String> sendReactionEvent({
+    required String? emoji,
+    bool? isEphemeral = true,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #sendReactionEvent,
+          [],
+          {
+            #emoji: emoji,
+            #isEphemeral: isEphemeral,
+          },
+        ),
+        returnValue: _i5.Future<String>.value(_i9.dummyValue<String>(
+          this,
+          Invocation.method(
+            #sendReactionEvent,
+            [],
+            {
+              #emoji: emoji,
+              #isEphemeral: isEphemeral,
+            },
+          ),
+        )),
+        returnValueForMissingStub:
+            _i5.Future<String>.value(_i9.dummyValue<String>(
+          this,
+          Invocation.method(
+            #sendReactionEvent,
+            [],
+            {
+              #emoji: emoji,
+              #isEphemeral: isEphemeral,
+            },
+          ),
+        )),
+      ) as _i5.Future<String>);
+
+  @override
+  _i5.Future<String?> removeReactionEvent({required String? eventId}) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #removeReactionEvent,
+          [],
+          {#eventId: eventId},
+        ),
+        returnValue: _i5.Future<String?>.value(),
+        returnValueForMissingStub: _i5.Future<String?>.value(),
+      ) as _i5.Future<String?>);
+
+  @override
+  _i5.Future<List<_i2.MatrixEvent>> getAllReactions({required String? emoji}) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getAllReactions,
+          [],
+          {#emoji: emoji},
+        ),
+        returnValue:
+            _i5.Future<List<_i2.MatrixEvent>>.value(<_i2.MatrixEvent>[]),
+        returnValueForMissingStub:
+            _i5.Future<List<_i2.MatrixEvent>>.value(<_i2.MatrixEvent>[]),
+      ) as _i5.Future<List<_i2.MatrixEvent>>);
 }

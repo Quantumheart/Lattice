@@ -84,6 +84,9 @@ mixin CallMixin on ChangeNotifier {
   VoIP? _voip;
   VoIP? get voip => _voip;
 
+  @visibleForTesting
+  set voipForTest(VoIP? value) => _voip = value;
+
   _LatticeWebRTCDelegate? _webrtcDelegate;
 
   void initVoip() {
@@ -166,10 +169,8 @@ mixin CallMixin on ChangeNotifier {
     notifyListeners();
 
     try {
-      final resolvedBackend =
-          backend ?? _resolveBackend(room, groupCallId);
-      final resolvedCallId =
-          groupCallId ?? _resolveGroupCallId(room);
+      final resolvedCallId = groupCallId ?? _resolveGroupCallId(room);
+      final resolvedBackend = backend ?? _resolveBackend(room, resolvedCallId);
 
       final groupCall = _findOrCreateGroupCall(
         room,
@@ -231,24 +232,23 @@ mixin CallMixin on ChangeNotifier {
 
   // ── Private ─────────────────────────────────────────────
 
+  GroupCallSession? _findGroupCall(Room room, String callId) {
+    for (final groupCall in _voip!.groupCalls.values) {
+      if (groupCall.room.id == room.id && groupCall.groupCallId == callId) {
+        return groupCall;
+      }
+    }
+    return null;
+  }
+
   GroupCallSession _findOrCreateGroupCall(
     Room room,
     CallBackend backend,
     String? callId,
   ) {
     if (callId != null) {
-      final existing = _voip!.groupCalls.values.firstWhere(
-        (gc) => gc.room.id == room.id && gc.groupCallId == callId,
-        orElse: () => GroupCallSession.withAutoGenId(
-          room,
-          _voip!,
-          backend,
-          'm.call',
-          'm.room',
-          callId,
-        ),
-      );
-      return existing;
+      final existing = _findGroupCall(room, callId);
+      if (existing != null) return existing;
     }
 
     return GroupCallSession.withAutoGenId(
@@ -257,12 +257,11 @@ mixin CallMixin on ChangeNotifier {
       backend,
       'm.call',
       'm.room',
-      null,
+      callId,
     );
   }
 
-  CallBackend _resolveBackend(Room room, String? groupCallId) {
-    final callId = groupCallId ?? _resolveGroupCallId(room);
+  CallBackend _resolveBackend(Room room, String? callId) {
     if (callId != null && _voip != null) {
       final memberships = room.getCallMembershipsFromRoom(_voip!);
       for (final mems in memberships.values) {
