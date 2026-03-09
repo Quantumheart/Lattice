@@ -784,6 +784,7 @@ void main() {
       final newClient = MockClient();
       when(newClient.rooms).thenReturn([]);
       service.updateClient(newClient);
+      await Future<void>.delayed(Duration.zero);
 
       expect(service.livekitRoom, isNull);
       expect(fakeRoom.disposed, isTrue);
@@ -817,6 +818,7 @@ void main() {
       );
 
       service.dispose();
+      await Future<void>.delayed(Duration.zero);
       expect(fakeRoom.disposed, isTrue);
     });
   });

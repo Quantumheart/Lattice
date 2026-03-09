@@ -120,7 +120,7 @@ class CallService extends ChangeNotifier {
   }
 
   void _resetState() {
-    _cleanupLiveKit();
+    unawaited(_cleanupLiveKit());
     _activeGroupCall = null;
     _callState = LatticeCallState.idle;
     _voip = null;
@@ -263,7 +263,7 @@ class CallService extends ChangeNotifier {
       );
     } catch (e) {
       debugPrint('[Lattice] Failed to join call: $e');
-      _cleanupLiveKit();
+      await _cleanupLiveKit();
       _callState = LatticeCallState.failed;
       _activeGroupCall = null;
       unawaited(_callEventSub?.cancel());
@@ -283,7 +283,7 @@ class CallService extends ChangeNotifier {
     _callState = LatticeCallState.disconnecting;
     notifyListeners();
 
-    await _disconnectLiveKit();
+    await _cleanupLiveKit();
 
     try {
       await _activeGroupCall!.leave();
@@ -435,7 +435,7 @@ class CallService extends ChangeNotifier {
     });
 
     listener.on<livekit.RoomDisconnectedEvent>((_) {
-      _cleanupLiveKit();
+      unawaited(_cleanupLiveKit());
       final groupCall = _activeGroupCall;
       _activeGroupCall = null;
       unawaited(_callEventSub?.cancel());
@@ -477,7 +477,7 @@ class CallService extends ChangeNotifier {
         _livekitRoom?.remoteParticipants.values.toList() ?? [];
   }
 
-  Future<void> _disconnectLiveKit() async {
+  Future<void> _cleanupLiveKit() async {
     final listener = _livekitListener;
     final room = _livekitRoom;
     _livekitListener = null;
@@ -499,20 +499,6 @@ class CallService extends ChangeNotifier {
     try {
       await room?.dispose();
     } catch (_) {}
-  }
-
-  void _cleanupLiveKit() {
-    final listener = _livekitListener;
-    final room = _livekitRoom;
-    _livekitListener = null;
-    _livekitRoom = null;
-    if (listener != null) unawaited(listener.dispose());
-    if (room != null) unawaited(room.dispose());
-    _participants = [];
-    _activeSpeakers = [];
-    _isMicEnabled = false;
-    _isCameraEnabled = false;
-    _isScreenShareEnabled = false;
   }
 
   // ── Private ─────────────────────────────────────────────
@@ -557,6 +543,9 @@ class CallService extends ChangeNotifier {
         }
       }
     }
+    debugPrint(
+      '[Lattice] No active membership found for call $callId, falling back to MeshBackend',
+    );
     return MeshBackend();
   }
 
@@ -570,7 +559,7 @@ class CallService extends ChangeNotifier {
     switch (event) {
       case GroupCallStateChanged(:final state):
         if (state == GroupCallState.ended) {
-          _cleanupLiveKit();
+          unawaited(_cleanupLiveKit());
           _callState = LatticeCallState.idle;
           _activeGroupCall = null;
           unawaited(_callEventSub?.cancel());
