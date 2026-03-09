@@ -16,13 +16,22 @@ class _VideoGridState extends State<VideoGrid> {
 
   static const _maxPerPage = 6;
 
+  @override
+  void didUpdateWidget(covariant VideoGrid oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final pageCount = (widget.participants.length / _maxPerPage).ceil();
+    if (_currentPage >= pageCount && pageCount > 0) {
+      _currentPage = pageCount - 1;
+    }
+  }
+
   (int columns, int rows) _computeGrid(int count, double width, double height) {
     final isLandscape = width > height;
     return switch (count) {
       0 => (0, 0),
       1 => (1, 1),
       2 => width > 720 ? (2, 1) : (1, 2),
-      3 => (2, 2),
+      3 => isLandscape ? (3, 1) : (1, 3),
       4 => (2, 2),
       5 || 6 => isLandscape ? (3, 2) : (2, 3),
       _ => isLandscape ? (3, 2) : (2, 3),
@@ -71,9 +80,6 @@ class _VideoGridState extends State<VideoGrid> {
     }
 
     final pageCount = (participants.length / _maxPerPage).ceil();
-    if (_currentPage >= pageCount) {
-      _currentPage = pageCount - 1;
-    }
 
     return Column(
       children: [

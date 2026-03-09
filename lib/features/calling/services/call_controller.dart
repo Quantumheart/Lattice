@@ -30,8 +30,8 @@ class CallController extends ChangeNotifier {
   // ── Join / hang up ────────────────────────────────────────────
 
   Future<void> join() async {
+    if (_state != CallState.joining) return;
     debugPrint('[Lattice] CallController: joining room $roomId');
-    _state = CallState.joining;
     _notify();
 
     await Future<void>.delayed(const Duration(milliseconds: 500));

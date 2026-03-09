@@ -6,6 +6,10 @@ class ParticipantTile extends StatelessWidget {
 
   final CallParticipant participant;
 
+  static const _minAudioBarWidth = 4.0;
+  static const _maxAudioBarWidth = 20.0;
+  static const _audioLevelThreshold = 0.05;
+
   Color _avatarColor() {
     const colors = [
       Colors.blue,
@@ -22,25 +26,25 @@ class ParticipantTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: participant.isSpeaking ? Colors.blue : Colors.transparent,
-            width: 2,
-          ),
-          boxShadow: participant.isSpeaking
-              ? [
-                  BoxShadow(
-                    color: Colors.blue.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                  ),
-                ]
-              : null,
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: participant.isSpeaking ? Colors.blue : Colors.transparent,
+          width: 2,
         ),
+        boxShadow: participant.isSpeaking
+            ? [
+                BoxShadow(
+                  color: Colors.blue.withValues(alpha: 0.3),
+                  blurRadius: 8,
+                  spreadRadius: 1,
+                ),
+              ]
+            : null,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -84,6 +88,8 @@ class ParticipantTile extends StatelessWidget {
   }
 
   Widget _buildBottomOverlay(BuildContext context) {
+    final showAudioBar = participant.audioLevel > _audioLevelThreshold;
+
     return Positioned(
       left: 0,
       right: 0,
@@ -100,15 +106,19 @@ class ParticipantTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
           child: Row(
             children: [
-              Container(
-                width: participant.audioLevel * 20,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.green,
-                  borderRadius: BorderRadius.circular(2),
+              if (showAudioBar) ...[
+                Container(
+                  width: _minAudioBarWidth +
+                      participant.audioLevel *
+                          (_maxAudioBarWidth - _minAudioBarWidth),
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
-              ),
-              if (participant.audioLevel > 0) const SizedBox(width: 4),
+                const SizedBox(width: 4),
+              ],
               Expanded(
                 child: Text(
                   participant.isLocal

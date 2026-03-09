@@ -1,8 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lattice/features/calling/services/call_controller.dart';
 import 'package:lattice/features/calling/services/call_permission_service.dart';
-import 'package:lattice/features/calling/widgets/call_controller.dart';
 import 'package:lattice/features/calling/widgets/video_grid.dart';
 
 class CallScreen extends StatefulWidget {
@@ -50,15 +51,17 @@ class _CallScreenState extends State<CallScreen> {
     if (!mounted) return;
     if (_controller.state == CallState.ended) {
       Future<void>.delayed(const Duration(seconds: 2), () {
-        if (mounted) Navigator.of(context).pop();
+        if (mounted) context.pop();
       });
     }
     setState(() {});
   }
 
   String _formatElapsed(Duration d) {
+    final hours = d.inHours;
     final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
     final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    if (hours > 0) return '$hours:$minutes:$seconds';
     return '$minutes:$seconds';
   }
 
@@ -69,11 +72,19 @@ class _CallScreenState extends State<CallScreen> {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
+    final darkScheme = ColorScheme.fromSeed(
+      seedColor: cs.primary,
+      brightness: Brightness.dark,
+    );
+
     return Theme(
-      data: ThemeData.dark().copyWith(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: cs.primary,
-          brightness: Brightness.dark,
+      data: Theme.of(context).copyWith(
+        brightness: Brightness.dark,
+        colorScheme: darkScheme,
+        scaffoldBackgroundColor: darkScheme.surface,
+        appBarTheme: AppBarTheme(
+          backgroundColor: darkScheme.surface,
+          foregroundColor: darkScheme.onSurface,
         ),
       ),
       child: Scaffold(
