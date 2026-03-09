@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:lattice/shared/widgets/pulsing_avatar.dart';
 
 String formatCallElapsed(Duration d) {
   final hours = d.inHours;
@@ -62,24 +63,13 @@ class CallRingingOutgoingView extends StatefulWidget {
   State<CallRingingOutgoingView> createState() => _CallRingingOutgoingViewState();
 }
 
-class _CallRingingOutgoingViewState extends State<CallRingingOutgoingView>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _pulseCtrl;
-  late final Animation<double> _pulseAnim;
+class _CallRingingOutgoingViewState extends State<CallRingingOutgoingView> {
   Timer? _elapsedTimer;
   int _elapsedSeconds = 0;
 
   @override
   void initState() {
     super.initState();
-    _pulseCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    );
-    unawaited(_pulseCtrl.repeat(reverse: true));
-    _pulseAnim = Tween<double>(begin: 1, end: 1.1).animate(
-      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
-    );
     _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       setState(() => _elapsedSeconds++);
     });
@@ -87,7 +77,6 @@ class _CallRingingOutgoingViewState extends State<CallRingingOutgoingView>
 
   @override
   void dispose() {
-    _pulseCtrl.dispose();
     _elapsedTimer?.cancel();
     super.dispose();
   }
@@ -102,18 +91,7 @@ class _CallRingingOutgoingViewState extends State<CallRingingOutgoingView>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ScaleTransition(
-            scale: _pulseAnim,
-            child: CircleAvatar(
-              radius: 48,
-              child: Text(
-                widget.displayName.isNotEmpty
-                    ? widget.displayName[0].toUpperCase()
-                    : '?',
-                style: tt.headlineLarge,
-              ),
-            ),
-          ),
+          PulsingAvatar(displayName: widget.displayName),
           const SizedBox(height: 24),
           Text('Calling ${widget.displayName}...', style: tt.titleMedium),
           const SizedBox(height: 8),

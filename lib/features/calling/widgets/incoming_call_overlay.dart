@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/features/calling/models/incoming_call_info.dart';
+import 'package:lattice/shared/widgets/pulsing_avatar.dart';
 import 'package:provider/provider.dart';
 
 class IncomingCallOverlay extends StatefulWidget {
@@ -87,7 +88,7 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay> {
   }
 }
 
-class _IncomingCallDialog extends StatefulWidget {
+class _IncomingCallDialog extends StatelessWidget {
   const _IncomingCallDialog({
     required this.info,
     required this.onAcceptAudio,
@@ -99,34 +100,6 @@ class _IncomingCallDialog extends StatefulWidget {
   final VoidCallback onAcceptAudio;
   final VoidCallback onAcceptVideo;
   final VoidCallback onDecline;
-
-  @override
-  State<_IncomingCallDialog> createState() => _IncomingCallDialogState();
-}
-
-class _IncomingCallDialogState extends State<_IncomingCallDialog>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _pulseCtrl;
-  late final Animation<double> _pulseAnim;
-
-  @override
-  void initState() {
-    super.initState();
-    _pulseCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    );
-    unawaited(_pulseCtrl.repeat(reverse: true));
-    _pulseAnim = Tween<double>(begin: 1, end: 1.15).animate(
-      CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut),
-    );
-  }
-
-  @override
-  void dispose() {
-    _pulseCtrl.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -144,23 +117,15 @@ class _IncomingCallDialogState extends State<_IncomingCallDialog>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  ScaleTransition(
-                    scale: _pulseAnim,
-                    child: CircleAvatar(
-                      radius: 48,
-                      child: Text(
-                        widget.info.callerName.isNotEmpty
-                            ? widget.info.callerName[0].toUpperCase()
-                            : '?',
-                        style: tt.headlineLarge,
-                      ),
-                    ),
+                  PulsingAvatar(
+                    displayName: info.callerName,
+                    endScale: 1.15,
                   ),
                   const SizedBox(height: 24),
-                  Text(widget.info.callerName, style: tt.titleLarge),
+                  Text(info.callerName, style: tt.titleLarge),
                   const SizedBox(height: 8),
                   Text(
-                    widget.info.isVideo ? 'Incoming video call' : 'Incoming voice call',
+                    info.isVideo ? 'Incoming video call' : 'Incoming voice call',
                     style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
                   ),
                   const SizedBox(height: 32),
@@ -170,21 +135,21 @@ class _IncomingCallDialogState extends State<_IncomingCallDialog>
                       FloatingActionButton(
                         heroTag: 'decline',
                         backgroundColor: cs.error,
-                        onPressed: widget.onDecline,
+                        onPressed: onDecline,
                         child: const Icon(Icons.call_end_rounded, color: Colors.white),
                       ),
                       const SizedBox(width: 24),
                       FloatingActionButton(
                         heroTag: 'accept_audio',
                         backgroundColor: Colors.green,
-                        onPressed: widget.onAcceptAudio,
+                        onPressed: onAcceptAudio,
                         child: const Icon(Icons.call_rounded, color: Colors.white),
                       ),
                       const SizedBox(width: 24),
                       FloatingActionButton(
                         heroTag: 'accept_video',
                         backgroundColor: Colors.green,
-                        onPressed: widget.onAcceptVideo,
+                        onPressed: onAcceptVideo,
                         child: const Icon(Icons.videocam_rounded, color: Colors.white),
                       ),
                     ],
