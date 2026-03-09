@@ -4,12 +4,13 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i8;
-import 'dart:ui' as _i9;
+import 'dart:ui' as _i10;
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart' as _i3;
 import 'package:lattice/core/models/server_auth_capabilities.dart' as _i4;
 import 'package:lattice/core/models/space_node.dart' as _i7;
 import 'package:lattice/core/services/matrix_service.dart' as _i5;
+import 'package:lattice/core/services/mixins/call_mixin.dart' as _i9;
 import 'package:matrix/matrix.dart' as _i2;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i6;
@@ -241,6 +242,13 @@ class MockMatrixService extends _i1.Mock implements _i5.MatrixService {
       ) as bool);
 
   @override
+  _i9.LatticeCallState get callState => (super.noSuchMethod(
+        Invocation.getter(#callState),
+        returnValue: _i9.LatticeCallState.idle,
+        returnValueForMissingStub: _i9.LatticeCallState.idle,
+      ) as _i9.LatticeCallState);
+
+  @override
   _i8.Future<void> init({bool? restoreSession = true}) => (super.noSuchMethod(
         Invocation.method(
           #init,
@@ -271,7 +279,7 @@ class MockMatrixService extends _i1.Mock implements _i5.MatrixService {
       );
 
   @override
-  void addListener(_i9.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i10.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #addListener,
           [listener],
@@ -280,7 +288,7 @@ class MockMatrixService extends _i1.Mock implements _i5.MatrixService {
       );
 
   @override
-  void removeListener(_i9.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i10.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #removeListener,
           [listener],
@@ -704,4 +712,111 @@ class MockMatrixService extends _i1.Mock implements _i5.MatrixService {
         ),
         returnValueForMissingStub: null,
       );
+
+  @override
+  void initVoip() => super.noSuchMethod(
+        Invocation.method(
+          #initVoip,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void disposeVoip() => super.noSuchMethod(
+        Invocation.method(
+          #disposeVoip,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  bool roomHasActiveCall(String? roomId) => (super.noSuchMethod(
+        Invocation.method(
+          #roomHasActiveCall,
+          [roomId],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  List<String> activeCallIdsForRoom(String? roomId) => (super.noSuchMethod(
+        Invocation.method(
+          #activeCallIdsForRoom,
+          [roomId],
+        ),
+        returnValue: <String>[],
+        returnValueForMissingStub: <String>[],
+      ) as List<String>);
+
+  @override
+  int callParticipantCount(
+    String? roomId,
+    String? groupCallId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #callParticipantCount,
+          [
+            roomId,
+            groupCallId,
+          ],
+        ),
+        returnValue: 0,
+        returnValueForMissingStub: 0,
+      ) as int);
+
+  @override
+  List<_i2.CallMembership> callMembershipsForRoom(String? roomId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #callMembershipsForRoom,
+          [roomId],
+        ),
+        returnValue: <_i2.CallMembership>[],
+        returnValueForMissingStub: <_i2.CallMembership>[],
+      ) as List<_i2.CallMembership>);
+
+  @override
+  _i8.Future<void> joinCall(
+    String? roomId, {
+    _i2.CallBackend? backend,
+    String? groupCallId,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #joinCall,
+          [roomId],
+          {
+            #backend: backend,
+            #groupCallId: groupCallId,
+          },
+        ),
+        returnValue: _i8.Future<void>.value(),
+        returnValueForMissingStub: _i8.Future<void>.value(),
+      ) as _i8.Future<void>);
+
+  @override
+  _i8.Future<void> leaveCall() => (super.noSuchMethod(
+        Invocation.method(
+          #leaveCall,
+          [],
+        ),
+        returnValue: _i8.Future<void>.value(),
+        returnValueForMissingStub: _i8.Future<void>.value(),
+      ) as _i8.Future<void>);
+
+  @override
+  _i8.Future<_i2.TurnServerCredentials?> fetchTurnServers() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #fetchTurnServers,
+          [],
+        ),
+        returnValue: _i8.Future<_i2.TurnServerCredentials?>.value(),
+        returnValueForMissingStub:
+            _i8.Future<_i2.TurnServerCredentials?>.value(),
+      ) as _i8.Future<_i2.TurnServerCredentials?>);
 }

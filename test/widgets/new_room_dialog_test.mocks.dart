@@ -5,13 +5,14 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i5;
 import 'dart:typed_data' as _i11;
-import 'dart:ui' as _i14;
+import 'dart:ui' as _i15;
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart' as _i7;
 import 'package:http/http.dart' as _i4;
 import 'package:lattice/core/models/server_auth_capabilities.dart' as _i8;
 import 'package:lattice/core/models/space_node.dart' as _i13;
 import 'package:lattice/core/services/matrix_service.dart' as _i12;
+import 'package:lattice/core/services/mixins/call_mixin.dart' as _i14;
 import 'package:matrix/encryption.dart' as _i9;
 import 'package:matrix/matrix.dart' as _i2;
 import 'package:matrix/matrix_api_lite/generated/fixed_model.dart' as _i6;
@@ -7769,6 +7770,13 @@ class MockMatrixService extends _i1.Mock implements _i12.MatrixService {
       ) as bool);
 
   @override
+  _i14.LatticeCallState get callState => (super.noSuchMethod(
+        Invocation.getter(#callState),
+        returnValue: _i14.LatticeCallState.idle,
+        returnValueForMissingStub: _i14.LatticeCallState.idle,
+      ) as _i14.LatticeCallState);
+
+  @override
   _i5.Future<void> init({bool? restoreSession = true}) => (super.noSuchMethod(
         Invocation.method(
           #init,
@@ -7799,7 +7807,7 @@ class MockMatrixService extends _i1.Mock implements _i12.MatrixService {
       );
 
   @override
-  void addListener(_i14.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i15.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #addListener,
           [listener],
@@ -7808,7 +7816,7 @@ class MockMatrixService extends _i1.Mock implements _i12.MatrixService {
       );
 
   @override
-  void removeListener(_i14.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i15.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #removeListener,
           [listener],
@@ -8232,4 +8240,111 @@ class MockMatrixService extends _i1.Mock implements _i12.MatrixService {
         ),
         returnValueForMissingStub: null,
       );
+
+  @override
+  void initVoip() => super.noSuchMethod(
+        Invocation.method(
+          #initVoip,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void disposeVoip() => super.noSuchMethod(
+        Invocation.method(
+          #disposeVoip,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  bool roomHasActiveCall(String? roomId) => (super.noSuchMethod(
+        Invocation.method(
+          #roomHasActiveCall,
+          [roomId],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  List<String> activeCallIdsForRoom(String? roomId) => (super.noSuchMethod(
+        Invocation.method(
+          #activeCallIdsForRoom,
+          [roomId],
+        ),
+        returnValue: <String>[],
+        returnValueForMissingStub: <String>[],
+      ) as List<String>);
+
+  @override
+  int callParticipantCount(
+    String? roomId,
+    String? groupCallId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #callParticipantCount,
+          [
+            roomId,
+            groupCallId,
+          ],
+        ),
+        returnValue: 0,
+        returnValueForMissingStub: 0,
+      ) as int);
+
+  @override
+  List<_i2.CallMembership> callMembershipsForRoom(String? roomId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #callMembershipsForRoom,
+          [roomId],
+        ),
+        returnValue: <_i2.CallMembership>[],
+        returnValueForMissingStub: <_i2.CallMembership>[],
+      ) as List<_i2.CallMembership>);
+
+  @override
+  _i5.Future<void> joinCall(
+    String? roomId, {
+    _i2.CallBackend? backend,
+    String? groupCallId,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #joinCall,
+          [roomId],
+          {
+            #backend: backend,
+            #groupCallId: groupCallId,
+          },
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> leaveCall() => (super.noSuchMethod(
+        Invocation.method(
+          #leaveCall,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<_i2.TurnServerCredentials?> fetchTurnServers() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #fetchTurnServers,
+          [],
+        ),
+        returnValue: _i5.Future<_i2.TurnServerCredentials?>.value(),
+        returnValueForMissingStub:
+            _i5.Future<_i2.TurnServerCredentials?>.value(),
+      ) as _i5.Future<_i2.TurnServerCredentials?>);
 }
