@@ -1,7 +1,6 @@
-import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:super_clipboard/super_clipboard.dart';
+import 'package:pasteboard/pasteboard.dart';
 
 class ClipboardImageData {
   const ClipboardImageData({required this.bytes, required this.mimeType});
@@ -9,46 +8,15 @@ class ClipboardImageData {
   final String mimeType;
 }
 
-final _formats = <(SimpleFileFormat, String)>[
-  (Formats.png, 'image/png'),
-  (Formats.jpeg, 'image/jpeg'),
-  (Formats.gif, 'image/gif'),
-  (Formats.webp, 'image/webp'),
-];
-
 Future<bool> clipboardHasImage() async {
-  final clipboard = SystemClipboard.instance;
-  if (clipboard == null) return false;
-  final reader = await clipboard.read();
-  return _formats.any((entry) => reader.canProvide(entry.$1));
+  final bytes = await Pasteboard.image;
+  return bytes != null && bytes.isNotEmpty;
 }
 
 Future<ClipboardImageData?> readClipboardImage() async {
-  final clipboard = SystemClipboard.instance;
-  if (clipboard == null) return null;
-
-  final reader = await clipboard.read();
-
-  for (final (format, mime) in _formats) {
-    if (!reader.canProvide(format)) continue;
-
-    final completer = Completer<Uint8List?>();
-    reader.getFile(
-      format,
-      (file) async {
-        final bytes = await file.readAll();
-        completer.complete(bytes);
-      },
-      onError: (_) => completer.complete(null),
-    );
-
-    final bytes = await completer.future;
-    if (bytes != null && bytes.isNotEmpty) {
-      return ClipboardImageData(bytes: bytes, mimeType: mime);
-    }
-  }
-
-  return null;
+  final bytes = await Pasteboard.image;
+  if (bytes == null || bytes.isEmpty) return null;
+  return ClipboardImageData(bytes: bytes, mimeType: 'image/png');
 }
 
 String generatePasteFilename(String mimeType) {
