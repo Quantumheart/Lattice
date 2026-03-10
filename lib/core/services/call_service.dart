@@ -2,14 +2,12 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_webrtc/flutter_webrtc.dart' as flutter_webrtc;
 import 'package:http/http.dart' as http;
 import 'package:lattice/features/calling/models/call_participant.dart' as ui;
 import 'package:lattice/features/calling/models/incoming_call_info.dart' as model;
 import 'package:lattice/features/calling/services/ringtone_service.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
 import 'package:matrix/matrix.dart';
-import 'package:webrtc_interface/webrtc_interface.dart' as webrtc;
 
 // ── Call State ──────────────────────────────────────────────
 
@@ -33,70 +31,11 @@ typedef HttpPostFunction = Future<http.Response> Function(
   Object? body,
 });
 
-// ── WebRTC Delegate ─────────────────────────────────────────
+// ── Constants ──────────────────────────────────────────────
 
-class _LatticeWebRTCDelegate implements WebRTCDelegate {
-  _LatticeWebRTCDelegate(this._callService);
-
-  final CallService _callService;
-
-  @override
-  webrtc.MediaDevices get mediaDevices => flutter_webrtc.navigator.mediaDevices;
-
-  @override
-  Future<webrtc.RTCPeerConnection> createPeerConnection(
-    Map<String, dynamic> configuration, [
-    Map<String, dynamic> constraints = const {},
-  ]) =>
-      flutter_webrtc.createPeerConnection(configuration, constraints);
-
-  @override
-  Future<void> playRingtone() async {
-    await _callService._ringtoneService?.playRingtone();
-  }
-
-  @override
-  Future<void> stopRingtone() async {
-    await _callService._ringtoneService?.stop();
-  }
-
-  @override
-  Future<void> registerListeners(CallSession session) async {}
-
-  @override
-  Future<void> handleNewCall(CallSession session) async {
-    _callService._handleIncomingCall(session);
-  }
-
-  @override
-  Future<void> handleCallEnded(CallSession session) async {
-    _callService._handleCallEnded();
-  }
-
-  @override
-  Future<void> handleMissedCall(CallSession session) async {
-    _callService._handleCallEnded();
-  }
-
-  @override
-  Future<void> handleNewGroupCall(GroupCallSession groupCall) async {
-    _callService._handleIncomingGroupCall(groupCall);
-  }
-
-  @override
-  Future<void> handleGroupCallEnded(GroupCallSession groupCall) async {
-    _callService._handleCallEnded();
-  }
-
-  @override
-  bool get isWeb => kIsWeb;
-
-  @override
-  bool get canHandleNewCall => _callService.callState == LatticeCallState.idle;
-
-  @override
-  EncryptionKeyProvider? get keyProvider => null;
-}
+const _callMemberEventType = 'org.matrix.msc3401.call.member';
+const _membershipExpiresMs = 14400000;
+const _membershipRenewalInterval = Duration(minutes: 5);
 
 // ── Call Service ────────────────────────────────────────────
 
@@ -107,33 +46,13 @@ class CallService extends ChangeNotifier {
   Client get client => _client;
 
   bool _disposed = false;
+  bool _initialized = false;
 
-  // ── VoIP ────────────────────────────────────────────────
-
-  VoIP? _voip;
-  VoIP? get voip => _voip;
-
-  @visibleForTesting
-  set voipForTest(VoIP? value) => _voip = value;
-
-  @visibleForTesting
-  void simulateIncomingGroupCall(GroupCallSession groupCall) =>
-      _handleIncomingGroupCall(groupCall);
-
-  @visibleForTesting
-  void simulateCallEnded() => _handleCallEnded();
-
-  @visibleForTesting
-  void simulateIncomingCall(CallSession session) =>
-      _handleIncomingCall(session);
-
-  _LatticeWebRTCDelegate? _webrtcDelegate;
-
-  void initVoip() {
-    _webrtcDelegate = _LatticeWebRTCDelegate(this);
-    _voip = VoIP(_client, _webrtcDelegate!);
+  void init() {
+    if (_initialized) return;
+    _initialized = true;
     unawaited(fetchWellKnownLiveKit());
-    debugPrint('[Lattice] VoIP initialized');
+    debugPrint('[Lattice] CallService initialized');
   }
 
   // ── Ringtone ───────────────────────────────────────────
@@ -154,16 +73,15 @@ class CallService extends ChangeNotifier {
   LatticeCallState get callState => _callState;
 
   bool _joining = false;
+  bool _endedDuringJoin = false;
 
   @visibleForTesting
   bool get isJoining => _joining;
 
-  GroupCallSession? _activeGroupCall;
-  GroupCallSession? get activeGroupCall => _activeGroupCall;
+  String? _activeCallRoomId;
+  String? get activeCallRoomId => _activeCallRoomId;
 
-  String? get activeCallRoomId => _activeGroupCall?.room.id;
-
-  StreamSubscription<MatrixRTCCallEvent>? _callEventSub;
+  Timer? _membershipRenewalTimer;
 
   // ── Ringing State ─────────────────────────────────────────
 
@@ -213,6 +131,9 @@ class CallService extends ChangeNotifier {
   HttpPostFunction _httpPost = http.post;
 
   @visibleForTesting
+  HttpPostFunction get httpPostForTest => _httpPost;
+
+  @visibleForTesting
   set httpPostForTest(HttpPostFunction fn) => _httpPost = fn;
 
   // ── Participant Aggregation ─────────────────────────────
@@ -221,57 +142,18 @@ class CallService extends ChangeNotifier {
 
   List<ui.CallParticipant> _buildParticipantList() {
     final result = <ui.CallParticipant>[];
+    if (_livekitRoom == null) return result;
 
-    if (_livekitRoom != null) {
-      final local = _livekitRoom!.localParticipant;
-      if (local != null) {
-        result.add(ui.CallParticipant.fromLiveKit(
-          local,
-          activeSpeakers: _activeSpeakers,
-          isLocal: true,
-        ),);
-      }
-      for (final p in _participants) {
-        result.add(ui.CallParticipant.fromLiveKit(p, activeSpeakers: _activeSpeakers));
-      }
-    } else if (_activeGroupCall != null) {
-      final backend = _activeGroupCall!.backend;
-      final myUserId = _client.userID ?? '';
-
-      final localStream = backend.localUserMediaStream;
-      final hasLocalVideo = localStream != null && !localStream.isVideoMuted();
-      result.add(ui.CallParticipant(
-        id: myUserId,
-        displayName: _activeGroupCall!.room
-            .unsafeGetUserFromMemoryOrFallback(myUserId)
-            .calcDisplayname(),
+    final local = _livekitRoom!.localParticipant;
+    if (local != null) {
+      result.add(ui.CallParticipant.fromLiveKit(
+        local,
+        activeSpeakers: _activeSpeakers,
         isLocal: true,
-        isMuted: !_isMicEnabled,
-        isAudioOnly: !hasLocalVideo,
-        mediaStream: hasLocalVideo ? localStream.stream : null,
       ),);
-
-      final userStreams = backend.userMediaStreams;
-      final memberships = callMembershipsForRoom(_activeGroupCall!.room.id);
-      for (final mem in memberships) {
-        final userId = mem.userId;
-        if (userId == myUserId && mem.deviceId == _client.deviceID) continue;
-        final room = _activeGroupCall!.room;
-        final user = room.unsafeGetUserFromMemoryOrFallback(userId);
-        final participantId = '$userId:${mem.deviceId}';
-
-        final remoteStream = userStreams
-            .where((s) => !s.isLocal() && s.participant.id == participantId)
-            .firstOrNull;
-        final hasVideo = remoteStream != null && !remoteStream.isVideoMuted();
-
-        result.add(ui.CallParticipant(
-          id: participantId,
-          displayName: user.calcDisplayname(),
-          isAudioOnly: !hasVideo,
-          mediaStream: hasVideo ? remoteStream.stream : null,
-        ),);
-      }
+    }
+    for (final p in _participants) {
+      result.add(ui.CallParticipant.fromLiveKit(p, activeSpeakers: _activeSpeakers),);
     }
 
     return result;
@@ -280,79 +162,81 @@ class CallService extends ChangeNotifier {
   // ── Queries ─────────────────────────────────────────────
 
   bool roomHasActiveCall(String roomId) {
-    if (_voip == null) return false;
     final room = _client.getRoomById(roomId);
     if (room == null) return false;
-    return room.hasActiveGroupCall(_voip!);
+    return _getActiveRtcMemberships(room).isNotEmpty;
   }
 
   List<String> activeCallIdsForRoom(String roomId) {
-    if (_voip == null) return const [];
     final room = _client.getRoomById(roomId);
     if (room == null) return const [];
-    return room.activeGroupCallIds(_voip!);
+    final memberships = _getActiveRtcMemberships(room);
+    final callIds = <String>{};
+    for (final mem in memberships) {
+      final callId = mem['call_id'] as String? ?? '';
+      callIds.add(callId);
+    }
+    return callIds.toList();
   }
 
   int callParticipantCount(String roomId, String groupCallId) {
-    if (_voip == null) return 0;
     final room = _client.getRoomById(roomId);
     if (room == null) return 0;
-    return room.groupCallParticipantCount(groupCallId, _voip!);
+    final memberships = _getActiveRtcMemberships(room);
+    return memberships
+        .where((m) => (m['call_id'] as String? ?? '') == groupCallId)
+        .length;
   }
 
-  List<CallMembership> callMembershipsForRoom(String roomId) {
-    if (_voip == null) return const [];
-    final room = _client.getRoomById(roomId);
-    if (room == null) return const [];
-    final memberships = room.getCallMembershipsFromRoom(_voip!);
-    return memberships.values.expand((list) => list).toList();
+  List<Map<String, dynamic>> _getActiveRtcMemberships(Room room) {
+    final states = room.states[_callMemberEventType];
+    if (states == null) return const [];
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final result = <Map<String, dynamic>>[];
+
+    for (final stateEvent in states.values) {
+      final content = stateEvent.content;
+      if (content.isEmpty) continue;
+
+      final originTs = stateEvent is Event
+          ? stateEvent.originServerTs.millisecondsSinceEpoch
+          : now;
+
+      final memberships = content['memberships'];
+      if (memberships is List) {
+        for (final mem in memberships) {
+          if (mem is Map<String, dynamic> &&
+              _isMembershipActive(mem, originTs, now)) {
+            result.add(mem);
+          }
+        }
+      } else {
+        if (_isMembershipActive(content, originTs, now)) {
+          result.add(Map<String, dynamic>.from(content));
+        }
+      }
+    }
+    return result;
+  }
+
+  bool _isMembershipActive(Map<String, dynamic> mem, int originTs, int nowMs) {
+    final expiresTs = mem['expires_ts'] as int?;
+    if (expiresTs != null) return expiresTs > nowMs;
+
+    final expires = mem['expires'] as int?;
+    if (expires != null) return (originTs + expires) > nowMs;
+
+    return false;
   }
 
   // ── Incoming Call Handling ─────────────────────────────────
 
-  void _handleIncomingCall(CallSession session) {
-    if (_callState != LatticeCallState.idle) return;
-
-    final room = session.room;
-    final remoteId = session.remoteUserId;
-    String callerName;
-    Uri? callerAvatar;
-
-    if (remoteId != null && remoteId.isNotEmpty) {
-      final caller = room.unsafeGetUserFromMemoryOrFallback(remoteId);
-      callerName = caller.calcDisplayname();
-      callerAvatar = caller.avatarUrl;
-    } else {
-      callerName = room.getLocalizedDisplayname();
-    }
-
-    _incomingCall = model.IncomingCallInfo(
-      roomId: room.id,
-      callerName: callerName,
-      callerAvatarUrl: callerAvatar,
-      isVideo: session.type == CallType.kVideo,
-    );
-    _callState = LatticeCallState.ringingIncoming;
-    _incomingCallController.add(_incomingCall!);
-    notifyListeners();
-  }
-
-  void _handleIncomingGroupCall(GroupCallSession groupCall) {
-    if (_callState != LatticeCallState.idle) return;
-
-    final room = groupCall.room;
-    _incomingCall = model.IncomingCallInfo(
-      roomId: room.id,
-      callerName: room.getLocalizedDisplayname(),
-      isGroupCall: true,
-    );
-    _callState = LatticeCallState.ringingIncoming;
-    _incomingCallController.add(_incomingCall!);
-    notifyListeners();
-  }
-
   void _handleCallEnded() {
-    if (_joining) return;
+    if (_joining) {
+      _endedDuringJoin = true;
+      return;
+    }
     if (_callState == LatticeCallState.ringingIncoming ||
         _callState == LatticeCallState.ringingOutgoing) {
       _incomingCall = null;
@@ -361,6 +245,9 @@ class CallService extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  @visibleForTesting
+  void simulateCallEnded() => _handleCallEnded();
 
   // ── Ringing Actions ────────────────────────────────────────
 
@@ -388,13 +275,19 @@ class CallService extends ChangeNotifier {
   void cancelOutgoingCall() {
     if (_callState != LatticeCallState.ringingOutgoing) return;
     _stopRinging();
-    _callState = LatticeCallState.idle;
-    notifyListeners();
-    unawaited(leaveCall());
+    if (_joining) {
+      _endedDuringJoin = true;
+      _callState = LatticeCallState.idle;
+      notifyListeners();
+    } else {
+      _callState = LatticeCallState.idle;
+      notifyListeners();
+      unawaited(leaveCall());
+    }
   }
 
   Future<void> initiateCall(String roomId, {model.CallType type = model.CallType.voice}) async {
-    if (_voip == null) initVoip();
+    if (!_initialized) init();
     if (_callState != LatticeCallState.idle) return;
 
     _callState = LatticeCallState.ringingOutgoing;
@@ -413,12 +306,8 @@ class CallService extends ChangeNotifier {
 
   // ── Actions ─────────────────────────────────────────────
 
-  Future<void> joinCall(
-    String roomId, {
-    CallBackend? backend,
-    String? groupCallId,
-  }) async {
-    if (_voip == null) return;
+  Future<void> joinCall(String roomId) async {
+    if (!_initialized) init();
 
     const allowedStates = {
       LatticeCallState.idle,
@@ -453,80 +342,88 @@ class CallService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final resolvedCallId = groupCallId ?? _resolveGroupCallId(room);
-      final resolvedBackend = backend ?? _resolveBackend(room, resolvedCallId);
-
-      final groupCall = _findOrCreateGroupCall(
-        room,
-        resolvedBackend,
-        resolvedCallId,
-      );
-
-      _activeGroupCall = groupCall;
-      _callEventSub = groupCall.matrixRTCEventStream.stream.listen(
-        _onMatrixRTCEvent,
-      );
-
-      await groupCall.enter();
-
-      if (resolvedBackend is LiveKitBackend) {
-        await _connectLiveKit(resolvedBackend);
+      if (_cachedLivekitServiceUrl == null) {
+        await fetchWellKnownLiveKit();
+      }
+      if (_cachedLivekitServiceUrl == null) {
+        throw Exception('LiveKit service URL not found in well-known');
       }
 
+      final livekitAlias = room.canonicalAlias.isNotEmpty
+          ? room.canonicalAlias
+          : room.id;
+
+      _activeCallRoomId = roomId;
+
+      await _sendMembershipEvent(roomId, livekitAlias);
+      _startMembershipRenewal(roomId, livekitAlias);
+
+      await _connectLiveKit(
+        livekitServiceUrl: _cachedLivekitServiceUrl!,
+        livekitAlias: livekitAlias,
+      );
+
       _stopRinging();
+
+      if (_endedDuringJoin) {
+        debugPrint('[Lattice] Call ended while joining, cleaning up');
+        await _cleanupLiveKit();
+        await _removeMembershipEvent(roomId);
+        _cancelMembershipRenewal();
+        _activeCallRoomId = null;
+        _callState = LatticeCallState.idle;
+        notifyListeners();
+        return;
+      }
 
       _callStartTime = DateTime.now();
       _callState = LatticeCallState.connected;
       notifyListeners();
-      debugPrint(
-        '[Lattice] Joined call ${groupCall.groupCallId} in room $roomId',
-      );
+      debugPrint('[Lattice] Joined call in room $roomId');
     } catch (e) {
       debugPrint('[Lattice] Failed to join call: $e');
       await _cleanupLiveKit();
 
-      final failedGroupCall = _activeGroupCall;
-      _activeGroupCall = null;
-      _stopRinging();
-
-      unawaited(_callEventSub?.cancel());
-      _callEventSub = null;
-
-      if (failedGroupCall != null) {
+      if (_activeCallRoomId != null) {
         try {
-          await failedGroupCall.leave();
+          await _removeMembershipEvent(_activeCallRoomId!);
         } catch (leaveError) {
-          debugPrint('[Lattice] Error leaving group call after failure: $leaveError');
+          debugPrint('[Lattice] Error removing membership after failure: $leaveError');
         }
       }
+
+      _cancelMembershipRenewal();
+      _activeCallRoomId = null;
+      _stopRinging();
 
       _callState = LatticeCallState.failed;
       notifyListeners();
     } finally {
       _joining = false;
+      _endedDuringJoin = false;
     }
   }
 
   Future<void> leaveCall() async {
-    if (_activeGroupCall == null) return;
+    if (_activeCallRoomId == null) return;
 
-    final callId = _activeGroupCall!.groupCallId;
-    debugPrint('[Lattice] Leaving call $callId');
+    final roomId = _activeCallRoomId!;
+    debugPrint('[Lattice] Leaving call in room $roomId');
 
+    _stopRinging();
     _callState = LatticeCallState.disconnecting;
     notifyListeners();
 
     await _cleanupLiveKit();
+    _cancelMembershipRenewal();
 
     try {
-      await _activeGroupCall!.leave();
+      await _removeMembershipEvent(roomId);
     } catch (e) {
-      debugPrint('[Lattice] Error leaving call: $e');
+      debugPrint('[Lattice] Error removing membership: $e');
     }
 
-    unawaited(_callEventSub?.cancel());
-    _callEventSub = null;
-    _activeGroupCall = null;
+    _activeCallRoomId = null;
     _callStartTime = null;
     _callState = LatticeCallState.idle;
     notifyListeners();
@@ -554,45 +451,25 @@ class CallService extends ChangeNotifier {
 
   Future<void> toggleMicrophone() async {
     final localParticipant = _livekitRoom?.localParticipant;
-    if (localParticipant == null && _activeGroupCall == null) return;
+    if (localParticipant == null) return;
 
     await _toggleTrack(
       currentValue: _isMicEnabled,
       updateField: (v) => _isMicEnabled = v,
       label: 'microphone',
-      apply: (enabled) async {
-        if (localParticipant != null) {
-          await localParticipant.setMicrophoneEnabled(enabled);
-        } else {
-          await _activeGroupCall!.backend.setDeviceMuted(
-            _activeGroupCall!,
-            !enabled,
-            MediaInputKind.audioinput,
-          );
-        }
-      },
+      apply: localParticipant.setMicrophoneEnabled,
     );
   }
 
   Future<void> toggleCamera() async {
     final localParticipant = _livekitRoom?.localParticipant;
-    if (localParticipant == null && _activeGroupCall == null) return;
+    if (localParticipant == null) return;
 
     await _toggleTrack(
       currentValue: _isCameraEnabled,
       updateField: (v) => _isCameraEnabled = v,
       label: 'camera',
-      apply: (enabled) async {
-        if (localParticipant != null) {
-          await localParticipant.setCameraEnabled(enabled);
-        } else {
-          await _activeGroupCall!.backend.setDeviceMuted(
-            _activeGroupCall!,
-            !enabled,
-            MediaInputKind.videoinput,
-          );
-        }
-      },
+      apply: localParticipant.setCameraEnabled,
     );
   }
 
@@ -623,12 +500,14 @@ class CallService extends ChangeNotifier {
 
   void _resetState() {
     unawaited(_cleanupLiveKit());
-    _activeGroupCall = null;
+    _cancelMembershipRenewal();
+    _activeCallRoomId = null;
     _callState = LatticeCallState.idle;
-    _voip = null;
-    _webrtcDelegate = null;
+    _initialized = false;
     _incomingCall = null;
     _stopRinging();
+    unawaited(_ringtoneService?.dispose());
+    _ringtoneService = null;
     _callStartTime = null;
   }
 
@@ -651,28 +530,146 @@ class CallService extends ChangeNotifier {
     if (!_disposed) super.notifyListeners();
   }
 
+  // ── MatrixRTC Membership ─────────────────────────────────
+
+  String get _membershipStateKey =>
+      '_${_client.userID!}_${_client.deviceID!}_m.call';
+
+  Map<String, dynamic> _makeMembershipContent(
+    String livekitServiceUrl,
+    String livekitAlias,
+  ) => {
+    'application': 'm.call',
+    'call_id': '',
+    'scope': 'm.room',
+    'device_id': _client.deviceID,
+    'expires': _membershipExpiresMs,
+    'focus_active': {
+      'type': 'livekit',
+      'focus_selection': 'oldest_membership',
+    },
+    'foci_preferred': [
+      {
+        'type': 'livekit',
+        'livekit_service_url': livekitServiceUrl,
+        'livekit_alias': livekitAlias,
+      },
+    ],
+  };
+
+  Future<void> _sendMembershipEvent(String roomId, String livekitAlias) async {
+    await _client.setRoomStateWithKey(
+      roomId,
+      _callMemberEventType,
+      _membershipStateKey,
+      _makeMembershipContent(_cachedLivekitServiceUrl!, livekitAlias),
+    );
+  }
+
+  Future<void> _removeMembershipEvent(String roomId) async {
+    await _client.setRoomStateWithKey(
+      roomId,
+      _callMemberEventType,
+      _membershipStateKey,
+      {},
+    );
+  }
+
+  void _startMembershipRenewal(String roomId, String livekitAlias) {
+    _cancelMembershipRenewal();
+    _membershipRenewalTimer = Timer.periodic(
+      _membershipRenewalInterval,
+      (_) => _sendMembershipEvent(roomId, livekitAlias).catchError(
+        (Object e) => debugPrint('[Lattice] Failed to renew membership: $e'),
+      ),
+    );
+  }
+
+  void _cancelMembershipRenewal() {
+    _membershipRenewalTimer?.cancel();
+    _membershipRenewalTimer = null;
+  }
+
   // ── LiveKit Private ─────────────────────────────────────
 
-  Future<({String url, String token})> _fetchLiveKitToken(
-    LiveKitBackend backend,
-  ) async {
+  Future<http.Response> _postWithRedirects(
+    Uri url, {
+    required Map<String, String> headers,
+    required String body,
+  }) async {
+    var currentUrl = url;
+    var response = await _httpPost(currentUrl, headers: headers, body: body);
+
+    var redirects = 0;
+    while ((response.statusCode == 307 || response.statusCode == 308) &&
+        redirects < 5) {
+      final location = response.headers['location'];
+      if (location == null) break;
+      currentUrl = currentUrl.resolve(location);
+      response = await _httpPost(currentUrl, headers: headers, body: body);
+      redirects++;
+    }
+
+    return response;
+  }
+
+  String _buildServiceUrl(String baseUrl, String path) {
+    if (baseUrl.endsWith('/')) return '$baseUrl$path';
+    return '$baseUrl/$path';
+  }
+
+  Future<({String url, String token})> _fetchLiveKitToken({
+    required String livekitServiceUrl,
+    required String livekitAlias,
+  }) async {
     final openId = await _client.requestOpenIdToken(
       _client.userID!,
       {},
     );
 
-    final response = await _httpPost(
-      Uri.parse(backend.livekitServiceUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'access_token': openId.accessToken,
-        'token_type': openId.tokenType,
-        'matrix_server_name': openId.matrixServerName,
-        'expires_in': openId.expiresIn,
-        'room_alias': backend.livekitAlias,
-        'device_id': _client.deviceID,
-      }),
+    final openIdPayload = {
+      'access_token': openId.accessToken,
+      'token_type': openId.tokenType,
+      'matrix_server_name': openId.matrixServerName,
+      'expires_in': openId.expiresIn,
+    };
+    final headers = {'Content-Type': 'application/json'};
+
+    final newBody = jsonEncode({
+      'room_id': livekitAlias,
+      'slot_id': 'm.call#ROOM',
+      'openid_token': openIdPayload,
+      'member': {
+        'id': '${_client.userID}:${_client.deviceID}',
+        'claimed_user_id': _client.userID,
+        'claimed_device_id': _client.deviceID,
+      },
+    });
+
+    final newUrl = Uri.parse(
+      _buildServiceUrl(livekitServiceUrl, 'get_token'),
     );
+    var response = await _postWithRedirects(
+      newUrl,
+      headers: headers,
+      body: newBody,
+    );
+
+    if (response.statusCode == 404) {
+      final legacyBody = jsonEncode({
+        'room': livekitAlias,
+        'openid_token': openIdPayload,
+        'device_id': _client.deviceID,
+      });
+      final legacyUrl = Uri.parse(
+        _buildServiceUrl(livekitServiceUrl, 'sfu/get'),
+      );
+      response = await _postWithRedirects(
+        legacyUrl,
+        headers: headers,
+        body: legacyBody,
+      );
+    }
 
     if (response.statusCode != 200) {
       throw Exception(
@@ -681,11 +678,17 @@ class CallService extends ChangeNotifier {
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
-    return (url: json['url'] as String, token: json['token'] as String);
+    return (url: json['url'] as String, token: json['jwt'] as String? ?? json['token'] as String);
   }
 
-  Future<void> _connectLiveKit(LiveKitBackend backend) async {
-    final credentials = await _fetchLiveKitToken(backend);
+  Future<void> _connectLiveKit({
+    required String livekitServiceUrl,
+    required String livekitAlias,
+  }) async {
+    final credentials = await _fetchLiveKitToken(
+      livekitServiceUrl: livekitServiceUrl,
+      livekitAlias: livekitAlias,
+    );
 
     _livekitRoom = _roomFactory();
     _livekitListener = _livekitRoom!.createListener();
@@ -714,17 +717,16 @@ class CallService extends ChangeNotifier {
 
     listener.on<livekit.RoomDisconnectedEvent>((_) {
       unawaited(_cleanupLiveKit());
-      final groupCall = _activeGroupCall;
-      _activeGroupCall = null;
-      unawaited(_callEventSub?.cancel());
-      _callEventSub = null;
+      final roomId = _activeCallRoomId;
+      _activeCallRoomId = null;
+      _cancelMembershipRenewal();
       _callStartTime = null;
       _callState = LatticeCallState.failed;
       notifyListeners();
-      if (groupCall != null) {
+      if (roomId != null) {
         unawaited(
-          groupCall.leave().catchError(
-            (Object e) => debugPrint('[Lattice] Error leaving group call after disconnect: $e'),
+          _removeMembershipEvent(roomId).catchError(
+            (Object e) => debugPrint('[Lattice] Error removing membership after disconnect: $e'),
           ),
         );
       }
@@ -782,67 +784,11 @@ class CallService extends ChangeNotifier {
 
   // ── Private ─────────────────────────────────────────────
 
-  GroupCallSession? _findGroupCall(Room room, String callId) {
-    for (final groupCall in _voip!.groupCalls.values) {
-      if (groupCall.room.id == room.id && groupCall.groupCallId == callId) {
-        return groupCall;
-      }
-    }
-    return null;
-  }
-
-  GroupCallSession _findOrCreateGroupCall(
-    Room room,
-    CallBackend backend,
-    String? callId,
-  ) {
-    if (callId != null) {
-      final existing = _findGroupCall(room, callId);
-      if (existing != null) return existing;
-    }
-
-    return GroupCallSession.withAutoGenId(
-      room,
-      _voip!,
-      backend,
-      'm.call',
-      'm.room',
-      callId,
-    );
-  }
-
-  CallBackend _resolveBackend(Room room, String? callId) {
-    if (callId != null && _voip != null) {
-      final memberships = room.getCallMembershipsFromRoom(_voip!);
-      for (final mems in memberships.values) {
-        for (final mem in mems) {
-          if (mem.callId == callId && !mem.isExpired) {
-            return mem.backend;
-          }
-        }
-      }
-    }
-
-    final wellKnownBackend = _resolveBackendFromWellKnown(room);
-    if (wellKnownBackend != null) return wellKnownBackend;
-
-    debugPrint(
-      '[Lattice] No LiveKit config found for call $callId, falling back to MeshBackend',
-    );
-    return MeshBackend();
-  }
-
   String? _cachedLivekitServiceUrl;
 
-  CallBackend? _resolveBackendFromWellKnown(Room room) {
-    if (_cachedLivekitServiceUrl == null) return null;
-    return LiveKitBackend(
-      livekitServiceUrl: _cachedLivekitServiceUrl!,
-      livekitAlias: room.canonicalAlias.isNotEmpty
-          ? room.canonicalAlias
-          : room.id,
-    );
-  }
+  @visibleForTesting
+  set cachedLivekitServiceUrlForTest(String? url) =>
+      _cachedLivekitServiceUrl = url;
 
   Future<void> fetchWellKnownLiveKit() async {
     try {
@@ -864,42 +810,5 @@ class CallService extends ChangeNotifier {
     } catch (e) {
       debugPrint('[Lattice] Failed to fetch LiveKit well-known: $e');
     }
-  }
-
-  String? _resolveGroupCallId(Room room) {
-    if (_voip == null) return null;
-    final ids = room.activeGroupCallIds(_voip!);
-    return ids.isNotEmpty ? ids.first : null;
-  }
-
-  void _onMatrixRTCEvent(MatrixRTCCallEvent event) {
-    switch (event) {
-      case GroupCallStateChanged(:final state):
-        if (state == GroupCallState.ended && !_joining) {
-          unawaited(_cleanupLiveKit());
-          _callState = LatticeCallState.idle;
-          _activeGroupCall = null;
-          _callStartTime = null;
-          unawaited(_callEventSub?.cancel());
-          _callEventSub = null;
-        }
-      case GroupCallStateError():
-        _callState = LatticeCallState.failed;
-      case ParticipantsJoinEvent() ||
-            ParticipantsLeftEvent() ||
-            CallReactionAddedEvent() ||
-            CallReactionRemovedEvent() ||
-            GroupCallActiveSpeakerChanged() ||
-            CallAddedEvent() ||
-            CallRemovedEvent() ||
-            CallReplacedEvent() ||
-            GroupCallStreamAdded() ||
-            GroupCallStreamRemoved() ||
-            GroupCallStreamReplaced() ||
-            GroupCallLocalScreenshareStateChanged() ||
-            GroupCallLocalMutedChanged():
-        break;
-    }
-    notifyListeners();
   }
 }

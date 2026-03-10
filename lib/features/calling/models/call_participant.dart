@@ -39,6 +39,7 @@ class CallParticipant {
       isMuted: p.isMuted,
       isSpeaking: activeSpeakers.any((s) => s.identity == p.identity),
       isScreenSharing: hasScreenShare,
+      audioLevel: p.audioLevel,
       videoTrack: videoTrack,
     );
   }
