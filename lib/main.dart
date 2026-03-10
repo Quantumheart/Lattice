@@ -100,19 +100,19 @@ class _LatticeAppState extends State<LatticeApp> {
                       create: (ctx) {
                         final cs = CallService(client: ctx.read<MatrixService>().client)
                           ..ringtoneService = RingtoneService();
-                        if (ctx.read<MatrixService>().isLoggedIn) cs.initVoip();
+                        if (ctx.read<MatrixService>().isLoggedIn) cs.init();
                         return cs;
                       },
                       update: (_, matrix, previous) {
                         if (previous == null) {
                           final cs = CallService(client: matrix.client)
                             ..ringtoneService = RingtoneService();
-                          if (matrix.isLoggedIn) cs.initVoip();
+                          if (matrix.isLoggedIn) cs.init();
                           return cs;
                         }
                         previous.updateClient(matrix.client);
-                        if (matrix.isLoggedIn && previous.voip == null) {
-                          previous.initVoip();
+                        if (matrix.isLoggedIn) {
+                          previous.init();
                         }
                         return previous;
                       },

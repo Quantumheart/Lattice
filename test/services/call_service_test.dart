@@ -7,18 +7,12 @@ import 'package:http/http.dart' as http;
 import 'package:lattice/core/services/call_service.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
 import 'package:matrix/matrix.dart';
-import 'package:matrix/src/utils/cached_stream_controller.dart';
-import 'package:matrix/src/voip/models/voip_id.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
   MockSpec<Room>(),
-  MockSpec<VoIP>(),
-  MockSpec<GroupCallSession>(),
-  MockSpec<CallSession>(),
-  MockSpec<User>(),
 ])
 import 'call_service_test.mocks.dart';
 
@@ -43,6 +37,9 @@ class _MockLocalParticipant extends Fake
 
   @override
   bool get isMuted => false;
+
+  @override
+  double get audioLevel => 0.0;
 
   @override
   Future<livekit.LocalTrackPublication?> setMicrophoneEnabled(
@@ -155,28 +152,41 @@ class _FakeLiveKitRoom extends Fake implements livekit.Room {
   }
 }
 
+class _FakeRemoteParticipant extends Fake
+    implements livekit.RemoteParticipant {
+  @override
+  List<livekit.RemoteTrackPublication<livekit.RemoteVideoTrack>>
+      get videoTrackPublications => [];
+
+  @override
+  String get identity => 'remote';
+
+  @override
+  String get name => 'Remote User';
+
+  @override
+  bool get isMuted => false;
+
+  @override
+  double get audioLevel => 0.0;
+}
+
 void main() {
   late MockClient mockClient;
   late CallService service;
-  late MockVoIP mockVoip;
 
   setUp(() {
     mockClient = MockClient();
-    mockVoip = MockVoIP();
     when(mockClient.rooms).thenReturn([]);
+    when(mockClient.userID).thenReturn('@user:example.com');
+    when(mockClient.deviceID).thenReturn('DEVICE1');
     service = CallService(client: mockClient);
   });
-
-  void injectVoip() {
-    service.voipForTest = mockVoip;
-  }
 
   _FakeLiveKitRoom setupLiveKitMocks() {
     final fakeRoom = _FakeLiveKitRoom();
     service.roomFactoryForTest = () => fakeRoom;
 
-    when(mockClient.userID).thenReturn('@user:example.com');
-    when(mockClient.deviceID).thenReturn('DEVICE1');
     when(mockClient.requestOpenIdToken(any, any)).thenAnswer(
       (_) async => OpenIdCredentials(
         accessToken: 'openid_token',
@@ -186,32 +196,28 @@ void main() {
       ),
     );
 
+    when(mockClient.setRoomStateWithKey(any, any, any, any))
+        .thenAnswer((_) async => 'event_id');
+
     service.httpPostForTest = (url, {headers, body}) async {
       return http.Response(
-        jsonEncode({'url': 'wss://lk.example.com', 'token': 'lk_token'}),
+        jsonEncode({'url': 'wss://lk.example.com', 'jwt': 'lk_token'}),
         200,
       );
     };
 
+    service.cachedLivekitServiceUrlForTest = 'https://lk-jwt.example.com';
+
     return fakeRoom;
   }
 
-  ({MockGroupCallSession groupCall, CachedStreamController<MatrixRTCCallEvent> events}) setupGroupCall(MockRoom mockRoom) {
-    final mockGroupCall = MockGroupCallSession();
-    final eventStreamController =
-        CachedStreamController<MatrixRTCCallEvent>();
-
+  MockRoom setupMockRoom() {
+    final mockRoom = MockRoom();
     when(mockRoom.id).thenReturn('!room:example.com');
+    when(mockRoom.canonicalAlias).thenReturn('#room:example.com');
     when(mockRoom.states).thenReturn({});
-    when(mockGroupCall.room).thenReturn(mockRoom);
-    when(mockGroupCall.groupCallId).thenReturn('call_1');
-    final voipId = VoipId(roomId: '!room:example.com', callId: 'call_1');
-    when(mockVoip.groupCalls).thenReturn({voipId: mockGroupCall});
-    when(mockGroupCall.matrixRTCEventStream).thenReturn(eventStreamController);
-    when(mockGroupCall.enter()).thenAnswer((_) async {});
-    when(mockGroupCall.leave()).thenAnswer((_) async {});
-
-    return (groupCall: mockGroupCall, events: eventStreamController);
+    when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
+    return mockRoom;
   }
 
   group('CallService initial state', () {
@@ -219,16 +225,8 @@ void main() {
       expect(service.callState, LatticeCallState.idle);
     });
 
-    test('activeGroupCall starts as null', () {
-      expect(service.activeGroupCall, isNull);
-    });
-
     test('activeCallRoomId starts as null', () {
       expect(service.activeCallRoomId, isNull);
-    });
-
-    test('voip starts as null before init', () {
-      expect(service.voip, isNull);
     });
 
     test('LiveKit state starts with defaults', () {
@@ -241,456 +239,327 @@ void main() {
     });
   });
 
-  group('roomHasActiveCall', () {
-    test('returns false when voip is null', () {
-      expect(service.roomHasActiveCall('!room:example.com'), isFalse);
-    });
-
-    test('returns false for unknown room', () {
-      injectVoip();
-      when(mockClient.getRoomById(any)).thenReturn(null);
-      expect(service.roomHasActiveCall('!room:example.com'), isFalse);
-    });
-  });
-
-  group('activeCallIdsForRoom', () {
-    test('returns empty when voip is null', () {
-      expect(service.activeCallIdsForRoom('!room:example.com'), isEmpty);
-    });
-
-    test('returns empty for unknown room', () {
-      injectVoip();
-      when(mockClient.getRoomById(any)).thenReturn(null);
-      expect(service.activeCallIdsForRoom('!room:example.com'), isEmpty);
-    });
-  });
-
-  group('callParticipantCount', () {
-    test('returns 0 when voip is null', () {
-      expect(service.callParticipantCount('!room:example.com', 'call1'), 0);
-    });
-
-    test('returns 0 for unknown room', () {
-      injectVoip();
-      when(mockClient.getRoomById(any)).thenReturn(null);
-      expect(service.callParticipantCount('!room:example.com', 'call1'), 0);
-    });
-  });
-
-  group('callMembershipsForRoom', () {
-    test('returns empty when voip is null', () {
-      expect(service.callMembershipsForRoom('!room:example.com'), isEmpty);
-    });
-
-    test('returns empty for unknown room', () {
-      injectVoip();
-      when(mockClient.getRoomById(any)).thenReturn(null);
-      expect(service.callMembershipsForRoom('!room:example.com'), isEmpty);
-    });
-  });
-
   group('joinCall', () {
-    test('does nothing when voip is null', () async {
-      await service.joinCall('!room:example.com');
-      expect(service.callState, LatticeCallState.idle);
-    });
-
-    test('stays idle when room not found from idle state', () async {
-      injectVoip();
-      when(mockClient.getRoomById(any)).thenReturn(null);
+    test('sends membership state event and connects to LiveKit', () async {
+      setupLiveKitMocks();
+      setupMockRoom();
 
       await service.joinCall('!room:example.com');
-      expect(service.callState, LatticeCallState.idle);
-    });
-
-    test('transitions to failed when enter throws', () async {
-      final mockRoom = MockRoom();
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-      when(mockRoom.id).thenReturn('!room:example.com');
-      when(mockRoom.activeGroupCallIds(mockVoip)).thenReturn([]);
-      when(mockRoom.getCallMembershipsFromRoom(mockVoip)).thenReturn({});
-      when(mockVoip.groupCalls).thenReturn({});
-
-      await service.joinCall('!room:example.com');
-
-      expect(service.callState, LatticeCallState.failed);
-      expect(service.activeGroupCall, isNull);
-    });
-
-    test('notifies listeners on joining transition', () async {
-      final mockRoom = MockRoom();
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-      when(mockRoom.id).thenReturn('!room:example.com');
-      when(mockRoom.activeGroupCallIds(mockVoip)).thenReturn([]);
-      when(mockRoom.getCallMembershipsFromRoom(mockVoip)).thenReturn({});
-      when(mockVoip.groupCalls).thenReturn({});
-
-      final states = <LatticeCallState>[];
-      service.addListener(() => states.add(service.callState));
-
-      await service.joinCall('!room:example.com');
-
-      expect(states, contains(LatticeCallState.joining));
-    });
-
-    test('connects to LiveKit when backend is LiveKitBackend', () async {
-      final mockRoom = MockRoom();
-      final fakeRoom = setupLiveKitMocks();
-      final result = setupGroupCall(mockRoom);
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      final livekitBackend = LiveKitBackend(
-        livekitServiceUrl: 'https://lk-jwt.example.com/token',
-        livekitAlias: '#room:example.com',
-      );
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: livekitBackend,
-        groupCallId: 'call_1',
-      );
 
       expect(service.callState, LatticeCallState.connected);
-      expect(fakeRoom.connected, isTrue);
-      expect(service.livekitRoom, same(fakeRoom));
-      expect(service.isMicEnabled, isFalse);
-      expect(service.isCameraEnabled, isFalse);
-      expect(service.isScreenShareEnabled, isFalse);
+      expect(service.activeCallRoomId, '!room:example.com');
+      expect(service.livekitRoom, isNotNull);
 
-      verify(result.groupCall.enter()).called(1);
-    });
-
-    test('transitions to failed when token exchange throws', () async {
-      final mockRoom = MockRoom();
-      setupLiveKitMocks();
-      setupGroupCall(mockRoom);
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-      when(mockClient.requestOpenIdToken(any, any))
-          .thenThrow(Exception('token error'));
-
-      final livekitBackend = LiveKitBackend(
-        livekitServiceUrl: 'https://lk-jwt.example.com/token',
-        livekitAlias: '#room:example.com',
-      );
-
-      await service.joinCall(
+      verify(mockClient.setRoomStateWithKey(
         '!room:example.com',
-        backend: livekitBackend,
-        groupCallId: 'call_1',
-      );
-
-      expect(service.callState, LatticeCallState.failed);
-      expect(service.activeGroupCall, isNull);
-      expect(service.livekitRoom, isNull);
+        'org.matrix.msc3401.call.member',
+        '_@user:example.com_DEVICE1_m.call',
+        argThat(containsPair('application', 'm.call')),
+      )).called(1);
     });
 
-    test('transitions to failed when LiveKit connect throws', () async {
-      final mockRoom = MockRoom();
-      final fakeRoom = setupLiveKitMocks();
-      setupGroupCall(mockRoom);
-      fakeRoom.throwOnConnect = true;
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      final livekitBackend = LiveKitBackend(
-        livekitServiceUrl: 'https://lk-jwt.example.com/token',
-        livekitAlias: '#room:example.com',
-      );
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: livekitBackend,
-        groupCallId: 'call_1',
-      );
-
-      expect(service.callState, LatticeCallState.failed);
-      expect(service.livekitRoom, isNull);
-    });
-
-    test('transitions to failed when token response is not 200', () async {
-      final mockRoom = MockRoom();
+    test('requires LiveKit service URL', () async {
       setupLiveKitMocks();
-      setupGroupCall(mockRoom);
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
+      setupMockRoom();
+      service.cachedLivekitServiceUrlForTest = null;
 
       service.httpPostForTest = (url, {headers, body}) async {
-        return http.Response('Unauthorized', 401);
+        return http.Response('', 404);
       };
 
-      final livekitBackend = LiveKitBackend(
-        livekitServiceUrl: 'https://lk-jwt.example.com/token',
-        livekitAlias: '#room:example.com',
-      );
+      when(mockClient.getWellknown()).thenThrow(Exception('no well-known'));
 
-      await service.joinCall(
+      await service.joinCall('!room:example.com');
+
+      expect(service.callState, LatticeCallState.failed);
+    });
+
+    test('returns early when room not found', () async {
+      setupLiveKitMocks();
+      when(mockClient.getRoomById('!missing:example.com')).thenReturn(null);
+
+      service
+        ..cachedLivekitServiceUrlForTest = 'https://lk.example.com'
+        ..init();
+      await service.joinCall('!missing:example.com');
+
+      expect(service.callState, LatticeCallState.idle);
+    });
+
+    test('rejects concurrent join attempts', () async {
+      final completer = Completer<void>();
+      final fakeRoom = setupLiveKitMocks();
+      setupMockRoom();
+
+      fakeRoom.throwOnConnect = false;
+
+      final originalPost = service.httpPostForTest;
+      service.httpPostForTest = (url, {headers, body}) async {
+        await completer.future;
+        return originalPost(url, headers: headers, body: body);
+      };
+
+      final firstJoin = service.joinCall('!room:example.com');
+
+      expect(service.callState, LatticeCallState.joining);
+
+      await service.joinCall('!room:example.com');
+
+      expect(service.callState, LatticeCallState.failed);
+
+      completer.complete();
+      await firstJoin;
+    });
+
+    test('only allows join from valid states', () async {
+      setupLiveKitMocks();
+      setupMockRoom();
+
+      await service.joinCall('!room:example.com');
+      expect(service.callState, LatticeCallState.connected);
+
+      await service.joinCall('!room:example.com');
+      expect(service.callState, LatticeCallState.failed);
+    });
+
+    test('cleans up on LiveKit connect failure', () async {
+      final fakeRoom = setupLiveKitMocks();
+      setupMockRoom();
+      fakeRoom.throwOnConnect = true;
+
+      await service.joinCall('!room:example.com');
+
+      expect(service.callState, LatticeCallState.failed);
+      expect(service.activeCallRoomId, isNull);
+      expect(service.livekitRoom, isNull);
+
+      verify(mockClient.setRoomStateWithKey(
         '!room:example.com',
-        backend: livekitBackend,
-        groupCallId: 'call_1',
-      );
+        'org.matrix.msc3401.call.member',
+        '_@user:example.com_DEVICE1_m.call',
+        {},
+      )).called(1);
+    });
+
+    test('cleans up on token exchange failure', () async {
+      setupLiveKitMocks();
+      setupMockRoom();
+
+      service.httpPostForTest = (url, {headers, body}) async {
+        return http.Response('token error', 500);
+      };
+
+      await service.joinCall('!room:example.com');
+
+      expect(service.callState, LatticeCallState.failed);
+      expect(service.activeCallRoomId, isNull);
+    });
+  });
+
+  group('joinCall failure cleans up membership', () {
+    test('removes membership event when LiveKit connect fails', () async {
+      final fakeRoom = setupLiveKitMocks();
+      setupMockRoom();
+      fakeRoom.throwOnConnect = true;
+
+      await service.joinCall('!room:example.com');
+
+      final verifyResult = verify(mockClient.setRoomStateWithKey(
+        '!room:example.com',
+        'org.matrix.msc3401.call.member',
+        '_@user:example.com_DEVICE1_m.call',
+        captureAny,
+      ));
+      verifyResult.called(2);
+
+      final calls = verifyResult.captured;
+      expect(calls.first, containsPair('application', 'm.call'));
+      expect(calls.last, isEmpty);
+    });
+
+    test('removes membership event when token exchange fails', () async {
+      setupLiveKitMocks();
+      setupMockRoom();
+
+      service.httpPostForTest = (url, {headers, body}) async {
+        return http.Response('error', 500);
+      };
+
+      await service.joinCall('!room:example.com');
+
+      verify(mockClient.setRoomStateWithKey(
+        '!room:example.com',
+        'org.matrix.msc3401.call.member',
+        '_@user:example.com_DEVICE1_m.call',
+        {},
+      )).called(1);
+    });
+
+    test('membership removal error in catch block is handled gracefully', () async {
+      final fakeRoom = setupLiveKitMocks();
+      setupMockRoom();
+      fakeRoom.throwOnConnect = true;
+
+      var callCount = 0;
+      when(mockClient.setRoomStateWithKey(any, any, any, any))
+          .thenAnswer((_) async {
+        callCount++;
+        if (callCount == 2) throw Exception('leave error');
+        return 'event_id';
+      });
+
+      await service.joinCall('!room:example.com');
 
       expect(service.callState, LatticeCallState.failed);
     });
   });
 
   group('leaveCall', () {
+    test('disconnects LiveKit and removes membership', () async {
+      final fakeRoom = setupLiveKitMocks();
+      setupMockRoom();
+
+      await service.joinCall('!room:example.com');
+      expect(service.callState, LatticeCallState.connected);
+
+      await service.leaveCall();
+
+      expect(service.callState, LatticeCallState.idle);
+      expect(service.activeCallRoomId, isNull);
+      expect(service.livekitRoom, isNull);
+      expect(fakeRoom.disconnected, isTrue);
+
+      verify(mockClient.setRoomStateWithKey(
+        '!room:example.com',
+        'org.matrix.msc3401.call.member',
+        '_@user:example.com_DEVICE1_m.call',
+        {},
+      )).called(1);
+    });
+
     test('does nothing when no active call', () async {
       await service.leaveCall();
       expect(service.callState, LatticeCallState.idle);
     });
 
-    test('does not notify when no active call', () async {
-      var notified = false;
-      service.addListener(() => notified = true);
+    test('handles membership removal error gracefully', () async {
+      setupLiveKitMocks();
+      setupMockRoom();
 
-      await service.leaveCall();
-      expect(notified, isFalse);
-    });
+      await service.joinCall('!room:example.com');
 
-    test('disconnects LiveKit and transitions through disconnecting', () async {
-      final mockRoom = MockRoom();
-      final fakeRoom = setupLiveKitMocks();
-      setupGroupCall(mockRoom);
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      final livekitBackend = LiveKitBackend(
-        livekitServiceUrl: 'https://lk-jwt.example.com/token',
-        livekitAlias: '#room:example.com',
-      );
-
-      await service.joinCall(
+      when(mockClient.setRoomStateWithKey(
         '!room:example.com',
-        backend: livekitBackend,
-        groupCallId: 'call_1',
-      );
-
-      final states = <LatticeCallState>[];
-      service.addListener(() => states.add(service.callState));
+        'org.matrix.msc3401.call.member',
+        any,
+        {},
+      )).thenThrow(Exception('remove error'));
 
       await service.leaveCall();
 
-      expect(states, contains(LatticeCallState.disconnecting));
-      expect(states.last, LatticeCallState.idle);
-      expect(fakeRoom.disconnected, isTrue);
-      expect(fakeRoom.disposed, isTrue);
-      expect(service.livekitRoom, isNull);
-      expect(service.participants, isEmpty);
-      expect(service.isMicEnabled, isFalse);
+      expect(service.callState, LatticeCallState.idle);
     });
   });
 
-  group('LiveKit reconnection events', () {
-    late _FakeLiveKitRoom fakeRoom;
-    late MockGroupCallSession mockGroupCall;
+  group('LiveKit events', () {
+    test('reconnecting event sets reconnecting state', () async {
+      final fakeRoom = setupLiveKitMocks();
+      setupMockRoom();
 
-    setUp(() async {
-      final mockRoom = MockRoom();
-      fakeRoom = setupLiveKitMocks();
-      final result = setupGroupCall(mockRoom);
-      mockGroupCall = result.groupCall;
+      await service.joinCall('!room:example.com');
 
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
+      fakeRoom._listener!
+          .fire(livekit.RoomReconnectingEvent());
 
-      await service.joinCall(
-        '!room:example.com',
-        backend: LiveKitBackend(
-          livekitServiceUrl: 'https://lk-jwt.example.com/token',
-          livekitAlias: '#room:example.com',
-        ),
-        groupCallId: 'call_1',
-      );
-    });
-
-    test('RoomReconnectingEvent sets state to reconnecting', () {
-      fakeRoom._listener!.fire(const livekit.RoomReconnectingEvent());
       expect(service.callState, LatticeCallState.reconnecting);
     });
 
-    test('RoomReconnectedEvent sets state to connected', () {
-      fakeRoom._listener!.fire(const livekit.RoomReconnectingEvent());
-      fakeRoom._listener!.fire(const livekit.RoomReconnectedEvent());
+    test('reconnected event sets connected state', () async {
+      final fakeRoom = setupLiveKitMocks();
+      setupMockRoom();
+
+      await service.joinCall('!room:example.com');
+
+      fakeRoom._listener!
+          .fire(livekit.RoomReconnectedEvent());
+
       expect(service.callState, LatticeCallState.connected);
     });
 
-    test('RoomDisconnectedEvent cleans up and sets state to failed', () {
-      fakeRoom._listener!.fire(livekit.RoomDisconnectedEvent());
+    test('disconnect event cleans up and removes membership', () async {
+      final fakeRoom = setupLiveKitMocks();
+      setupMockRoom();
+
+      await service.joinCall('!room:example.com');
+
+      fakeRoom._listener!
+          .fire(livekit.RoomDisconnectedEvent(reason: null));
 
       expect(service.callState, LatticeCallState.failed);
-      expect(service.livekitRoom, isNull);
-      expect(service.participants, isEmpty);
-      expect(service.activeGroupCall, isNull);
-    });
+      expect(service.activeCallRoomId, isNull);
 
-    test('RoomDisconnectedEvent leaves the Matrix group call', () async {
-      fakeRoom._listener!.fire(livekit.RoomDisconnectedEvent());
       await Future<void>.delayed(Duration.zero);
 
-      verify(mockGroupCall.leave()).called(1);
-    });
-  });
-
-  group('MatrixRTC events clean up LiveKit', () {
-    late _FakeLiveKitRoom fakeRoom;
-    late CachedStreamController<MatrixRTCCallEvent> eventStream;
-
-    setUp(() async {
-      final mockRoom = MockRoom();
-      fakeRoom = setupLiveKitMocks();
-      final result = setupGroupCall(mockRoom);
-      eventStream = result.events;
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      await service.joinCall(
+      verify(mockClient.setRoomStateWithKey(
         '!room:example.com',
-        backend: LiveKitBackend(
-          livekitServiceUrl: 'https://lk-jwt.example.com/token',
-          livekitAlias: '#room:example.com',
-        ),
-        groupCallId: 'call_1',
-      );
+        'org.matrix.msc3401.call.member',
+        '_@user:example.com_DEVICE1_m.call',
+        {},
+      )).called(1);
     });
 
-    test('GroupCallStateChanged ended cleans up LiveKit', () async {
-      expect(service.livekitRoom, isNotNull);
+    test('participants sync on connect/disconnect events', () async {
+      final fakeRoom = setupLiveKitMocks();
+      setupMockRoom();
 
-      eventStream.add(GroupCallStateChanged(GroupCallState.ended));
-      await Future<void>.delayed(Duration.zero);
+      await service.joinCall('!room:example.com');
 
-      expect(service.callState, LatticeCallState.idle);
-      expect(service.livekitRoom, isNull);
-      expect(service.activeGroupCall, isNull);
-      expect(fakeRoom.disposed, isTrue);
-    });
-  });
-
-  group('concurrent join guard', () {
-    test('second joinCall is rejected while first is in progress', () async {
-      final mockRoom = MockRoom();
-      setupLiveKitMocks();
-      setupGroupCall(mockRoom);
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      final livekitBackend = LiveKitBackend(
-        livekitServiceUrl: 'https://lk-jwt.example.com/token',
-        livekitAlias: '#room:example.com',
-      );
-
-      final first = service.joinCall(
-        '!room:example.com',
-        backend: livekitBackend,
-        groupCallId: 'call_1',
-      );
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: livekitBackend,
-        groupCallId: 'call_1',
-      );
-
-      await first;
-      expect(service.callState, LatticeCallState.connected);
-    });
-  });
-
-  group('LiveKit participant sync', () {
-    late _FakeLiveKitRoom fakeRoom;
-
-    setUp(() async {
-      final mockRoom = MockRoom();
-      fakeRoom = setupLiveKitMocks();
-      setupGroupCall(mockRoom);
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: LiveKitBackend(
-          livekitServiceUrl: 'https://lk-jwt.example.com/token',
-          livekitAlias: '#room:example.com',
-        ),
-        groupCallId: 'call_1',
-      );
-    });
-
-    test('participants list is empty initially', () {
       expect(service.participants, isEmpty);
-    });
 
-    test('ParticipantConnectedEvent syncs participants', () {
       final fakeRemote = _FakeRemoteParticipant();
       fakeRoom._remoteParticipants['user2'] = fakeRemote;
-
       fakeRoom._listener!.fire(
         livekit.ParticipantConnectedEvent(participant: fakeRemote),
       );
 
-      expect(service.participants, hasLength(1));
-    });
-
-    test('ParticipantDisconnectedEvent syncs participants', () {
-      final fakeRemote = _FakeRemoteParticipant();
-      fakeRoom._remoteParticipants['user2'] = fakeRemote;
-
-      fakeRoom._listener!.fire(
-        livekit.ParticipantConnectedEvent(participant: fakeRemote),
-      );
       expect(service.participants, hasLength(1));
 
       fakeRoom._remoteParticipants.remove('user2');
       fakeRoom._listener!.fire(
         livekit.ParticipantDisconnectedEvent(participant: fakeRemote),
       );
+
       expect(service.participants, isEmpty);
     });
 
-    test('ActiveSpeakersChangedEvent updates active speakers', () {
+    test('active speakers update on event', () async {
+      final fakeRoom = setupLiveKitMocks();
+      setupMockRoom();
+
+      await service.joinCall('!room:example.com');
+
       fakeRoom._listener!.fire(
-        const livekit.ActiveSpeakersChangedEvent(speakers: []),
+        livekit.ActiveSpeakersChangedEvent(
+          speakers: [fakeRoom._localParticipant!],
+        ),
       );
-      expect(service.activeSpeakers, isEmpty);
+
+      expect(service.activeSpeakers, hasLength(1));
     });
   });
 
-  group('Track toggles', () {
+  group('track toggles', () {
     late _FakeLiveKitRoom fakeRoom;
 
     setUp(() async {
-      final mockRoom = MockRoom();
       fakeRoom = setupLiveKitMocks();
-      setupGroupCall(mockRoom);
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: LiveKitBackend(
-          livekitServiceUrl: 'https://lk-jwt.example.com/token',
-          livekitAlias: '#room:example.com',
-        ),
-        groupCallId: 'call_1',
-      );
+      setupMockRoom();
+      await service.joinCall('!room:example.com');
     });
 
-    test('toggleMicrophone enables and disables mic', () async {
+    test('toggleMicrophone enables then disables', () async {
+      expect(service.isMicEnabled, isFalse);
+
       await service.toggleMicrophone();
       expect(service.isMicEnabled, isTrue);
       expect(fakeRoom._localParticipant!.micEnabled, isTrue);
@@ -700,7 +569,9 @@ void main() {
       expect(fakeRoom._localParticipant!.micEnabled, isFalse);
     });
 
-    test('toggleCamera enables and disables camera', () async {
+    test('toggleCamera enables then disables', () async {
+      expect(service.isCameraEnabled, isFalse);
+
       await service.toggleCamera();
       expect(service.isCameraEnabled, isTrue);
       expect(fakeRoom._localParticipant!.cameraEnabled, isTrue);
@@ -710,7 +581,9 @@ void main() {
       expect(fakeRoom._localParticipant!.cameraEnabled, isFalse);
     });
 
-    test('toggleScreenShare enables and disables screen share', () async {
+    test('toggleScreenShare enables then disables', () async {
+      expect(service.isScreenShareEnabled, isFalse);
+
       await service.toggleScreenShare();
       expect(service.isScreenShareEnabled, isTrue);
       expect(fakeRoom._localParticipant!.screenShareEnabled, isTrue);
@@ -720,963 +593,213 @@ void main() {
       expect(fakeRoom._localParticipant!.screenShareEnabled, isFalse);
     });
 
-    test('toggleMicrophone reverts on error', () async {
+    test('toggle reverts on error', () async {
+      await service.toggleMicrophone();
+      expect(service.isMicEnabled, isTrue);
+
       fakeRoom._localParticipant!.throwOnToggle = true;
 
       await service.toggleMicrophone();
-      expect(service.isMicEnabled, isFalse);
+      expect(service.isMicEnabled, isTrue);
     });
 
-    test('toggleCamera reverts on error', () async {
-      fakeRoom._localParticipant!.throwOnToggle = true;
+    test('toggle does nothing without LiveKit room', () async {
+      final standalone = CallService(client: mockClient);
 
-      await service.toggleCamera();
-      expect(service.isCameraEnabled, isFalse);
-    });
+      await standalone.toggleMicrophone();
+      expect(standalone.isMicEnabled, isFalse);
 
-    test('toggleScreenShare reverts on error', () async {
-      fakeRoom._localParticipant!.throwOnToggle = true;
+      await standalone.toggleCamera();
+      expect(standalone.isCameraEnabled, isFalse);
 
-      await service.toggleScreenShare();
-      expect(service.isScreenShareEnabled, isFalse);
-    });
-
-    test('toggle does nothing when no local participant', () async {
-      final noLkService = CallService(client: mockClient);
-      await noLkService.toggleMicrophone();
-      expect(noLkService.isMicEnabled, isFalse);
+      await standalone.toggleScreenShare();
+      expect(standalone.isScreenShareEnabled, isFalse);
     });
   });
 
-  group('fetchTurnServers', () {
-    test('returns null on error', () async {
-      when(mockClient.getTurnServer()).thenThrow(Exception('no server'));
-      final result = await service.fetchTurnServers();
-      expect(result, isNull);
-    });
-  });
-
-  group('updateClient', () {
-    test('resets state when client changes', () {
-      injectVoip();
-      final newClient = MockClient();
-      when(newClient.rooms).thenReturn([]);
-
-      service.updateClient(newClient);
-
-      expect(service.voip, isNull);
+  group('ringing actions', () {
+    test('declineCall resets state', () {
+      service.declineCall();
       expect(service.callState, LatticeCallState.idle);
-      expect(service.activeGroupCall, isNull);
-      expect(service.client, same(newClient));
     });
 
-    test('does nothing when same client', () {
-      injectVoip();
-      service.updateClient(mockClient);
-      expect(service.voip, same(mockVoip));
-    });
-
-    test('cleans up LiveKit on client change', () async {
-      final mockRoom = MockRoom();
-      final fakeRoom = setupLiveKitMocks();
-      setupGroupCall(mockRoom);
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: LiveKitBackend(
-          livekitServiceUrl: 'https://lk-jwt.example.com/token',
-          livekitAlias: '#room:example.com',
-        ),
-        groupCallId: 'call_1',
-      );
-
-      expect(service.livekitRoom, isNotNull);
-
-      final newClient = MockClient();
-      when(newClient.rooms).thenReturn([]);
-      service.updateClient(newClient);
-      await Future<void>.delayed(Duration.zero);
-
-      expect(service.livekitRoom, isNull);
-      expect(fakeRoom.disposed, isTrue);
-    });
-  });
-
-  group('ringing states', () {
-    test('initiateCall transitions to ringingOutgoing', () async {
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(null);
-
-      final states = <LatticeCallState>[];
-      service.addListener(() => states.add(service.callState));
-
-      await service.initiateCall('!room:example.com');
-
-      expect(states.first, LatticeCallState.ringingOutgoing);
-    });
-
-    test('initiateCall with no room transitions to failed', () async {
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(null);
-
-      final states = <LatticeCallState>[];
-      service.addListener(() => states.add(service.callState));
-
-      await service.initiateCall('!room:example.com');
-      expect(states.first, LatticeCallState.ringingOutgoing);
-      expect(states.last, LatticeCallState.failed);
-    });
-
-    test('cancelOutgoingCall does nothing when not ringing', () async {
-      injectVoip();
-
+    test('cancelOutgoingCall resets state', () {
       service.cancelOutgoingCall();
       expect(service.callState, LatticeCallState.idle);
     });
-
-    test('acceptCall transitions from ringingIncoming to joining', () {
-      injectVoip();
-
-      final states = <LatticeCallState>[];
-      service.addListener(() => states.add(service.callState));
-
-      service.acceptCall();
-      expect(states, isEmpty);
-    });
-
-    test('declineCall from ringingIncoming resets to idle', () {
-      injectVoip();
-
-      service.declineCall();
-      expect(service.callState, LatticeCallState.idle);
-    });
-
-    test('callElapsed returns null when not connected', () {
-      expect(service.callElapsed, isNull);
-    });
-
-    test('incomingCallStream emits events', () async {
-      final events = <Object>[];
-      service.incomingCallStream.listen(events.add);
-
-      expect(events, isEmpty);
-    });
   });
 
-  group('dispose', () {
-    test('resets call state', () {
-      injectVoip();
-      service.dispose();
-      expect(service.callState, LatticeCallState.idle);
-      expect(service.activeGroupCall, isNull);
-      expect(service.voip, isNull);
-    });
-
-    test('cleans up LiveKit resources', () async {
-      final mockRoom = MockRoom();
-      final fakeRoom = setupLiveKitMocks();
-      setupGroupCall(mockRoom);
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: LiveKitBackend(
-          livekitServiceUrl: 'https://lk-jwt.example.com/token',
-          livekitAlias: '#room:example.com',
-        ),
-        groupCallId: 'call_1',
-      );
-
-      service.dispose();
-      await Future<void>.delayed(Duration.zero);
-      expect(fakeRoom.disposed, isTrue);
-    });
-  });
-
-  group('dispose', () {
-    test('resets call state', () {
-      injectVoip();
-      service.dispose();
-      expect(service.callState, LatticeCallState.idle);
-      expect(service.activeGroupCall, isNull);
-      expect(service.voip, isNull);
-    });
-
-    test('cleans up LiveKit resources', () async {
-      final mockRoom = MockRoom();
-      final fakeRoom = setupLiveKitMocks();
-      setupGroupCall(mockRoom);
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: LiveKitBackend(
-          livekitServiceUrl: 'https://lk-jwt.example.com/token',
-          livekitAlias: '#room:example.com',
-        ),
-        groupCallId: 'call_1',
-      );
-
-      service.dispose();
-      await Future<void>.delayed(Duration.zero);
-      expect(fakeRoom.disposed, isTrue);
-    });
-  });
-
-  // ── Bug-Fix Regression Tests ─────────────────────────────
-
-  group('handleCallEnded guard during joining', () {
-    test('handleCallEnded is ignored while _joining is true', () async {
-      final mockRoom = MockRoom();
-      setupLiveKitMocks();
-      final result = setupGroupCall(mockRoom);
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      final enterCompleter = Completer<void>();
-      when(result.groupCall.enter()).thenAnswer((_) => enterCompleter.future);
-
-      final joinFuture = service.joinCall(
-        '!room:example.com',
-        backend: LiveKitBackend(
-          livekitServiceUrl: 'https://lk-jwt.example.com/token',
-          livekitAlias: '#room:example.com',
-        ),
-        groupCallId: 'call_1',
-      );
-      await Future<void>.delayed(Duration.zero);
-
-      expect(service.isJoining, isTrue);
-
+  group('handleCallEnded', () {
+    test('resets ringing state', () {
       service.simulateCallEnded();
+      expect(service.callState, LatticeCallState.idle);
+    });
+  });
 
-      expect(
-        service.callState,
-        isNot(LatticeCallState.idle),
-        reason: 'handleCallEnded must be ignored while _joining is true',
-      );
-
-      enterCompleter.complete();
-      await joinFuture;
-
-      expect(service.callState, LatticeCallState.connected);
+  group('roomHasActiveCall', () {
+    test('returns false when room not found', () {
+      when(mockClient.getRoomById('!missing:example.com')).thenReturn(null);
+      expect(service.roomHasActiveCall('!missing:example.com'), isFalse);
     });
 
-    test('handleCallEnded fires normally when not joining', () {
-      final mockRoom = MockRoom();
-      final mockCallSession = MockCallSession();
-      final mockUser = MockUser();
-
-      injectVoip();
-      when(mockCallSession.room).thenReturn(mockRoom);
-      when(mockCallSession.remoteUserId).thenReturn('@caller:example.com');
-      when(mockCallSession.type).thenReturn(CallType.kVoice);
-      when(mockRoom.id).thenReturn('!room:example.com');
+    test('returns false when no call member state events', () {
+      final mockRoom = setupMockRoom();
       when(mockRoom.states).thenReturn({});
-      when(mockRoom.unsafeGetUserFromMemoryOrFallback(any)).thenReturn(mockUser);
-      when(mockUser.calcDisplayname()).thenReturn('Caller');
+      expect(service.roomHasActiveCall('!room:example.com'), isFalse);
+    });
 
-      service.simulateIncomingCall(mockCallSession);
-      expect(service.callState, LatticeCallState.ringingIncoming);
+    test('returns true when active membership exists', () {
+      final mockRoom = setupMockRoom();
+      final now = DateTime.now().millisecondsSinceEpoch;
+      when(mockRoom.states).thenReturn({
+        'org.matrix.msc3401.call.member': {
+          '_@alice:example.com_DEVICE_m.call': FakeEvent(
+            content: {
+              'application': 'm.call',
+              'call_id': '',
+              'scope': 'm.room',
+              'device_id': 'DEVICE',
+              'expires': 14400000,
+            },
+            originServerTs: now,
+          ),
+        },
+      });
+      expect(service.roomHasActiveCall('!room:example.com'), isTrue);
+    });
 
-      service.simulateCallEnded();
-      expect(service.callState, LatticeCallState.idle);
+    test('returns false when membership is expired', () {
+      final mockRoom = setupMockRoom();
+      final longAgo = DateTime.now()
+          .subtract(const Duration(hours: 5))
+          .millisecondsSinceEpoch;
+      when(mockRoom.states).thenReturn({
+        'org.matrix.msc3401.call.member': {
+          '_@alice:example.com_DEVICE_m.call': FakeEvent(
+            content: {
+              'application': 'm.call',
+              'call_id': '',
+              'expires': 1000,
+            },
+            originServerTs: longAgo,
+          ),
+        },
+      });
+      expect(service.roomHasActiveCall('!room:example.com'), isFalse);
     });
   });
 
-  group('MatrixRTC ended event guard during joining', () {
-    test('GroupCallStateChanged.ended is ignored while joining', () async {
-      final mockRoom = MockRoom();
+  group('callParticipantCount', () {
+    test('counts active memberships for a call id', () {
+      final mockRoom = setupMockRoom();
+      final now = DateTime.now().millisecondsSinceEpoch;
+      when(mockRoom.states).thenReturn({
+        'org.matrix.msc3401.call.member': {
+          '_@alice:example.com_DEV1_m.call': FakeEvent(
+            content: {
+              'application': 'm.call',
+              'call_id': '',
+              'expires': 14400000,
+            },
+            originServerTs: now,
+          ),
+          '_@bob:example.com_DEV2_m.call': FakeEvent(
+            content: {
+              'application': 'm.call',
+              'call_id': '',
+              'expires': 14400000,
+            },
+            originServerTs: now,
+          ),
+        },
+      });
+      expect(service.callParticipantCount('!room:example.com', ''), 2);
+    });
+  });
+
+  group('E2E: outgoing call lifecycle', () {
+    test('initiateCall joins and connects', () async {
       setupLiveKitMocks();
-      final result = setupGroupCall(mockRoom);
+      setupMockRoom();
 
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      final enterCompleter = Completer<void>();
-      when(result.groupCall.enter()).thenAnswer((_) => enterCompleter.future);
-
-      final joinFuture = service.joinCall(
-        '!room:example.com',
-        backend: LiveKitBackend(
-          livekitServiceUrl: 'https://lk-jwt.example.com/token',
-          livekitAlias: '#room:example.com',
-        ),
-        groupCallId: 'call_1',
-      );
-      await Future<void>.delayed(Duration.zero);
-
-      expect(service.isJoining, isTrue);
-
-      result.events.add(GroupCallStateChanged(GroupCallState.ended));
-      await Future<void>.delayed(Duration.zero);
-
-      expect(
-        service.callState,
-        isNot(LatticeCallState.idle),
-        reason: 'ended event must be ignored while _joining is true',
-      );
-
-      expect(service.activeGroupCall, isNotNull);
-
-      enterCompleter.complete();
-      await joinFuture;
+      await service.initiateCall('!room:example.com');
 
       expect(service.callState, LatticeCallState.connected);
+      expect(service.activeCallRoomId, '!room:example.com');
     });
 
-    test('GroupCallStateChanged.ended works normally after connected', () async {
-      final mockRoom = MockRoom();
-      final fakeRoom = setupLiveKitMocks();
-      final result = setupGroupCall(mockRoom);
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: LiveKitBackend(
-          livekitServiceUrl: 'https://lk-jwt.example.com/token',
-          livekitAlias: '#room:example.com',
-        ),
-        groupCallId: 'call_1',
-      );
-      expect(service.callState, LatticeCallState.connected);
-
-      result.events.add(GroupCallStateChanged(GroupCallState.ended));
-      await Future<void>.delayed(Duration.zero);
-
-      expect(service.callState, LatticeCallState.idle);
-      expect(service.activeGroupCall, isNull);
-      expect(fakeRoom.disposed, isTrue);
-    });
-  });
-
-  group('joinCall failure cleans up group call membership', () {
-    test('groupCall.leave() is called when LiveKit connect fails', () async {
-      final mockRoom = MockRoom();
-      final fakeRoom = setupLiveKitMocks();
-      final result = setupGroupCall(mockRoom);
-      fakeRoom.throwOnConnect = true;
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: LiveKitBackend(
-          livekitServiceUrl: 'https://lk-jwt.example.com/token',
-          livekitAlias: '#room:example.com',
-        ),
-        groupCallId: 'call_1',
-      );
-
-      expect(service.callState, LatticeCallState.failed);
-      verify(result.groupCall.enter()).called(1);
-      verify(result.groupCall.leave()).called(1);
-    });
-
-    test('groupCall.leave() is called when token exchange fails', () async {
-      final mockRoom = MockRoom();
+    test('cancelOutgoingCall during join sets ended flag', () async {
+      final completer = Completer<void>();
       setupLiveKitMocks();
-      final result = setupGroupCall(mockRoom);
+      setupMockRoom();
 
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-      when(mockClient.requestOpenIdToken(any, any))
-          .thenThrow(Exception('token error'));
+      final originalPost = service.httpPostForTest;
+      service.httpPostForTest = (url, {headers, body}) async {
+        await completer.future;
+        return originalPost(url, headers: headers, body: body);
+      };
 
-      await service.joinCall(
-        '!room:example.com',
-        backend: LiveKitBackend(
-          livekitServiceUrl: 'https://lk-jwt.example.com/token',
-          livekitAlias: '#room:example.com',
-        ),
-        groupCallId: 'call_1',
-      );
+      final joinFuture = service.initiateCall('!room:example.com');
 
-      expect(service.callState, LatticeCallState.failed);
-      verify(result.groupCall.leave()).called(1);
-    });
-
-    test('leave() error in catch block is handled gracefully', () async {
-      final mockRoom = MockRoom();
-      final fakeRoom = setupLiveKitMocks();
-      final result = setupGroupCall(mockRoom);
-      fakeRoom.throwOnConnect = true;
-      when(result.groupCall.leave()).thenThrow(Exception('leave error'));
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: LiveKitBackend(
-          livekitServiceUrl: 'https://lk-jwt.example.com/token',
-          livekitAlias: '#room:example.com',
-        ),
-        groupCallId: 'call_1',
-      );
-
-      expect(service.callState, LatticeCallState.failed);
-      expect(service.activeGroupCall, isNull);
-    });
-  });
-
-  // ── End-to-End Call Lifecycle Tests ──────────────────────
-
-  group('E2E: outgoing call lifecycle (caller)', () {
-    late MockRoom mockRoom;
-    late _FakeLiveKitRoom fakeRoom;
-    late MockGroupCallSession mockGroupCall;
-    late CachedStreamController<MatrixRTCCallEvent> eventStream;
-
-    final livekitBackend = LiveKitBackend(
-      livekitServiceUrl: 'https://lk-jwt.example.com/token',
-      livekitAlias: '#room:example.com',
-    );
-
-    setUp(() {
-      mockRoom = MockRoom();
-      fakeRoom = setupLiveKitMocks();
-      final result = setupGroupCall(mockRoom);
-      mockGroupCall = result.groupCall;
-      eventStream = result.events;
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-    });
-
-    test('full lifecycle: join → connect → leave', () async {
-      final states = <LatticeCallState>[];
-      service.addListener(() => states.add(service.callState));
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: livekitBackend,
-        groupCallId: 'call_1',
-      );
-
-      expect(service.callState, LatticeCallState.connected);
-      expect(states, contains(LatticeCallState.joining));
-      expect(states.last, LatticeCallState.connected);
-      expect(service.activeGroupCall, same(mockGroupCall));
-      expect(service.activeCallRoomId, '!room:example.com');
-      expect(fakeRoom.connected, isTrue);
-
-      states.clear();
-      await service.leaveCall();
-
-      expect(service.callState, LatticeCallState.idle);
-      expect(states, contains(LatticeCallState.disconnecting));
-      expect(states.last, LatticeCallState.idle);
-      expect(service.activeGroupCall, isNull);
-      expect(service.livekitRoom, isNull);
-      verify(mockGroupCall.leave()).called(1);
-    });
-
-    test('delegate callback during join does not disrupt call', () async {
-      final enterCompleter = Completer<void>();
-      when(mockGroupCall.enter()).thenAnswer((_) => enterCompleter.future);
-
-      final joinFuture = service.joinCall(
-        '!room:example.com',
-        backend: livekitBackend,
-        groupCallId: 'call_1',
-      );
       await Future<void>.delayed(Duration.zero);
+      expect(service.callState, LatticeCallState.ringingOutgoing);
 
-      expect(service.isJoining, isTrue);
+      service.cancelOutgoingCall();
 
-      service.simulateCallEnded();
-
-      expect(
-        service.callState,
-        isNot(LatticeCallState.idle),
-        reason: 'delegate callback must not interfere during join',
-      );
-
-      enterCompleter.complete();
+      completer.complete();
       await joinFuture;
 
-      expect(service.callState, LatticeCallState.connected);
-    });
-
-    test('MatrixRTC ended event during join does not disrupt call', () async {
-      final enterCompleter = Completer<void>();
-      when(mockGroupCall.enter()).thenAnswer((_) => enterCompleter.future);
-
-      final joinFuture = service.joinCall(
-        '!room:example.com',
-        backend: livekitBackend,
-        groupCallId: 'call_1',
-      );
-      await Future<void>.delayed(Duration.zero);
-
-      eventStream.add(GroupCallStateChanged(GroupCallState.ended));
-      await Future<void>.delayed(Duration.zero);
-
-      expect(service.activeGroupCall, isNotNull);
-
-      enterCompleter.complete();
-      await joinFuture;
-
-      expect(service.callState, LatticeCallState.connected);
-    });
-
-    test('joinCall failure does not leave ghost membership', () async {
-      fakeRoom.throwOnConnect = true;
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: livekitBackend,
-        groupCallId: 'call_1',
-      );
-
-      expect(service.callState, LatticeCallState.failed);
-      expect(service.activeGroupCall, isNull);
-      verify(mockGroupCall.leave()).called(1);
-    });
-
-    test('callElapsed is set after connection', () async {
-      expect(service.callElapsed, isNull);
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: livekitBackend,
-        groupCallId: 'call_1',
-      );
-
-      expect(service.callState, LatticeCallState.connected);
-      expect(service.callElapsed, isNotNull);
-    });
-
-    test('second joinCall rejected while first in progress', () async {
-      await service.joinCall(
-        '!room:example.com',
-        backend: livekitBackend,
-        groupCallId: 'call_1',
-      );
-      expect(service.callState, LatticeCallState.connected);
-      expect(service.activeCallRoomId, '!room:example.com');
-    });
-  });
-
-  group('E2E: incoming call lifecycle (callee)', () {
-    late MockRoom mockRoom;
-    late _FakeLiveKitRoom fakeRoom;
-    late MockGroupCallSession mockGroupCall;
-
-    final livekitBackend = LiveKitBackend(
-      livekitServiceUrl: 'https://lk-jwt.example.com/token',
-      livekitAlias: '#room:example.com',
-    );
-
-    setUp(() {
-      mockRoom = MockRoom();
-      fakeRoom = setupLiveKitMocks();
-      final result = setupGroupCall(mockRoom);
-      mockGroupCall = result.groupCall;
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-      when(mockRoom.getLocalizedDisplayname()).thenReturn('Test Room');
-    });
-
-    void simulateIncoming() {
-      service.simulateIncomingGroupCall(mockGroupCall);
-    }
-
-    test('receive → ringing → accept → joining transition', () async {
-      final states = <LatticeCallState>[];
-      service.addListener(() => states.add(service.callState));
-
-      simulateIncoming();
-
-      expect(service.callState, LatticeCallState.ringingIncoming);
-      expect(service.incomingCall, isNotNull);
-      expect(service.incomingCall!.roomId, '!room:example.com');
-      expect(service.incomingCall!.callerName, 'Test Room');
-
-      states.clear();
-      service.acceptCall();
-
-      expect(service.callState, LatticeCallState.joining);
-      expect(service.incomingCall, isNull);
-      expect(states.first, LatticeCallState.joining);
-    });
-
-    test('callee join → connect → leave with explicit params', () async {
-      await service.joinCall(
-        '!room:example.com',
-        backend: livekitBackend,
-        groupCallId: 'call_1',
-      );
-
-      expect(service.callState, LatticeCallState.connected);
-      expect(fakeRoom.connected, isTrue);
-      verify(mockGroupCall.enter()).called(1);
-
-      await service.leaveCall();
       expect(service.callState, LatticeCallState.idle);
-      verify(mockGroupCall.leave()).called(1);
-    });
-
-    test('decline incoming call', () {
-      simulateIncoming();
-      expect(service.callState, LatticeCallState.ringingIncoming);
-
-      service.declineCall();
-      expect(service.callState, LatticeCallState.idle);
-      expect(service.incomingCall, isNull);
-    });
-
-    test('incoming call ignored when already in a call', () async {
-      await service.joinCall(
-        '!room:example.com',
-        backend: livekitBackend,
-        groupCallId: 'call_1',
-      );
-      expect(service.callState, LatticeCallState.connected);
-
-      final otherGroupCall = MockGroupCallSession();
-      final otherRoom = MockRoom();
-      when(otherGroupCall.room).thenReturn(otherRoom);
-      when(otherRoom.id).thenReturn('!other:example.com');
-      when(otherRoom.states).thenReturn({});
-      when(otherRoom.getLocalizedDisplayname()).thenReturn('Other Room');
-
-      service.simulateIncomingGroupCall(otherGroupCall);
-
-      expect(service.callState, LatticeCallState.connected);
-      expect(service.incomingCall, isNull);
-      expect(service.activeCallRoomId, '!room:example.com');
-    });
-
-    test('accept does nothing when not in ringing state', () {
-      service.acceptCall();
-      expect(service.callState, LatticeCallState.idle);
-    });
-
-    test('1:1 incoming call sets caller name from remote user', () {
-      final mockCallSession = MockCallSession();
-      final mockUser = MockUser();
-
-      when(mockCallSession.room).thenReturn(mockRoom);
-      when(mockCallSession.remoteUserId).thenReturn('@alice:example.com');
-      when(mockCallSession.type).thenReturn(CallType.kVideo);
-      when(mockRoom.unsafeGetUserFromMemoryOrFallback('@alice:example.com'))
-          .thenReturn(mockUser);
-      when(mockUser.calcDisplayname()).thenReturn('Alice');
-      when(mockUser.avatarUrl).thenReturn(null);
-
-      service.simulateIncomingCall(mockCallSession);
-
-      expect(service.callState, LatticeCallState.ringingIncoming);
-      expect(service.incomingCall!.callerName, 'Alice');
-      expect(service.incomingCall!.isVideo, isTrue);
-    });
-
-    test('incomingCallStream emits on incoming call', () async {
-      final events = <Object>[];
-      service.incomingCallStream.listen(events.add);
-
-      simulateIncoming();
-      await Future<void>.delayed(Duration.zero);
-
-      expect(events, hasLength(1));
-    });
-  });
-
-  group('E2E: call reconnection and recovery', () {
-    late _FakeLiveKitRoom fakeRoom;
-    late MockGroupCallSession mockGroupCall;
-
-    setUp(() async {
-      final mockRoom = MockRoom();
-      fakeRoom = setupLiveKitMocks();
-      final result = setupGroupCall(mockRoom);
-      mockGroupCall = result.groupCall;
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: LiveKitBackend(
-          livekitServiceUrl: 'https://lk-jwt.example.com/token',
-          livekitAlias: '#room:example.com',
-        ),
-        groupCallId: 'call_1',
-      );
-      expect(service.callState, LatticeCallState.connected);
-    });
-
-    test('reconnect cycle: connected → reconnecting → connected', () {
-      final states = <LatticeCallState>[];
-      service.addListener(() => states.add(service.callState));
-
-      fakeRoom._listener!.fire(const livekit.RoomReconnectingEvent());
-      expect(service.callState, LatticeCallState.reconnecting);
-
-      fakeRoom._listener!.fire(const livekit.RoomReconnectedEvent());
-      expect(service.callState, LatticeCallState.connected);
-
-      expect(states, [
-        LatticeCallState.reconnecting,
-        LatticeCallState.connected,
-      ]);
-    });
-
-    test('disconnect cleans up everything and leaves group call', () async {
-      fakeRoom._listener!.fire(livekit.RoomDisconnectedEvent());
-      await Future<void>.delayed(Duration.zero);
-
-      expect(service.callState, LatticeCallState.failed);
-      expect(service.activeGroupCall, isNull);
-      expect(service.livekitRoom, isNull);
-      expect(service.participants, isEmpty);
-      expect(fakeRoom.disconnected, isTrue);
-      verify(mockGroupCall.leave()).called(1);
-    });
-
-    test('multiple reconnect events handled correctly', () {
-      fakeRoom._listener!.fire(const livekit.RoomReconnectingEvent());
-      expect(service.callState, LatticeCallState.reconnecting);
-
-      fakeRoom._listener!.fire(const livekit.RoomReconnectingEvent());
-      expect(service.callState, LatticeCallState.reconnecting);
-
-      fakeRoom._listener!.fire(const livekit.RoomReconnectedEvent());
-      expect(service.callState, LatticeCallState.connected);
     });
   });
 
   group('E2E: concurrent and edge-case scenarios', () {
     test('joinCall from failed state succeeds', () async {
-      final mockRoom = MockRoom();
       final fakeRoom = setupLiveKitMocks();
-      setupGroupCall(mockRoom);
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
+      setupMockRoom();
       fakeRoom.throwOnConnect = true;
-      await service.joinCall(
-        '!room:example.com',
-        backend: LiveKitBackend(
-          livekitServiceUrl: 'https://lk-jwt.example.com/token',
-          livekitAlias: '#room:example.com',
-        ),
-        groupCallId: 'call_1',
-      );
+
+      await service.joinCall('!room:example.com');
       expect(service.callState, LatticeCallState.failed);
 
       fakeRoom.throwOnConnect = false;
-      final fakeRoom2 = _FakeLiveKitRoom();
-      service.roomFactoryForTest = () => fakeRoom2;
+      final freshRoom = _FakeLiveKitRoom();
+      service.roomFactoryForTest = () => freshRoom;
 
-      final mockGroupCall2 = MockGroupCallSession();
-      final eventStream2 = CachedStreamController<MatrixRTCCallEvent>();
-      when(mockGroupCall2.room).thenReturn(mockRoom);
-      when(mockGroupCall2.groupCallId).thenReturn('call_1');
-      when(mockGroupCall2.matrixRTCEventStream).thenReturn(eventStream2);
-      when(mockGroupCall2.enter()).thenAnswer((_) async {});
-      when(mockGroupCall2.leave()).thenAnswer((_) async {});
-      final voipId = VoipId(roomId: '!room:example.com', callId: 'call_1');
-      when(mockVoip.groupCalls).thenReturn({voipId: mockGroupCall2});
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: LiveKitBackend(
-          livekitServiceUrl: 'https://lk-jwt.example.com/token',
-          livekitAlias: '#room:example.com',
-        ),
-        groupCallId: 'call_1',
-      );
-
+      await service.joinCall('!room:example.com');
       expect(service.callState, LatticeCallState.connected);
-      expect(fakeRoom2.connected, isTrue);
     });
 
-    test('state transitions during join → connect → leave', () async {
-      final mockRoom = MockRoom();
+    test('second joinCall rejected while first in progress', () async {
+      final completer = Completer<void>();
       setupLiveKitMocks();
-      setupGroupCall(mockRoom);
+      setupMockRoom();
 
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
+      final originalPost = service.httpPostForTest;
+      service.httpPostForTest = (url, {headers, body}) async {
+        await completer.future;
+        return originalPost(url, headers: headers, body: body);
+      };
 
-      final states = <LatticeCallState>[];
-      service.addListener(() => states.add(service.callState));
+      final firstJoin = service.joinCall('!room:example.com');
 
-      await service.joinCall(
-        '!room:example.com',
-        backend: LiveKitBackend(
-          livekitServiceUrl: 'https://lk-jwt.example.com/token',
-          livekitAlias: '#room:example.com',
-        ),
-        groupCallId: 'call_1',
-      );
+      await Future<void>.delayed(Duration.zero);
 
-      expect(states.first, LatticeCallState.joining);
-      expect(states.last, LatticeCallState.connected);
+      await service.joinCall('!room:example.com');
 
-      states.clear();
-      await service.leaveCall();
+      expect(service.callState, LatticeCallState.failed);
 
-      expect(states.first, LatticeCallState.disconnecting);
-      expect(states.last, LatticeCallState.idle);
-    });
-
-    test('client update during active call resets everything', () async {
-      final mockRoom = MockRoom();
-      setupLiveKitMocks();
-      setupGroupCall(mockRoom);
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: LiveKitBackend(
-          livekitServiceUrl: 'https://lk-jwt.example.com/token',
-          livekitAlias: '#room:example.com',
-        ),
-        groupCallId: 'call_1',
-      );
-      expect(service.callState, LatticeCallState.connected);
-
-      final newClient = MockClient();
-      when(newClient.rooms).thenReturn([]);
-      service.updateClient(newClient);
-
-      expect(service.callState, LatticeCallState.idle);
-      expect(service.activeGroupCall, isNull);
-      expect(service.livekitRoom, isNull);
-    });
-  });
-
-  group('E2E: MeshBackend call lifecycle', () {
-    test('join with MeshBackend succeeds without LiveKit', () async {
-      final mockRoom = MockRoom();
-      final result = setupGroupCall(mockRoom);
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: MeshBackend(),
-        groupCallId: 'call_1',
-      );
-
-      expect(service.callState, LatticeCallState.connected);
-      expect(service.livekitRoom, isNull);
-      expect(service.activeGroupCall, same(result.groupCall));
-      verify(result.groupCall.enter()).called(1);
-    });
-
-    test('leave MeshBackend call', () async {
-      final mockRoom = MockRoom();
-      final result = setupGroupCall(mockRoom);
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: MeshBackend(),
-        groupCallId: 'call_1',
-      );
-
-      await service.leaveCall();
-
-      expect(service.callState, LatticeCallState.idle);
-      expect(service.activeGroupCall, isNull);
-      verify(result.groupCall.leave()).called(1);
-    });
-  });
-
-  group('E2E: track toggles during active call', () {
-    late _FakeLiveKitRoom fakeRoom;
-
-    setUp(() async {
-      final mockRoom = MockRoom();
-      fakeRoom = setupLiveKitMocks();
-      setupGroupCall(mockRoom);
-
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: LiveKitBackend(
-          livekitServiceUrl: 'https://lk-jwt.example.com/token',
-          livekitAlias: '#room:example.com',
-        ),
-        groupCallId: 'call_1',
-      );
-    });
-
-    test('full toggle sequence: mic → camera → screenshare', () async {
-      expect(service.isMicEnabled, isFalse);
-      expect(service.isCameraEnabled, isFalse);
-      expect(service.isScreenShareEnabled, isFalse);
-
-      await service.toggleMicrophone();
-      expect(service.isMicEnabled, isTrue);
-
-      await service.toggleCamera();
-      expect(service.isCameraEnabled, isTrue);
-
-      await service.toggleScreenShare();
-      expect(service.isScreenShareEnabled, isTrue);
-
-      await service.toggleMicrophone();
-      expect(service.isMicEnabled, isFalse);
-      expect(service.isCameraEnabled, isTrue);
-      expect(service.isScreenShareEnabled, isTrue);
-    });
-
-    test('toggle error does not affect other toggles', () async {
-      await service.toggleMicrophone();
-      expect(service.isMicEnabled, isTrue);
-
-      fakeRoom._localParticipant!.throwOnToggle = true;
-
-      await service.toggleCamera();
-      expect(service.isCameraEnabled, isFalse);
-
-      expect(service.isMicEnabled, isTrue);
+      completer.complete();
+      await firstJoin;
     });
   });
 
   group('E2E: participant aggregation', () {
     test('allParticipants includes local after LiveKit connect', () async {
-      final mockRoom = MockRoom();
       setupLiveKitMocks();
-      setupGroupCall(mockRoom);
+      setupMockRoom();
 
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: LiveKitBackend(
-          livekitServiceUrl: 'https://lk-jwt.example.com/token',
-          livekitAlias: '#room:example.com',
-        ),
-        groupCallId: 'call_1',
-      );
+      await service.joinCall('!room:example.com');
 
       final participants = service.allParticipants;
       expect(participants, hasLength(1));
@@ -1684,21 +807,10 @@ void main() {
     });
 
     test('allParticipants updates when remote joins', () async {
-      final mockRoom = MockRoom();
       final fakeRoom = setupLiveKitMocks();
-      setupGroupCall(mockRoom);
+      setupMockRoom();
 
-      injectVoip();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      await service.joinCall(
-        '!room:example.com',
-        backend: LiveKitBackend(
-          livekitServiceUrl: 'https://lk-jwt.example.com/token',
-          livekitAlias: '#room:example.com',
-        ),
-        groupCallId: 'call_1',
-      );
+      await service.joinCall('!room:example.com');
 
       final fakeRemote = _FakeRemoteParticipant();
       fakeRoom._remoteParticipants['user2'] = fakeRemote;
@@ -1714,22 +826,142 @@ void main() {
       expect(service.allParticipants, isEmpty);
     });
   });
+
+  group('token exchange', () {
+    test('tries get_token first, falls back to sfu/get on 404', () async {
+      setupLiveKitMocks();
+      setupMockRoom();
+
+      final requestedUrls = <String>[];
+      service.httpPostForTest = (url, {headers, body}) async {
+        requestedUrls.add(url.toString());
+        if (url.path.contains('get_token')) {
+          return http.Response('', 404);
+        }
+        return http.Response(
+          jsonEncode({'url': 'wss://lk.example.com', 'token': 'lk_token'}),
+          200,
+        );
+      };
+
+      await service.joinCall('!room:example.com');
+
+      expect(service.callState, LatticeCallState.connected);
+      expect(requestedUrls.any((u) => u.contains('get_token')), isTrue);
+      expect(requestedUrls.any((u) => u.contains('sfu/get')), isTrue);
+    });
+
+    test('follows 307 redirects', () async {
+      setupLiveKitMocks();
+      setupMockRoom();
+
+      var callCount = 0;
+      service.httpPostForTest = (url, {headers, body}) async {
+        callCount++;
+        if (callCount == 1) {
+          return http.Response('', 307, headers: {
+            'location': 'https://lk-jwt.example.com/get_token/',
+          });
+        }
+        return http.Response(
+          jsonEncode({'url': 'wss://lk.example.com', 'jwt': 'lk_token'}),
+          200,
+        );
+      };
+
+      await service.joinCall('!room:example.com');
+
+      expect(service.callState, LatticeCallState.connected);
+      expect(callCount, 2);
+    });
+  });
+
+  group('membership state event format', () {
+    test('sends correct MSC3401 membership content', () async {
+      setupLiveKitMocks();
+      setupMockRoom();
+
+      await service.joinCall('!room:example.com');
+
+      final captured = verify(mockClient.setRoomStateWithKey(
+        '!room:example.com',
+        'org.matrix.msc3401.call.member',
+        '_@user:example.com_DEVICE1_m.call',
+        captureAny,
+      )).captured;
+
+      final content = captured.first as Map<String, dynamic>;
+      expect(content['application'], 'm.call');
+      expect(content['call_id'], '');
+      expect(content['scope'], 'm.room');
+      expect(content['device_id'], 'DEVICE1');
+      expect(content['expires'], 14400000);
+      expect(content['focus_active'], {
+        'type': 'livekit',
+        'focus_selection': 'oldest_membership',
+      });
+      expect(content['foci_preferred'], [
+        {
+          'type': 'livekit',
+          'livekit_service_url': 'https://lk-jwt.example.com',
+          'livekit_alias': '#room:example.com',
+        },
+      ]);
+    });
+
+    test('sends empty content on leave', () async {
+      setupLiveKitMocks();
+      setupMockRoom();
+
+      await service.joinCall('!room:example.com');
+      await service.leaveCall();
+
+      verify(mockClient.setRoomStateWithKey(
+        '!room:example.com',
+        'org.matrix.msc3401.call.member',
+        '_@user:example.com_DEVICE1_m.call',
+        {},
+      )).called(1);
+    });
+  });
+
+  group('updateClient', () {
+    test('resets state on client change', () async {
+      setupLiveKitMocks();
+      setupMockRoom();
+
+      await service.joinCall('!room:example.com');
+      expect(service.callState, LatticeCallState.connected);
+
+      final newClient = MockClient();
+      when(newClient.rooms).thenReturn([]);
+      service.updateClient(newClient);
+
+      expect(service.callState, LatticeCallState.idle);
+      expect(service.activeCallRoomId, isNull);
+    });
+
+    test('no-op when same client', () async {
+      setupLiveKitMocks();
+      setupMockRoom();
+
+      await service.joinCall('!room:example.com');
+      service.updateClient(mockClient);
+
+      expect(service.callState, LatticeCallState.connected);
+    });
+  });
 }
 
-// ── Fake RemoteParticipant ─────────────────────────────────
+// ── Fake Event for room state testing ─────────────────────
 
-class _FakeRemoteParticipant extends Fake
-    implements livekit.RemoteParticipant {
-  @override
-  List<livekit.RemoteTrackPublication<livekit.RemoteVideoTrack>>
-      get videoTrackPublications => [];
+class FakeEvent extends Fake implements Event {
+  FakeEvent({required this.content, required int originServerTs})
+      : originServerTs = DateTime.fromMillisecondsSinceEpoch(originServerTs);
 
   @override
-  String get identity => 'remote';
+  final Map<String, dynamic> content;
 
   @override
-  String get name => 'Remote User';
-
-  @override
-  bool get isMuted => false;
+  final DateTime originServerTs;
 }
