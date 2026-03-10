@@ -26,10 +26,11 @@ class _CallScreenState extends State<CallScreen> {
     final state = _callService.callState;
     if (state == LatticeCallState.idle || state == LatticeCallState.failed) {
       _popTimer ??= Timer(const Duration(seconds: 2), () {
+        _popTimer = null;
         if (mounted) unawaited(CallNavigator.endCall(context));
       });
-    } else if (_popTimer != null) {
-      _popTimer!.cancel();
+    } else {
+      _popTimer?.cancel();
       _popTimer = null;
     }
   }

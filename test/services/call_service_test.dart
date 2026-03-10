@@ -303,7 +303,7 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      expect(service.callState, LatticeCallState.failed);
+      expect(service.callState, LatticeCallState.joining);
 
       completer.complete();
       await firstJoin;
@@ -778,7 +778,7 @@ void main() {
       expect(service.callState, LatticeCallState.connected);
     });
 
-    test('second joinCall rejected while first in progress', () async {
+    test('second joinCall ignored while first in progress', () async {
       final completer = Completer<void>();
       setupLiveKitMocks();
       setupMockRoom();
@@ -795,7 +795,7 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      expect(service.callState, LatticeCallState.failed);
+      expect(service.isJoining, isTrue);
 
       completer.complete();
       await firstJoin;

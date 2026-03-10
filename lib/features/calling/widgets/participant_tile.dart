@@ -20,6 +20,7 @@ class _ParticipantTileState extends State<ParticipantTile> {
   static const _audioLevelThreshold = 0.05;
 
   rtc.RTCVideoRenderer? _renderer;
+  int _setupGeneration = 0;
 
   @override
   void initState() {
@@ -36,19 +37,21 @@ class _ParticipantTileState extends State<ParticipantTile> {
   }
 
   Future<void> _setupRenderer() async {
+    final generation = ++_setupGeneration;
     final stream = widget.participant.mediaStream;
     if (stream == null) {
       if (_renderer != null) {
         _renderer!.srcObject = null;
         await _renderer!.dispose();
         _renderer = null;
-        if (mounted) setState(() {});
+        if (mounted && generation == _setupGeneration) setState(() {});
       }
       return;
     }
 
     _renderer ??= rtc.RTCVideoRenderer();
     await _renderer!.initialize();
+    if (generation != _setupGeneration) return;
     _renderer!.srcObject = stream;
     if (mounted) setState(() {});
   }
@@ -141,6 +144,7 @@ class _ParticipantTileState extends State<ParticipantTile> {
   }
 
   Widget _buildBottomOverlay(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final showAudioBar = widget.participant.audioLevel > _audioLevelThreshold;
 
     return Positioned(
@@ -148,11 +152,11 @@ class _ParticipantTileState extends State<ParticipantTile> {
       right: 0,
       bottom: 0,
       child: DecoratedBox(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.transparent, Colors.black54],
+            colors: [Colors.transparent, cs.scrim.withValues(alpha: 0.54)],
           ),
         ),
         child: Padding(
@@ -166,7 +170,7 @@ class _ParticipantTileState extends State<ParticipantTile> {
                           (_maxAudioBarWidth - _minAudioBarWidth),
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.greenAccent,
+                    color: cs.tertiary,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),

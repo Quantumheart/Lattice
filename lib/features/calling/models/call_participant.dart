@@ -26,7 +26,8 @@ class CallParticipant {
         .where((pub) => pub.source != livekit.TrackSource.screenShareVideo)
         .firstOrNull;
     final hasVideo = cameraPub != null && cameraPub.subscribed && !cameraPub.muted;
-    final videoTrack = hasVideo ? cameraPub.track as livekit.VideoTrack? : null;
+    final track = hasVideo ? cameraPub.track : null;
+    final videoTrack = track is livekit.VideoTrack ? track : null;
 
     final hasScreenShare = p.videoTrackPublications.any(
       (pub) => pub.source == livekit.TrackSource.screenShareVideo && pub.subscribed,

@@ -248,10 +248,11 @@ mixin CallLiveKitMixin on ChangeNotifier {
     );
 
     _livekitRoom = _roomFactory();
-    _livekitListener = _livekitRoom!.createListener();
-    _subscribeLiveKitEvents();
 
     await _livekitRoom!.connect(credentials.url, credentials.token);
+
+    _livekitListener = _livekitRoom!.createListener();
+    _subscribeLiveKitEvents();
 
     _isMicEnabled = false;
     _isCameraEnabled = false;
@@ -273,13 +274,13 @@ mixin CallLiveKitMixin on ChangeNotifier {
     });
 
     listener.on<livekit.RoomDisconnectedEvent>((_) {
-      unawaited(cleanupLiveKit());
       final roomId = activeCallRoomId;
       activeCallRoomId = null;
       cancelMembershipRenewal();
       callStartTime = null;
       callState = LatticeCallState.failed;
       notifyListeners();
+      unawaited(cleanupLiveKit());
       if (roomId != null) {
         unawaited(
           removeMembershipEvent(roomId).catchError(
@@ -334,10 +335,14 @@ mixin CallLiveKitMixin on ChangeNotifier {
     }
     try {
       await listener?.dispose();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[Lattice] Error disposing LiveKit listener: $e');
+    }
     try {
       await room?.dispose();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[Lattice] Error disposing LiveKit room: $e');
+    }
   }
 
   // ── Well-Known ────────────────────────────────────────────────

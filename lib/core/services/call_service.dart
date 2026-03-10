@@ -137,9 +137,9 @@ class CallService extends ChangeNotifier
 
   @override
   void dispose() {
-    _disposed = true;
     _resetState();
     closeIncomingCallController();
+    _disposed = true;
     super.dispose();
   }
 

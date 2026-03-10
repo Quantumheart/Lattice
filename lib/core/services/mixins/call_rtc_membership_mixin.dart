@@ -42,11 +42,15 @@ mixin CallRtcMembershipMixin on ChangeNotifier {
   // ── Send / Remove ─────────────────────────────────────────────
   @protected
   Future<void> sendMembershipEvent(String roomId, String livekitAlias) async {
+    final serviceUrl = cachedLivekitServiceUrl;
+    if (serviceUrl == null) {
+      throw StateError('cachedLivekitServiceUrl is null');
+    }
     await client.setRoomStateWithKey(
       roomId,
       callMemberEventType,
       membershipStateKey,
-      makeMembershipContent(cachedLivekitServiceUrl!, livekitAlias),
+      makeMembershipContent(serviceUrl, livekitAlias),
     );
   }
 

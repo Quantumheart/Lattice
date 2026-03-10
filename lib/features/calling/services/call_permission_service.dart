@@ -13,8 +13,16 @@ abstract class CallPermissionService {
       Permission.camera,
       Permission.microphone,
     ].request();
-    return statuses[Permission.camera]!.isGranted &&
-        statuses[Permission.microphone]!.isGranted;
+
+    final camera = statuses[Permission.camera]!;
+    final microphone = statuses[Permission.microphone]!;
+
+    if (camera.isPermanentlyDenied || microphone.isPermanentlyDenied) {
+      await openAppSettings();
+      return false;
+    }
+
+    return camera.isGranted && microphone.isGranted;
   }
 
   static Future<bool> check() async {
