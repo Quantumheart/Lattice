@@ -75,6 +75,7 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
         if (room.pinnedEventIds.isNotEmpty && onPinnedEvent != null)
           Builder(
             builder: (buttonContext) => IconButton(
+              mouseCursor: SystemMouseCursors.click,
               icon: Badge.count(
                 count: room.pinnedEventIds.length,
                 child: const Icon(Icons.push_pin_rounded),
@@ -89,10 +90,12 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         _CallButton(room: room),
         IconButton(
+          mouseCursor: SystemMouseCursors.click,
           icon: const Icon(Icons.search_rounded),
           onPressed: onSearch,
         ),
         IconButton(
+          mouseCursor: SystemMouseCursors.click,
           icon: const Icon(Icons.more_vert_rounded),
           onPressed: () {
             if (onShowDetails != null) {
@@ -161,16 +164,21 @@ class _CallButtonState extends State<_CallButton> {
             !roomHasCall);
 
     if (roomHasCall && !isInCall) {
-      return TextButton.icon(
-        icon: const Icon(Icons.call_rounded),
-        label: const Text('Join'),
-        style: TextButton.styleFrom(foregroundColor: Colors.green),
-        onPressed: busy ? null : () => _startCall(model.CallType.voice),
+      return MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: TextButton.icon(
+          icon: const Icon(Icons.call_rounded),
+          label: const Text('Join'),
+          style: TextButton.styleFrom(foregroundColor: Colors.green),
+          onPressed: busy ? null : () => _startCall(model.CallType.voice),
+        ),
       );
     }
 
     if (isInCall) {
-      return PopupMenuButton<String>(
+      return MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: PopupMenuButton<String>(
         icon: Icon(Icons.call_rounded, color: Colors.green.shade400),
         tooltip: 'In call',
         onSelected: (value) {
@@ -203,34 +211,15 @@ class _CallButtonState extends State<_CallButton> {
             ),
           ),
         ],
+      ),
       );
     }
 
-    return PopupMenuButton<model.CallType>(
+    return IconButton(
+      mouseCursor: SystemMouseCursors.click,
       icon: const Icon(Icons.call_rounded),
       tooltip: 'Call',
-      enabled: !busy,
-      onSelected: _startCall,
-      itemBuilder: (_) => const [
-        PopupMenuItem(
-          value: model.CallType.voice,
-          child: ListTile(
-            leading: Icon(Icons.call_rounded),
-            title: Text('Voice call'),
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
-        PopupMenuItem(
-          value: model.CallType.video,
-          child: ListTile(
-            leading: Icon(Icons.videocam_rounded),
-            title: Text('Video call'),
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-          ),
-        ),
-      ],
+      onPressed: busy ? null : () => _startCall(model.CallType.voice),
     );
   }
 }

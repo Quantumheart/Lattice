@@ -195,7 +195,7 @@ void main() {
     when(mockClient.setRoomStateWithKey(any, any, any, any))
         .thenAnswer((_) async => 'event_id');
 
-    service.httpPostForTest = (_, url, {headers, body}) async {
+    service.httpPostForTest = (client, url, {headers, body}) async {
       return http.Response(
         jsonEncode({'url': 'wss://lk.example.com', 'jwt': 'lk_token'}),
         200,
@@ -268,7 +268,7 @@ void main() {
       setupMockRoom();
       service.cachedLivekitServiceUrlForTest = null;
 
-      service.httpPostForTest = (_, url, {headers, body}) async {
+      service.httpPostForTest = (client, url, {headers, body}) async {
         return http.Response('', 404);
       };
 
@@ -299,9 +299,9 @@ void main() {
       fakeRoom.throwOnConnect = false;
 
       final originalPost = service.httpPostForTest;
-      service.httpPostForTest = (_, url, {headers, body}) async {
+      service.httpPostForTest = (client, url, {headers, body}) async {
         await completer.future;
-        return originalPost(_, url, headers: headers, body: body);
+        return originalPost(client, url, headers: headers, body: body);
       };
 
       final firstJoin = service.joinCall('!room:example.com');
@@ -352,7 +352,7 @@ void main() {
       setupLiveKitMocks();
       setupMockRoom();
 
-      service.httpPostForTest = (_, url, {headers, body}) async {
+      service.httpPostForTest = (client, url, {headers, body}) async {
         return http.Response('token error', 500);
       };
 
@@ -390,7 +390,7 @@ void main() {
       setupLiveKitMocks();
       setupMockRoom();
 
-      service.httpPostForTest = (_, url, {headers, body}) async {
+      service.httpPostForTest = (client, url, {headers, body}) async {
         return http.Response('error', 500);
       };
 
@@ -748,9 +748,9 @@ void main() {
       setupMockRoom();
 
       final originalPost = service.httpPostForTest;
-      service.httpPostForTest = (_, url, {headers, body}) async {
+      service.httpPostForTest = (client, url, {headers, body}) async {
         await completer.future;
-        return originalPost(_, url, headers: headers, body: body);
+        return originalPost(client, url, headers: headers, body: body);
       };
 
       final joinFuture = service.initiateCall('!room:example.com');
@@ -790,9 +790,9 @@ void main() {
       setupMockRoom();
 
       final originalPost = service.httpPostForTest;
-      service.httpPostForTest = (_, url, {headers, body}) async {
+      service.httpPostForTest = (client, url, {headers, body}) async {
         await completer.future;
-        return originalPost(_, url, headers: headers, body: body);
+        return originalPost(client, url, headers: headers, body: body);
       };
 
       final firstJoin = service.joinCall('!room:example.com');
@@ -848,7 +848,7 @@ void main() {
 
       Uri? capturedUrl;
       Object? capturedBody;
-      service.httpPostForTest = (_, url, {headers, body}) async {
+      service.httpPostForTest = (client, url, {headers, body}) async {
         capturedUrl = url;
         capturedBody = body;
         return http.Response(
@@ -878,7 +878,7 @@ void main() {
       setupMockRoom();
 
       var callCount = 0;
-      service.httpPostForTest = (_, url, {headers, body}) async {
+      service.httpPostForTest = (client, url, {headers, body}) async {
         callCount++;
         if (callCount == 1) {
           return http.Response(
