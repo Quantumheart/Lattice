@@ -25,12 +25,10 @@ class _ParticipantTileState extends State<ParticipantTile> {
   rtc.RTCVideoRenderer? _renderer;
   int _setupGeneration = 0;
   Uri? _resolvedAvatarUrl;
-  late String _matrixUserId;
 
   @override
   void initState() {
     super.initState();
-    _matrixUserId = _extractMatrixId(widget.participant.id);
     unawaited(_setupRenderer());
     unawaited(_resolveAvatar());
   }
@@ -42,17 +40,9 @@ class _ParticipantTileState extends State<ParticipantTile> {
       unawaited(_setupRenderer());
     }
     if (widget.participant.id != oldWidget.participant.id) {
-      _matrixUserId = _extractMatrixId(widget.participant.id);
       _resolvedAvatarUrl = null;
       unawaited(_resolveAvatar());
     }
-  }
-
-  static final _matrixIdPattern = RegExp('@[^:]+:[^:]+');
-
-  static String _extractMatrixId(String identity) {
-    final match = _matrixIdPattern.firstMatch(identity);
-    return match?.group(0) ?? identity;
   }
 
   Future<void> _resolveAvatar() async {
@@ -62,7 +52,7 @@ class _ParticipantTileState extends State<ParticipantTile> {
     }
     try {
       final client = context.read<CallService>().client;
-      final profile = await client.getProfileFromUserId(_matrixUserId);
+      final profile = await client.getProfileFromUserId(widget.participant.id);
       if (mounted && profile.avatarUrl != null) {
         setState(() => _resolvedAvatarUrl = profile.avatarUrl);
       }
@@ -164,7 +154,7 @@ class _ParticipantTileState extends State<ParticipantTile> {
         child: UserAvatar(
           client: matrixClient,
           avatarUrl: _resolvedAvatarUrl,
-          userId: _matrixUserId,
+          userId: widget.participant.id,
           size: 64,
         ),
       ),
