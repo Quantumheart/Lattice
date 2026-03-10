@@ -60,8 +60,7 @@ class CallService extends ChangeNotifier
 
   // ── Shared State ─────────────────────────────────────────────
 
-  static const Map<LatticeCallState, Set<LatticeCallState>> validTransitions =
-      {
+  static const Map<LatticeCallState, Set<LatticeCallState>> validTransitions = {
     LatticeCallState.idle: {
       LatticeCallState.joining,
       LatticeCallState.ringingOutgoing,
@@ -114,7 +113,8 @@ class CallService extends ChangeNotifier
     final allowed = validTransitions[_callState];
     if (allowed == null || !allowed.contains(next)) {
       debugPrint(
-          '[Lattice] Invalid call state transition: $_callState → $next');
+        '[Lattice] Invalid call state transition: $_callState → $next',
+      );
       assert(false, 'Invalid call state transition: $_callState → $next');
       return;
     }

@@ -278,6 +278,10 @@ mixin CallLiveKitMixin on ChangeNotifier {
     });
 
     listener.on<livekit.RoomDisconnectedEvent>((_) {
+      if (callState == LatticeCallState.disconnecting ||
+          callState == LatticeCallState.idle) {
+        return;
+      }
       if (callState == LatticeCallState.joining) {
         callState = LatticeCallState.idle;
         return;
@@ -336,14 +340,14 @@ mixin CallLiveKitMixin on ChangeNotifier {
     _isScreenShareEnabled = false;
 
     try {
-      await room?.disconnect();
-    } catch (e) {
-      debugPrint('[Lattice] Error disconnecting LiveKit: $e');
-    }
-    try {
       await listener?.dispose();
     } catch (e) {
       debugPrint('[Lattice] Error disposing LiveKit listener: $e');
+    }
+    try {
+      await room?.disconnect();
+    } catch (e) {
+      debugPrint('[Lattice] Error disconnecting LiveKit: $e');
     }
     try {
       await room?.dispose();
