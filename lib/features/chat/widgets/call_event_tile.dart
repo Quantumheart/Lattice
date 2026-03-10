@@ -80,6 +80,9 @@ class CallEventTile extends StatelessWidget {
       case kCallReject:
         return (Icons.call_end_rounded, '$sender declined the call');
 
+      case kCallAnswer:
+        return (Icons.call_rounded, '$sender answered the call');
+
       default:
         return (Icons.call_rounded, 'Call event');
     }

@@ -4,12 +4,14 @@ class IncomingCallInfo {
   const IncomingCallInfo({
     required this.roomId,
     required this.callerName,
+    this.callId,
     this.callerAvatarUrl,
     this.isVideo = false,
     this.isGroupCall = false,
   });
 
   final String roomId;
+  final String? callId;
   final String callerName;
   final Uri? callerAvatarUrl;
   final bool isVideo;

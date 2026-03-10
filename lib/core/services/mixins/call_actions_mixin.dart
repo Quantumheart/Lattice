@@ -30,6 +30,8 @@ mixin CallActionsMixin on ChangeNotifier {
     required String livekitAlias,
   });
   Future<void> cleanupLiveKit();
+  String? get activeCallId;
+  Future<void> sendCallHangup(String roomId, String callId, {String reason});
 
   // ── Teardown ─────────────────────────────────────────────────
   Future<void> _teardownCall({String? roomId}) async {
@@ -125,6 +127,12 @@ mixin CallActionsMixin on ChangeNotifier {
 
     final roomId = activeCallRoomId!;
     debugPrint('[Lattice] Leaving call in room $roomId');
+
+    final callId = activeCallId;
+    final room = client.getRoomById(roomId);
+    if (callId != null && room != null && room.isDirectChat) {
+      unawaited(sendCallHangup(roomId, callId));
+    }
 
     stopRinging();
     callState = LatticeCallState.disconnecting;

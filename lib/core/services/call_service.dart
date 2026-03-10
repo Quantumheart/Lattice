@@ -6,6 +6,7 @@ import 'package:lattice/core/services/mixins/call_actions_mixin.dart';
 import 'package:lattice/core/services/mixins/call_livekit_mixin.dart';
 import 'package:lattice/core/services/mixins/call_ringing_mixin.dart';
 import 'package:lattice/core/services/mixins/call_rtc_membership_mixin.dart';
+import 'package:lattice/core/services/mixins/call_signaling_mixin.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
 import 'package:matrix/matrix.dart';
 
@@ -45,7 +46,8 @@ class CallService extends ChangeNotifier
         CallRtcMembershipMixin,
         CallLiveKitMixin,
         CallRingingMixin,
-        CallActionsMixin {
+        CallActionsMixin,
+        CallSignalingMixin {
   CallService({required Client client}) : _client = client;
 
   Client _client;
@@ -152,10 +154,12 @@ class CallService extends ChangeNotifier
     if (_initialized) return;
     _initialized = true;
     unawaited(fetchWellKnownLiveKit());
+    startSignalingListener();
     debugPrint('[Lattice] CallService initialized');
   }
 
   void _resetState() {
+    stopSignalingListener();
     unawaited(cleanupLiveKit());
     cancelMembershipRenewal();
     _activeCallRoomId = null;
@@ -164,6 +168,7 @@ class CallService extends ChangeNotifier
     resetIncomingCall();
     stopRinging();
     disposeRingtone();
+    clearActiveCallId();
     _callStartTime = null;
   }
 

@@ -1,6 +1,16 @@
 const kCallInvite = 'm.call.invite';
+const kCallAnswer = 'm.call.answer';
 const kCallHangup = 'm.call.hangup';
 const kCallReject = 'm.call.reject';
 const kCallMember = 'com.famedly.call.member';
 const kCallMemberMsc = 'org.matrix.msc3401.call.member';
-const Set<String> callEventTypes = {kCallInvite, kCallHangup, kCallReject};
+
+const kHangupUserHangup = 'user_hangup';
+const kHangupInviteTimeout = 'invite_timeout';
+
+const Set<String> callEventTypes = {
+  kCallInvite,
+  kCallAnswer,
+  kCallHangup,
+  kCallReject,
+};

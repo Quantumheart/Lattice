@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:lattice/core/services/call_service.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
@@ -176,6 +177,7 @@ void main() {
     when(mockClient.rooms).thenReturn([]);
     when(mockClient.userID).thenReturn('@user:example.com');
     when(mockClient.deviceID).thenReturn('DEVICE1');
+    when(mockClient.onTimelineEvent).thenReturn(CachedStreamController<Event>());
     service = CallService(client: mockClient);
   });
 
@@ -732,36 +734,30 @@ void main() {
   });
 
   group('E2E: outgoing call lifecycle', () {
-    test('initiateCall joins and connects', () async {
+    test('initiateCall sends invite and stays ringingOutgoing', () async {
       setupLiveKitMocks();
-      setupMockRoom();
+      final room = setupMockRoom();
+      when(room.sendEvent(any, type: anyNamed('type')))
+          .thenAnswer((_) async => 'event_id');
+      when(room.isDirectChat).thenReturn(true);
 
       await service.initiateCall('!room:example.com');
 
-      expect(service.callState, LatticeCallState.connected);
-      expect(service.activeCallRoomId, '!room:example.com');
+      expect(service.callState, LatticeCallState.ringingOutgoing);
+      expect(service.activeCallId, isNotNull);
     });
 
-    test('cancelOutgoingCall during join sets ended flag', () async {
-      final completer = Completer<void>();
+    test('cancelOutgoingCall sends hangup and returns to idle', () async {
       setupLiveKitMocks();
-      setupMockRoom();
+      final room = setupMockRoom();
+      when(room.sendEvent(any, type: anyNamed('type')))
+          .thenAnswer((_) async => 'event_id');
+      when(room.isDirectChat).thenReturn(true);
 
-      final originalPost = service.httpPostForTest;
-      service.httpPostForTest = (client, url, {headers, body}) async {
-        await completer.future;
-        return originalPost(client, url, headers: headers, body: body);
-      };
-
-      final joinFuture = service.initiateCall('!room:example.com');
-
-      await Future<void>.delayed(Duration.zero);
-      expect(service.callState, LatticeCallState.joining);
+      await service.initiateCall('!room:example.com');
+      expect(service.callState, LatticeCallState.ringingOutgoing);
 
       service.cancelOutgoingCall();
-
-      completer.complete();
-      await joinFuture;
 
       expect(service.callState, LatticeCallState.idle);
     });
