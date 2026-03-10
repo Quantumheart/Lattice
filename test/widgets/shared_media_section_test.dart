@@ -14,12 +14,20 @@ import 'package:mockito/mockito.dart';
 ])
 import 'shared_media_section_test.mocks.dart';
 
-typedef _SearchResult = ({List<Event> events, String? nextBatch, DateTime? searchedUntil});
+typedef _SearchResult = ({
+  List<Event> events,
+  String? nextBatch,
+  DateTime? searchedUntil
+});
 
 _SearchResult _result({List<Event> events = const [], String? nextBatch}) =>
     (events: events, nextBatch: nextBatch, searchedUntil: null);
 
-MockEvent _makeEvent(String messageType, {String body = 'file.dat', Map<String, dynamic>? info}) {
+MockEvent _makeEvent(
+  String messageType, {
+  String body = 'file.dat',
+  Map<String, dynamic>? info,
+}) {
   final event = MockEvent();
   when(event.messageType).thenReturn(messageType);
   when(event.body).thenReturn(body);
@@ -52,11 +60,13 @@ void main() {
   group('SharedMediaSection', () {
     testWidgets('shows loading indicator while fetching media', (tester) async {
       final completer = Completer<_SearchResult>();
-      when(mockRoom.searchEvents(
-        searchFunc: anyNamed('searchFunc'),
-        nextBatch: anyNamed('nextBatch'),
-        limit: anyNamed('limit'),
-      ),).thenAnswer((_) => completer.future);
+      when(
+        mockRoom.searchEvents(
+          searchFunc: anyNamed('searchFunc'),
+          nextBatch: anyNamed('nextBatch'),
+          limit: anyNamed('limit'),
+        ),
+      ).thenAnswer((_) => completer.future);
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pump();
@@ -69,11 +79,13 @@ void main() {
     });
 
     testWidgets('shows empty state when no media found', (tester) async {
-      when(mockRoom.searchEvents(
-        searchFunc: anyNamed('searchFunc'),
-        nextBatch: anyNamed('nextBatch'),
-        limit: anyNamed('limit'),
-      ),).thenAnswer((_) async => _result());
+      when(
+        mockRoom.searchEvents(
+          searchFunc: anyNamed('searchFunc'),
+          nextBatch: anyNamed('nextBatch'),
+          limit: anyNamed('limit'),
+        ),
+      ).thenAnswer((_) async => _result());
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -88,11 +100,13 @@ void main() {
         info: {'size': 1048576},
       );
 
-      when(mockRoom.searchEvents(
-        searchFunc: anyNamed('searchFunc'),
-        nextBatch: anyNamed('nextBatch'),
-        limit: anyNamed('limit'),
-      ),).thenAnswer((_) async => _result(events: [fileEvent]));
+      when(
+        mockRoom.searchEvents(
+          searchFunc: anyNamed('searchFunc'),
+          nextBatch: anyNamed('nextBatch'),
+          limit: anyNamed('limit'),
+        ),
+      ).thenAnswer((_) async => _result(events: [fileEvent]));
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -105,32 +119,39 @@ void main() {
     testWidgets('shows audio icon for audio events', (tester) async {
       final audioEvent = _makeEvent(
         MessageTypes.Audio,
-        body: 'recording.ogg',
+        body: 'recording.mp3',
         info: {'size': 512},
       );
 
-      when(mockRoom.searchEvents(
-        searchFunc: anyNamed('searchFunc'),
-        nextBatch: anyNamed('nextBatch'),
-        limit: anyNamed('limit'),
-      ),).thenAnswer((_) async => _result(events: [audioEvent]));
+      when(
+        mockRoom.searchEvents(
+          searchFunc: anyNamed('searchFunc'),
+          nextBatch: anyNamed('nextBatch'),
+          limit: anyNamed('limit'),
+        ),
+      ).thenAnswer((_) async => _result(events: [audioEvent]));
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('recording.ogg'), findsOneWidget);
+      expect(find.text('recording.mp3'), findsOneWidget);
       expect(find.text('512 B'), findsOneWidget);
       expect(find.byIcon(Icons.audiotrack_rounded), findsOneWidget);
     });
 
-    testWidgets('shows Load more button when there is a next batch', (tester) async {
+    testWidgets('shows Load more button when there is a next batch',
+        (tester) async {
       final fileEvent = _makeEvent(MessageTypes.File, body: 'file.txt');
 
-      when(mockRoom.searchEvents(
-        searchFunc: anyNamed('searchFunc'),
-        nextBatch: anyNamed('nextBatch'),
-        limit: anyNamed('limit'),
-      ),).thenAnswer((_) async => _result(events: [fileEvent], nextBatch: 'batch2'));
+      when(
+        mockRoom.searchEvents(
+          searchFunc: anyNamed('searchFunc'),
+          nextBatch: anyNamed('nextBatch'),
+          limit: anyNamed('limit'),
+        ),
+      ).thenAnswer(
+        (_) async => _result(events: [fileEvent], nextBatch: 'batch2'),
+      );
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -141,11 +162,13 @@ void main() {
     testWidgets('hides Load more when no next batch', (tester) async {
       final fileEvent = _makeEvent(MessageTypes.File, body: 'file.txt');
 
-      when(mockRoom.searchEvents(
-        searchFunc: anyNamed('searchFunc'),
-        nextBatch: anyNamed('nextBatch'),
-        limit: anyNamed('limit'),
-      ),).thenAnswer((_) async => _result(events: [fileEvent]));
+      when(
+        mockRoom.searchEvents(
+          searchFunc: anyNamed('searchFunc'),
+          nextBatch: anyNamed('nextBatch'),
+          limit: anyNamed('limit'),
+        ),
+      ).thenAnswer((_) async => _result(events: [fileEvent]));
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -154,11 +177,13 @@ void main() {
     });
 
     testWidgets('handles load error gracefully', (tester) async {
-      when(mockRoom.searchEvents(
-        searchFunc: anyNamed('searchFunc'),
-        nextBatch: anyNamed('nextBatch'),
-        limit: anyNamed('limit'),
-      ),).thenThrow(Exception('Network error'));
+      when(
+        mockRoom.searchEvents(
+          searchFunc: anyNamed('searchFunc'),
+          nextBatch: anyNamed('nextBatch'),
+          limit: anyNamed('limit'),
+        ),
+      ).thenThrow(Exception('Network error'));
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
@@ -173,11 +198,13 @@ void main() {
       when(room.client).thenReturn(mockClient);
       when(imageEvent.room).thenReturn(room);
 
-      when(mockRoom.searchEvents(
-        searchFunc: anyNamed('searchFunc'),
-        nextBatch: anyNamed('nextBatch'),
-        limit: anyNamed('limit'),
-      ),).thenAnswer((_) async => _result(events: [imageEvent]));
+      when(
+        mockRoom.searchEvents(
+          searchFunc: anyNamed('searchFunc'),
+          nextBatch: anyNamed('nextBatch'),
+          limit: anyNamed('limit'),
+        ),
+      ).thenAnswer((_) async => _result(events: [imageEvent]));
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();

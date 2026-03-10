@@ -9,6 +9,14 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart' as sqflite_native;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+const Set<String> _callPreviewTypes = {
+  EventTypes.CallInvite,
+  EventTypes.CallAnswer,
+  EventTypes.CallReject,
+  EventTypes.CallHangup,
+  EventTypes.GroupCallMember,
+};
+
 /// Creates a configured [Client] instance with platform-specific database.
 Future<Client> createDefaultClient(
   String clientName, {
@@ -30,7 +38,7 @@ Future<Client> createDefaultClient(
     'lattice_$clientName',
     database: sqfliteDb,
   );
-  return Client(
+  final client = Client(
     'Lattice ($clientName)',
     database: database,
     logLevel: kReleaseMode ? Level.warning : Level.verbose,
@@ -45,4 +53,6 @@ Future<Client> createDefaultClient(
       vodozemacInit: vod.init,
     ),
   );
+  client.roomPreviewLastEvents.removeAll(_callPreviewTypes);
+  return client;
 }

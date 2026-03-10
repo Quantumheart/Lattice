@@ -37,7 +37,7 @@ class VoiceRecordingController extends ChangeNotifier {
 
     final dir = await getTemporaryDirectory();
     _filePath =
-        '${dir.path}/lattice_voice_${DateTime.now().millisecondsSinceEpoch}.ogg';
+        '${dir.path}/lattice_voice_${DateTime.now().millisecondsSinceEpoch}.mp3';
 
     await _service.start(_filePath!);
 

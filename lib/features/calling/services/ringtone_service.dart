@@ -12,7 +12,7 @@ class RingtoneService {
   Future<void> playRingtone({bool loop = true}) async {
     if (kIsWeb) return;
     await stop();
-    await _ensurePlayer().open(Media('asset:///assets/audio/ringtone.ogg'));
+    await _ensurePlayer().open(Media('asset:///assets/audio/ringtone.mp3'));
     if (loop) {
       await _player!.setPlaylistMode(PlaylistMode.loop);
     }
@@ -22,7 +22,7 @@ class RingtoneService {
   Future<void> playDialtone({bool loop = true}) async {
     if (kIsWeb) return;
     await stop();
-    await _ensurePlayer().open(Media('asset:///assets/audio/dialtone.ogg'));
+    await _ensurePlayer().open(Media('asset:///assets/audio/dialtone.mp3'));
     if (loop) {
       await _player!.setPlaylistMode(PlaylistMode.loop);
     }
