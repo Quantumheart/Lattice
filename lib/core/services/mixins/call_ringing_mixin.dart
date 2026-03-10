@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/features/calling/models/incoming_call_info.dart' as model;
 import 'package:lattice/features/calling/services/ringtone_service.dart';
+import 'package:matrix/matrix.dart';
 
 mixin CallRingingMixin on ChangeNotifier {
   // ── Cross-mixin dependencies ──────────────────────────────────
@@ -15,8 +17,10 @@ mixin CallRingingMixin on ChangeNotifier {
   set activeCallRoomId(String? value);
   bool get initialized;
   void init();
+  Client get client;
   Future<void> joinCall(String roomId);
   Future<void> leaveCall();
+  void showNativeOutgoingCall(String roomId, String callerName, bool isVideo);
 
   // ── Signaling dependencies ────────────────────────────────────
   Future<void> sendCallInvite(String roomId, {bool isVideo});
@@ -148,7 +152,14 @@ mixin CallRingingMixin on ChangeNotifier {
     activeCallRoomId = roomId;
     callState = LatticeCallState.ringingOutgoing;
 
-    unawaited(_ringtoneService?.playDialtone());
+    final room = client.getRoomById(roomId);
+    final callerName = room?.getLocalizedDisplayname() ?? roomId;
+    final isVideo = type == model.CallType.video;
+    showNativeOutgoingCall(roomId, callerName, isVideo);
+
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
+      unawaited(_ringtoneService?.playDialtone());
+    }
 
     _ringingTimer = Timer(const Duration(seconds: 60), () => cancelOutgoingCall(isTimeout: true));
 

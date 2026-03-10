@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
@@ -20,8 +22,11 @@ class IncomingCallOverlay extends StatefulWidget {
 
 class _IncomingCallOverlayState extends State<IncomingCallOverlay> {
   StreamSubscription<IncomingCallInfo>? _sub;
+  StreamSubscription<String>? _nativeAcceptSub;
   IncomingCallInfo? _incoming;
   CallService? _callService;
+
+  bool get _isDesktop => kIsWeb || (!Platform.isAndroid && !Platform.isIOS);
 
   @override
   void didChangeDependencies() {
@@ -30,9 +35,18 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay> {
     if (_callService != callService) {
       _callService?.removeListener(_onCallStateChanged);
       unawaited(_sub?.cancel());
+      unawaited(_nativeAcceptSub?.cancel());
       _callService = callService;
       _sub = callService.incomingCallStream.listen((info) {
-        if (mounted) setState(() => _incoming = info);
+        if (mounted && _isDesktop) setState(() => _incoming = info);
+      });
+      _nativeAcceptSub = callService.nativeAcceptedCallStream.listen((roomId) {
+        if (mounted) {
+          widget.router.goNamed(
+            Routes.call,
+            pathParameters: {'roomId': roomId},
+          );
+        }
       });
       callService.addListener(_onCallStateChanged);
     }
@@ -50,6 +64,7 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay> {
   @override
   void dispose() {
     unawaited(_sub?.cancel());
+    unawaited(_nativeAcceptSub?.cancel());
     _callService?.removeListener(_onCallStateChanged);
     super.dispose();
   }
