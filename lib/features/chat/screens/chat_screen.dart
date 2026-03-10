@@ -9,7 +9,7 @@ import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/calling/models/call_constants.dart';
-import 'package:lattice/features/calling/services/call_navigator.dart';
+import 'package:lattice/features/chat/services/chat_message_actions.dart';
 import 'package:lattice/features/chat/services/chat_search_controller.dart';
 import 'package:lattice/features/chat/services/compose_state_controller.dart';
 import 'package:lattice/features/chat/services/typing_controller.dart';
@@ -21,6 +21,7 @@ import 'package:lattice/features/chat/widgets/chat_message_item.dart';
 import 'package:lattice/features/chat/widgets/compose_bar_section.dart';
 import 'package:lattice/features/chat/widgets/desktop_drop_wrapper.dart';
 import 'package:lattice/features/chat/widgets/file_send_handler.dart';
+import 'package:lattice/features/chat/widgets/join_call_banner.dart';
 import 'package:lattice/features/chat/widgets/read_receipts.dart';
 import 'package:lattice/features/chat/widgets/search_results_body.dart';
 import 'package:lattice/features/chat/widgets/typing_indicator.dart';
@@ -82,6 +83,9 @@ class _ChatScreenState extends State<ChatScreen>
   bool get _isDesktop =>
       !kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS);
 
+  // ── Message actions ──────────────────────────────────────
+  late ChatMessageActions _actions;
+
   // ── Search ─────────────────────────────────────────────
   late ChatSearchController _search;
   final _searchCtrl = TextEditingController();
@@ -90,6 +94,7 @@ class _ChatScreenState extends State<ChatScreen>
   @override
   void initState() {
     super.initState();
+    _actions = _createActions();
     _search = _createSearchController();
     unawaited(_initTimeline());
     _itemPosListener.itemPositions.addListener(_onScroll);
@@ -108,10 +113,23 @@ class _ChatScreenState extends State<ChatScreen>
       _voiceCtrl?.dispose();
       _search.removeListener(_onSearchChanged);
       _search.dispose();
+      _actions = _createActions();
       _search = _createSearchController();
       unawaited(_initTimeline());
       _composeFocusNode.requestFocus();
     }
+  }
+
+  ChatMessageActions _createActions() {
+    return ChatMessageActions(
+      getRoomId: () => widget.roomId,
+      getRoom: () => context.read<MatrixService>().client.getRoomById(widget.roomId),
+      getTimeline: () => _timeline,
+      compose: _compose,
+      msgCtrl: _msgCtrl,
+      getScaffold: () => ScaffoldMessenger.of(context),
+      getMatrixService: () => context.read<MatrixService>(),
+    );
   }
 
   ChatSearchController _createSearchController() {
@@ -275,124 +293,6 @@ class _ChatScreenState extends State<ChatScreen>
     }
   }
 
-  // ── Reactions ──────────────────────────────────────
-
-  Future<void> _toggleReaction(Event event, String emoji) async {
-    if (_timeline == null) return;
-    final matrix = context.read<MatrixService>();
-    final myId = matrix.client.userID;
-
-    final existing = event
-        .aggregatedEvents(_timeline!, RelationshipTypes.reaction)
-        .where((e) =>
-            e.senderId == myId &&
-            e.content
-                    .tryGetMap<String, Object?>('m.relates_to')
-                    ?.tryGet<String>('key') ==
-                emoji,)
-        .firstOrNull;
-
-    try {
-      if (existing != null) {
-        await existing.redactEvent();
-      } else {
-        await event.room.sendReaction(event.eventId, emoji);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  'Failed to react: ${MatrixService.friendlyAuthError(e)}',),),
-        );
-      }
-    }
-  }
-
-  // ── Pin ──────────────────────────────────────────────
-
-  Future<void> _togglePin(Event event) async {
-    final room = event.room;
-    final pinned = List<String>.from(room.pinnedEventIds);
-    final wasPinned = pinned.contains(event.eventId);
-    if (wasPinned) {
-      pinned.remove(event.eventId);
-    } else {
-      pinned.add(event.eventId);
-    }
-    try {
-      await room.setPinnedEvents(pinned);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(wasPinned
-                ? 'Failed to unpin message'
-                : 'Failed to pin message',),
-          ),
-        );
-      }
-    }
-  }
-
-  // ── Send ───────────────────────────────────────────────
-
-  Future<void> _send() async {
-    final text = _msgCtrl.text.trim();
-    final attachments = List<PendingAttachment>.from(_compose.pendingAttachments.value);
-    if (text.isEmpty && attachments.isEmpty) return;
-
-    _msgCtrl.clear();
-    _compose.pendingAttachments.value = [];
-
-    final replyEvent = _compose.replyNotifier.value;
-    _compose.replyNotifier.value = null;
-
-    final editEvent = _compose.editNotifier.value;
-    _compose.editNotifier.value = null;
-
-    final scaffold = ScaffoldMessenger.of(context);
-    final matrix = context.read<MatrixService>();
-    final room = matrix.client.getRoomById(widget.roomId);
-    if (room == null) return;
-
-    for (var i = 0; i < attachments.length; i++) {
-      final ok = await sendFileBytes(
-        scaffold: scaffold,
-        room: room,
-        name: attachments[i].name,
-        bytes: attachments[i].bytes,
-        uploadNotifier: _compose.uploadNotifier,
-      );
-      if (!ok) {
-        _compose.pendingAttachments.value = attachments.sublist(i);
-        if (text.isNotEmpty) {
-          _msgCtrl.text = text;
-          _compose.replyNotifier.value = replyEvent;
-          _compose.editNotifier.value = editEvent;
-        }
-        return;
-      }
-    }
-
-    if (text.isNotEmpty) {
-      try {
-        await room.sendTextEvent(
-          text,
-          inReplyTo: editEvent == null ? replyEvent : null,
-          editEventId: editEvent?.eventId,
-        );
-      } catch (e) {
-        _msgCtrl.text = text;
-        _compose.replyNotifier.value = replyEvent;
-        _compose.editNotifier.value = editEvent;
-        scaffold.showSnackBar(
-          SnackBar(content: Text('Failed to send: ${MatrixService.friendlyAuthError(e)}')),
-        );
-      }
-    }
-  }
-
   // ── Search methods ────────────────────────────────────────
 
   void _openSearch() {
@@ -518,7 +418,7 @@ class _ChatScreenState extends State<ChatScreen>
     final column = Column(
       children: [
         if (roomHasCall && !isInCall)
-          _JoinCallBanner(room: room, callService: callService),
+          JoinCallBanner(room: room, callService: callService),
         Expanded(
           child: _timeline == null
               ? const Center(child: CircularProgressIndicator())
@@ -544,7 +444,7 @@ class _ChatScreenState extends State<ChatScreen>
           editNotifier: _compose.editNotifier,
           pendingAttachments: _compose.pendingAttachments,
           controller: _msgCtrl,
-          onSend: _send,
+          onSend: _actions.send,
           onCancelReply: _compose.cancelReply,
           onCancelEdit: () => _compose.cancelEdit(_msgCtrl),
           onAttach: () async {
@@ -614,53 +514,11 @@ class _ChatScreenState extends State<ChatScreen>
           receiptMap: receiptMap,
           onReply: _setReplyTo,
           onEdit: _setEditEvent,
-          onToggleReaction: _toggleReaction,
-          onPin: _togglePin,
+          onToggleReaction: _actions.toggleReaction,
+          onPin: _actions.togglePin,
           onTapReply: _navigateToEvent,
         );
       },
-    );
-  }
-}
-
-class _JoinCallBanner extends StatelessWidget {
-  const _JoinCallBanner({required this.room, required this.callService});
-
-  final Room room;
-  final CallService callService;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final callIds = callService.activeCallIdsForRoom(room.id);
-    final participantCount = callIds.isNotEmpty
-        ? callService.callParticipantCount(room.id, callIds.first)
-        : 0;
-
-    return Material(
-      color: cs.primaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Row(
-          children: [
-            Icon(Icons.call_rounded, size: 18, color: cs.onPrimaryContainer),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                'Call in progress${participantCount > 0 ? ' \u2014 $participantCount participant${participantCount == 1 ? '' : 's'}' : ''}',
-                style: TextStyle(color: cs.onPrimaryContainer),
-              ),
-            ),
-            FilledButton.tonal(
-              onPressed: () => CallNavigator.startCall(
-                context,
-                roomId: room.id,
-              ),
-              child: const Text('Join'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
