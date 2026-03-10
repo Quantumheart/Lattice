@@ -9,6 +9,10 @@ import 'package:livekit_client/livekit_client.dart' as livekit;
 import 'package:matrix/matrix.dart';
 
 mixin CallLiveKitMixin on ChangeNotifier {
+  // ── Constants ───────────────────────────────────────────────────
+  static const _maxRedirects = 6;
+  static const _wellKnownTtl = Duration(hours: 1);
+
   // ── Cross-mixin dependencies ──────────────────────────────────
   Client get client;
   LatticeCallState get callState;
@@ -46,12 +50,15 @@ mixin CallLiveKitMixin on ChangeNotifier {
   List<livekit.Participant> get activeSpeakers =>
       List.unmodifiable(_activeSpeakers);
 
+  List<ui.CallParticipant>? _cachedParticipants;
+  bool _participantsDirty = true;
+
   LiveKitRoomFactory _roomFactory = livekit.Room.new;
 
   @visibleForTesting
   set roomFactoryForTest(LiveKitRoomFactory factory) => _roomFactory = factory;
 
-  HttpPostFunction _httpPost = _postNoAutoRedirect;
+  HttpPostFunction _httpPost = _sendNoAutoRedirect;
 
   @visibleForTesting
   HttpPostFunction get httpPostForTest => _httpPost;
@@ -59,7 +66,8 @@ mixin CallLiveKitMixin on ChangeNotifier {
   @visibleForTesting
   set httpPostForTest(HttpPostFunction fn) => _httpPost = fn;
 
-  static Future<http.Response> _postNoAutoRedirect(
+  static Future<http.Response> _sendNoAutoRedirect(
+    http.Client httpClient,
     Uri url, {
     Map<String, String>? headers,
     Object? body,
@@ -72,16 +80,19 @@ mixin CallLiveKitMixin on ChangeNotifier {
     } else if (body is String) {
       request.bodyBytes = utf8.encode(body);
     }
-    final client = http.Client();
-    try {
-      return http.Response.fromStream(await client.send(request));
-    } finally {
-      client.close();
-    }
+    return http.Response.fromStream(await httpClient.send(request));
   }
 
   // ── Participant Aggregation ───────────────────────────────────
-  List<ui.CallParticipant> get allParticipants => _buildParticipantList();
+  List<ui.CallParticipant> get allParticipants {
+    if (_participantsDirty || _cachedParticipants == null) {
+      _cachedParticipants = _buildParticipantList();
+      _participantsDirty = false;
+    }
+    return _cachedParticipants!;
+  }
+
+  void _invalidateParticipants() => _participantsDirty = true;
 
   List<ui.CallParticipant> _buildParticipantList() {
     final result = <ui.CallParticipant>[];
@@ -157,40 +168,37 @@ mixin CallLiveKitMixin on ChangeNotifier {
     );
   }
 
-  // ── TURN Server ───────────────────────────────────────────────
-  Future<TurnServerCredentials?> fetchTurnServers() async {
-    try {
-      return await client.getTurnServer();
-    } catch (e) {
-      debugPrint('[Lattice] Failed to fetch TURN servers: $e');
-      return null;
-    }
-  }
-
   // ── HTTP Helpers ──────────────────────────────────────────────
   Future<http.Response> _postWithRedirects(
     Uri url, {
     required Map<String, String> headers,
     required Object body,
   }) async {
-    var currentUrl = url;
+    final httpClient = http.Client();
+    try {
+      var currentUrl = url;
 
-    for (var i = 0; i < 6; i++) {
-      final response = await _httpPost(currentUrl, headers: headers, body: body);
-      final code = response.statusCode;
+      for (var i = 0; i < _maxRedirects; i++) {
+        final response = await _httpPost(
+          httpClient, currentUrl, headers: headers, body: body,
+        );
+        final code = response.statusCode;
 
-      if (code == 301 || code == 302 || code == 303 ||
-          code == 307 || code == 308) {
-        final location = response.headers['location'];
-        if (location == null) return response;
-        currentUrl = currentUrl.resolve(location);
-        continue;
+        if (code == 301 || code == 302 || code == 303 ||
+            code == 307 || code == 308) {
+          final location = response.headers['location'];
+          if (location == null) return response;
+          currentUrl = currentUrl.resolve(location);
+          continue;
+        }
+
+        return response;
       }
 
-      return response;
+      throw Exception('Too many redirects');
+    } finally {
+      httpClient.close();
     }
-
-    throw Exception('Too many redirects');
   }
 
   String _buildServiceUrl(String baseUrl, String path) {
@@ -252,9 +260,16 @@ mixin CallLiveKitMixin on ChangeNotifier {
       livekitAlias: livekitAlias,
     );
 
+    if (callState != LatticeCallState.joining) return;
+
     _livekitRoom = _roomFactory();
 
     await _livekitRoom!.connect(credentials.url, credentials.token);
+
+    if (callState != LatticeCallState.joining) {
+      await cleanupLiveKit();
+      return;
+    }
 
     _livekitListener = _livekitRoom!.createListener();
     _subscribeLiveKitEvents();
@@ -303,23 +318,38 @@ mixin CallLiveKitMixin on ChangeNotifier {
 
     listener.on<livekit.ParticipantConnectedEvent>((_) {
       _syncParticipants();
+      _invalidateParticipants();
       notifyListeners();
     });
 
     listener.on<livekit.ParticipantDisconnectedEvent>((_) {
       _syncParticipants();
+      _invalidateParticipants();
       notifyListeners();
     });
 
     listener.on<livekit.ActiveSpeakersChangedEvent>((event) {
       _activeSpeakers = event.speakers.toList();
+      _invalidateParticipants();
       notifyListeners();
     });
 
-    listener.on<livekit.TrackMutedEvent>((_) => notifyListeners());
-    listener.on<livekit.TrackUnmutedEvent>((_) => notifyListeners());
-    listener.on<livekit.TrackSubscribedEvent>((_) => notifyListeners());
-    listener.on<livekit.TrackUnsubscribedEvent>((_) => notifyListeners());
+    listener.on<livekit.TrackMutedEvent>((_) {
+      _invalidateParticipants();
+      notifyListeners();
+    });
+    listener.on<livekit.TrackUnmutedEvent>((_) {
+      _invalidateParticipants();
+      notifyListeners();
+    });
+    listener.on<livekit.TrackSubscribedEvent>((_) {
+      _invalidateParticipants();
+      notifyListeners();
+    });
+    listener.on<livekit.TrackUnsubscribedEvent>((_) {
+      _invalidateParticipants();
+      notifyListeners();
+    });
   }
 
   void _syncParticipants() {
@@ -335,6 +365,8 @@ mixin CallLiveKitMixin on ChangeNotifier {
     _livekitRoom = null;
     _participants = [];
     _activeSpeakers = [];
+    _cachedParticipants = null;
+    _participantsDirty = true;
     _isMicEnabled = false;
     _isCameraEnabled = false;
     _isScreenShareEnabled = false;
@@ -358,12 +390,23 @@ mixin CallLiveKitMixin on ChangeNotifier {
 
   // ── Well-Known ────────────────────────────────────────────────
   String? _cachedLivekitServiceUrl;
+  DateTime? _wellKnownFetchedAt;
 
-  String? get cachedLivekitServiceUrl => _cachedLivekitServiceUrl;
+  String? get cachedLivekitServiceUrl {
+    if (_cachedLivekitServiceUrl != null &&
+        _wellKnownFetchedAt != null &&
+        DateTime.now().difference(_wellKnownFetchedAt!) > _wellKnownTtl) {
+      _cachedLivekitServiceUrl = null;
+      _wellKnownFetchedAt = null;
+    }
+    return _cachedLivekitServiceUrl;
+  }
 
   @visibleForTesting
-  set cachedLivekitServiceUrlForTest(String? url) =>
-      _cachedLivekitServiceUrl = url;
+  set cachedLivekitServiceUrlForTest(String? url) {
+    _cachedLivekitServiceUrl = url;
+    _wellKnownFetchedAt = url != null ? DateTime.now() : null;
+  }
 
   Future<void> fetchWellKnownLiveKit() async {
     try {
@@ -377,6 +420,7 @@ mixin CallLiveKitMixin on ChangeNotifier {
           final serviceUrl = foci['livekit_service_url'] as String?;
           if (serviceUrl != null) {
             _cachedLivekitServiceUrl = serviceUrl;
+            _wellKnownFetchedAt = DateTime.now();
             debugPrint('[Lattice] LiveKit service URL: $serviceUrl');
             return;
           }

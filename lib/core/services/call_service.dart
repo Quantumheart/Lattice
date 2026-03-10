@@ -26,6 +26,7 @@ enum LatticeCallState {
 
 typedef LiveKitRoomFactory = livekit.Room Function();
 typedef HttpPostFunction = Future<http.Response> Function(
+  http.Client httpClient,
   Uri url, {
   Map<String, String>? headers,
   Object? body,
