@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:lattice/core/services/mixins/call_actions_mixin.dart';
 import 'package:lattice/core/services/mixins/call_livekit_mixin.dart';
+import 'package:lattice/core/services/mixins/call_native_ui_mixin.dart';
 import 'package:lattice/core/services/mixins/call_ringing_mixin.dart';
 import 'package:lattice/core/services/mixins/call_rtc_membership_mixin.dart';
 import 'package:lattice/core/services/mixins/call_signaling_mixin.dart';
@@ -47,7 +48,8 @@ class CallService extends ChangeNotifier
         CallLiveKitMixin,
         CallRingingMixin,
         CallActionsMixin,
-        CallSignalingMixin {
+        CallSignalingMixin,
+        CallNativeUiMixin {
   CallService({required Client client}) : _client = client;
 
   Client _client;
@@ -123,6 +125,16 @@ class CallService extends ChangeNotifier
     }
     _callState = next;
     notifyListeners();
+    switch (next) {
+      case LatticeCallState.connected:
+        updateNativeCallConnected();
+      case LatticeCallState.idle:
+      case LatticeCallState.disconnecting:
+      case LatticeCallState.failed:
+        endNativeCall();
+      default:
+        break;
+    }
   }
 
   String? _activeCallRoomId;
@@ -155,10 +167,12 @@ class CallService extends ChangeNotifier
     _initialized = true;
     unawaited(fetchWellKnownLiveKit());
     startSignalingListener();
+    initNativeCallUi();
     debugPrint('[Lattice] CallService initialized');
   }
 
   void _resetState() {
+    endNativeCall();
     stopSignalingListener();
     unawaited(cleanupLiveKit());
     cancelMembershipRenewal();
@@ -180,6 +194,7 @@ class CallService extends ChangeNotifier
 
   @override
   void dispose() {
+    disposeNativeCallUi();
     _resetState();
     closeIncomingCallController();
     _disposed = true;

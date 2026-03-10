@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
@@ -21,6 +22,7 @@ mixin CallSignalingMixin on ChangeNotifier {
   void pushIncomingCall(model.IncomingCallInfo info);
   @protected
   void playRingtone();
+  void showNativeIncomingCall(model.IncomingCallInfo info);
 
   // ── State ─────────────────────────────────────────────────────
   String? _activeCallId;
@@ -157,7 +159,10 @@ mixin CallSignalingMixin on ChangeNotifier {
 
     pushIncomingCall(info);
     callState = LatticeCallState.ringingIncoming;
-    playRingtone();
+    showNativeIncomingCall(info);
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
+      playRingtone();
+    }
 
     debugPrint('[Lattice] Incoming call $callId from ${sender.calcDisplayname()}');
   }
