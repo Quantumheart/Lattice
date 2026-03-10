@@ -14,7 +14,7 @@ class RingtoneService {
     await stop();
     await _ensurePlayer().open(Media('asset:///assets/audio/ringtone.ogg'));
     if (loop) {
-      await _player!.setPlaylistMode(PlaylistMode.single);
+      await _player!.setPlaylistMode(PlaylistMode.loop);
     }
     unawaited(HapticFeedback.mediumImpact().catchError((_) {}));
   }
@@ -24,7 +24,7 @@ class RingtoneService {
     await stop();
     await _ensurePlayer().open(Media('asset:///assets/audio/dialtone.ogg'));
     if (loop) {
-      await _player!.setPlaylistMode(PlaylistMode.single);
+      await _player!.setPlaylistMode(PlaylistMode.loop);
     }
   }
 

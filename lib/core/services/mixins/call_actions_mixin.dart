@@ -47,7 +47,8 @@ mixin CallActionsMixin on ChangeNotifier {
       LatticeCallState.ringingOutgoing,
       LatticeCallState.failed,
     };
-    if (!allowedStates.contains(callState) || joining) {
+    if (joining) return;
+    if (!allowedStates.contains(callState)) {
       if (callState != LatticeCallState.idle) {
         stopRinging();
         callState = LatticeCallState.failed;
@@ -77,7 +78,8 @@ mixin CallActionsMixin on ChangeNotifier {
       if (cachedLivekitServiceUrl == null) {
         await fetchWellKnownLiveKit();
       }
-      if (cachedLivekitServiceUrl == null) {
+      final livekitServiceUrl = cachedLivekitServiceUrl;
+      if (livekitServiceUrl == null) {
         throw Exception('LiveKit service URL not found in well-known');
       }
 
@@ -91,7 +93,7 @@ mixin CallActionsMixin on ChangeNotifier {
       startMembershipRenewal(roomId, livekitAlias);
 
       await connectLiveKit(
-        livekitServiceUrl: cachedLivekitServiceUrl!,
+        livekitServiceUrl: livekitServiceUrl,
         livekitAlias: livekitAlias,
       );
 

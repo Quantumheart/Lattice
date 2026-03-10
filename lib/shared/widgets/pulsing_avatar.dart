@@ -21,7 +21,8 @@ class PulsingAvatar extends StatefulWidget {
 class _PulsingAvatarState extends State<PulsingAvatar>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<double> _animation;
+  late CurvedAnimation _curved;
+  late Animation<double> _animation;
 
   @override
   void initState() {
@@ -31,13 +32,21 @@ class _PulsingAvatarState extends State<PulsingAvatar>
       duration: const Duration(milliseconds: 1200),
     );
     unawaited(_controller.repeat(reverse: true));
-    _animation = Tween<double>(begin: 1, end: widget.endScale).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _curved = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+    _animation = Tween<double>(begin: 1, end: widget.endScale).animate(_curved);
+  }
+
+  @override
+  void didUpdateWidget(covariant PulsingAvatar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.endScale != widget.endScale) {
+      _animation = Tween<double>(begin: 1, end: widget.endScale).animate(_curved);
+    }
   }
 
   @override
   void dispose() {
+    _curved.dispose();
     _controller.dispose();
     super.dispose();
   }

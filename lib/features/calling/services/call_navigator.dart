@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
@@ -25,21 +27,16 @@ abstract class CallNavigator {
     final isDm = room?.isDirectChat ?? false;
 
     if (isDm) {
-      await callService.initiateCall(roomId, type: type);
-      if (context.mounted && callService.callState == LatticeCallState.connected) {
-        context.goNamed(
-          Routes.call,
-          pathParameters: {'roomId': roomId},
-        );
-      }
+      unawaited(callService.initiateCall(roomId, type: type));
     } else {
-      await callService.joinCall(roomId);
-      if (context.mounted && callService.callState == LatticeCallState.connected) {
-        context.goNamed(
-          Routes.call,
-          pathParameters: {'roomId': roomId},
-        );
-      }
+      unawaited(callService.joinCall(roomId));
+    }
+
+    if (context.mounted) {
+      context.goNamed(
+        Routes.call,
+        pathParameters: {'roomId': roomId},
+      );
     }
   }
 
