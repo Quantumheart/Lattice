@@ -102,25 +102,27 @@ mixin CallLiveKitMixin on ChangeNotifier {
         ? client.getRoomById(activeCallRoomId!)
         : null;
 
-    Uri? avatarFor(String identity) {
+    Uri? avatarFor(String matrixId) {
       if (room == null) return null;
-      return room.unsafeGetUserFromMemoryOrFallback(identity).avatarUrl;
+      return room.unsafeGetUserFromMemoryOrFallback(matrixId).avatarUrl;
     }
 
     final local = _livekitRoom!.localParticipant;
     if (local != null) {
+      final localId = ui.CallParticipant.extractMatrixId(local.identity);
       result.add(ui.CallParticipant.fromLiveKit(
         local,
         activeSpeakers: _activeSpeakers,
         isLocal: true,
-        avatarUrl: avatarFor(local.identity),
+        avatarUrl: avatarFor(localId),
       ),);
     }
     for (final p in _participants) {
+      final pId = ui.CallParticipant.extractMatrixId(p.identity);
       result.add(ui.CallParticipant.fromLiveKit(
         p,
         activeSpeakers: _activeSpeakers,
-        avatarUrl: avatarFor(p.identity),
+        avatarUrl: avatarFor(pId),
       ),);
     }
 

@@ -34,8 +34,9 @@ class CallParticipant {
     final hasScreenShare = p.videoTrackPublications.any(
       (pub) => pub.source == livekit.TrackSource.screenShareVideo && pub.subscribed,
     );
+    final matrixId = extractMatrixId(p.identity);
     return CallParticipant(
-      id: p.identity,
+      id: matrixId,
       displayName: p.name.isNotEmpty ? p.name : _displayNameFromIdentity(p.identity),
       avatarUrl: avatarUrl,
       isLocal: isLocal,
@@ -46,6 +47,13 @@ class CallParticipant {
       audioLevel: p.audioLevel,
       videoTrack: videoTrack,
     );
+  }
+
+  static final _matrixIdPattern = RegExp('@[^:]+:[^:]+');
+
+  static String extractMatrixId(String identity) {
+    final match = _matrixIdPattern.firstMatch(identity);
+    return match?.group(0) ?? identity;
   }
 
   static String _displayNameFromIdentity(String identity) {
