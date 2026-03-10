@@ -20,10 +20,6 @@ mixin CallLiveKitMixin on ChangeNotifier {
   DateTime? get callStartTime;
   @protected
   set callStartTime(DateTime? value);
-  bool get joining;
-  bool get endedDuringJoin;
-  @protected
-  set endedDuringJoin(bool value);
   void cancelMembershipRenewal();
   Future<void> removeMembershipEvent(String roomId);
 
@@ -55,13 +51,34 @@ mixin CallLiveKitMixin on ChangeNotifier {
   @visibleForTesting
   set roomFactoryForTest(LiveKitRoomFactory factory) => _roomFactory = factory;
 
-  HttpPostFunction _httpPost = http.post;
+  HttpPostFunction _httpPost = _postNoAutoRedirect;
 
   @visibleForTesting
   HttpPostFunction get httpPostForTest => _httpPost;
 
   @visibleForTesting
   set httpPostForTest(HttpPostFunction fn) => _httpPost = fn;
+
+  static Future<http.Response> _postNoAutoRedirect(
+    Uri url, {
+    Map<String, String>? headers,
+    Object? body,
+  }) async {
+    final request = http.Request('POST', url)
+      ..followRedirects = false;
+    if (headers != null) request.headers.addAll(headers);
+    if (body is List<int>) {
+      request.bodyBytes = body;
+    } else if (body is String) {
+      request.bodyBytes = utf8.encode(body);
+    }
+    final client = http.Client();
+    try {
+      return http.Response.fromStream(await client.send(request));
+    } finally {
+      client.close();
+    }
+  }
 
   // ── Participant Aggregation ───────────────────────────────────
   List<ui.CallParticipant> get allParticipants => _buildParticipantList();
@@ -154,22 +171,26 @@ mixin CallLiveKitMixin on ChangeNotifier {
   Future<http.Response> _postWithRedirects(
     Uri url, {
     required Map<String, String> headers,
-    required String body,
+    required Object body,
   }) async {
     var currentUrl = url;
-    var response = await _httpPost(currentUrl, headers: headers, body: body);
 
-    var redirects = 0;
-    while ((response.statusCode == 307 || response.statusCode == 308) &&
-        redirects < 5) {
-      final location = response.headers['location'];
-      if (location == null) break;
-      currentUrl = currentUrl.resolve(location);
-      response = await _httpPost(currentUrl, headers: headers, body: body);
-      redirects++;
+    for (var i = 0; i < 6; i++) {
+      final response = await _httpPost(currentUrl, headers: headers, body: body);
+      final code = response.statusCode;
+
+      if (code == 301 || code == 302 || code == 303 ||
+          code == 307 || code == 308) {
+        final location = response.headers['location'];
+        if (location == null) return response;
+        currentUrl = currentUrl.resolve(location);
+        continue;
+      }
+
+      return response;
     }
 
-    return response;
+    throw Exception('Too many redirects');
   }
 
   String _buildServiceUrl(String baseUrl, String path) {
@@ -186,55 +207,26 @@ mixin CallLiveKitMixin on ChangeNotifier {
       {},
     );
 
+    final headers = {'Content-Type': 'application/json'};
     final openIdPayload = {
       'access_token': openId.accessToken,
       'token_type': openId.tokenType,
       'matrix_server_name': openId.matrixServerName,
       'expires_in': openId.expiresIn,
     };
-    final headers = {'Content-Type': 'application/json'};
 
-    final displayName = client.getRoomById(livekitAlias)
-            ?.unsafeGetUserFromMemoryOrFallback(client.userID!)
-            .calcDisplayname() ??
-        client.userID!;
-
-    final newBody = jsonEncode({
-      'room_id': livekitAlias,
-      'slot_id': 'm.call#ROOM',
-      'display_name': displayName,
-      'openid_token': openIdPayload,
-      'member': {
-        'id': '${client.userID}:${client.deviceID}',
-        'claimed_user_id': client.userID,
-        'claimed_device_id': client.deviceID,
-      },
-    });
-
-    final newUrl = Uri.parse(
-      _buildServiceUrl(livekitServiceUrl, 'get_token'),
+    final url = Uri.parse(
+      _buildServiceUrl(livekitServiceUrl, 'sfu/get'),
     );
-    var response = await _postWithRedirects(
-      newUrl,
+    final response = await _postWithRedirects(
+      url,
       headers: headers,
-      body: newBody,
-    );
-
-    if (response.statusCode == 404) {
-      final legacyBody = jsonEncode({
+      body: utf8.encode(jsonEncode({
         'room': livekitAlias,
         'openid_token': openIdPayload,
         'device_id': client.deviceID,
-      });
-      final legacyUrl = Uri.parse(
-        _buildServiceUrl(livekitServiceUrl, 'sfu/get'),
-      );
-      response = await _postWithRedirects(
-        legacyUrl,
-        headers: headers,
-        body: legacyBody,
-      );
-    }
+      }),),
+    );
 
     if (response.statusCode != 200) {
       throw Exception(
@@ -243,7 +235,10 @@ mixin CallLiveKitMixin on ChangeNotifier {
     }
 
     final json = jsonDecode(response.body) as Map<String, dynamic>;
-    return (url: json['url'] as String, token: json['jwt'] as String? ?? json['token'] as String);
+    return (
+      url: json['url'] as String,
+      token: json['jwt'] as String? ?? json['token'] as String,
+    );
   }
 
   // ── Connection ────────────────────────────────────────────────
@@ -264,7 +259,8 @@ mixin CallLiveKitMixin on ChangeNotifier {
     _livekitListener = _livekitRoom!.createListener();
     _subscribeLiveKitEvents();
 
-    _isMicEnabled = false;
+    await _livekitRoom!.localParticipant?.setMicrophoneEnabled(true);
+    _isMicEnabled = true;
     _isCameraEnabled = false;
     _isScreenShareEnabled = false;
     _syncParticipants();
@@ -282,9 +278,8 @@ mixin CallLiveKitMixin on ChangeNotifier {
     });
 
     listener.on<livekit.RoomDisconnectedEvent>((_) {
-      if (joining) {
-        debugPrint('[Lattice] LiveKit disconnected during join, deferring cleanup');
-        endedDuringJoin = true;
+      if (callState == LatticeCallState.joining) {
+        callState = LatticeCallState.idle;
         return;
       }
       final roomId = activeCallRoomId;

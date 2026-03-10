@@ -212,6 +212,13 @@ void main() {
     when(mockRoom.id).thenReturn('!room:example.com');
     when(mockRoom.canonicalAlias).thenReturn('#room:example.com');
     when(mockRoom.states).thenReturn({});
+    when(mockRoom.client).thenReturn(mockClient);
+    when(mockRoom.unsafeGetUserFromMemoryOrFallback(any)).thenAnswer(
+      (invocation) => User(
+        invocation.positionalArguments[0] as String,
+        room: mockRoom,
+      ),
+    );
     when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
     return mockRoom;
   }
@@ -316,10 +323,7 @@ void main() {
       await service.joinCall('!room:example.com');
       expect(service.callState, LatticeCallState.connected);
 
-      expect(
-        () => service.joinCall('!room:example.com'),
-        throwsA(isA<AssertionError>()),
-      );
+      await service.joinCall('!room:example.com');
       expect(service.callState, LatticeCallState.connected);
     });
 
@@ -568,16 +572,16 @@ void main() {
       await service.joinCall('!room:example.com');
     });
 
-    test('toggleMicrophone enables then disables', () async {
-      expect(service.isMicEnabled, isFalse);
-
-      await service.toggleMicrophone();
+    test('toggleMicrophone disables then enables', () async {
       expect(service.isMicEnabled, isTrue);
-      expect(fakeRoom._localParticipant!.micEnabled, isTrue);
 
       await service.toggleMicrophone();
       expect(service.isMicEnabled, isFalse);
       expect(fakeRoom._localParticipant!.micEnabled, isFalse);
+
+      await service.toggleMicrophone();
+      expect(service.isMicEnabled, isTrue);
+      expect(fakeRoom._localParticipant!.micEnabled, isTrue);
     });
 
     test('toggleCamera enables then disables', () async {
@@ -605,7 +609,6 @@ void main() {
     });
 
     test('toggle reverts on error', () async {
-      await service.toggleMicrophone();
       expect(service.isMicEnabled, isTrue);
 
       fakeRoom._localParticipant!.throwOnToggle = true;
@@ -753,7 +756,7 @@ void main() {
       final joinFuture = service.initiateCall('!room:example.com');
 
       await Future<void>.delayed(Duration.zero);
-      expect(service.callState, LatticeCallState.ringingOutgoing);
+      expect(service.callState, LatticeCallState.joining);
 
       service.cancelOutgoingCall();
 
@@ -798,7 +801,7 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      expect(service.isJoining, isTrue);
+      expect(service.callState, LatticeCallState.joining);
 
       completer.complete();
       await firstJoin;
@@ -839,18 +842,17 @@ void main() {
   });
 
   group('token exchange', () {
-    test('tries get_token first, falls back to sfu/get on 404', () async {
+    test('posts to sfu/get with nested OpenID payload', () async {
       setupLiveKitMocks();
       setupMockRoom();
 
-      final requestedUrls = <String>[];
+      Uri? capturedUrl;
+      Object? capturedBody;
       service.httpPostForTest = (url, {headers, body}) async {
-        requestedUrls.add(url.toString());
-        if (url.path.contains('get_token')) {
-          return http.Response('', 404);
-        }
+        capturedUrl = url;
+        capturedBody = body;
         return http.Response(
-          jsonEncode({'url': 'wss://lk.example.com', 'token': 'lk_token'}),
+          jsonEncode({'url': 'wss://lk.example.com', 'jwt': 'lk_token'}),
           200,
         );
       };
@@ -858,8 +860,17 @@ void main() {
       await service.joinCall('!room:example.com');
 
       expect(service.callState, LatticeCallState.connected);
-      expect(requestedUrls.any((u) => u.contains('get_token')), isTrue);
-      expect(requestedUrls.any((u) => u.contains('sfu/get')), isTrue);
+      expect(capturedUrl.toString(), contains('sfu/get'));
+      final decoded = jsonDecode(
+        utf8.decode(capturedBody! as List<int>),
+      ) as Map<String, dynamic>;
+      expect(decoded['room'], '#room:example.com');
+      expect(decoded['device_id'], 'DEVICE1');
+      expect(decoded.containsKey('slot_id'), isFalse);
+      expect(decoded.containsKey('display_name'), isFalse);
+      final openIdToken = decoded['openid_token'] as Map<String, dynamic>;
+      expect(openIdToken['access_token'], 'openid_token');
+      expect(openIdToken['matrix_server_name'], 'example.com');
     });
 
     test('follows 307 redirects', () async {
@@ -874,7 +885,7 @@ void main() {
             '',
             307,
             headers: {
-              'location': 'https://lk-jwt.example.com/get_token/',
+              'location': 'https://lk-jwt.example.com/sfu/get/',
             },
           );
         }
