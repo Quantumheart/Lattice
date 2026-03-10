@@ -116,6 +116,17 @@ class CallService extends ChangeNotifier {
   @visibleForTesting
   set voipForTest(VoIP? value) => _voip = value;
 
+  @visibleForTesting
+  void simulateIncomingGroupCall(GroupCallSession groupCall) =>
+      _handleIncomingGroupCall(groupCall);
+
+  @visibleForTesting
+  void simulateCallEnded() => _handleCallEnded();
+
+  @visibleForTesting
+  void simulateIncomingCall(CallSession session) =>
+      _handleIncomingCall(session);
+
   _LatticeWebRTCDelegate? _webrtcDelegate;
 
   void initVoip() {
@@ -143,6 +154,9 @@ class CallService extends ChangeNotifier {
   LatticeCallState get callState => _callState;
 
   bool _joining = false;
+
+  @visibleForTesting
+  bool get isJoining => _joining;
 
   GroupCallSession? _activeGroupCall;
   GroupCallSession? get activeGroupCall => _activeGroupCall;
@@ -203,10 +217,7 @@ class CallService extends ChangeNotifier {
 
   // ── Participant Aggregation ─────────────────────────────
 
-  List<ui.CallParticipant>? _cachedParticipants;
-
-  List<ui.CallParticipant> get allParticipants =>
-      _cachedParticipants ??= _buildParticipantList();
+  List<ui.CallParticipant> get allParticipants => _buildParticipantList();
 
   List<ui.CallParticipant> _buildParticipantList() {
     final result = <ui.CallParticipant>[];
@@ -341,6 +352,7 @@ class CallService extends ChangeNotifier {
   }
 
   void _handleCallEnded() {
+    if (_joining) return;
     if (_callState == LatticeCallState.ringingIncoming ||
         _callState == LatticeCallState.ringingOutgoing) {
       _incomingCall = null;
@@ -407,17 +419,30 @@ class CallService extends ChangeNotifier {
     String? groupCallId,
   }) async {
     if (_voip == null) return;
-    if (_callState != LatticeCallState.idle &&
-        _callState != LatticeCallState.joining &&
-        _callState != LatticeCallState.ringingOutgoing) {
-      if (_joining) return;
-      debugPrint('[Lattice] Cannot join call: already in state $_callState');
+
+    const allowedStates = {
+      LatticeCallState.idle,
+      LatticeCallState.joining,
+      LatticeCallState.ringingOutgoing,
+      LatticeCallState.failed,
+    };
+    if (!allowedStates.contains(_callState) || _joining) {
+      if (_callState != LatticeCallState.idle) {
+        _stopRinging();
+        _callState = LatticeCallState.failed;
+        notifyListeners();
+      }
       return;
     }
 
     final room = _client.getRoomById(roomId);
     if (room == null) {
-      debugPrint('[Lattice] Cannot join call: room $roomId not found');
+      if (_callState == LatticeCallState.ringingOutgoing ||
+          _callState == LatticeCallState.joining) {
+        _stopRinging();
+        _callState = LatticeCallState.failed;
+        notifyListeners();
+      }
       return;
     }
 
@@ -459,12 +484,23 @@ class CallService extends ChangeNotifier {
     } catch (e) {
       debugPrint('[Lattice] Failed to join call: $e');
       await _cleanupLiveKit();
-      _callState = LatticeCallState.failed;
+
+      final failedGroupCall = _activeGroupCall;
       _activeGroupCall = null;
       _stopRinging();
 
       unawaited(_callEventSub?.cancel());
       _callEventSub = null;
+
+      if (failedGroupCall != null) {
+        try {
+          await failedGroupCall.leave();
+        } catch (leaveError) {
+          debugPrint('[Lattice] Error leaving group call after failure: $leaveError');
+        }
+      }
+
+      _callState = LatticeCallState.failed;
       notifyListeners();
     } finally {
       _joining = false;
@@ -612,7 +648,6 @@ class CallService extends ChangeNotifier {
 
   @override
   void notifyListeners() {
-    _cachedParticipants = null;
     if (!_disposed) super.notifyListeners();
   }
 
@@ -840,7 +875,7 @@ class CallService extends ChangeNotifier {
   void _onMatrixRTCEvent(MatrixRTCCallEvent event) {
     switch (event) {
       case GroupCallStateChanged(:final state):
-        if (state == GroupCallState.ended) {
+        if (state == GroupCallState.ended && !_joining) {
           unawaited(_cleanupLiveKit());
           _callState = LatticeCallState.idle;
           _activeGroupCall = null;

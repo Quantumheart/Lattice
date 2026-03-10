@@ -13,7 +13,10 @@ abstract class CallNavigator {
     model.CallType type = model.CallType.voice,
   }) async {
     final callService = context.read<CallService>();
-    if (callService.callState != LatticeCallState.idle) return;
+    if (callService.callState != LatticeCallState.idle &&
+        callService.callState != LatticeCallState.failed) {
+      return;
+    }
 
     final granted = await CallPermissionService.request();
     if (!granted || !context.mounted) return;
@@ -23,7 +26,7 @@ abstract class CallNavigator {
 
     if (isDm) {
       await callService.initiateCall(roomId, type: type);
-      if (context.mounted) {
+      if (context.mounted && callService.callState == LatticeCallState.connected) {
         context.goNamed(
           Routes.call,
           pathParameters: {'roomId': roomId},

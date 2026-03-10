@@ -4,20 +4,21 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i5;
-import 'dart:typed_data' as _i9;
+import 'dart:typed_data' as _i10;
 
 import 'package:http/http.dart' as _i4;
-import 'package:matrix/encryption.dart' as _i7;
+import 'package:matrix/encryption.dart' as _i8;
 import 'package:matrix/matrix.dart' as _i2;
 import 'package:matrix/matrix_api_lite/generated/fixed_model.dart' as _i6;
-import 'package:matrix/src/models/timeline_chunk.dart' as _i11;
+import 'package:matrix/src/models/timeline_chunk.dart' as _i12;
 import 'package:matrix/src/utils/cached_stream_controller.dart' as _i3;
-import 'package:matrix/src/utils/space_child.dart' as _i10;
-import 'package:matrix/src/voip/models/call_options.dart' as _i14;
-import 'package:matrix/src/voip/models/delayed_event_canceller.dart' as _i13;
-import 'package:matrix/src/voip/models/voip_id.dart' as _i12;
+import 'package:matrix/src/utils/space_child.dart' as _i11;
+import 'package:matrix/src/voip/models/call_options.dart' as _i7;
+import 'package:matrix/src/voip/models/delayed_event_canceller.dart' as _i14;
+import 'package:matrix/src/voip/models/voip_id.dart' as _i13;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i8;
+import 'package:mockito/src/dummies.dart' as _i9;
+import 'package:webrtc_interface/webrtc_interface.dart' as _i15;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -849,6 +850,16 @@ class _FakeCallBackend_76 extends _i1.SmartFake implements _i2.CallBackend {
         );
 }
 
+class _FakeCallOptions_77 extends _i1.SmartFake implements _i7.CallOptions {
+  _FakeCallOptions_77(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
 /// A class which mocks [Client].
 ///
 /// See the documentation for Mockito's code generation for more information.
@@ -867,11 +878,11 @@ class MockClient extends _i1.Mock implements _i2.Client {
       ) as _i2.DatabaseApi);
 
   @override
-  Set<_i7.KeyVerificationMethod> get verificationMethods => (super.noSuchMethod(
+  Set<_i8.KeyVerificationMethod> get verificationMethods => (super.noSuchMethod(
         Invocation.getter(#verificationMethods),
-        returnValue: <_i7.KeyVerificationMethod>{},
-        returnValueForMissingStub: <_i7.KeyVerificationMethod>{},
-      ) as Set<_i7.KeyVerificationMethod>);
+        returnValue: <_i8.KeyVerificationMethod>{},
+        returnValueForMissingStub: <_i8.KeyVerificationMethod>{},
+      ) as Set<_i8.KeyVerificationMethod>);
 
   @override
   Set<String> get importantStateEvents => (super.noSuchMethod(
@@ -991,11 +1002,11 @@ class MockClient extends _i1.Mock implements _i2.Client {
   @override
   String get clientName => (super.noSuchMethod(
         Invocation.getter(#clientName),
-        returnValue: _i8.dummyValue<String>(
+        returnValue: _i9.dummyValue<String>(
           this,
           Invocation.getter(#clientName),
         ),
-        returnValueForMissingStub: _i8.dummyValue<String>(
+        returnValueForMissingStub: _i9.dummyValue<String>(
           this,
           Invocation.getter(#clientName),
         ),
@@ -1032,11 +1043,11 @@ class MockClient extends _i1.Mock implements _i2.Client {
   @override
   String get dehydratedDeviceDisplayName => (super.noSuchMethod(
         Invocation.getter(#dehydratedDeviceDisplayName),
-        returnValue: _i8.dummyValue<String>(
+        returnValue: _i9.dummyValue<String>(
           this,
           Invocation.getter(#dehydratedDeviceDisplayName),
         ),
-        returnValueForMissingStub: _i8.dummyValue<String>(
+        returnValueForMissingStub: _i9.dummyValue<String>(
           this,
           Invocation.getter(#dehydratedDeviceDisplayName),
         ),
@@ -1066,11 +1077,11 @@ class MockClient extends _i1.Mock implements _i2.Client {
   @override
   String get identityKey => (super.noSuchMethod(
         Invocation.getter(#identityKey),
-        returnValue: _i8.dummyValue<String>(
+        returnValue: _i9.dummyValue<String>(
           this,
           Invocation.getter(#identityKey),
         ),
-        returnValueForMissingStub: _i8.dummyValue<String>(
+        returnValueForMissingStub: _i9.dummyValue<String>(
           this,
           Invocation.getter(#identityKey),
         ),
@@ -1079,11 +1090,11 @@ class MockClient extends _i1.Mock implements _i2.Client {
   @override
   String get fingerprintKey => (super.noSuchMethod(
         Invocation.getter(#fingerprintKey),
-        returnValue: _i8.dummyValue<String>(
+        returnValue: _i9.dummyValue<String>(
           this,
           Invocation.getter(#fingerprintKey),
         ),
-        returnValueForMissingStub: _i8.dummyValue<String>(
+        returnValueForMissingStub: _i9.dummyValue<String>(
           this,
           Invocation.getter(#fingerprintKey),
         ),
@@ -1369,34 +1380,34 @@ class MockClient extends _i1.Mock implements _i2.Client {
       ) as _i3.CachedStreamController<_i2.BasicEvent>);
 
   @override
-  _i3.CachedStreamController<_i7.RoomKeyRequest> get onRoomKeyRequest =>
+  _i3.CachedStreamController<_i8.RoomKeyRequest> get onRoomKeyRequest =>
       (super.noSuchMethod(
         Invocation.getter(#onRoomKeyRequest),
-        returnValue: _FakeCachedStreamController_6<_i7.RoomKeyRequest>(
+        returnValue: _FakeCachedStreamController_6<_i8.RoomKeyRequest>(
           this,
           Invocation.getter(#onRoomKeyRequest),
         ),
         returnValueForMissingStub:
-            _FakeCachedStreamController_6<_i7.RoomKeyRequest>(
+            _FakeCachedStreamController_6<_i8.RoomKeyRequest>(
           this,
           Invocation.getter(#onRoomKeyRequest),
         ),
-      ) as _i3.CachedStreamController<_i7.RoomKeyRequest>);
+      ) as _i3.CachedStreamController<_i8.RoomKeyRequest>);
 
   @override
-  _i3.CachedStreamController<_i7.KeyVerification>
+  _i3.CachedStreamController<_i8.KeyVerification>
       get onKeyVerificationRequest => (super.noSuchMethod(
             Invocation.getter(#onKeyVerificationRequest),
-            returnValue: _FakeCachedStreamController_6<_i7.KeyVerification>(
+            returnValue: _FakeCachedStreamController_6<_i8.KeyVerification>(
               this,
               Invocation.getter(#onKeyVerificationRequest),
             ),
             returnValueForMissingStub:
-                _FakeCachedStreamController_6<_i7.KeyVerification>(
+                _FakeCachedStreamController_6<_i8.KeyVerification>(
               this,
               Invocation.getter(#onKeyVerificationRequest),
             ),
-          ) as _i3.CachedStreamController<_i7.KeyVerification>);
+          ) as _i3.CachedStreamController<_i8.KeyVerification>);
 
   @override
   _i3.CachedStreamController<_i2.UiaRequest<dynamic>> get onUiaRequest =>
@@ -1552,7 +1563,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
       );
 
   @override
-  set verificationMethods(Set<_i7.KeyVerificationMethod>? value) =>
+  set verificationMethods(Set<_i8.KeyVerificationMethod>? value) =>
       super.noSuchMethod(
         Invocation.setter(
           #verificationMethods,
@@ -1841,14 +1852,14 @@ class MockClient extends _i1.Mock implements _i2.Client {
           #generateUniqueTransactionId,
           [],
         ),
-        returnValue: _i8.dummyValue<String>(
+        returnValue: _i9.dummyValue<String>(
           this,
           Invocation.method(
             #generateUniqueTransactionId,
             [],
           ),
         ),
-        returnValueForMissingStub: _i8.dummyValue<String>(
+        returnValueForMissingStub: _i9.dummyValue<String>(
           this,
           Invocation.method(
             #generateUniqueTransactionId,
@@ -2236,8 +2247,8 @@ class MockClient extends _i1.Mock implements _i2.Client {
           #uiaRequestBackground,
           [request],
         ),
-        returnValue: _i8.ifNotNull(
-              _i8.dummyValueOrNull<T>(
+        returnValue: _i9.ifNotNull(
+              _i9.dummyValueOrNull<T>(
                 this,
                 Invocation.method(
                   #uiaRequestBackground,
@@ -2253,8 +2264,8 @@ class MockClient extends _i1.Mock implements _i2.Client {
                 [request],
               ),
             ),
-        returnValueForMissingStub: _i8.ifNotNull(
-              _i8.dummyValueOrNull<T>(
+        returnValueForMissingStub: _i9.ifNotNull(
+              _i9.dummyValueOrNull<T>(
                 this,
                 Invocation.method(
                   #uiaRequestBackground,
@@ -2295,7 +2306,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             #skipExistingChat: skipExistingChat,
           },
         ),
-        returnValue: _i5.Future<String>.value(_i8.dummyValue<String>(
+        returnValue: _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #startDirectChat,
@@ -2311,7 +2322,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i5.Future<String>.value(_i8.dummyValue<String>(
+            _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #startDirectChat,
@@ -2360,7 +2371,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             #powerLevelContentOverride: powerLevelContentOverride,
           },
         ),
-        returnValue: _i5.Future<String>.value(_i8.dummyValue<String>(
+        returnValue: _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #createGroupChat,
@@ -2381,7 +2392,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i5.Future<String>.value(_i8.dummyValue<String>(
+            _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #createGroupChat,
@@ -2484,7 +2495,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             #waitForSync: waitForSync,
           },
         ),
-        returnValue: _i5.Future<String>.value(_i8.dummyValue<String>(
+        returnValue: _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #createSpace,
@@ -2502,7 +2513,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i5.Future<String>.value(_i8.dummyValue<String>(
+            _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #createSpace,
@@ -3021,7 +3032,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
 
   @override
   _i5.Future<Uri> uploadContent(
-    _i9.Uint8List? file, {
+    _i10.Uint8List? file, {
     String? filename,
     String? contentType,
   }) =>
@@ -3373,7 +3384,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             #thirdPartySigned: thirdPartySigned,
           },
         ),
-        returnValue: _i5.Future<String>.value(_i8.dummyValue<String>(
+        returnValue: _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #joinRoom,
@@ -3387,7 +3398,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i5.Future<String>.value(_i8.dummyValue<String>(
+            _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #joinRoom,
@@ -3538,7 +3549,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
   @override
   Never unexpectedResponse(
     _i4.BaseResponse? response,
-    _i9.Uint8List? body,
+    _i10.Uint8List? body,
   ) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -4916,7 +4927,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             #visibility: visibility,
           },
         ),
-        returnValue: _i5.Future<String>.value(_i8.dummyValue<String>(
+        returnValue: _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #createRoom,
@@ -4938,7 +4949,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i5.Future<String>.value(_i8.dummyValue<String>(
+            _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #createRoom,
@@ -5432,7 +5443,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             #reason: reason,
           },
         ),
-        returnValue: _i5.Future<String>.value(_i8.dummyValue<String>(
+        returnValue: _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #knockRoom,
@@ -5444,7 +5455,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i5.Future<String>.value(_i8.dummyValue<String>(
+            _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #knockRoom,
@@ -6452,7 +6463,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             authData,
           ],
         ),
-        returnValue: _i5.Future<String>.value(_i8.dummyValue<String>(
+        returnValue: _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #postRoomKeysVersion,
@@ -6463,7 +6474,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i5.Future<String>.value(_i8.dummyValue<String>(
+            _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #postRoomKeysVersion,
@@ -6711,7 +6722,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             #thirdPartySigned: thirdPartySigned,
           },
         ),
-        returnValue: _i5.Future<String>.value(_i8.dummyValue<String>(
+        returnValue: _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #joinRoomById,
@@ -6723,7 +6734,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i5.Future<String>.value(_i8.dummyValue<String>(
+            _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #joinRoomById,
@@ -6983,7 +6994,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             body,
           ],
         ),
-        returnValue: _i5.Future<String>.value(_i8.dummyValue<String>(
+        returnValue: _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #sendMessage,
@@ -6996,7 +7007,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i5.Future<String>.value(_i8.dummyValue<String>(
+            _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #sendMessage,
@@ -7063,7 +7074,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             body,
           ],
         ),
-        returnValue: _i5.Future<String>.value(_i8.dummyValue<String>(
+        returnValue: _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #setRoomStateWithKey,
@@ -7076,7 +7087,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i5.Future<String>.value(_i8.dummyValue<String>(
+            _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #setRoomStateWithKey,
@@ -7124,7 +7135,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ],
           {#additionalCreators: additionalCreators},
         ),
-        returnValue: _i5.Future<String>.value(_i8.dummyValue<String>(
+        returnValue: _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #upgradeRoom,
@@ -7136,7 +7147,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i5.Future<String>.value(_i8.dummyValue<String>(
+            _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #upgradeRoom,
@@ -7384,7 +7395,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             body,
           ],
         ),
-        returnValue: _i5.Future<String>.value(_i8.dummyValue<String>(
+        returnValue: _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #defineFilter,
@@ -7395,7 +7406,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i5.Future<String>.value(_i8.dummyValue<String>(
+            _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #defineFilter,
@@ -7657,7 +7668,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
   _i5.Future<Map<String, Object?>> uploadContentToMXC(
     String? serverName,
     String? mediaId,
-    _i9.Uint8List? body, {
+    _i10.Uint8List? body, {
     String? filename,
     String? contentType,
   }) =>
@@ -7688,11 +7699,11 @@ class MockRoom extends _i1.Mock implements _i2.Room {
   @override
   String get id => (super.noSuchMethod(
         Invocation.getter(#id),
-        returnValue: _i8.dummyValue<String>(
+        returnValue: _i9.dummyValue<String>(
           this,
           Invocation.getter(#id),
         ),
-        returnValueForMissingStub: _i8.dummyValue<String>(
+        returnValueForMissingStub: _i9.dummyValue<String>(
           this,
           Invocation.getter(#id),
         ),
@@ -7779,11 +7790,11 @@ class MockRoom extends _i1.Mock implements _i2.Room {
   @override
   String get fullyRead => (super.noSuchMethod(
         Invocation.getter(#fullyRead),
-        returnValue: _i8.dummyValue<String>(
+        returnValue: _i9.dummyValue<String>(
           this,
           Invocation.getter(#fullyRead),
         ),
-        returnValueForMissingStub: _i8.dummyValue<String>(
+        returnValueForMissingStub: _i9.dummyValue<String>(
           this,
           Invocation.getter(#fullyRead),
         ),
@@ -7819,11 +7830,11 @@ class MockRoom extends _i1.Mock implements _i2.Room {
   @override
   String get name => (super.noSuchMethod(
         Invocation.getter(#name),
-        returnValue: _i8.dummyValue<String>(
+        returnValue: _i9.dummyValue<String>(
           this,
           Invocation.getter(#name),
         ),
-        returnValueForMissingStub: _i8.dummyValue<String>(
+        returnValueForMissingStub: _i9.dummyValue<String>(
           this,
           Invocation.getter(#name),
         ),
@@ -7839,11 +7850,11 @@ class MockRoom extends _i1.Mock implements _i2.Room {
   @override
   String get topic => (super.noSuchMethod(
         Invocation.getter(#topic),
-        returnValue: _i8.dummyValue<String>(
+        returnValue: _i9.dummyValue<String>(
           this,
           Invocation.getter(#topic),
         ),
-        returnValueForMissingStub: _i8.dummyValue<String>(
+        returnValueForMissingStub: _i9.dummyValue<String>(
           this,
           Invocation.getter(#topic),
         ),
@@ -7852,11 +7863,11 @@ class MockRoom extends _i1.Mock implements _i2.Room {
   @override
   String get canonicalAlias => (super.noSuchMethod(
         Invocation.getter(#canonicalAlias),
-        returnValue: _i8.dummyValue<String>(
+        returnValue: _i9.dummyValue<String>(
           this,
           Invocation.getter(#canonicalAlias),
         ),
-        returnValueForMissingStub: _i8.dummyValue<String>(
+        returnValueForMissingStub: _i9.dummyValue<String>(
           this,
           Invocation.getter(#canonicalAlias),
         ),
@@ -7899,11 +7910,11 @@ class MockRoom extends _i1.Mock implements _i2.Room {
   @override
   String get displayname => (super.noSuchMethod(
         Invocation.getter(#displayname),
-        returnValue: _i8.dummyValue<String>(
+        returnValue: _i9.dummyValue<String>(
           this,
           Invocation.getter(#displayname),
         ),
-        returnValueForMissingStub: _i8.dummyValue<String>(
+        returnValueForMissingStub: _i9.dummyValue<String>(
           this,
           Invocation.getter(#displayname),
         ),
@@ -8162,18 +8173,18 @@ class MockRoom extends _i1.Mock implements _i2.Room {
       ) as bool);
 
   @override
-  List<_i10.SpaceParent> get spaceParents => (super.noSuchMethod(
+  List<_i11.SpaceParent> get spaceParents => (super.noSuchMethod(
         Invocation.getter(#spaceParents),
-        returnValue: <_i10.SpaceParent>[],
-        returnValueForMissingStub: <_i10.SpaceParent>[],
-      ) as List<_i10.SpaceParent>);
+        returnValue: <_i11.SpaceParent>[],
+        returnValueForMissingStub: <_i11.SpaceParent>[],
+      ) as List<_i11.SpaceParent>);
 
   @override
-  List<_i10.SpaceChild> get spaceChildren => (super.noSuchMethod(
+  List<_i11.SpaceChild> get spaceChildren => (super.noSuchMethod(
         Invocation.getter(#spaceChildren),
-        returnValue: <_i10.SpaceChild>[],
-        returnValueForMissingStub: <_i10.SpaceChild>[],
-      ) as List<_i10.SpaceChild>);
+        returnValue: <_i11.SpaceChild>[],
+        returnValueForMissingStub: <_i11.SpaceChild>[],
+      ) as List<_i11.SpaceChild>);
 
   @override
   set membership(_i2.Membership? value) => super.noSuchMethod(
@@ -8340,14 +8351,14 @@ class MockRoom extends _i1.Mock implements _i2.Room {
           #getLocalizedDisplayname,
           [i18n],
         ),
-        returnValue: _i8.dummyValue<String>(
+        returnValue: _i9.dummyValue<String>(
           this,
           Invocation.method(
             #getLocalizedDisplayname,
             [i18n],
           ),
         ),
-        returnValueForMissingStub: _i8.dummyValue<String>(
+        returnValueForMissingStub: _i9.dummyValue<String>(
           this,
           Invocation.method(
             #getLocalizedDisplayname,
@@ -8395,7 +8406,7 @@ class MockRoom extends _i1.Mock implements _i2.Room {
           #setName,
           [newName],
         ),
-        returnValue: _i5.Future<String>.value(_i8.dummyValue<String>(
+        returnValue: _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #setName,
@@ -8403,7 +8414,7 @@ class MockRoom extends _i1.Mock implements _i2.Room {
           ),
         )),
         returnValueForMissingStub:
-            _i5.Future<String>.value(_i8.dummyValue<String>(
+            _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #setName,
@@ -8418,7 +8429,7 @@ class MockRoom extends _i1.Mock implements _i2.Room {
           #setDescription,
           [newName],
         ),
-        returnValue: _i5.Future<String>.value(_i8.dummyValue<String>(
+        returnValue: _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #setDescription,
@@ -8426,7 +8437,7 @@ class MockRoom extends _i1.Mock implements _i2.Room {
           ),
         )),
         returnValueForMissingStub:
-            _i5.Future<String>.value(_i8.dummyValue<String>(
+            _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #setDescription,
@@ -8510,7 +8521,7 @@ class MockRoom extends _i1.Mock implements _i2.Room {
           #setPinnedEvents,
           [pinnedEventIds],
         ),
-        returnValue: _i5.Future<String>.value(_i8.dummyValue<String>(
+        returnValue: _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #setPinnedEvents,
@@ -8518,7 +8529,7 @@ class MockRoom extends _i1.Mock implements _i2.Room {
           ),
         )),
         returnValueForMissingStub:
-            _i5.Future<String>.value(_i8.dummyValue<String>(
+            _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #setPinnedEvents,
@@ -8760,7 +8771,7 @@ class MockRoom extends _i1.Mock implements _i2.Room {
             power,
           ],
         ),
-        returnValue: _i5.Future<String>.value(_i8.dummyValue<String>(
+        returnValue: _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #setPower,
@@ -8771,7 +8782,7 @@ class MockRoom extends _i1.Mock implements _i2.Room {
           ),
         )),
         returnValueForMissingStub:
-            _i5.Future<String>.value(_i8.dummyValue<String>(
+            _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #setPower,
@@ -8860,15 +8871,15 @@ class MockRoom extends _i1.Mock implements _i2.Room {
       ) as _i5.Future<void>);
 
   @override
-  _i5.Future<_i11.TimelineChunk?> getEventContext(String? eventId) =>
+  _i5.Future<_i12.TimelineChunk?> getEventContext(String? eventId) =>
       (super.noSuchMethod(
         Invocation.method(
           #getEventContext,
           [eventId],
         ),
-        returnValue: _i5.Future<_i11.TimelineChunk?>.value(),
-        returnValueForMissingStub: _i5.Future<_i11.TimelineChunk?>.value(),
-      ) as _i5.Future<_i11.TimelineChunk?>);
+        returnValue: _i5.Future<_i12.TimelineChunk?>.value(),
+        returnValueForMissingStub: _i5.Future<_i12.TimelineChunk?>.value(),
+      ) as _i5.Future<_i12.TimelineChunk?>);
 
   @override
   _i5.Future<void> postReceipt(
@@ -9076,7 +9087,7 @@ class MockRoom extends _i1.Mock implements _i2.Room {
           #setAvatar,
           [file],
         ),
-        returnValue: _i5.Future<String>.value(_i8.dummyValue<String>(
+        returnValue: _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #setAvatar,
@@ -9084,7 +9095,7 @@ class MockRoom extends _i1.Mock implements _i2.Room {
           ),
         )),
         returnValueForMissingStub:
-            _i5.Future<String>.value(_i8.dummyValue<String>(
+            _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #setAvatar,
@@ -9408,26 +9419,26 @@ class MockVoIP extends _i1.Mock implements _i2.VoIP {
       ) as bool);
 
   @override
-  Map<_i12.VoipId, _i2.CallSession> get calls => (super.noSuchMethod(
+  Map<_i13.VoipId, _i2.CallSession> get calls => (super.noSuchMethod(
         Invocation.getter(#calls),
-        returnValue: <_i12.VoipId, _i2.CallSession>{},
-        returnValueForMissingStub: <_i12.VoipId, _i2.CallSession>{},
-      ) as Map<_i12.VoipId, _i2.CallSession>);
+        returnValue: <_i13.VoipId, _i2.CallSession>{},
+        returnValueForMissingStub: <_i13.VoipId, _i2.CallSession>{},
+      ) as Map<_i13.VoipId, _i2.CallSession>);
 
   @override
-  Map<_i12.VoipId, _i2.GroupCallSession> get groupCalls => (super.noSuchMethod(
+  Map<_i13.VoipId, _i2.GroupCallSession> get groupCalls => (super.noSuchMethod(
         Invocation.getter(#groupCalls),
-        returnValue: <_i12.VoipId, _i2.GroupCallSession>{},
-        returnValueForMissingStub: <_i12.VoipId, _i2.GroupCallSession>{},
-      ) as Map<_i12.VoipId, _i2.GroupCallSession>);
+        returnValue: <_i13.VoipId, _i2.GroupCallSession>{},
+        returnValueForMissingStub: <_i13.VoipId, _i2.GroupCallSession>{},
+      ) as Map<_i13.VoipId, _i2.GroupCallSession>);
 
   @override
-  Map<String, _i13.DelayedEventCanceller> get delayedEventCancellers =>
+  Map<String, _i14.DelayedEventCanceller> get delayedEventCancellers =>
       (super.noSuchMethod(
         Invocation.getter(#delayedEventCancellers),
-        returnValue: <String, _i13.DelayedEventCanceller>{},
-        returnValueForMissingStub: <String, _i13.DelayedEventCanceller>{},
-      ) as Map<String, _i13.DelayedEventCanceller>);
+        returnValue: <String, _i14.DelayedEventCanceller>{},
+        returnValueForMissingStub: <String, _i14.DelayedEventCanceller>{},
+      ) as Map<String, _i14.DelayedEventCanceller>);
 
   @override
   _i3.CachedStreamController<_i2.CallSession> get onIncomingCallSetup =>
@@ -9462,11 +9473,11 @@ class MockVoIP extends _i1.Mock implements _i2.VoIP {
   @override
   String get localPartyId => (super.noSuchMethod(
         Invocation.getter(#localPartyId),
-        returnValue: _i8.dummyValue<String>(
+        returnValue: _i9.dummyValue<String>(
           this,
           Invocation.getter(#localPartyId),
         ),
-        returnValueForMissingStub: _i8.dummyValue<String>(
+        returnValueForMissingStub: _i9.dummyValue<String>(
           this,
           Invocation.getter(#localPartyId),
         ),
@@ -9523,11 +9534,11 @@ class MockVoIP extends _i1.Mock implements _i2.VoIP {
   @override
   String get currentSessionId => (super.noSuchMethod(
         Invocation.getter(#currentSessionId),
-        returnValue: _i8.dummyValue<String>(
+        returnValue: _i9.dummyValue<String>(
           this,
           Invocation.getter(#currentSessionId),
         ),
-        returnValueForMissingStub: _i8.dummyValue<String>(
+        returnValueForMissingStub: _i9.dummyValue<String>(
           this,
           Invocation.getter(#currentSessionId),
         ),
@@ -9541,7 +9552,7 @@ class MockVoIP extends _i1.Mock implements _i2.VoIP {
       ) as int);
 
   @override
-  set currentCID(_i12.VoipId? value) => super.noSuchMethod(
+  set currentCID(_i13.VoipId? value) => super.noSuchMethod(
         Invocation.setter(
           #currentCID,
           value,
@@ -9550,7 +9561,7 @@ class MockVoIP extends _i1.Mock implements _i2.VoIP {
       );
 
   @override
-  set currentGroupCID(_i12.VoipId? value) => super.noSuchMethod(
+  set currentGroupCID(_i13.VoipId? value) => super.noSuchMethod(
         Invocation.setter(
           #currentGroupCID,
           value,
@@ -9810,7 +9821,7 @@ class MockVoIP extends _i1.Mock implements _i2.VoIP {
       ) as _i5.Future<_i2.CallSession>);
 
   @override
-  _i2.CallSession createNewCall(_i14.CallOptions? opts) => (super.noSuchMethod(
+  _i2.CallSession createNewCall(_i7.CallOptions? opts) => (super.noSuchMethod(
         Invocation.method(
           #createNewCall,
           [opts],
@@ -10010,11 +10021,11 @@ class MockGroupCallSession extends _i1.Mock implements _i2.GroupCallSession {
   @override
   String get groupCallId => (super.noSuchMethod(
         Invocation.getter(#groupCallId),
-        returnValue: _i8.dummyValue<String>(
+        returnValue: _i9.dummyValue<String>(
           this,
           Invocation.getter(#groupCallId),
         ),
-        returnValueForMissingStub: _i8.dummyValue<String>(
+        returnValueForMissingStub: _i9.dummyValue<String>(
           this,
           Invocation.getter(#groupCallId),
         ),
@@ -10068,11 +10079,11 @@ class MockGroupCallSession extends _i1.Mock implements _i2.GroupCallSession {
   @override
   String get avatarName => (super.noSuchMethod(
         Invocation.getter(#avatarName),
-        returnValue: _i8.dummyValue<String>(
+        returnValue: _i9.dummyValue<String>(
           this,
           Invocation.getter(#avatarName),
         ),
-        returnValueForMissingStub: _i8.dummyValue<String>(
+        returnValueForMissingStub: _i9.dummyValue<String>(
           this,
           Invocation.getter(#avatarName),
         ),
@@ -10181,7 +10192,7 @@ class MockGroupCallSession extends _i1.Mock implements _i2.GroupCallSession {
             #isEphemeral: isEphemeral,
           },
         ),
-        returnValue: _i5.Future<String>.value(_i8.dummyValue<String>(
+        returnValue: _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #sendReactionEvent,
@@ -10193,7 +10204,7 @@ class MockGroupCallSession extends _i1.Mock implements _i2.GroupCallSession {
           ),
         )),
         returnValueForMissingStub:
-            _i5.Future<String>.value(_i8.dummyValue<String>(
+            _i5.Future<String>.value(_i9.dummyValue<String>(
           this,
           Invocation.method(
             #sendReactionEvent,
@@ -10231,4 +10242,1495 @@ class MockGroupCallSession extends _i1.Mock implements _i2.GroupCallSession {
         returnValueForMissingStub:
             _i5.Future<List<_i2.MatrixEvent>>.value(<_i2.MatrixEvent>[]),
       ) as _i5.Future<List<_i2.MatrixEvent>>);
+}
+
+/// A class which mocks [CallSession].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockCallSession extends _i1.Mock implements _i2.CallSession {
+  @override
+  _i7.CallOptions get opts => (super.noSuchMethod(
+        Invocation.getter(#opts),
+        returnValue: _FakeCallOptions_77(
+          this,
+          Invocation.getter(#opts),
+        ),
+        returnValueForMissingStub: _FakeCallOptions_77(
+          this,
+          Invocation.getter(#opts),
+        ),
+      ) as _i7.CallOptions);
+
+  @override
+  _i2.CallType get type => (super.noSuchMethod(
+        Invocation.getter(#type),
+        returnValue: _i2.CallType.kVoice,
+        returnValueForMissingStub: _i2.CallType.kVoice,
+      ) as _i2.CallType);
+
+  @override
+  _i2.Room get room => (super.noSuchMethod(
+        Invocation.getter(#room),
+        returnValue: _FakeRoom_75(
+          this,
+          Invocation.getter(#room),
+        ),
+        returnValueForMissingStub: _FakeRoom_75(
+          this,
+          Invocation.getter(#room),
+        ),
+      ) as _i2.Room);
+
+  @override
+  _i2.VoIP get voip => (super.noSuchMethod(
+        Invocation.getter(#voip),
+        returnValue: _FakeVoIP_74(
+          this,
+          Invocation.getter(#voip),
+        ),
+        returnValueForMissingStub: _FakeVoIP_74(
+          this,
+          Invocation.getter(#voip),
+        ),
+      ) as _i2.VoIP);
+
+  @override
+  String get callId => (super.noSuchMethod(
+        Invocation.getter(#callId),
+        returnValue: _i9.dummyValue<String>(
+          this,
+          Invocation.getter(#callId),
+        ),
+        returnValueForMissingStub: _i9.dummyValue<String>(
+          this,
+          Invocation.getter(#callId),
+        ),
+      ) as String);
+
+  @override
+  String get localPartyId => (super.noSuchMethod(
+        Invocation.getter(#localPartyId),
+        returnValue: _i9.dummyValue<String>(
+          this,
+          Invocation.getter(#localPartyId),
+        ),
+        returnValueForMissingStub: _i9.dummyValue<String>(
+          this,
+          Invocation.getter(#localPartyId),
+        ),
+      ) as String);
+
+  @override
+  _i2.CallDirection get direction => (super.noSuchMethod(
+        Invocation.getter(#direction),
+        returnValue: _i2.CallDirection.kIncoming,
+        returnValueForMissingStub: _i2.CallDirection.kIncoming,
+      ) as _i2.CallDirection);
+
+  @override
+  _i2.CallState get state => (super.noSuchMethod(
+        Invocation.getter(#state),
+        returnValue: _i2.CallState.kFledgling,
+        returnValueForMissingStub: _i2.CallState.kFledgling,
+      ) as _i2.CallState);
+
+  @override
+  bool get isOutgoing => (super.noSuchMethod(
+        Invocation.getter(#isOutgoing),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  bool get isRinging => (super.noSuchMethod(
+        Invocation.getter(#isRinging),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  bool get callHasEnded => (super.noSuchMethod(
+        Invocation.getter(#callHasEnded),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  bool get localHold => (super.noSuchMethod(
+        Invocation.getter(#localHold),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  bool get remoteOnHold => (super.noSuchMethod(
+        Invocation.getter(#remoteOnHold),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  bool get answeredByUs => (super.noSuchMethod(
+        Invocation.getter(#answeredByUs),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  _i2.Client get client => (super.noSuchMethod(
+        Invocation.getter(#client),
+        returnValue: _FakeClient_66(
+          this,
+          Invocation.getter(#client),
+        ),
+        returnValueForMissingStub: _FakeClient_66(
+          this,
+          Invocation.getter(#client),
+        ),
+      ) as _i2.Client);
+
+  @override
+  bool get isGroupCall => (super.noSuchMethod(
+        Invocation.getter(#isGroupCall),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  _i3.CachedStreamController<_i2.CallSession> get onCallStreamsChanged =>
+      (super.noSuchMethod(
+        Invocation.getter(#onCallStreamsChanged),
+        returnValue: _FakeCachedStreamController_6<_i2.CallSession>(
+          this,
+          Invocation.getter(#onCallStreamsChanged),
+        ),
+        returnValueForMissingStub:
+            _FakeCachedStreamController_6<_i2.CallSession>(
+          this,
+          Invocation.getter(#onCallStreamsChanged),
+        ),
+      ) as _i3.CachedStreamController<_i2.CallSession>);
+
+  @override
+  _i3.CachedStreamController<_i2.CallSession> get onCallReplaced =>
+      (super.noSuchMethod(
+        Invocation.getter(#onCallReplaced),
+        returnValue: _FakeCachedStreamController_6<_i2.CallSession>(
+          this,
+          Invocation.getter(#onCallReplaced),
+        ),
+        returnValueForMissingStub:
+            _FakeCachedStreamController_6<_i2.CallSession>(
+          this,
+          Invocation.getter(#onCallReplaced),
+        ),
+      ) as _i3.CachedStreamController<_i2.CallSession>);
+
+  @override
+  _i3.CachedStreamController<_i2.CallSession>
+      get onCallHangupNotifierForGroupCalls => (super.noSuchMethod(
+            Invocation.getter(#onCallHangupNotifierForGroupCalls),
+            returnValue: _FakeCachedStreamController_6<_i2.CallSession>(
+              this,
+              Invocation.getter(#onCallHangupNotifierForGroupCalls),
+            ),
+            returnValueForMissingStub:
+                _FakeCachedStreamController_6<_i2.CallSession>(
+              this,
+              Invocation.getter(#onCallHangupNotifierForGroupCalls),
+            ),
+          ) as _i3.CachedStreamController<_i2.CallSession>);
+
+  @override
+  _i3.CachedStreamController<_i2.CallState> get onCallStateChanged =>
+      (super.noSuchMethod(
+        Invocation.getter(#onCallStateChanged),
+        returnValue: _FakeCachedStreamController_6<_i2.CallState>(
+          this,
+          Invocation.getter(#onCallStateChanged),
+        ),
+        returnValueForMissingStub: _FakeCachedStreamController_6<_i2.CallState>(
+          this,
+          Invocation.getter(#onCallStateChanged),
+        ),
+      ) as _i3.CachedStreamController<_i2.CallState>);
+
+  @override
+  _i3.CachedStreamController<_i2.CallStateChange> get onCallEventChanged =>
+      (super.noSuchMethod(
+        Invocation.getter(#onCallEventChanged),
+        returnValue: _FakeCachedStreamController_6<_i2.CallStateChange>(
+          this,
+          Invocation.getter(#onCallEventChanged),
+        ),
+        returnValueForMissingStub:
+            _FakeCachedStreamController_6<_i2.CallStateChange>(
+          this,
+          Invocation.getter(#onCallEventChanged),
+        ),
+      ) as _i3.CachedStreamController<_i2.CallStateChange>);
+
+  @override
+  _i3.CachedStreamController<_i2.WrappedMediaStream> get onStreamAdd =>
+      (super.noSuchMethod(
+        Invocation.getter(#onStreamAdd),
+        returnValue: _FakeCachedStreamController_6<_i2.WrappedMediaStream>(
+          this,
+          Invocation.getter(#onStreamAdd),
+        ),
+        returnValueForMissingStub:
+            _FakeCachedStreamController_6<_i2.WrappedMediaStream>(
+          this,
+          Invocation.getter(#onStreamAdd),
+        ),
+      ) as _i3.CachedStreamController<_i2.WrappedMediaStream>);
+
+  @override
+  _i3.CachedStreamController<_i2.WrappedMediaStream> get onStreamRemoved =>
+      (super.noSuchMethod(
+        Invocation.getter(#onStreamRemoved),
+        returnValue: _FakeCachedStreamController_6<_i2.WrappedMediaStream>(
+          this,
+          Invocation.getter(#onStreamRemoved),
+        ),
+        returnValueForMissingStub:
+            _FakeCachedStreamController_6<_i2.WrappedMediaStream>(
+          this,
+          Invocation.getter(#onStreamRemoved),
+        ),
+      ) as _i3.CachedStreamController<_i2.WrappedMediaStream>);
+
+  @override
+  List<_i2.WrappedMediaStream> get getLocalStreams => (super.noSuchMethod(
+        Invocation.getter(#getLocalStreams),
+        returnValue: <_i2.WrappedMediaStream>[],
+        returnValueForMissingStub: <_i2.WrappedMediaStream>[],
+      ) as List<_i2.WrappedMediaStream>);
+
+  @override
+  List<_i2.WrappedMediaStream> get getRemoteStreams => (super.noSuchMethod(
+        Invocation.getter(#getRemoteStreams),
+        returnValue: <_i2.WrappedMediaStream>[],
+        returnValueForMissingStub: <_i2.WrappedMediaStream>[],
+      ) as List<_i2.WrappedMediaStream>);
+
+  @override
+  bool get isLocalVideoMuted => (super.noSuchMethod(
+        Invocation.getter(#isLocalVideoMuted),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  bool get isMicrophoneMuted => (super.noSuchMethod(
+        Invocation.getter(#isMicrophoneMuted),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  bool get screensharingEnabled => (super.noSuchMethod(
+        Invocation.getter(#screensharingEnabled),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  set opts(_i7.CallOptions? value) => super.noSuchMethod(
+        Invocation.setter(
+          #opts,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  set pc(_i15.RTCPeerConnection? value) => super.noSuchMethod(
+        Invocation.setter(
+          #pc,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  set remoteUserId(String? value) => super.noSuchMethod(
+        Invocation.setter(
+          #remoteUserId,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  set remoteDeviceId(String? value) => super.noSuchMethod(
+        Invocation.setter(
+          #remoteDeviceId,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  set remoteSessionId(String? value) => super.noSuchMethod(
+        Invocation.setter(
+          #remoteSessionId,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  set remotePartyId(String? value) => super.noSuchMethod(
+        Invocation.setter(
+          #remotePartyId,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  set hangupReason(_i2.CallErrorCode? value) => super.noSuchMethod(
+        Invocation.setter(
+          #hangupReason,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  _i5.Future<bool> hasVideoToSend() => (super.noSuchMethod(
+        Invocation.method(
+          #hasVideoToSend,
+          [],
+        ),
+        returnValue: _i5.Future<bool>.value(false),
+        returnValueForMissingStub: _i5.Future<bool>.value(false),
+      ) as _i5.Future<bool>);
+
+  @override
+  _i5.Future<void> initOutboundCall(_i2.CallType? type) => (super.noSuchMethod(
+        Invocation.method(
+          #initOutboundCall,
+          [type],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> initWithInvite(
+    _i2.CallType? type,
+    _i15.RTCSessionDescription? offer,
+    _i2.SDPStreamMetadata? metadata,
+    int? lifetime,
+    bool? isGroupCall,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #initWithInvite,
+          [
+            type,
+            offer,
+            metadata,
+            lifetime,
+            isGroupCall,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> answerWithStreams(List<_i2.WrappedMediaStream>? callFeeds) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #answerWithStreams,
+          [callFeeds],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> replacedBy(_i2.CallSession? newCall) => (super.noSuchMethod(
+        Invocation.method(
+          #replacedBy,
+          [newCall],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> sendAnswer(_i15.RTCSessionDescription? answer) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #sendAnswer,
+          [answer],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> gotCallFeedsForAnswer(
+          List<_i2.WrappedMediaStream>? callFeeds) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #gotCallFeedsForAnswer,
+          [callFeeds],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> placeCallWithStreams(
+    List<_i2.WrappedMediaStream>? callFeeds, {
+    bool? requestScreenSharing = false,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #placeCallWithStreams,
+          [callFeeds],
+          {#requestScreenSharing: requestScreenSharing},
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> gotCallFeedsForInvite(
+    List<_i2.WrappedMediaStream>? callFeeds, {
+    bool? requestScreenSharing = false,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #gotCallFeedsForInvite,
+          [callFeeds],
+          {#requestScreenSharing: requestScreenSharing},
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> onAnswerReceived(
+    _i15.RTCSessionDescription? answer,
+    _i2.SDPStreamMetadata? metadata,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #onAnswerReceived,
+          [
+            answer,
+            metadata,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> onNegotiateReceived(
+    _i2.SDPStreamMetadata? metadata,
+    _i15.RTCSessionDescription? description,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #onNegotiateReceived,
+          [
+            metadata,
+            description,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> updateMediaDeviceForCall() => (super.noSuchMethod(
+        Invocation.method(
+          #updateMediaDeviceForCall,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> onSDPStreamMetadataReceived(
+          _i2.SDPStreamMetadata? metadata) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #onSDPStreamMetadataReceived,
+          [metadata],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> onCandidatesReceived(List<dynamic>? candidates) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #onCandidatesReceived,
+          [candidates],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  void onAssertedIdentityReceived(_i2.AssertedIdentity? identity) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #onAssertedIdentityReceived,
+          [identity],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  _i5.Future<bool> setScreensharingEnabled(bool? enabled) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #setScreensharingEnabled,
+          [enabled],
+        ),
+        returnValue: _i5.Future<bool>.value(false),
+        returnValueForMissingStub: _i5.Future<bool>.value(false),
+      ) as _i5.Future<bool>);
+
+  @override
+  _i5.Future<void> addLocalStream(
+    _i15.MediaStream? stream,
+    String? purpose, {
+    bool? addToPeerConnection = true,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #addLocalStream,
+          [
+            stream,
+            purpose,
+          ],
+          {#addToPeerConnection: addToPeerConnection},
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> deleteAllStreams() => (super.noSuchMethod(
+        Invocation.method(
+          #deleteAllStreams,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> deleteFeedByStream(_i15.MediaStream? stream) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #deleteFeedByStream,
+          [stream],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> deleteStream(_i2.WrappedMediaStream? stream) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #deleteStream,
+          [stream],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> removeLocalStream(_i2.WrappedMediaStream? callFeed) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #removeLocalStream,
+          [callFeed],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  void setCallState(_i2.CallState? newState) => super.noSuchMethod(
+        Invocation.method(
+          #setCallState,
+          [newState],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  _i5.Future<void> setLocalVideoMuted(bool? muted) => (super.noSuchMethod(
+        Invocation.method(
+          #setLocalVideoMuted,
+          [muted],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> insertVideoTrackToAudioOnlyStream() => (super.noSuchMethod(
+        Invocation.method(
+          #insertVideoTrackToAudioOnlyStream,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> setMicrophoneMuted(bool? muted) => (super.noSuchMethod(
+        Invocation.method(
+          #setMicrophoneMuted,
+          [muted],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> setRemoteOnHold(bool? onHold) => (super.noSuchMethod(
+        Invocation.method(
+          #setRemoteOnHold,
+          [onHold],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<bool> isLocalOnHold() => (super.noSuchMethod(
+        Invocation.method(
+          #isLocalOnHold,
+          [],
+        ),
+        returnValue: _i5.Future<bool>.value(false),
+        returnValueForMissingStub: _i5.Future<bool>.value(false),
+      ) as _i5.Future<bool>);
+
+  @override
+  _i5.Future<void> answer({String? txid}) => (super.noSuchMethod(
+        Invocation.method(
+          #answer,
+          [],
+          {#txid: txid},
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> reject({
+    _i2.CallErrorCode? reason,
+    bool? shouldEmit = true,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #reject,
+          [],
+          {
+            #reason: reason,
+            #shouldEmit: shouldEmit,
+          },
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> hangup({
+    required _i2.CallErrorCode? reason,
+    bool? shouldEmit = true,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #hangup,
+          [],
+          {
+            #reason: reason,
+            #shouldEmit: shouldEmit,
+          },
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> sendDTMF(String? tones) => (super.noSuchMethod(
+        Invocation.method(
+          #sendDTMF,
+          [tones],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> terminate(
+    _i2.CallParty? party,
+    _i2.CallErrorCode? reason,
+    bool? shouldEmit,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #terminate,
+          [
+            party,
+            reason,
+            shouldEmit,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> onRejectReceived(_i2.CallErrorCode? reason) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #onRejectReceived,
+          [reason],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> onNegotiationNeeded() => (super.noSuchMethod(
+        Invocation.method(
+          #onNegotiationNeeded,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> onAnsweredElsewhere() => (super.noSuchMethod(
+        Invocation.method(
+          #onAnsweredElsewhere,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> cleanUp() => (super.noSuchMethod(
+        Invocation.method(
+          #cleanUp,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> updateMuteStatus() => (super.noSuchMethod(
+        Invocation.method(
+          #updateMuteStatus,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> restartIce() => (super.noSuchMethod(
+        Invocation.method(
+          #restartIce,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> createDataChannel(
+    String? label,
+    _i15.RTCDataChannelInit? dataChannelDict,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #createDataChannel,
+          [
+            label,
+            dataChannelDict,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> tryRemoveStopedStreams() => (super.noSuchMethod(
+        Invocation.method(
+          #tryRemoveStopedStreams,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  void fireCallEvent(_i2.CallStateChange? event) => super.noSuchMethod(
+        Invocation.method(
+          #fireCallEvent,
+          [event],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  _i5.Future<void> onSelectAnswerReceived(String? selectedPartyId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #onSelectAnswerReceived,
+          [selectedPartyId],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<String?> sendInviteToCall(
+    _i2.Room? room,
+    String? callId,
+    int? lifetime,
+    String? party_id,
+    String? sdp, {
+    String? type = 'offer',
+    String? version = '1',
+    String? txid,
+    _i2.CallCapabilities? capabilities,
+    _i2.SDPStreamMetadata? metadata,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #sendInviteToCall,
+          [
+            room,
+            callId,
+            lifetime,
+            party_id,
+            sdp,
+          ],
+          {
+            #type: type,
+            #version: version,
+            #txid: txid,
+            #capabilities: capabilities,
+            #metadata: metadata,
+          },
+        ),
+        returnValue: _i5.Future<String?>.value(),
+        returnValueForMissingStub: _i5.Future<String?>.value(),
+      ) as _i5.Future<String?>);
+
+  @override
+  _i5.Future<String?> sendSelectCallAnswer(
+    _i2.Room? room,
+    String? callId,
+    String? party_id,
+    String? selected_party_id, {
+    String? version = '1',
+    String? txid,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #sendSelectCallAnswer,
+          [
+            room,
+            callId,
+            party_id,
+            selected_party_id,
+          ],
+          {
+            #version: version,
+            #txid: txid,
+          },
+        ),
+        returnValue: _i5.Future<String?>.value(),
+        returnValueForMissingStub: _i5.Future<String?>.value(),
+      ) as _i5.Future<String?>);
+
+  @override
+  _i5.Future<String?> sendCallReject(
+    _i2.Room? room,
+    String? callId,
+    String? party_id, {
+    String? version = '1',
+    String? txid,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #sendCallReject,
+          [
+            room,
+            callId,
+            party_id,
+          ],
+          {
+            #version: version,
+            #txid: txid,
+          },
+        ),
+        returnValue: _i5.Future<String?>.value(),
+        returnValueForMissingStub: _i5.Future<String?>.value(),
+      ) as _i5.Future<String?>);
+
+  @override
+  _i5.Future<String?> sendCallNegotiate(
+    _i2.Room? room,
+    String? callId,
+    int? lifetime,
+    String? party_id,
+    String? sdp, {
+    String? type = 'offer',
+    String? version = '1',
+    String? txid,
+    _i2.CallCapabilities? capabilities,
+    _i2.SDPStreamMetadata? metadata,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #sendCallNegotiate,
+          [
+            room,
+            callId,
+            lifetime,
+            party_id,
+            sdp,
+          ],
+          {
+            #type: type,
+            #version: version,
+            #txid: txid,
+            #capabilities: capabilities,
+            #metadata: metadata,
+          },
+        ),
+        returnValue: _i5.Future<String?>.value(),
+        returnValueForMissingStub: _i5.Future<String?>.value(),
+      ) as _i5.Future<String?>);
+
+  @override
+  _i5.Future<String?> sendCallCandidates(
+    _i2.Room? room,
+    String? callId,
+    String? party_id,
+    List<Map<String, dynamic>>? candidates, {
+    String? version = '1',
+    String? txid,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #sendCallCandidates,
+          [
+            room,
+            callId,
+            party_id,
+            candidates,
+          ],
+          {
+            #version: version,
+            #txid: txid,
+          },
+        ),
+        returnValue: _i5.Future<String?>.value(),
+        returnValueForMissingStub: _i5.Future<String?>.value(),
+      ) as _i5.Future<String?>);
+
+  @override
+  _i5.Future<String?> sendAnswerCall(
+    _i2.Room? room,
+    String? callId,
+    String? sdp,
+    String? party_id, {
+    String? type = 'answer',
+    String? version = '1',
+    String? txid,
+    _i2.CallCapabilities? capabilities,
+    _i2.SDPStreamMetadata? metadata,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #sendAnswerCall,
+          [
+            room,
+            callId,
+            sdp,
+            party_id,
+          ],
+          {
+            #type: type,
+            #version: version,
+            #txid: txid,
+            #capabilities: capabilities,
+            #metadata: metadata,
+          },
+        ),
+        returnValue: _i5.Future<String?>.value(),
+        returnValueForMissingStub: _i5.Future<String?>.value(),
+      ) as _i5.Future<String?>);
+
+  @override
+  _i5.Future<String?> sendHangupCall(
+    _i2.Room? room,
+    String? callId,
+    String? party_id,
+    String? hangupCause, {
+    String? version = '1',
+    String? txid,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #sendHangupCall,
+          [
+            room,
+            callId,
+            party_id,
+            hangupCause,
+          ],
+          {
+            #version: version,
+            #txid: txid,
+          },
+        ),
+        returnValue: _i5.Future<String?>.value(),
+        returnValueForMissingStub: _i5.Future<String?>.value(),
+      ) as _i5.Future<String?>);
+
+  @override
+  _i5.Future<String?> sendSDPStreamMetadataChanged(
+    _i2.Room? room,
+    String? callId,
+    String? party_id,
+    _i2.SDPStreamMetadata? metadata, {
+    String? version = '1',
+    String? txid,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #sendSDPStreamMetadataChanged,
+          [
+            room,
+            callId,
+            party_id,
+            metadata,
+          ],
+          {
+            #version: version,
+            #txid: txid,
+          },
+        ),
+        returnValue: _i5.Future<String?>.value(),
+        returnValueForMissingStub: _i5.Future<String?>.value(),
+      ) as _i5.Future<String?>);
+
+  @override
+  _i5.Future<String?> sendCallReplaces(
+    _i2.Room? room,
+    String? callId,
+    String? party_id,
+    _i2.CallReplaces? callReplaces, {
+    String? version = '1',
+    String? txid,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #sendCallReplaces,
+          [
+            room,
+            callId,
+            party_id,
+            callReplaces,
+          ],
+          {
+            #version: version,
+            #txid: txid,
+          },
+        ),
+        returnValue: _i5.Future<String?>.value(),
+        returnValueForMissingStub: _i5.Future<String?>.value(),
+      ) as _i5.Future<String?>);
+
+  @override
+  _i5.Future<String?> sendAssertedIdentity(
+    _i2.Room? room,
+    String? callId,
+    String? party_id,
+    _i2.AssertedIdentity? assertedIdentity, {
+    String? version = '1',
+    String? txid,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #sendAssertedIdentity,
+          [
+            room,
+            callId,
+            party_id,
+            assertedIdentity,
+          ],
+          {
+            #version: version,
+            #txid: txid,
+          },
+        ),
+        returnValue: _i5.Future<String?>.value(),
+        returnValueForMissingStub: _i5.Future<String?>.value(),
+      ) as _i5.Future<String?>);
+}
+
+/// A class which mocks [User].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockUser extends _i1.Mock implements _i2.User {
+  @override
+  _i2.Room get room => (super.noSuchMethod(
+        Invocation.getter(#room),
+        returnValue: _FakeRoom_75(
+          this,
+          Invocation.getter(#room),
+        ),
+        returnValueForMissingStub: _FakeRoom_75(
+          this,
+          Invocation.getter(#room),
+        ),
+      ) as _i2.Room);
+
+  @override
+  String get id => (super.noSuchMethod(
+        Invocation.getter(#id),
+        returnValue: _i9.dummyValue<String>(
+          this,
+          Invocation.getter(#id),
+        ),
+        returnValueForMissingStub: _i9.dummyValue<String>(
+          this,
+          Invocation.getter(#id),
+        ),
+      ) as String);
+
+  @override
+  int get powerLevel => (super.noSuchMethod(
+        Invocation.getter(#powerLevel),
+        returnValue: 0,
+        returnValueForMissingStub: 0,
+      ) as int);
+
+  @override
+  _i2.Membership get membership => (super.noSuchMethod(
+        Invocation.getter(#membership),
+        returnValue: _i2.Membership.ban,
+        returnValueForMissingStub: _i2.Membership.ban,
+      ) as _i2.Membership);
+
+  @override
+  _i5.Future<_i2.CachedPresence> get currentPresence => (super.noSuchMethod(
+        Invocation.getter(#currentPresence),
+        returnValue:
+            _i5.Future<_i2.CachedPresence>.value(_FakeCachedPresence_21(
+          this,
+          Invocation.getter(#currentPresence),
+        )),
+        returnValueForMissingStub:
+            _i5.Future<_i2.CachedPresence>.value(_FakeCachedPresence_21(
+          this,
+          Invocation.getter(#currentPresence),
+        )),
+      ) as _i5.Future<_i2.CachedPresence>);
+
+  @override
+  bool get canBan => (super.noSuchMethod(
+        Invocation.getter(#canBan),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  bool get canKick => (super.noSuchMethod(
+        Invocation.getter(#canKick),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  bool get canChangePowerLevel => (super.noSuchMethod(
+        Invocation.getter(#canChangePowerLevel),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  bool get canChangeUserPowerLevel => (super.noSuchMethod(
+        Invocation.getter(#canChangeUserPowerLevel),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  String get mention => (super.noSuchMethod(
+        Invocation.getter(#mention),
+        returnValue: _i9.dummyValue<String>(
+          this,
+          Invocation.getter(#mention),
+        ),
+        returnValueForMissingStub: _i9.dummyValue<String>(
+          this,
+          Invocation.getter(#mention),
+        ),
+      ) as String);
+
+  @override
+  Set<String> get mentionFragments => (super.noSuchMethod(
+        Invocation.getter(#mentionFragments),
+        returnValue: <String>{},
+        returnValueForMissingStub: <String>{},
+      ) as Set<String>);
+
+  @override
+  set stateKey(String? value) => super.noSuchMethod(
+        Invocation.setter(
+          #stateKey,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  String get senderId => (super.noSuchMethod(
+        Invocation.getter(#senderId),
+        returnValue: _i9.dummyValue<String>(
+          this,
+          Invocation.getter(#senderId),
+        ),
+        returnValueForMissingStub: _i9.dummyValue<String>(
+          this,
+          Invocation.getter(#senderId),
+        ),
+      ) as String);
+
+  @override
+  set senderId(String? value) => super.noSuchMethod(
+        Invocation.setter(
+          #senderId,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  String get type => (super.noSuchMethod(
+        Invocation.getter(#type),
+        returnValue: _i9.dummyValue<String>(
+          this,
+          Invocation.getter(#type),
+        ),
+        returnValueForMissingStub: _i9.dummyValue<String>(
+          this,
+          Invocation.getter(#type),
+        ),
+      ) as String);
+
+  @override
+  Map<String, Object?> get content => (super.noSuchMethod(
+        Invocation.getter(#content),
+        returnValue: <String, Object?>{},
+        returnValueForMissingStub: <String, Object?>{},
+      ) as Map<String, Object?>);
+
+  @override
+  set type(String? value) => super.noSuchMethod(
+        Invocation.setter(
+          #type,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  set content(Map<String, Object?>? value) => super.noSuchMethod(
+        Invocation.setter(
+          #content,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  String calcDisplayname({
+    bool? formatLocalpart,
+    bool? mxidLocalPartFallback,
+    _i2.MatrixLocalizations? i18n = const _i2.MatrixDefaultLocalizations(),
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #calcDisplayname,
+          [],
+          {
+            #formatLocalpart: formatLocalpart,
+            #mxidLocalPartFallback: mxidLocalPartFallback,
+            #i18n: i18n,
+          },
+        ),
+        returnValue: _i9.dummyValue<String>(
+          this,
+          Invocation.method(
+            #calcDisplayname,
+            [],
+            {
+              #formatLocalpart: formatLocalpart,
+              #mxidLocalPartFallback: mxidLocalPartFallback,
+              #i18n: i18n,
+            },
+          ),
+        ),
+        returnValueForMissingStub: _i9.dummyValue<String>(
+          this,
+          Invocation.method(
+            #calcDisplayname,
+            [],
+            {
+              #formatLocalpart: formatLocalpart,
+              #mxidLocalPartFallback: mxidLocalPartFallback,
+              #i18n: i18n,
+            },
+          ),
+        ),
+      ) as String);
+
+  @override
+  _i5.Future<void> kick() => (super.noSuchMethod(
+        Invocation.method(
+          #kick,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> ban() => (super.noSuchMethod(
+        Invocation.method(
+          #ban,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> unban() => (super.noSuchMethod(
+        Invocation.method(
+          #unban,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> setPower(int? power) => (super.noSuchMethod(
+        Invocation.method(
+          #setPower,
+          [power],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<String> startDirectChat({
+    bool? enableEncryption,
+    List<_i2.StateEvent>? initialState,
+    bool? waitForSync = true,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #startDirectChat,
+          [],
+          {
+            #enableEncryption: enableEncryption,
+            #initialState: initialState,
+            #waitForSync: waitForSync,
+          },
+        ),
+        returnValue: _i5.Future<String>.value(_i9.dummyValue<String>(
+          this,
+          Invocation.method(
+            #startDirectChat,
+            [],
+            {
+              #enableEncryption: enableEncryption,
+              #initialState: initialState,
+              #waitForSync: waitForSync,
+            },
+          ),
+        )),
+        returnValueForMissingStub:
+            _i5.Future<String>.value(_i9.dummyValue<String>(
+          this,
+          Invocation.method(
+            #startDirectChat,
+            [],
+            {
+              #enableEncryption: enableEncryption,
+              #initialState: initialState,
+              #waitForSync: waitForSync,
+            },
+          ),
+        )),
+      ) as _i5.Future<String>);
+
+  @override
+  _i5.Future<_i2.CachedPresence> fetchCurrentPresence() => (super.noSuchMethod(
+        Invocation.method(
+          #fetchCurrentPresence,
+          [],
+        ),
+        returnValue:
+            _i5.Future<_i2.CachedPresence>.value(_FakeCachedPresence_21(
+          this,
+          Invocation.method(
+            #fetchCurrentPresence,
+            [],
+          ),
+        )),
+        returnValueForMissingStub:
+            _i5.Future<_i2.CachedPresence>.value(_FakeCachedPresence_21(
+          this,
+          Invocation.method(
+            #fetchCurrentPresence,
+            [],
+          ),
+        )),
+      ) as _i5.Future<_i2.CachedPresence>);
+
+  @override
+  Map<String, Object?> toJson() => (super.noSuchMethod(
+        Invocation.method(
+          #toJson,
+          [],
+        ),
+        returnValue: <String, Object?>{},
+        returnValueForMissingStub: <String, Object?>{},
+      ) as Map<String, Object?>);
 }

@@ -28,8 +28,10 @@ class _CallScreenState extends State<CallScreen> {
       _popTimer ??= Timer(const Duration(seconds: 2), () {
         if (mounted) unawaited(CallNavigator.endCall(context));
       });
+    } else if (_popTimer != null) {
+      _popTimer!.cancel();
+      _popTimer = null;
     }
-    setState(() {});
   }
 
   @override
@@ -65,7 +67,7 @@ class _CallScreenState extends State<CallScreen> {
               displayName: widget.displayName,
               onCancel: callService.cancelOutgoingCall,
             ),
-          LatticeCallState.ringingIncoming => const CallEndedView(),
+          LatticeCallState.ringingIncoming => CallJoiningView(displayName: widget.displayName),
           LatticeCallState.joining => CallJoiningView(displayName: widget.displayName),
           LatticeCallState.connected => const ConnectedCallView(),
           LatticeCallState.reconnecting => const CallReconnectingView(),
