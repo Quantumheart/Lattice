@@ -60,7 +60,7 @@ class CallService extends ChangeNotifier
 
   // ── Shared State ─────────────────────────────────────────────
 
-  static const Map<LatticeCallState, Set<LatticeCallState>> _validTransitions =
+  static const Map<LatticeCallState, Set<LatticeCallState>> validTransitions =
       {
     LatticeCallState.idle: {
       LatticeCallState.joining,
@@ -89,6 +89,7 @@ class CallService extends ChangeNotifier
     },
     LatticeCallState.reconnecting: {
       LatticeCallState.connected,
+      LatticeCallState.disconnecting,
       LatticeCallState.failed,
     },
     LatticeCallState.disconnecting: {
@@ -110,7 +111,7 @@ class CallService extends ChangeNotifier
   @protected
   set callState(LatticeCallState next) {
     if (_callState == next) return;
-    final allowed = _validTransitions[_callState];
+    final allowed = validTransitions[_callState];
     if (allowed == null || !allowed.contains(next)) {
       debugPrint(
           '[Lattice] Invalid call state transition: $_callState → $next');
@@ -129,27 +130,6 @@ class CallService extends ChangeNotifier
   @override
   @protected
   set activeCallRoomId(String? value) => _activeCallRoomId = value;
-
-  bool _joining = false;
-
-  @override
-  bool get joining => _joining;
-
-  @override
-  @protected
-  set joining(bool value) => _joining = value;
-
-  @visibleForTesting
-  bool get isJoining => _joining;
-
-  bool _endedDuringJoin = false;
-
-  @override
-  bool get endedDuringJoin => _endedDuringJoin;
-
-  @override
-  @protected
-  set endedDuringJoin(bool value) => _endedDuringJoin = value;
 
   DateTime? _callStartTime;
 
@@ -180,8 +160,6 @@ class CallService extends ChangeNotifier
     _activeCallRoomId = null;
     _callState = LatticeCallState.idle;
     _initialized = false;
-    _joining = false;
-    _endedDuringJoin = false;
     resetIncomingCall();
     stopRinging();
     disposeRingtone();

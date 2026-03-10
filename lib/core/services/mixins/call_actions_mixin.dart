@@ -13,12 +13,6 @@ mixin CallActionsMixin on ChangeNotifier {
   String? get activeCallRoomId;
   @protected
   set activeCallRoomId(String? value);
-  bool get joining;
-  @protected
-  set joining(bool value);
-  bool get endedDuringJoin;
-  @protected
-  set endedDuringJoin(bool value);
   DateTime? get callStartTime;
   @protected
   set callStartTime(DateTime? value);
@@ -56,7 +50,10 @@ mixin CallActionsMixin on ChangeNotifier {
 
   bool _canJoin(String roomId) {
     if (!initialized) init();
-    if (joining) return false;
+    final allowed = CallService.validTransitions[callState];
+    if (allowed == null || !allowed.contains(LatticeCallState.joining)) {
+      return false;
+    }
     if (client.getRoomById(roomId) == null) return false;
     return true;
   }
@@ -88,20 +85,15 @@ mixin CallActionsMixin on ChangeNotifier {
     if (!_canJoin(roomId)) return;
 
     final room = client.getRoomById(roomId)!;
-    joining = true;
-    if (callState != LatticeCallState.ringingOutgoing) {
-      callState = LatticeCallState.joining;
-    }
-    notifyListeners();
+    callState = LatticeCallState.joining;
 
     try {
       await _connectToLiveKit(roomId, room);
       stopRinging();
 
-      if (endedDuringJoin) {
-        debugPrint('[Lattice] Call ended while joining, cleaning up');
+      if (callState != LatticeCallState.joining) {
+        debugPrint('[Lattice] Call interrupted while joining, cleaning up');
         await _teardownCall(roomId: roomId);
-        callState = LatticeCallState.idle;
         return;
       }
 
@@ -112,14 +104,18 @@ mixin CallActionsMixin on ChangeNotifier {
       debugPrint('[Lattice] Failed to join call: $e');
       await _teardownCall(roomId: activeCallRoomId);
       stopRinging();
-      callState = LatticeCallState.failed;
-    } finally {
-      joining = false;
-      endedDuringJoin = false;
+      if (callState == LatticeCallState.joining) {
+        callState = LatticeCallState.failed;
+      }
     }
   }
 
   Future<void> leaveCall() async {
+    if (callState == LatticeCallState.joining) {
+      callState = LatticeCallState.idle;
+      return;
+    }
+
     if (activeCallRoomId == null) {
       if (callState != LatticeCallState.idle) {
         callState = LatticeCallState.idle;

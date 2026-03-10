@@ -10,10 +10,6 @@ mixin CallRingingMixin on ChangeNotifier {
   LatticeCallState get callState;
   @protected
   set callState(LatticeCallState value);
-  bool get joining;
-  bool get endedDuringJoin;
-  @protected
-  set endedDuringJoin(bool value);
   bool get initialized;
   void init();
   Future<void> joinCall(String roomId);
@@ -60,8 +56,8 @@ mixin CallRingingMixin on ChangeNotifier {
   // ── Incoming Call Handling ────────────────────────────────────
   @protected
   void handleCallEnded() {
-    if (joining) {
-      endedDuringJoin = true;
+    if (callState == LatticeCallState.joining) {
+      callState = LatticeCallState.idle;
       return;
     }
     if (callState == LatticeCallState.ringingIncoming ||
@@ -82,7 +78,6 @@ mixin CallRingingMixin on ChangeNotifier {
     if (info == null) return;
 
     _incomingCall = null;
-    callState = LatticeCallState.joining;
     stopRinging();
 
     unawaited(joinCall(info.roomId));
@@ -96,15 +91,12 @@ mixin CallRingingMixin on ChangeNotifier {
   }
 
   void cancelOutgoingCall() {
-    if (callState != LatticeCallState.ringingOutgoing) return;
-    stopRinging();
-    if (joining) {
-      endedDuringJoin = true;
-      callState = LatticeCallState.idle;
-    } else {
-      callState = LatticeCallState.idle;
-      unawaited(leaveCall());
+    if (callState != LatticeCallState.ringingOutgoing &&
+        callState != LatticeCallState.joining) {
+      return;
     }
+    stopRinging();
+    callState = LatticeCallState.idle;
   }
 
   Future<void> initiateCall(String roomId, {model.CallType type = model.CallType.voice}) async {
@@ -115,11 +107,7 @@ mixin CallRingingMixin on ChangeNotifier {
 
     unawaited(_ringtoneService?.playDialtone());
 
-    _ringingTimer = Timer(const Duration(seconds: 60), () {
-      if (callState == LatticeCallState.ringingOutgoing) {
-        cancelOutgoingCall();
-      }
-    });
+    _ringingTimer = Timer(const Duration(seconds: 60), cancelOutgoingCall);
 
     await joinCall(roomId);
   }
