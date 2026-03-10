@@ -18,8 +18,7 @@ import 'call_service_test.mocks.dart';
 
 // ── LiveKit Mocks ─────────────────────────────────────────
 
-class _MockLocalParticipant extends Fake
-    implements livekit.LocalParticipant {
+class _MockLocalParticipant extends Fake implements livekit.LocalParticipant {
   bool micEnabled = false;
   bool cameraEnabled = false;
   bool screenShareEnabled = false;
@@ -39,7 +38,7 @@ class _MockLocalParticipant extends Fake
   bool get isMuted => false;
 
   @override
-  double get audioLevel => 0.0;
+  double get audioLevel => 0;
 
   @override
   Future<livekit.LocalTrackPublication?> setMicrophoneEnabled(
@@ -73,8 +72,7 @@ class _MockLocalParticipant extends Fake
   }
 }
 
-class _FakeEventsListener<T> extends Fake
-    implements livekit.EventsListener<T> {
+class _FakeEventsListener<T> extends Fake implements livekit.EventsListener<T> {
   final _handlers = <Type, List<Function>>{};
 
   @override
@@ -116,8 +114,7 @@ class _FakeLiveKitRoom extends Fake implements livekit.Room {
 
   @override
   UnmodifiableMapView<String, livekit.RemoteParticipant>
-      get remoteParticipants =>
-          UnmodifiableMapView(_remoteParticipants);
+      get remoteParticipants => UnmodifiableMapView(_remoteParticipants);
 
   @override
   livekit.EventsListener<livekit.RoomEvent> createListener({
@@ -152,8 +149,7 @@ class _FakeLiveKitRoom extends Fake implements livekit.Room {
   }
 }
 
-class _FakeRemoteParticipant extends Fake
-    implements livekit.RemoteParticipant {
+class _FakeRemoteParticipant extends Fake implements livekit.RemoteParticipant {
   @override
   List<livekit.RemoteTrackPublication<livekit.RemoteVideoTrack>>
       get videoTrackPublications => [];
@@ -168,7 +164,7 @@ class _FakeRemoteParticipant extends Fake
   bool get isMuted => false;
 
   @override
-  double get audioLevel => 0.0;
+  double get audioLevel => 0;
 }
 
 void main() {
@@ -250,12 +246,14 @@ void main() {
       expect(service.activeCallRoomId, '!room:example.com');
       expect(service.livekitRoom, isNotNull);
 
-      verify(mockClient.setRoomStateWithKey(
-        '!room:example.com',
-        'org.matrix.msc3401.call.member',
-        '_@user:example.com_DEVICE1_m.call',
-        argThat(containsPair('application', 'm.call')),
-      )).called(1);
+      verify(
+        mockClient.setRoomStateWithKey(
+          '!room:example.com',
+          'org.matrix.msc3401.call.member',
+          '_@user:example.com_DEVICE1_m.call',
+          argThat(containsPair('application', 'm.call')),
+        ),
+      ).called(1);
     });
 
     test('requires LiveKit service URL', () async {
@@ -333,12 +331,14 @@ void main() {
       expect(service.activeCallRoomId, isNull);
       expect(service.livekitRoom, isNull);
 
-      verify(mockClient.setRoomStateWithKey(
-        '!room:example.com',
-        'org.matrix.msc3401.call.member',
-        '_@user:example.com_DEVICE1_m.call',
-        {},
-      )).called(1);
+      verify(
+        mockClient.setRoomStateWithKey(
+          '!room:example.com',
+          'org.matrix.msc3401.call.member',
+          '_@user:example.com_DEVICE1_m.call',
+          {},
+        ),
+      ).called(1);
     });
 
     test('cleans up on token exchange failure', () async {
@@ -364,12 +364,14 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      final verifyResult = verify(mockClient.setRoomStateWithKey(
-        '!room:example.com',
-        'org.matrix.msc3401.call.member',
-        '_@user:example.com_DEVICE1_m.call',
-        captureAny,
-      ));
+      final verifyResult = verify(
+        mockClient.setRoomStateWithKey(
+          '!room:example.com',
+          'org.matrix.msc3401.call.member',
+          '_@user:example.com_DEVICE1_m.call',
+          captureAny,
+        ),
+      );
       verifyResult.called(2);
 
       final calls = verifyResult.captured;
@@ -387,15 +389,18 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      verify(mockClient.setRoomStateWithKey(
-        '!room:example.com',
-        'org.matrix.msc3401.call.member',
-        '_@user:example.com_DEVICE1_m.call',
-        {},
-      )).called(1);
+      verify(
+        mockClient.setRoomStateWithKey(
+          '!room:example.com',
+          'org.matrix.msc3401.call.member',
+          '_@user:example.com_DEVICE1_m.call',
+          {},
+        ),
+      ).called(1);
     });
 
-    test('membership removal error in catch block is handled gracefully', () async {
+    test('membership removal error in catch block is handled gracefully',
+        () async {
       final fakeRoom = setupLiveKitMocks();
       setupMockRoom();
       fakeRoom.throwOnConnect = true;
@@ -429,12 +434,14 @@ void main() {
       expect(service.livekitRoom, isNull);
       expect(fakeRoom.disconnected, isTrue);
 
-      verify(mockClient.setRoomStateWithKey(
-        '!room:example.com',
-        'org.matrix.msc3401.call.member',
-        '_@user:example.com_DEVICE1_m.call',
-        {},
-      )).called(1);
+      verify(
+        mockClient.setRoomStateWithKey(
+          '!room:example.com',
+          'org.matrix.msc3401.call.member',
+          '_@user:example.com_DEVICE1_m.call',
+          {},
+        ),
+      ).called(1);
     });
 
     test('does nothing when no active call', () async {
@@ -448,12 +455,14 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      when(mockClient.setRoomStateWithKey(
-        '!room:example.com',
-        'org.matrix.msc3401.call.member',
-        any,
-        {},
-      )).thenThrow(Exception('remove error'));
+      when(
+        mockClient.setRoomStateWithKey(
+          '!room:example.com',
+          'org.matrix.msc3401.call.member',
+          any,
+          {},
+        ),
+      ).thenThrow(Exception('remove error'));
 
       await service.leaveCall();
 
@@ -468,8 +477,7 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      fakeRoom._listener!
-          .fire(livekit.RoomReconnectingEvent());
+      fakeRoom._listener!.fire(const livekit.RoomReconnectingEvent());
 
       expect(service.callState, LatticeCallState.reconnecting);
     });
@@ -480,8 +488,7 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      fakeRoom._listener!
-          .fire(livekit.RoomReconnectedEvent());
+      fakeRoom._listener!.fire(const livekit.RoomReconnectedEvent());
 
       expect(service.callState, LatticeCallState.connected);
     });
@@ -492,20 +499,21 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      fakeRoom._listener!
-          .fire(livekit.RoomDisconnectedEvent(reason: null));
+      fakeRoom._listener!.fire(livekit.RoomDisconnectedEvent());
 
       expect(service.callState, LatticeCallState.failed);
       expect(service.activeCallRoomId, isNull);
 
       await Future<void>.delayed(Duration.zero);
 
-      verify(mockClient.setRoomStateWithKey(
-        '!room:example.com',
-        'org.matrix.msc3401.call.member',
-        '_@user:example.com_DEVICE1_m.call',
-        {},
-      )).called(1);
+      verify(
+        mockClient.setRoomStateWithKey(
+          '!room:example.com',
+          'org.matrix.msc3401.call.member',
+          '_@user:example.com_DEVICE1_m.call',
+          {},
+        ),
+      ).called(1);
     });
 
     test('participants sync on connect/disconnect events', () async {
@@ -859,9 +867,13 @@ void main() {
       service.httpPostForTest = (url, {headers, body}) async {
         callCount++;
         if (callCount == 1) {
-          return http.Response('', 307, headers: {
-            'location': 'https://lk-jwt.example.com/get_token/',
-          });
+          return http.Response(
+            '',
+            307,
+            headers: {
+              'location': 'https://lk-jwt.example.com/get_token/',
+            },
+          );
         }
         return http.Response(
           jsonEncode({'url': 'wss://lk.example.com', 'jwt': 'lk_token'}),
@@ -883,12 +895,14 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      final captured = verify(mockClient.setRoomStateWithKey(
-        '!room:example.com',
-        'org.matrix.msc3401.call.member',
-        '_@user:example.com_DEVICE1_m.call',
-        captureAny,
-      )).captured;
+      final captured = verify(
+        mockClient.setRoomStateWithKey(
+          '!room:example.com',
+          'org.matrix.msc3401.call.member',
+          '_@user:example.com_DEVICE1_m.call',
+          captureAny,
+        ),
+      ).captured;
 
       final content = captured.first as Map<String, dynamic>;
       expect(content['application'], 'm.call');
@@ -916,12 +930,14 @@ void main() {
       await service.joinCall('!room:example.com');
       await service.leaveCall();
 
-      verify(mockClient.setRoomStateWithKey(
-        '!room:example.com',
-        'org.matrix.msc3401.call.member',
-        '_@user:example.com_DEVICE1_m.call',
-        {},
-      )).called(1);
+      verify(
+        mockClient.setRoomStateWithKey(
+          '!room:example.com',
+          'org.matrix.msc3401.call.member',
+          '_@user:example.com_DEVICE1_m.call',
+          {},
+        ),
+      ).called(1);
     });
   });
 
