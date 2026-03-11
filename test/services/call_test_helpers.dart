@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lattice/features/calling/services/ringtone_service.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
 import 'package:matrix/matrix.dart';
 
@@ -63,6 +64,7 @@ class FakeLocalParticipant extends Fake implements livekit.LocalParticipant {
 
 class FakeEventsListener<T> extends Fake implements livekit.EventsListener<T> {
   final _handlers = <Type, List<Function>>{};
+  bool throwOnDispose = false;
 
   @override
   livekit.CancelListenFunc on<E>(
@@ -75,6 +77,7 @@ class FakeEventsListener<T> extends Fake implements livekit.EventsListener<T> {
 
   @override
   Future<bool> dispose() async {
+    if (throwOnDispose) throw Exception('listener dispose error');
     _handlers.clear();
     return true;
   }
@@ -97,6 +100,8 @@ class FakeLiveKitRoom extends Fake implements livekit.Room {
   bool disconnected = false;
   bool disposed = false;
   bool throwOnConnect = false;
+  bool throwOnDisconnect = false;
+  bool throwOnDispose = false;
 
   @override
   livekit.LocalParticipant? get localParticipant => localParticipantFake;
@@ -128,11 +133,13 @@ class FakeLiveKitRoom extends Fake implements livekit.Room {
 
   @override
   Future<void> disconnect() async {
+    if (throwOnDisconnect) throw Exception('disconnect error');
     disconnected = true;
   }
 
   @override
   Future<bool> dispose() async {
+    if (throwOnDispose) throw Exception('dispose error');
     disposed = true;
     return true;
   }
@@ -158,15 +165,107 @@ class FakeRemoteParticipant extends Fake implements livekit.RemoteParticipant {
   double get audioLevel => 0;
 }
 
+// ── LiveKit Track/Publication Fakes ───────────────────────
+
+class FakeTrackPublication extends Fake implements livekit.TrackPublication {}
+
+class FakeLocalTrackPublication extends Fake
+    implements livekit.LocalTrackPublication {}
+
+class FakeRemoteTrackPublication extends Fake
+    implements livekit.RemoteTrackPublication {}
+
+class FakeTrack extends Fake implements livekit.Track {}
+
+// ── Fake User ─────────────────────────────────────────────
+
+class FakeUser extends Fake implements User {
+  FakeUser({this.displayName, this.avatarUrl});
+
+  @override
+  final String? displayName;
+
+  @override
+  final Uri? avatarUrl;
+
+  @override
+  String calcDisplayname({
+    bool? formatLocalpart,
+    bool? mxidLocalPartFallback,
+    MatrixLocalizations i18n = const MatrixDefaultLocalizations(),
+  }) =>
+      displayName ?? 'Unknown';
+}
+
 // ── Fake Event for room state testing ─────────────────────
 
 class FakeEvent extends Fake implements Event {
-  FakeEvent({required this.content, required int originServerTs})
-      : originServerTs = DateTime.fromMillisecondsSinceEpoch(originServerTs);
+  FakeEvent({
+    required this.content,
+    required int originServerTs,
+    this.type = '',
+    this.roomId,
+    this.senderId = '',
+    Room? room,
+    User? senderFromMemoryOrFallback,
+  })  : _room = room,
+        _sender = senderFromMemoryOrFallback,
+        originServerTs = DateTime.fromMillisecondsSinceEpoch(originServerTs);
 
   @override
   final Map<String, dynamic> content;
 
   @override
   final DateTime originServerTs;
+
+  @override
+  final String type;
+
+  @override
+  final String? roomId;
+
+  @override
+  final String senderId;
+
+  final Room? _room;
+  final User? _sender;
+
+  @override
+  Room get room => _room!;
+
+  @override
+  User get senderFromMemoryOrFallback => _sender ?? FakeUser();
+}
+
+// ── Fake Ringtone Service ─────────────────────────────────
+
+class FakeRingtoneService extends Fake implements RingtoneService {
+  bool playing = false;
+  String? lastPlayed;
+  bool disposed = false;
+  bool stopped = false;
+
+  @override
+  Future<void> playRingtone({bool loop = true}) async {
+    playing = true;
+    lastPlayed = 'ringtone';
+  }
+
+  @override
+  Future<void> playDialtone({bool loop = true}) async {
+    playing = true;
+    lastPlayed = 'dialtone';
+  }
+
+  @override
+  Future<void> stop() async {
+    playing = false;
+    stopped = true;
+  }
+
+  @override
+  Future<void> dispose() async {
+    disposed = true;
+    playing = false;
+  }
 }
