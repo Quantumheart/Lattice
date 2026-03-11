@@ -14,7 +14,10 @@ import 'helpers/test_app.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  loginFlowTests();
+}
 
+void loginFlowTests() {
   late MockClient mockClient;
   late MockFlutterSecureStorage mockStorage;
   late MatrixService matrixService;

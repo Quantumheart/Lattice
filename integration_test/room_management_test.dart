@@ -20,7 +20,10 @@ const _newRoomId = '!newroom:example.com';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  roomManagementTests();
+}
 
+void roomManagementTests() {
   late MockClient mockClient;
   late MockRoom mockRoom;
   late MockFlutterSecureStorage mockStorage;

@@ -46,7 +46,10 @@ Event makeFakeEvent({
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  chatMessagingTests();
+}
 
+void chatMessagingTests() {
   late MockClient mockClient;
   late MockRoom mockRoom;
   late MockFlutterSecureStorage mockStorage;

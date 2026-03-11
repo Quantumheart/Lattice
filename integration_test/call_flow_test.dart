@@ -235,7 +235,10 @@ class _CallTestHarness {
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  callFlowTests();
+}
 
+void callFlowTests() {
   late _CallTestHarness h;
 
   setUp(() {
