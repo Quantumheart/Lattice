@@ -58,7 +58,7 @@ class NativeCallUiService {
     if (activeCalls is List && activeCalls.isNotEmpty) {
       final call = activeCalls.last;
       if (call is Map && call['isAccepted'] == true) {
-        final extra = call['extra'] as Map<String, dynamic>?;
+        final extra = (call['extra'] as Map?)?.cast<String, dynamic>();
         final roomId = extra?['roomId'] as String?;
         final withVideo = extra?['withVideo'] == 'true';
         if (roomId != null) {
@@ -146,7 +146,7 @@ class NativeCallUiService {
   }
 
   void _onNativeAccept(Map<String, dynamic>? body) {
-    final extra = body?['extra'] as Map<String, dynamic>?;
+    final extra = (body?['extra'] as Map?)?.cast<String, dynamic>();
     final roomId = extra?['roomId'] as String?;
     final withVideo = extra?['withVideo'] == 'true';
     _actionController.add(
