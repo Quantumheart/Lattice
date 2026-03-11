@@ -178,6 +178,9 @@ void main() {
     when(mockClient.userID).thenReturn('@user:example.com');
     when(mockClient.deviceID).thenReturn('DEVICE1');
     when(mockClient.onTimelineEvent).thenReturn(CachedStreamController<Event>());
+    when(mockClient.onRoomState).thenReturn(
+      CachedStreamController<({String roomId, StrippedStateEvent state})>(),
+    );
     service = CallService(client: mockClient);
   });
 
