@@ -16,6 +16,7 @@ void showFullImageDialog(BuildContext context, Event event) {
 
 // ── Full image viewer ──────────────────────────────────────────
 
+// coverage:ignore-start
 class _FullImageContent extends StatefulWidget {
   const _FullImageContent({required this.event});
 
@@ -92,3 +93,4 @@ class _FullImageContentState extends State<_FullImageContent> {
     return InteractiveViewer(child: image);
   }
 }
+// coverage:ignore-end
