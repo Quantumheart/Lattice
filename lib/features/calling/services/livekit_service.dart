@@ -39,7 +39,7 @@ class LiveKitService {
   })  : _client = client,
         _onChanged = onChanged,
         _roomFactory = roomFactory ?? livekit.Room.new,
-        _httpPost = httpPost ?? _sendNoAutoRedirect;
+        httpPostForTest = httpPost ?? _sendNoAutoRedirect;
 
   static const _maxRedirects = 6;
   static const _wellKnownTtl = Duration(hours: 1);
@@ -47,15 +47,11 @@ class LiveKitService {
   Client _client;
   final VoidCallback _onChanged;
   LiveKitRoomFactory _roomFactory;
-  HttpPostFunction _httpPost;
+  HttpPostFunction httpPostForTest;
 
   void updateClient(Client client) => _client = client;
 
   set roomFactoryForTest(LiveKitRoomFactory factory) => _roomFactory = factory;
-
-  HttpPostFunction get httpPostForTest => _httpPost;
-
-  set httpPostForTest(HttpPostFunction fn) => _httpPost = fn;
 
   // ── LiveKit State ──────────────────────────────────────────
 
@@ -227,7 +223,7 @@ class LiveKitService {
       var currentUrl = url;
 
       for (var i = 0; i < _maxRedirects; i++) {
-        final response = await _httpPost(
+        final response = await httpPostForTest(
           httpClient, currentUrl, headers: headers, body: body,
         );
         final code = response.statusCode;

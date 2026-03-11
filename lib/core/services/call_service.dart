@@ -73,7 +73,9 @@ class CallService extends ChangeNotifier {
   HttpPostFunction get httpPostForTest => _liveKit.httpPostForTest;
 
   @visibleForTesting
-  set httpPostForTest(HttpPostFunction fn) => _liveKit.httpPostForTest = fn;
+  set httpPostForTest(HttpPostFunction fn) {
+    _liveKit.httpPostForTest = fn;
+  }
 
   @visibleForTesting
   set cachedLivekitServiceUrlForTest(String? url) =>
