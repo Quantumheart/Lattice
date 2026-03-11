@@ -98,6 +98,25 @@ class RtcMembershipService {
     return _getActiveRtcMemberships(room).isNotEmpty;
   }
 
+  static bool roomHasRemoteActiveCall(Client client, String roomId) {
+    final room = client.getRoomById(roomId);
+    if (room == null) return false;
+    final states = room.states[callMemberEventType];
+    if (states == null) return false;
+    final localPrefix = '_${client.userID!}_';
+    final now = DateTime.now().millisecondsSinceEpoch;
+    for (final entry in states.entries) {
+      if (entry.key.startsWith(localPrefix)) continue;
+      final content = entry.value.content;
+      if (content.isEmpty) continue;
+      final originTs = entry.value is Event
+          ? (entry.value as Event).originServerTs.millisecondsSinceEpoch
+          : now;
+      if (_isMembershipActive(content, originTs, now)) return true;
+    }
+    return false;
+  }
+
   static List<String> activeCallIdsForRoom(Client client, String roomId) {
     final room = client.getRoomById(roomId);
     if (room == null) return const [];

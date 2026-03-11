@@ -157,12 +157,26 @@ class CallService extends ChangeNotifier {
     _membershipWatcherSub = _client.onRoomState.stream.listen((update) {
       if (update.roomId != roomId) return;
       if (update.state.type != callMemberEventType) return;
-      if (_callState != LatticeCallState.ringingOutgoing) return;
-      if (!RtcMembershipService.roomHasActiveCall(_client, roomId)) return;
-      debugPrint('[Lattice] Detected RTC membership join, treating as answer');
-      _stopMembershipWatcher();
-      unawaited(joinCall(roomId));
+      _onMembershipChanged(roomId);
     });
+  }
+
+  void _onMembershipChanged(String roomId) {
+    final hasRemote =
+        RtcMembershipService.roomHasRemoteActiveCall(_client, roomId);
+
+    if (_callState == LatticeCallState.ringingOutgoing && hasRemote) {
+      debugPrint('[Lattice] Detected RTC membership join, treating as answer');
+      unawaited(joinCall(roomId));
+      return;
+    }
+
+    if ((_callState == LatticeCallState.connected ||
+            _callState == LatticeCallState.reconnecting) &&
+        !hasRemote) {
+      debugPrint('[Lattice] All remote members left, ending call');
+      unawaited(leaveCall());
+    }
   }
 
   void _stopMembershipWatcher() {
@@ -313,6 +327,7 @@ class CallService extends ChangeNotifier {
       }
 
       _callStartTime = DateTime.now();
+      _startMembershipWatcher(roomId);
       _setCallState(LatticeCallState.connected);
       debugPrint('[Lattice] Joined call in room $roomId');
     } catch (e) {
@@ -326,6 +341,16 @@ class CallService extends ChangeNotifier {
   }
 
   Future<void> leaveCall() async {
+    if (_callState == LatticeCallState.ringingOutgoing) {
+      cancelOutgoingCall();
+      return;
+    }
+
+    if (_callState == LatticeCallState.ringingIncoming) {
+      declineCall();
+      return;
+    }
+
     if (_callState == LatticeCallState.joining) {
       await _teardownCall(roomId: _activeCallRoomId);
       _activeCallId = null;
