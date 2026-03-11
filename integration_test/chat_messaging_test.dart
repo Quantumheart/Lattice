@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
@@ -63,6 +64,11 @@ void main() {
     when(mockClient.userID).thenReturn(_myUserId);
     when(mockClient.rooms).thenReturn([mockRoom]);
     when(mockClient.getRoomById(_roomId)).thenReturn(mockRoom);
+    when(mockClient.onTimelineEvent)
+        .thenReturn(CachedStreamController<Event>());
+    when(mockClient.onRoomState).thenReturn(
+      CachedStreamController<({String roomId, StrippedStateEvent state})>(),
+    );
 
     when(mockRoom.id).thenReturn(_roomId);
     when(mockRoom.getLocalizedDisplayname()).thenReturn('Chat Room');
@@ -124,6 +130,9 @@ void main() {
       providers: [
         ChangeNotifierProvider<MatrixService>.value(value: matrixService),
         ChangeNotifierProvider<ClientManager>.value(value: clientManager),
+        ChangeNotifierProvider(
+          create: (_) => CallService(client: mockClient),
+        ),
         ChangeNotifierProvider(create: (_) => PreferencesService()),
         ChangeNotifierProvider(create: (_) => MediaPlaybackService()),
       ],
