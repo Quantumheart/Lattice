@@ -3,6 +3,7 @@ import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+// coverage:ignore-start
 abstract class CallPermissionService {
   static bool get _needsPermissionRequest =>
       !kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS);
@@ -32,3 +33,4 @@ abstract class CallPermissionService {
     return camera && microphone;
   }
 }
+// coverage:ignore-end

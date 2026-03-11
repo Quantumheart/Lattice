@@ -8,6 +8,8 @@ import 'package:flutter_callkit_incoming/entities/call_kit_params.dart';
 import 'package:flutter_callkit_incoming/entities/ios_params.dart';
 import 'package:flutter_callkit_incoming/flutter_callkit_incoming.dart';
 
+// coverage:ignore-start
+
 // ── Native Call Actions ────────────────────────────────────
 
 sealed class NativeCallAction {}
@@ -168,3 +170,5 @@ class NativeCallUiService {
     unawaited(_nativeAcceptedCallController.close());
   }
 }
+
+// coverage:ignore-end

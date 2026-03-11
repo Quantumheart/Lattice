@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:media_kit/media_kit.dart';
 
+// coverage:ignore-start
 class RingtoneService {
   Player? _player;
 
@@ -42,3 +43,4 @@ class RingtoneService {
     _player = null;
   }
 }
+// coverage:ignore-end

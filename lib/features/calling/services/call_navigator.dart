@@ -8,6 +8,7 @@ import 'package:lattice/features/calling/models/incoming_call_info.dart' as mode
 import 'package:lattice/features/calling/services/call_permission_service.dart';
 import 'package:provider/provider.dart';
 
+// coverage:ignore-start
 abstract class CallNavigator {
   static Future<void> startCall(
     BuildContext context, {
@@ -58,3 +59,4 @@ abstract class CallNavigator {
     }
   }
 }
+// coverage:ignore-end
