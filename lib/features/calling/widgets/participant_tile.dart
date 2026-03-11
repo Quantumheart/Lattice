@@ -202,12 +202,12 @@ class _ParticipantTileState extends State<ParticipantTile> {
                   style: Theme.of(context)
                       .textTheme
                       .bodySmall
-                      ?.copyWith(color: Colors.white),
+                      ?.copyWith(color: cs.onInverseSurface),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (widget.participant.isMuted)
-                const Icon(Icons.mic_off, size: 14, color: Colors.redAccent),
+                Icon(Icons.mic_off, size: 14, color: cs.error),
             ],
           ),
         ),

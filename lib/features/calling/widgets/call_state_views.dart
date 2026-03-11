@@ -39,12 +39,13 @@ class CallReconnectingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.warning_amber_rounded, size: 48),
+          Icon(Icons.warning_amber_rounded, size: 48, color: cs.error),
           const SizedBox(height: 16),
           Text('Reconnecting...', style: tt.titleMedium),
         ],
@@ -99,8 +100,9 @@ class _CallRingingOutgoingViewState extends State<CallRingingOutgoingView> {
           const SizedBox(height: 32),
           FloatingActionButton(
             backgroundColor: cs.error,
+            foregroundColor: cs.onError,
             onPressed: widget.onCancel,
-            child: const Icon(Icons.call_end_rounded, color: Colors.white),
+            child: const Icon(Icons.call_end_rounded),
           ),
         ],
       ),
@@ -122,7 +124,7 @@ class CallEndedView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.call_end, size: 48),
+          Icon(Icons.call_end, size: 48, color: cs.onSurfaceVariant),
           const SizedBox(height: 16),
           Text('Call ended', style: tt.titleMedium),
           if (error != null) ...[
