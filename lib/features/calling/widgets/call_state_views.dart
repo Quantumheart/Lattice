@@ -131,6 +131,8 @@ class CallEndedView extends StatelessWidget {
               error!,
               style: tt.bodyMedium?.copyWith(color: cs.error),
               textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
           if (onReturn != null) ...[

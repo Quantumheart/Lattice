@@ -46,6 +46,7 @@ mixin CallNativeUiMixin on ChangeNotifier {
     _nativeEventSub = null;
     unawaited(FlutterCallkitIncoming.endAllCalls());
     _nativeCallId = null;
+    unawaited(_nativeAcceptedCallController.close());
   }
 
   Future<void> _checkPendingAccept() async {

@@ -154,10 +154,11 @@ class _CallButtonState extends State<_CallButton> {
 
   @override
   Widget build(BuildContext context) {
-    final callService = context.watch<CallService>();
-    final callState = callService.callState;
+    final callState = context.select<CallService, LatticeCallState>((s) => s.callState);
+    final activeRoomId = context.select<CallService, String?>((s) => s.activeCallRoomId);
+    final callService = context.read<CallService>();
     final roomHasCall = callService.roomHasActiveCall(widget.room.id);
-    final isInCall = callService.activeCallRoomId == widget.room.id;
+    final isInCall = activeRoomId == widget.room.id;
     final busy = _starting ||
         (callState != LatticeCallState.idle &&
             callState != LatticeCallState.failed &&
@@ -198,7 +199,6 @@ class _CallButtonState extends State<_CallButton> {
               leading: Icon(Icons.open_in_new_rounded),
               title: Text('Go to call'),
               dense: true,
-              contentPadding: EdgeInsets.zero,
             ),
           ),
           PopupMenuItem(
@@ -207,7 +207,6 @@ class _CallButtonState extends State<_CallButton> {
               leading: Icon(Icons.call_end_rounded, color: Colors.red),
               title: Text('Leave call'),
               dense: true,
-              contentPadding: EdgeInsets.zero,
             ),
           ),
         ],

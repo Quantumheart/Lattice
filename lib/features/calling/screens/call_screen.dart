@@ -22,14 +22,15 @@ class CallScreen extends StatefulWidget {
 class _CallScreenState extends State<CallScreen> {
   late final CallService _callService;
   Timer? _popTimer;
+  bool _disposed = false;
 
   void _onCallChanged() {
-    if (!mounted) return;
+    if (!mounted || _disposed) return;
     final state = _callService.callState;
     if (state == LatticeCallState.idle || state == LatticeCallState.failed) {
       _popTimer ??= Timer(const Duration(seconds: 2), () {
         _popTimer = null;
-        if (mounted) unawaited(CallNavigator.endCall(context));
+        if (mounted && !_disposed) unawaited(CallNavigator.endCall(context));
       });
     } else {
       _popTimer?.cancel();
@@ -46,6 +47,7 @@ class _CallScreenState extends State<CallScreen> {
 
   @override
   void dispose() {
+    _disposed = true;
     _popTimer?.cancel();
     _callService.removeListener(_onCallChanged);
     super.dispose();

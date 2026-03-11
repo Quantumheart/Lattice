@@ -23,6 +23,7 @@ class IncomingCallOverlay extends StatefulWidget {
 class _IncomingCallOverlayState extends State<IncomingCallOverlay> {
   StreamSubscription<IncomingCallInfo>? _sub;
   StreamSubscription<String>? _nativeAcceptSub;
+  StreamSubscription<String>? _warningSub;
   IncomingCallInfo? _incoming;
   CallService? _callService;
 
@@ -33,9 +34,9 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay> {
     super.didChangeDependencies();
     final callService = context.read<CallService>();
     if (_callService != callService) {
-      _callService?.removeListener(_onCallStateChanged);
-      unawaited(_sub?.cancel());
-      unawaited(_nativeAcceptSub?.cancel());
+      final oldService = _callService;
+      final oldSub = _sub;
+      final oldNativeSub = _nativeAcceptSub;
       _callService = callService;
       _sub = callService.incomingCallStream.listen((info) {
         if (mounted && _isDesktop) setState(() => _incoming = info);
@@ -48,7 +49,23 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay> {
           );
         }
       });
+      final oldWarningSub = _warningSub;
+      _warningSub = callService.warningStream.listen((message) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(message),
+              duration: const Duration(seconds: 6),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      });
       callService.addListener(_onCallStateChanged);
+      oldService?.removeListener(_onCallStateChanged);
+      unawaited(oldSub?.cancel());
+      unawaited(oldNativeSub?.cancel());
+      unawaited(oldWarningSub?.cancel());
     }
   }
 
@@ -65,6 +82,7 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay> {
   void dispose() {
     unawaited(_sub?.cancel());
     unawaited(_nativeAcceptSub?.cancel());
+    unawaited(_warningSub?.cancel());
     _callService?.removeListener(_onCallStateChanged);
     super.dispose();
   }
@@ -148,24 +166,24 @@ class _IncomingCallDialog extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       FloatingActionButton(
-                        heroTag: 'decline',
+                        heroTag: null,
                         backgroundColor: cs.error,
                         onPressed: onDecline,
                         child: Icon(Icons.call_end_rounded, color: cs.onError),
                       ),
                       const SizedBox(width: 24),
                       FloatingActionButton(
-                        heroTag: 'accept_audio',
-                        backgroundColor: Colors.green,
+                        heroTag: null,
+                        backgroundColor: cs.primary,
                         onPressed: onAcceptAudio,
-                        child: Icon(Icons.call_rounded, color: cs.surface),
+                        child: Icon(Icons.call_rounded, color: cs.onPrimary),
                       ),
                       const SizedBox(width: 24),
                       FloatingActionButton(
-                        heroTag: 'accept_video',
-                        backgroundColor: Colors.green,
+                        heroTag: null,
+                        backgroundColor: cs.primary,
                         onPressed: onAcceptVideo,
-                        child: Icon(Icons.videocam_rounded, color: cs.surface),
+                        child: Icon(Icons.videocam_rounded, color: cs.onPrimary),
                       ),
                     ],
                   ),

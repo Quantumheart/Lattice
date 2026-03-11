@@ -127,18 +127,22 @@ class _VideoGridState extends State<VideoGrid> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(pageCount, (i) {
-              return Container(
-                width: 8,
-                height: 8,
-                margin: const EdgeInsets.symmetric(horizontal: 3),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: i == _currentPage
-                      ? Theme.of(context).colorScheme.onSurface
-                      : Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.38),
+              return Semantics(
+                label: 'Page ${i + 1} of $pageCount',
+                selected: i == _currentPage,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: i == _currentPage
+                        ? Theme.of(context).colorScheme.onSurface
+                        : Theme.of(context)
+                              .colorScheme
+                              .onSurface
+                              .withValues(alpha: 0.38),
+                  ),
                 ),
               );
             }),

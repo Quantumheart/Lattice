@@ -50,9 +50,10 @@ mixin CallRingingMixin on ChangeNotifier {
   }
 
   @protected
-  void disposeRingtone() {
-    unawaited(_ringtoneService?.dispose());
+  Future<void> disposeRingtone() async {
+    final service = _ringtoneService;
     _ringtoneService = null;
+    await service?.dispose();
   }
 
   // ── Ringing State ─────────────────────────────────────────────

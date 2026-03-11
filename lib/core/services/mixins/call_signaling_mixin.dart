@@ -30,6 +30,13 @@ mixin CallSignalingMixin on ChangeNotifier {
 
   StreamSubscription<Event>? _signalingEventSub;
 
+  final StreamController<String> _warningController =
+      StreamController<String>.broadcast();
+  Stream<String> get warningStream => _warningController.stream;
+
+  @protected
+  void closeWarningController() => unawaited(_warningController.close());
+
   // ── Call ID generation ────────────────────────────────────────
   static final _random = Random();
 
@@ -45,6 +52,14 @@ mixin CallSignalingMixin on ChangeNotifier {
     _activeCallId = callId;
     final room = client.getRoomById(roomId);
     if (room == null) return;
+
+    if (room.encrypted && client.encryption == null) {
+      _warningController.add(
+        'This room is encrypted but encryption is not enabled. '
+        'The other party may not receive your call.',
+      );
+    }
+
     await room.sendEvent({
       'call_id': callId,
       'version': 1,
@@ -105,6 +120,36 @@ mixin CallSignalingMixin on ChangeNotifier {
   }
 
   void _onTimelineEvent(Event event) {
+    if (event.type == EventTypes.Encrypted) {
+      unawaited(_handleEncryptedEvent(event));
+      return;
+    }
+    _processCallEvent(event);
+  }
+
+  Future<void> _handleEncryptedEvent(Event event) async {
+    final encryption = client.encryption;
+    if (encryption == null) {
+      debugPrint(
+        '[Lattice] Received encrypted event in ${event.roomId} but E2EE is not enabled',
+      );
+      _warningController.add(
+        'An encrypted event was received but could not be decrypted. '
+        'Enable encryption to receive calls from encrypted rooms.',
+      );
+      return;
+    }
+    try {
+      final decrypted = await encryption.decryptRoomEvent(event);
+      if (callEventTypes.contains(decrypted.type)) {
+        _processCallEvent(decrypted);
+      }
+    } catch (e) {
+      debugPrint('[Lattice] Failed to decrypt potential call event: $e');
+    }
+  }
+
+  void _processCallEvent(Event event) {
     if (!callEventTypes.contains(event.type)) return;
 
     final room = event.room;

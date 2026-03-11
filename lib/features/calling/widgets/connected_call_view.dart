@@ -27,9 +27,15 @@ class ConnectedCallView extends StatelessWidget {
         Expanded(
           child: Stack(
             children: [
-              VideoGrid(participants: gridParticipants),
+              VideoGrid(
+                key: const ValueKey('video-grid'),
+                participants: gridParticipants,
+              ),
               if (localParticipant != null)
-                PipSelfView(participant: localParticipant),
+                PipSelfView(
+                  key: const ValueKey('pip-self'),
+                  participant: localParticipant,
+                ),
             ],
           ),
         ),

@@ -82,7 +82,10 @@ class _HomeShellState extends State<HomeShell> {
     final isWide = width >= _wideBreakpoint;
 
     final matrix = context.read<MatrixService>();
-    context.select<MatrixService, int>((m) => Object.hashAll(m.spaces.map((s) => s.id)));
+    context.select<MatrixService, int>((m) {
+      final ids = m.spaces.map((s) => s.id);
+      return Object.hash(ids.length, Object.hashAll(ids));
+    });
 
     final child = isWide
         ? WideLayout(

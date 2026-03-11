@@ -23,15 +23,16 @@ class CallPane extends StatelessWidget {
     final callService = context.watch<CallService>();
     final state = callService.callState;
     final roomId = callService.activeCallRoomId;
+    final roomName = _resolveRoomName(context, callService);
 
     final body = switch (state) {
       LatticeCallState.ringingOutgoing => CallRingingOutgoingView(
-          displayName: _resolveRoomName(context, callService),
+          displayName: roomName,
           onCancel: callService.cancelOutgoingCall,
         ),
       LatticeCallState.ringingIncoming ||
       LatticeCallState.joining => CallJoiningView(
-          displayName: _resolveRoomName(context, callService),
+          displayName: roomName,
         ),
       LatticeCallState.connected => const ConnectedCallView(),
       LatticeCallState.reconnecting => const CallReconnectingView(),
@@ -55,7 +56,7 @@ class CallPane extends StatelessWidget {
                 pathParameters: {'roomId': roomId},
               ),
             ),
-            title: Text(_resolveRoomName(context, callService)),
+            title: Text(roomName),
           ),
         Expanded(child: body),
       ],

@@ -76,9 +76,9 @@ class _ParticipantTileState extends State<ParticipantTile> {
 
     _renderer ??= rtc.RTCVideoRenderer();
     await _renderer!.initialize();
-    if (generation != _setupGeneration) return;
+    if (generation != _setupGeneration || !mounted) return;
     _renderer!.srcObject = stream;
-    if (mounted) setState(() {});
+    setState(() {});
   }
 
   @override

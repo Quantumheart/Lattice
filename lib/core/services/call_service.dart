@@ -131,6 +131,7 @@ class CallService extends ChangeNotifier
       case LatticeCallState.idle:
       case LatticeCallState.disconnecting:
       case LatticeCallState.failed:
+        stopRinging();
         endNativeCall();
       default:
         break;
@@ -174,14 +175,14 @@ class CallService extends ChangeNotifier
   void _resetState() {
     endNativeCall();
     stopSignalingListener();
+    stopRinging();
     unawaited(cleanupLiveKit());
     cancelMembershipRenewal();
     _activeCallRoomId = null;
     _callState = LatticeCallState.idle;
     _initialized = false;
     resetIncomingCall();
-    stopRinging();
-    disposeRingtone();
+    unawaited(disposeRingtone());
     clearActiveCallId();
     _callStartTime = null;
   }
@@ -194,9 +195,10 @@ class CallService extends ChangeNotifier
 
   @override
   void dispose() {
-    disposeNativeCallUi();
     _resetState();
+    disposeNativeCallUi();
     closeIncomingCallController();
+    closeWarningController();
     _disposed = true;
     super.dispose();
   }
