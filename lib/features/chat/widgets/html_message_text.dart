@@ -15,7 +15,8 @@ import 'package:url_launcher/url_launcher.dart';
 /// Renders Matrix HTML `formatted_body` as a styled [Text.rich] widget.
 ///
 /// Supported tags: b, strong, i, em, s, del, strike, u, ins, code, pre,
-/// br, p, h1–h6, blockquote, ol, ul, li, a[href], mx-reply (stripped).
+/// br, p, h1–h6, blockquote, ol, ul, li, a[href], span[data-mx-spoiler],
+/// mx-reply (stripped).
 /// Unsupported tags degrade gracefully — text content is preserved.
 class HtmlMessageText extends StatefulWidget {
   const HtmlMessageText({
@@ -53,6 +54,8 @@ class _HtmlMessageTextState extends State<HtmlMessageText> {
   );
 
   final _recognizers = <TapGestureRecognizer>[];
+  final _revealedSpoilers = <int>{};
+  int _spoilerCounter = 0;
 
   @override
   void dispose() {
@@ -75,6 +78,7 @@ class _HtmlMessageTextState extends State<HtmlMessageText> {
       r.dispose();
     }
     _recognizers.clear();
+    _spoilerCounter = 0;
 
     final cs = Theme.of(context).colorScheme;
     final linkColor = widget.isMe
@@ -369,6 +373,37 @@ class _HtmlMessageTextState extends State<HtmlMessageText> {
         }
         return;
 
+      case 'span':
+        if (node.attributes.containsKey('data-mx-spoiler')) {
+          final spoilerIndex = _spoilerCounter++;
+          final isRevealed = _revealedSpoilers.contains(spoilerIndex);
+          final reason = node.attributes['data-mx-spoiler'];
+          final hasReason = reason != null && reason.isNotEmpty;
+
+          final childSpans = <InlineSpan>[];
+          for (final child in node.nodes) {
+            _buildSpans(child, currentStyle, linkColor, childSpans);
+          }
+
+          spans.add(WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: _SpoilerSpan(
+              reason: hasReason ? reason : null,
+              isRevealed: isRevealed,
+              onReveal: () =>
+                  setState(() => _revealedSpoilers.add(spoilerIndex)),
+              childSpans: childSpans,
+              style: currentStyle,
+              isMe: widget.isMe,
+            ),
+          ),);
+          return;
+        }
+        for (final child in node.nodes) {
+          _buildSpans(child, currentStyle, linkColor, spans);
+        }
+        return;
+
       default:
         // Unsupported tag — just render children (text content preserved).
         for (final child in node.nodes) {
@@ -498,6 +533,58 @@ class _HtmlMessageTextState extends State<HtmlMessageText> {
         break;
       }
     }
+  }
+}
+
+// ── Spoiler span ─────────────────────────────────────────────
+
+class _SpoilerSpan extends StatelessWidget {
+  const _SpoilerSpan({
+    required this.isRevealed,
+    required this.onReveal,
+    required this.childSpans,
+    required this.style,
+    required this.isMe,
+    this.reason,
+  });
+
+  final String? reason;
+  final bool isRevealed;
+  final VoidCallback onReveal;
+  final List<InlineSpan> childSpans;
+  final TextStyle? style;
+  final bool isMe;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    if (!isRevealed) {
+      final label = reason ?? 'Spoiler';
+      return GestureDetector(
+        onTap: onReveal,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+          decoration: BoxDecoration(
+            color: isMe
+                ? cs.onPrimary.withValues(alpha: 0.3)
+                : cs.onSurface.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            label,
+            style: style?.copyWith(
+              color: isMe
+                  ? cs.onPrimary.withValues(alpha: 0.6)
+                  : cs.onSurface.withValues(alpha: 0.6),
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Text.rich(TextSpan(children: childSpans));
   }
 }
 

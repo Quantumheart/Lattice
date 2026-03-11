@@ -448,6 +448,86 @@ void main() {
     });
   });
 
+  group('HtmlMessageText spoiler tags', () {
+    testWidgets('spoiler without reason shows "Spoiler" label',
+        (tester) async {
+      await tester.pumpWidget(_wrap(
+        const HtmlMessageText(
+          html: '<span data-mx-spoiler="">hidden text</span>',
+          style: TextStyle(fontSize: 14),
+          isMe: false,
+        ),
+      ),);
+
+      expect(find.text('Spoiler'), findsOneWidget);
+      expect(find.text('hidden text'), findsNothing);
+    });
+
+    testWidgets('spoiler with reason shows reason text', (tester) async {
+      await tester.pumpWidget(_wrap(
+        const HtmlMessageText(
+          html: '<span data-mx-spoiler="Book ending">He dies</span>',
+          style: TextStyle(fontSize: 14),
+          isMe: false,
+        ),
+      ),);
+
+      expect(find.text('Book ending'), findsOneWidget);
+      expect(find.text('He dies'), findsNothing);
+    });
+
+    testWidgets('tapping spoiler reveals content', (tester) async {
+      await tester.pumpWidget(_wrap(
+        const HtmlMessageText(
+          html: '<span data-mx-spoiler="">hidden text</span>',
+          style: TextStyle(fontSize: 14),
+          isMe: false,
+        ),
+      ),);
+
+      expect(find.text('Spoiler'), findsOneWidget);
+      await tester.tap(find.text('Spoiler'));
+      await tester.pump();
+      expect(find.text('hidden text'), findsOneWidget);
+      expect(find.text('Spoiler'), findsNothing);
+    });
+
+    testWidgets('plain span without data-mx-spoiler renders normally',
+        (tester) async {
+      await tester.pumpWidget(_wrap(
+        const HtmlMessageText(
+          html: '<span>normal text</span>',
+          style: TextStyle(fontSize: 14),
+          isMe: false,
+        ),
+      ),);
+
+      final spans = _extractFlatSpans(tester);
+      expect(spans[0].text, 'normal text');
+    });
+
+    testWidgets('multiple spoilers track reveal state independently',
+        (tester) async {
+      await tester.pumpWidget(_wrap(
+        const HtmlMessageText(
+          html:
+              '<span data-mx-spoiler="">first</span> and <span data-mx-spoiler="">second</span>',
+          style: TextStyle(fontSize: 14),
+          isMe: false,
+        ),
+      ),);
+
+      // Both hidden initially.
+      expect(find.text('Spoiler'), findsNWidgets(2));
+
+      // Reveal only the first spoiler.
+      await tester.tap(find.text('Spoiler').first);
+      await tester.pump();
+      expect(find.text('first'), findsOneWidget);
+      expect(find.text('Spoiler'), findsOneWidget);
+    });
+  });
+
   group('HtmlMessageText mention pills', () {
     late MockRoom mockRoom;
     late MockClient mockClient;

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:lattice/core/utils/reply_fallback.dart';
 import 'package:lattice/features/chat/widgets/delete_event_dialog.dart';
 import 'package:lattice/features/chat/widgets/emoji_picker_sheet.dart';
+import 'package:lattice/features/chat/widgets/forward_message_dialog.dart';
 import 'package:lattice/features/chat/widgets/long_press_wrapper.dart';
 import 'package:lattice/features/chat/widgets/message_action_sheet.dart';
 import 'package:lattice/features/chat/widgets/message_bubble.dart' show MessageBubble;
@@ -169,6 +170,15 @@ class ChatMessageItem extends StatelessWidget {
             ),
           );
         },
+      ),
+      MessageAction(
+        label: 'Forward',
+        icon: Icons.shortcut_rounded,
+        onTap: () => ForwardMessageDialog.show(
+          context,
+          client: client,
+          event: event,
+        ),
       ),
       if (event.canRedact)
         MessageAction(

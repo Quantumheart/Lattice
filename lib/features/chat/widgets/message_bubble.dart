@@ -8,6 +8,7 @@ import 'package:lattice/core/utils/sender_color.dart';
 import 'package:lattice/features/chat/widgets/audio_bubble.dart';
 import 'package:lattice/features/chat/widgets/density_metrics.dart';
 import 'package:lattice/features/chat/widgets/file_bubble.dart';
+import 'package:lattice/features/chat/widgets/forward_message_dialog.dart';
 import 'package:lattice/features/chat/widgets/hover_action_bar.dart';
 import 'package:lattice/features/chat/widgets/html_message_text.dart';
 import 'package:lattice/features/chat/widgets/image_bubble.dart';
@@ -456,6 +457,16 @@ class _MessageBubbleState extends State<MessageBubble> {
             ],
           ),
         ),
+        const PopupMenuItem(
+          value: 'forward',
+          child: Row(
+            children: [
+              Icon(Icons.shortcut_rounded, size: 18),
+              SizedBox(width: 8),
+              Text('Forward'),
+            ],
+          ),
+        ),
         if (widget.onPin != null)
           PopupMenuItem(
             value: 'pin',
@@ -495,6 +506,14 @@ class _MessageBubbleState extends State<MessageBubble> {
           ? widget.event.getDisplayEvent(widget.timeline!)
           : widget.event;
       await Clipboard.setData(ClipboardData(text: stripReplyFallback(displayEvent.body)));
+    }
+    if (value == 'forward') {
+      if (!context.mounted) return;
+      await ForwardMessageDialog.show(
+        context,
+        client: widget.event.room.client,
+        event: widget.event,
+      );
     }
     if (value == 'delete') widget.onDelete?.call();
   }
