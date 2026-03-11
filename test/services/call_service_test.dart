@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -16,157 +15,7 @@ import 'package:mockito/mockito.dart';
   MockSpec<Room>(),
 ])
 import 'call_service_test.mocks.dart';
-
-// ── LiveKit Mocks ─────────────────────────────────────────
-
-class _MockLocalParticipant extends Fake implements livekit.LocalParticipant {
-  bool micEnabled = false;
-  bool cameraEnabled = false;
-  bool screenShareEnabled = false;
-  bool throwOnToggle = false;
-
-  @override
-  List<livekit.LocalTrackPublication<livekit.LocalVideoTrack>>
-      get videoTrackPublications => [];
-
-  @override
-  String get identity => 'local';
-
-  @override
-  String get name => 'Local User';
-
-  @override
-  bool get isMuted => false;
-
-  @override
-  double get audioLevel => 0;
-
-  @override
-  Future<livekit.LocalTrackPublication?> setMicrophoneEnabled(
-    bool enabled, {
-    livekit.AudioCaptureOptions? audioCaptureOptions,
-  }) async {
-    if (throwOnToggle) throw Exception('mic error');
-    micEnabled = enabled;
-    return null;
-  }
-
-  @override
-  Future<livekit.LocalTrackPublication?> setCameraEnabled(
-    bool enabled, {
-    livekit.CameraCaptureOptions? cameraCaptureOptions,
-  }) async {
-    if (throwOnToggle) throw Exception('camera error');
-    cameraEnabled = enabled;
-    return null;
-  }
-
-  @override
-  Future<livekit.LocalTrackPublication?> setScreenShareEnabled(
-    bool enabled, {
-    bool? captureScreenAudio,
-    livekit.ScreenShareCaptureOptions? screenShareCaptureOptions,
-  }) async {
-    if (throwOnToggle) throw Exception('screenshare error');
-    screenShareEnabled = enabled;
-    return null;
-  }
-}
-
-class _FakeEventsListener<T> extends Fake implements livekit.EventsListener<T> {
-  final _handlers = <Type, List<Function>>{};
-
-  @override
-  livekit.CancelListenFunc on<E>(
-    FutureOr<void> Function(E) then, {
-    bool Function(E)? filter,
-  }) {
-    _handlers.putIfAbsent(E, () => []).add(then);
-    return () async {};
-  }
-
-  @override
-  Future<bool> dispose() async {
-    _handlers.clear();
-    return true;
-  }
-
-  void fire<E>(E event) {
-    final handlers = _handlers[E];
-    if (handlers != null) {
-      for (final handler in handlers) {
-        (handler as void Function(E))(event);
-      }
-    }
-  }
-}
-
-class _FakeLiveKitRoom extends Fake implements livekit.Room {
-  _MockLocalParticipant? _localParticipant;
-  final Map<String, livekit.RemoteParticipant> _remoteParticipants = {};
-  _FakeEventsListener<livekit.RoomEvent>? _listener;
-  bool connected = false;
-  bool disconnected = false;
-  bool disposed = false;
-  bool throwOnConnect = false;
-
-  @override
-  livekit.LocalParticipant? get localParticipant => _localParticipant;
-
-  @override
-  UnmodifiableMapView<String, livekit.RemoteParticipant>
-      get remoteParticipants => UnmodifiableMapView(_remoteParticipants);
-
-  @override
-  livekit.EventsListener<livekit.RoomEvent> createListener({
-    bool synchronized = false,
-  }) {
-    _listener = _FakeEventsListener<livekit.RoomEvent>();
-    return _listener!;
-  }
-
-  @override
-  Future<void> connect(
-    String url,
-    String token, {
-    livekit.ConnectOptions? connectOptions,
-    livekit.RoomOptions? roomOptions,
-    livekit.FastConnectOptions? fastConnectOptions,
-  }) async {
-    if (throwOnConnect) throw Exception('connect failed');
-    connected = true;
-    _localParticipant = _MockLocalParticipant();
-  }
-
-  @override
-  Future<void> disconnect() async {
-    disconnected = true;
-  }
-
-  @override
-  Future<bool> dispose() async {
-    disposed = true;
-    return true;
-  }
-}
-
-class _FakeRemoteParticipant extends Fake implements livekit.RemoteParticipant {
-  @override
-  List<livekit.RemoteTrackPublication<livekit.RemoteVideoTrack>>
-      get videoTrackPublications => [];
-
-  @override
-  String get identity => 'remote';
-
-  @override
-  String get name => 'Remote User';
-
-  @override
-  bool get isMuted => false;
-
-  @override
-  double get audioLevel => 0;
-}
+import 'call_test_helpers.dart';
 
 void main() {
   late MockClient mockClient;
@@ -184,8 +33,8 @@ void main() {
     service = CallService(client: mockClient);
   });
 
-  _FakeLiveKitRoom setupLiveKitMocks() {
-    final fakeRoom = _FakeLiveKitRoom();
+  FakeLiveKitRoom setupLiveKitMocks() {
+    final fakeRoom = FakeLiveKitRoom();
     service.roomFactoryForTest = () => fakeRoom;
 
     when(mockClient.requestOpenIdToken(any, any)).thenAnswer(
@@ -489,7 +338,7 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      fakeRoom._listener!.fire(const livekit.RoomReconnectingEvent());
+      fakeRoom.listener!.fire(const livekit.RoomReconnectingEvent());
       await Future<void>.delayed(Duration.zero);
 
       expect(service.callState, LatticeCallState.reconnecting);
@@ -501,7 +350,7 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      fakeRoom._listener!.fire(const livekit.RoomReconnectedEvent());
+      fakeRoom.listener!.fire(const livekit.RoomReconnectedEvent());
       await Future<void>.delayed(Duration.zero);
 
       expect(service.callState, LatticeCallState.connected);
@@ -513,7 +362,7 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      fakeRoom._listener!.fire(livekit.RoomDisconnectedEvent());
+      fakeRoom.listener!.fire(livekit.RoomDisconnectedEvent());
       await Future<void>.delayed(Duration.zero);
 
       expect(service.callState, LatticeCallState.failed);
@@ -539,16 +388,16 @@ void main() {
 
       expect(service.participants, isEmpty);
 
-      final fakeRemote = _FakeRemoteParticipant();
-      fakeRoom._remoteParticipants['user2'] = fakeRemote;
-      fakeRoom._listener!.fire(
+      final fakeRemote = FakeRemoteParticipant();
+      fakeRoom.remoteParticipantsMap['user2'] = fakeRemote;
+      fakeRoom.listener!.fire(
         livekit.ParticipantConnectedEvent(participant: fakeRemote),
       );
 
       expect(service.participants, hasLength(1));
 
-      fakeRoom._remoteParticipants.remove('user2');
-      fakeRoom._listener!.fire(
+      fakeRoom.remoteParticipantsMap.remove('user2');
+      fakeRoom.listener!.fire(
         livekit.ParticipantDisconnectedEvent(participant: fakeRemote),
       );
 
@@ -561,9 +410,9 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      fakeRoom._listener!.fire(
+      fakeRoom.listener!.fire(
         livekit.ActiveSpeakersChangedEvent(
-          speakers: [fakeRoom._localParticipant!],
+          speakers: [fakeRoom.localParticipantFake!],
         ),
       );
 
@@ -572,7 +421,7 @@ void main() {
   });
 
   group('track toggles', () {
-    late _FakeLiveKitRoom fakeRoom;
+    late FakeLiveKitRoom fakeRoom;
 
     setUp(() async {
       fakeRoom = setupLiveKitMocks();
@@ -585,11 +434,11 @@ void main() {
 
       await service.toggleMicrophone();
       expect(service.isMicEnabled, isFalse);
-      expect(fakeRoom._localParticipant!.micEnabled, isFalse);
+      expect(fakeRoom.localParticipantFake!.micEnabled, isFalse);
 
       await service.toggleMicrophone();
       expect(service.isMicEnabled, isTrue);
-      expect(fakeRoom._localParticipant!.micEnabled, isTrue);
+      expect(fakeRoom.localParticipantFake!.micEnabled, isTrue);
     });
 
     test('toggleCamera enables then disables', () async {
@@ -597,11 +446,11 @@ void main() {
 
       await service.toggleCamera();
       expect(service.isCameraEnabled, isTrue);
-      expect(fakeRoom._localParticipant!.cameraEnabled, isTrue);
+      expect(fakeRoom.localParticipantFake!.cameraEnabled, isTrue);
 
       await service.toggleCamera();
       expect(service.isCameraEnabled, isFalse);
-      expect(fakeRoom._localParticipant!.cameraEnabled, isFalse);
+      expect(fakeRoom.localParticipantFake!.cameraEnabled, isFalse);
     });
 
     test('toggleScreenShare enables then disables', () async {
@@ -609,17 +458,17 @@ void main() {
 
       await service.toggleScreenShare();
       expect(service.isScreenShareEnabled, isTrue);
-      expect(fakeRoom._localParticipant!.screenShareEnabled, isTrue);
+      expect(fakeRoom.localParticipantFake!.screenShareEnabled, isTrue);
 
       await service.toggleScreenShare();
       expect(service.isScreenShareEnabled, isFalse);
-      expect(fakeRoom._localParticipant!.screenShareEnabled, isFalse);
+      expect(fakeRoom.localParticipantFake!.screenShareEnabled, isFalse);
     });
 
     test('toggle reverts on error', () async {
       expect(service.isMicEnabled, isTrue);
 
-      fakeRoom._localParticipant!.throwOnToggle = true;
+      fakeRoom.localParticipantFake!.throwOnToggle = true;
 
       await service.toggleMicrophone();
       expect(service.isMicEnabled, isTrue);
@@ -779,7 +628,7 @@ void main() {
       expect(service.callState, LatticeCallState.failed);
 
       fakeRoom.throwOnConnect = false;
-      final freshRoom = _FakeLiveKitRoom();
+      final freshRoom = FakeLiveKitRoom();
       service.roomFactoryForTest = () => freshRoom;
 
       await service.joinCall('!room:example.com');
@@ -828,9 +677,9 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      final fakeRemote = _FakeRemoteParticipant();
-      fakeRoom._remoteParticipants['user2'] = fakeRemote;
-      fakeRoom._listener!.fire(
+      final fakeRemote = FakeRemoteParticipant();
+      fakeRoom.remoteParticipantsMap['user2'] = fakeRemote;
+      fakeRoom.listener!.fire(
         livekit.ParticipantConnectedEvent(participant: fakeRemote),
       );
 
@@ -983,17 +832,4 @@ void main() {
       expect(service.callState, LatticeCallState.connected);
     });
   });
-}
-
-// ── Fake Event for room state testing ─────────────────────
-
-class FakeEvent extends Fake implements Event {
-  FakeEvent({required this.content, required int originServerTs})
-      : originServerTs = DateTime.fromMillisecondsSinceEpoch(originServerTs);
-
-  @override
-  final Map<String, dynamic> content;
-
-  @override
-  final DateTime originServerTs;
 }
