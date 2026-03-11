@@ -3,10 +3,20 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/features/calling/models/call_participant.dart' as ui;
+import 'package:lattice/features/calling/models/call_state.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
 import 'package:matrix/matrix.dart';
+
+// ── Types ──────────────────────────────────────────────────
+
+typedef LiveKitRoomFactory = livekit.Room Function();
+typedef HttpPostFunction = Future<http.Response> Function(
+  http.Client httpClient,
+  Uri url, {
+  Map<String, String>? headers,
+  Object? body,
+});
 
 // ── LiveKit Connection Events ──────────────────────────────
 
