@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import 'package:lattice/features/calling/models/call_participant.dart' as ui;
+import 'package:lattice/features/calling/models/call_state.dart';
 import 'package:lattice/features/calling/models/incoming_call_info.dart' as model;
 import 'package:lattice/features/calling/services/call_ringing_service.dart';
 import 'package:lattice/features/calling/services/call_signaling_service.dart';
@@ -14,34 +14,11 @@ import 'package:lattice/features/calling/services/rtc_membership_service.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
 import 'package:matrix/matrix.dart';
 
-// ── Call State ──────────────────────────────────────────────
-
-enum LatticeCallState {
-  idle,
-  ringingOutgoing,
-  ringingIncoming,
-  joining,
-  connected,
-  reconnecting,
-  disconnecting,
-  failed,
-}
-
-// ── Types ──────────────────────────────────────────────────
-
-typedef LiveKitRoomFactory = livekit.Room Function();
-typedef HttpPostFunction = Future<http.Response> Function(
-  http.Client httpClient,
-  Uri url, {
-  Map<String, String>? headers,
-  Object? body,
-});
-
-// ── Constants ──────────────────────────────────────────────
-
-const callMemberEventType = 'org.matrix.msc3401.call.member';
-const membershipExpiresMs = 14400000;
-const membershipRenewalInterval = Duration(minutes: 5);
+export 'package:lattice/features/calling/models/call_state.dart';
+export 'package:lattice/features/calling/services/livekit_service.dart'
+    show HttpPostFunction, LiveKitRoomFactory;
+export 'package:lattice/features/calling/services/rtc_membership_service.dart'
+    show callMemberEventType, membershipExpiresMs, membershipRenewalInterval;
 
 // ── Call Service ────────────────────────────────────────────
 
@@ -131,53 +108,12 @@ class CallService extends ChangeNotifier {
 
   // ── Shared State ───────────────────────────────────────────
 
-  static const Map<LatticeCallState, Set<LatticeCallState>> validTransitions = {
-    LatticeCallState.idle: {
-      LatticeCallState.joining,
-      LatticeCallState.ringingOutgoing,
-      LatticeCallState.ringingIncoming,
-    },
-    LatticeCallState.ringingOutgoing: {
-      LatticeCallState.joining,
-      LatticeCallState.connected,
-      LatticeCallState.idle,
-      LatticeCallState.failed,
-    },
-    LatticeCallState.ringingIncoming: {
-      LatticeCallState.joining,
-      LatticeCallState.idle,
-    },
-    LatticeCallState.joining: {
-      LatticeCallState.connected,
-      LatticeCallState.idle,
-      LatticeCallState.failed,
-    },
-    LatticeCallState.connected: {
-      LatticeCallState.reconnecting,
-      LatticeCallState.disconnecting,
-      LatticeCallState.failed,
-    },
-    LatticeCallState.reconnecting: {
-      LatticeCallState.connected,
-      LatticeCallState.disconnecting,
-      LatticeCallState.failed,
-    },
-    LatticeCallState.disconnecting: {
-      LatticeCallState.idle,
-    },
-    LatticeCallState.failed: {
-      LatticeCallState.idle,
-      LatticeCallState.joining,
-      LatticeCallState.ringingOutgoing,
-    },
-  };
-
   LatticeCallState _callState = LatticeCallState.idle;
   LatticeCallState get callState => _callState;
 
   void _setCallState(LatticeCallState next) {
     if (_callState == next) return;
-    final allowed = validTransitions[_callState];
+    final allowed = validCallTransitions[_callState];
     if (allowed == null || !allowed.contains(next)) {
       debugPrint(
         '[Lattice] Invalid call state transition: $_callState → $next',
@@ -297,7 +233,7 @@ class CallService extends ChangeNotifier {
 
   bool _canJoin(String roomId) {
     if (!_initialized) init();
-    final allowed = validTransitions[_callState];
+    final allowed = validCallTransitions[_callState];
     if (allowed == null || !allowed.contains(LatticeCallState.joining)) {
       return false;
     }
@@ -486,74 +422,14 @@ class CallService extends ChangeNotifier {
 
   // ── Queries ────────────────────────────────────────────────
 
-  bool roomHasActiveCall(String roomId) {
-    final room = _client.getRoomById(roomId);
-    if (room == null) return false;
-    return _getActiveRtcMemberships(room).isNotEmpty;
-  }
+  bool roomHasActiveCall(String roomId) =>
+      RtcMembershipService.roomHasActiveCall(_client, roomId);
 
-  List<String> activeCallIdsForRoom(String roomId) {
-    final room = _client.getRoomById(roomId);
-    if (room == null) return const [];
-    final memberships = _getActiveRtcMemberships(room);
-    final callIds = <String>{};
-    for (final mem in memberships) {
-      final callId = mem['call_id'] as String? ?? '';
-      callIds.add(callId);
-    }
-    return callIds.toList();
-  }
+  List<String> activeCallIdsForRoom(String roomId) =>
+      RtcMembershipService.activeCallIdsForRoom(_client, roomId);
 
-  int callParticipantCount(String roomId, String groupCallId) {
-    final room = _client.getRoomById(roomId);
-    if (room == null) return 0;
-    final memberships = _getActiveRtcMemberships(room);
-    return memberships
-        .where((m) => (m['call_id'] as String? ?? '') == groupCallId)
-        .length;
-  }
-
-  List<Map<String, dynamic>> _getActiveRtcMemberships(Room room) {
-    final states = room.states[callMemberEventType];
-    if (states == null) return const [];
-
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final result = <Map<String, dynamic>>[];
-
-    for (final stateEvent in states.values) {
-      final content = stateEvent.content;
-      if (content.isEmpty) continue;
-
-      final originTs = stateEvent is Event
-          ? stateEvent.originServerTs.millisecondsSinceEpoch
-          : now;
-
-      final memberships = content['memberships'];
-      if (memberships is List) {
-        for (final mem in memberships) {
-          if (mem is Map<String, dynamic> &&
-              _isMembershipActive(mem, originTs, now)) {
-            result.add(mem);
-          }
-        }
-      } else {
-        if (_isMembershipActive(content, originTs, now)) {
-          result.add(Map<String, dynamic>.from(content));
-        }
-      }
-    }
-    return result;
-  }
-
-  bool _isMembershipActive(Map<String, dynamic> mem, int originTs, int nowMs) {
-    final expiresTs = mem['expires_ts'] as int?;
-    if (expiresTs != null) return expiresTs > nowMs;
-
-    final expires = mem['expires'] as int?;
-    if (expires != null) return (originTs + expires) > nowMs;
-
-    return false;
-  }
+  int callParticipantCount(String roomId, String groupCallId) =>
+      RtcMembershipService.callParticipantCount(_client, roomId, groupCallId);
 
   // ── Event Handlers ─────────────────────────────────────────
 

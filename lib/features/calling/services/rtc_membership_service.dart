@@ -1,8 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:lattice/core/services/call_service.dart';
 import 'package:matrix/matrix.dart';
+
+// ── Constants ──────────────────────────────────────────────
+
+const callMemberEventType = 'org.matrix.msc3401.call.member';
+const membershipExpiresMs = 14400000;
+const membershipRenewalInterval = Duration(minutes: 5);
+
+// ── RTC Membership Service ─────────────────────────────────
 
 class RtcMembershipService {
   RtcMembershipService({required Client client}) : _client = client;
@@ -81,5 +88,84 @@ class RtcMembershipService {
   void cancelMembershipRenewal() {
     _membershipRenewalTimer?.cancel();
     _membershipRenewalTimer = null;
+  }
+
+  // ── Membership Queries ──────────────────────────────────────
+
+  static bool roomHasActiveCall(Client client, String roomId) {
+    final room = client.getRoomById(roomId);
+    if (room == null) return false;
+    return _getActiveRtcMemberships(room).isNotEmpty;
+  }
+
+  static List<String> activeCallIdsForRoom(Client client, String roomId) {
+    final room = client.getRoomById(roomId);
+    if (room == null) return const [];
+    final memberships = _getActiveRtcMemberships(room);
+    final callIds = <String>{};
+    for (final mem in memberships) {
+      final callId = mem['call_id'] as String? ?? '';
+      callIds.add(callId);
+    }
+    return callIds.toList();
+  }
+
+  static int callParticipantCount(
+    Client client,
+    String roomId,
+    String groupCallId,
+  ) {
+    final room = client.getRoomById(roomId);
+    if (room == null) return 0;
+    final memberships = _getActiveRtcMemberships(room);
+    return memberships
+        .where((m) => (m['call_id'] as String? ?? '') == groupCallId)
+        .length;
+  }
+
+  static List<Map<String, dynamic>> _getActiveRtcMemberships(Room room) {
+    final states = room.states[callMemberEventType];
+    if (states == null) return const [];
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final result = <Map<String, dynamic>>[];
+
+    for (final stateEvent in states.values) {
+      final content = stateEvent.content;
+      if (content.isEmpty) continue;
+
+      final originTs = stateEvent is Event
+          ? stateEvent.originServerTs.millisecondsSinceEpoch
+          : now;
+
+      final memberships = content['memberships'];
+      if (memberships is List) {
+        for (final mem in memberships) {
+          if (mem is Map<String, dynamic> &&
+              _isMembershipActive(mem, originTs, now)) {
+            result.add(mem);
+          }
+        }
+      } else {
+        if (_isMembershipActive(content, originTs, now)) {
+          result.add(Map<String, dynamic>.from(content));
+        }
+      }
+    }
+    return result;
+  }
+
+  static bool _isMembershipActive(
+    Map<String, dynamic> mem,
+    int originTs,
+    int nowMs,
+  ) {
+    final expiresTs = mem['expires_ts'] as int?;
+    if (expiresTs != null) return expiresTs > nowMs;
+
+    final expires = mem['expires'] as int?;
+    if (expires != null) return (originTs + expires) > nowMs;
+
+    return false;
   }
 }
