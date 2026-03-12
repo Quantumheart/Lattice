@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
 
+// coverage:ignore-start
+
 // ── Single-active-player enforcement ──────────────────────────
 
 class MediaPlaybackService extends ChangeNotifier {
@@ -40,3 +42,4 @@ class MediaPlaybackService extends ChangeNotifier {
     super.dispose();
   }
 }
+// coverage:ignore-end

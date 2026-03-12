@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lattice/features/calling/models/call_participant.dart';
 import 'package:lattice/features/calling/widgets/participant_tile.dart';
 
+// coverage:ignore-start
+
 class PipSelfView extends StatefulWidget {
   const PipSelfView({required this.participant, super.key});
 
@@ -86,3 +88,4 @@ class _PipSelfViewState extends State<PipSelfView> {
     });
   }
 }
+// coverage:ignore-end

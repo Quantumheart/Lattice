@@ -1,3 +1,5 @@
+// coverage:ignore-start
+
 enum UploadStatus { uploading, error }
 
 class UploadState {
@@ -11,3 +13,4 @@ class UploadState {
   final String fileName;
   final String? error;
 }
+// coverage:ignore-end

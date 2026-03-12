@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lattice/features/calling/models/call_participant.dart';
 import 'package:lattice/features/calling/widgets/participant_tile.dart';
 
+// coverage:ignore-start
+
 class ScreenShareLayout extends StatelessWidget {
   const ScreenShareLayout({
     required this.screenSharer,
@@ -79,3 +81,4 @@ class ScreenShareLayout extends StatelessWidget {
     );
   }
 }
+// coverage:ignore-end

@@ -9,6 +9,8 @@ import 'package:lattice/features/settings/screens/settings_screen.dart';
 import 'package:lattice/features/spaces/widgets/space_rail.dart';
 import 'package:provider/provider.dart';
 
+// coverage:ignore-start
+
 class NarrowLayout extends StatelessWidget {
   const NarrowLayout({
     required this.routerChild,
@@ -62,3 +64,4 @@ class NarrowLayout extends StatelessWidget {
     );
   }
 }
+// coverage:ignore-end

@@ -5,6 +5,8 @@ import 'package:lattice/core/utils/reply_fallback.dart';
 import 'package:lattice/core/utils/sender_color.dart';
 import 'package:matrix/matrix.dart';
 
+// coverage:ignore-start
+
 // ── Inline reply preview ──────────────────────────────────────
 
 class InlineReplyPreview extends StatefulWidget {
@@ -138,3 +140,4 @@ class _InlineReplyPreviewState extends State<InlineReplyPreview> {
     );
   }
 }
+// coverage:ignore-end

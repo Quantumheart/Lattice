@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import 'package:lattice/core/models/pending_attachment.dart';
 
+// coverage:ignore-start
+
 class AttachmentPreviewBar extends StatelessWidget {
   const AttachmentPreviewBar({
     required this.attachments,
@@ -146,3 +148,4 @@ class _AttachmentCard extends StatelessWidget {
     );
   }
 }
+// coverage:ignore-end

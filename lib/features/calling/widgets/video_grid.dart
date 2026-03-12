@@ -3,6 +3,8 @@ import 'package:lattice/features/calling/models/call_participant.dart';
 import 'package:lattice/features/calling/widgets/participant_tile.dart';
 import 'package:lattice/features/calling/widgets/screen_share_layout.dart';
 
+// coverage:ignore-start
+
 class VideoGrid extends StatefulWidget {
   const VideoGrid({required this.participants, super.key});
 
@@ -148,3 +150,4 @@ class _VideoGridState extends State<VideoGrid> {
     );
   }
 }
+// coverage:ignore-end

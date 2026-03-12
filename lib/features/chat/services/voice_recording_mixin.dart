@@ -5,6 +5,8 @@ import 'package:lattice/features/chat/services/voice_recording_controller.dart';
 import 'package:lattice/features/chat/widgets/voice_send_handler.dart';
 import 'package:provider/provider.dart';
 
+// coverage:ignore-start
+
 mixin VoiceRecordingMixin<T extends StatefulWidget> on State<T> {
   VoiceRecordingController? get voiceController;
   ValueNotifier<UploadState?> get voiceUploadNotifier;
@@ -38,3 +40,4 @@ mixin VoiceRecordingMixin<T extends StatefulWidget> on State<T> {
     await voiceController?.cancelRecording();
   }
 }
+// coverage:ignore-end

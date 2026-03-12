@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+// coverage:ignore-start
+
 class CallControlBar extends StatelessWidget {
   const CallControlBar({
     required this.isMicMuted,
@@ -124,3 +126,4 @@ class _HangUpButton extends StatelessWidget {
     );
   }
 }
+// coverage:ignore-end

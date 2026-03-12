@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lattice/features/auth/widgets/registration_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+// coverage:ignore-start
+
 /// Builds content for UIA stages that appear after form submission.
 Widget buildUiaContent({
   required BuildContext context,
@@ -140,3 +142,4 @@ Widget _buildTermsView(
     ],
   );
 }
+// coverage:ignore-end

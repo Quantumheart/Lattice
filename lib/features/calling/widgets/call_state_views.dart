@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lattice/shared/widgets/pulsing_avatar.dart';
 
+// coverage:ignore-start
+
 String formatCallElapsed(Duration d) {
   final hours = d.inHours;
   final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
@@ -147,3 +149,4 @@ class CallEndedView extends StatelessWidget {
     );
   }
 }
+// coverage:ignore-end

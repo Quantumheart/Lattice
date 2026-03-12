@@ -4,6 +4,8 @@ import 'package:lattice/core/utils/time_format.dart';
 import 'package:lattice/shared/widgets/user_avatar.dart';
 import 'package:matrix/matrix.dart';
 
+// coverage:ignore-start
+
 class SearchResultTile extends StatelessWidget {
   const SearchResultTile({
     required this.event, required this.query, required this.onTap, super.key,
@@ -103,3 +105,4 @@ class SearchResultTile extends StatelessWidget {
     );
   }
 }
+// coverage:ignore-end

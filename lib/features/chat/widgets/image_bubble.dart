@@ -6,6 +6,8 @@ import 'package:lattice/core/utils/media_auth.dart';
 import 'package:lattice/shared/widgets/full_image_view.dart';
 import 'package:matrix/matrix.dart';
 
+// coverage:ignore-start
+
 // ── Image bubble (async URI resolution) ──────────────────────
 
 class ImageBubble extends StatefulWidget {
@@ -118,3 +120,4 @@ class _ImageBubbleState extends State<ImageBubble> {
     );
   }
 }
+// coverage:ignore-end

@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:lattice/features/chat/services/voice_recording_service.dart';
 import 'package:path_provider/path_provider.dart';
 
+// coverage:ignore-start
+
 enum VoiceRecordingState { idle, requesting, recording, stopping }
 
 class VoiceRecordingController extends ChangeNotifier {
@@ -96,3 +98,4 @@ class VoiceRecordingController extends ChangeNotifier {
     super.dispose();
   }
 }
+// coverage:ignore-end

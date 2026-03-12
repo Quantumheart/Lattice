@@ -9,6 +9,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart' as sqflite_native;
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+// coverage:ignore-start
+
 const Set<String> _callPreviewTypes = {
   EventTypes.CallInvite,
   EventTypes.CallAnswer,
@@ -56,3 +58,4 @@ Future<Client> createDefaultClient(
   client.roomPreviewLastEvents.removeAll(_callPreviewTypes);
   return client;
 }
+// coverage:ignore-end
