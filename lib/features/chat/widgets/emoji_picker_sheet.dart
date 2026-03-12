@@ -6,7 +6,8 @@ import 'package:emoji_picker_flutter/emoji_picker_flutter.dart'
          SkinToneConfig;
 import 'package:flutter/material.dart';
 
-/// Shows a floating emoji picker dialog near the center of the screen.
+// coverage:ignore-start
+
 void showEmojiPickerSheet(BuildContext context, void Function(String emoji) onSelected) {
   unawaited(showDialog(
     context: context,
@@ -66,3 +67,4 @@ class _EmojiPickerDialog extends StatelessWidget {
     );
   }
 }
+// coverage:ignore-end

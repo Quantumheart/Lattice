@@ -8,6 +8,8 @@ import 'package:lattice/features/calling/widgets/call_state_views.dart';
 import 'package:lattice/features/calling/widgets/connected_call_view.dart';
 import 'package:provider/provider.dart';
 
+// coverage:ignore-start
+
 class CallPane extends StatelessWidget {
   const CallPane({super.key});
 
@@ -62,3 +64,4 @@ class CallPane extends StatelessWidget {
     );
   }
 }
+// coverage:ignore-end

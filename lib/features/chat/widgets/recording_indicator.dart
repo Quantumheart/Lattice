@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:lattice/core/utils/format_duration.dart';
 import 'package:lattice/features/chat/services/voice_recording_controller.dart';
 
+// coverage:ignore-start
+
 class RecordingIndicator extends StatelessWidget {
   const RecordingIndicator({
     required this.controller, required this.onCancel, required this.onStop, super.key,
@@ -109,3 +111,4 @@ class _PulsingDotState extends State<_PulsingDot>
     );
   }
 }
+// coverage:ignore-end

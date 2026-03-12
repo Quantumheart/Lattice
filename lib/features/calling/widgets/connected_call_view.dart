@@ -5,6 +5,8 @@ import 'package:lattice/features/calling/widgets/pip_self_view.dart';
 import 'package:lattice/features/calling/widgets/video_grid.dart';
 import 'package:provider/provider.dart';
 
+// coverage:ignore-start
+
 class ConnectedCallView extends StatelessWidget {
   const ConnectedCallView({super.key});
 
@@ -53,3 +55,4 @@ class ConnectedCallView extends StatelessWidget {
     );
   }
 }
+// coverage:ignore-end

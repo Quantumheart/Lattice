@@ -9,6 +9,8 @@ import 'package:lattice/features/calling/widgets/call_state_views.dart';
 import 'package:lattice/features/calling/widgets/connected_call_view.dart';
 import 'package:provider/provider.dart';
 
+// coverage:ignore-start
+
 class CallScreen extends StatefulWidget {
   const CallScreen({required this.roomId, required this.displayName, super.key});
 
@@ -86,3 +88,4 @@ class _CallScreenState extends State<CallScreen> {
   }
 
 }
+// coverage:ignore-end

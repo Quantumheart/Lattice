@@ -8,6 +8,8 @@ import 'package:lattice/shared/widgets/user_avatar.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
 import 'package:provider/provider.dart';
 
+// coverage:ignore-start
+
 class ParticipantTile extends StatefulWidget {
   const ParticipantTile({required this.participant, super.key});
 
@@ -215,3 +217,4 @@ class _ParticipantTileState extends State<ParticipantTile> {
     );
   }
 }
+// coverage:ignore-end

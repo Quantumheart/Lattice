@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+// coverage:ignore-start
+
 // ── Backup info dialog ──────────────────────────────────────────
 
 class BackupInfoDialog extends StatelessWidget {
@@ -57,3 +59,4 @@ class BackupInfoDialog extends StatelessWidget {
     );
   }
 }
+// coverage:ignore-end

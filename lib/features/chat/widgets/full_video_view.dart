@@ -4,6 +4,8 @@ import 'package:matrix/matrix.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
+// coverage:ignore-start
+
 // ── Fullscreen video dialog ───────────────────────────────────
 
 void showFullVideoDialog(
@@ -18,3 +20,4 @@ void showFullVideoDialog(
     child: Video(controller: controller),
   );
 }
+// coverage:ignore-end

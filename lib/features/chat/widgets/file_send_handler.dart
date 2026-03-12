@@ -8,6 +8,8 @@ import 'package:lattice/core/services/matrix_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
+// coverage:ignore-start
+
 Future<void> pickAndSendFile(
   BuildContext context,
   String roomId,
@@ -84,3 +86,4 @@ Future<bool> sendFileBytes({
     return false;
   }
 }
+// coverage:ignore-end

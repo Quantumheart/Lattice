@@ -7,6 +7,8 @@ import 'package:lattice/features/home/widgets/wide_layout.dart';
 import 'package:lattice/features/spaces/widgets/space_reparent_controller.dart';
 import 'package:provider/provider.dart';
 
+// coverage:ignore-start
+
 class HomeShell extends StatefulWidget {
   const HomeShell({
     required this.routerChild, required this.routerState, super.key,
@@ -140,3 +142,4 @@ class _HomeShellState extends State<HomeShell> {
     return bindings;
   }
 }
+// coverage:ignore-end

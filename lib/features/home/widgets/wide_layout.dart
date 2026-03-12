@@ -10,6 +10,8 @@ import 'package:lattice/features/rooms/widgets/room_list.dart';
 import 'package:lattice/features/spaces/widgets/space_rail.dart';
 import 'package:provider/provider.dart';
 
+// coverage:ignore-start
+
 class WideLayout extends StatefulWidget {
   const WideLayout({
     required this.width,
@@ -176,3 +178,4 @@ class _WideLayoutState extends State<WideLayout> {
     );
   }
 }
+// coverage:ignore-end

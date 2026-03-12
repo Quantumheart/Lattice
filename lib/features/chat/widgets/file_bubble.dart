@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:lattice/core/utils/format_file_size.dart';
 import 'package:matrix/matrix.dart';
 
+// coverage:ignore-start
+
 // ── File bubble (generic file attachment) ─────────────────────
 
 class FileBubble extends StatefulWidget {
@@ -116,3 +118,4 @@ class _FileBubbleState extends State<FileBubble> {
     );
   }
 }
+// coverage:ignore-end

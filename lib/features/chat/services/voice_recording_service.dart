@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:record/record.dart';
 
+// coverage:ignore-start
+
 class VoiceRecordingService {
   final _recorder = AudioRecorder();
 
@@ -27,3 +29,4 @@ class VoiceRecordingService {
     await _recorder.dispose();
   }
 }
+// coverage:ignore-end

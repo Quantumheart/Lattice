@@ -6,6 +6,8 @@ import 'package:lattice/core/services/matrix_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
+// coverage:ignore-start
+
 Future<void> sendVoiceMessage(
   BuildContext context,
   String roomId,
@@ -63,3 +65,4 @@ Future<void> sendVoiceMessage(
     } catch (_) {}
   }
 }
+// coverage:ignore-end

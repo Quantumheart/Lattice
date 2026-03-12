@@ -88,45 +88,50 @@ class _AddRoomToSpaceDialogState extends State<AddRoomToSpaceDialog> {
 
     return AlertDialog(
       title: const Text('Add to space'),
-      content: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 400, maxHeight: 400),
+      content: SizedBox(
+        width: 400,
         child: eligible.isEmpty
             ? const Text('This room is already in all your spaces.')
-            : ListView.builder(
-                shrinkWrap: true,
-                itemCount: eligible.length,
-                itemBuilder: (context, index) {
-                  final space = eligible[index];
-                  final checked = _selected[space.id] == true;
-                  return CheckboxListTile(
-                    value: checked,
-                    onChanged: _loading
-                        ? null
-                        : (v) => setState(() => _selected[space.id] = v ?? false),
-                    secondary: RoomAvatarWidget(room: space, size: 36),
-                    title: Text(
-                      space.getLocalizedDisplayname(),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    subtitle: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text('Suggested'),
-                        const SizedBox(width: 4),
-                        SizedBox(
-                          height: 24,
-                          child: Switch(
-                            value: _suggested[space.id] == true,
-                            onChanged: checked && !_loading
-                                ? (v) => setState(
-                                    () => _suggested[space.id] = v,)
-                                : null,
+            : SizedBox(
+                height: 400,
+                child: ListView.builder(
+                  itemCount: eligible.length,
+                  itemBuilder: (context, index) {
+                    final space = eligible[index];
+                    final checked = _selected[space.id] == true;
+                    return CheckboxListTile(
+                      value: checked,
+                      onChanged: _loading
+                          ? null
+                          : (v) => setState(
+                              () => _selected[space.id] = v ?? false,
+                            ),
+                      secondary: RoomAvatarWidget(room: space, size: 36),
+                      title: Text(
+                        space.getLocalizedDisplayname(),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      subtitle: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text('Suggested'),
+                          const SizedBox(width: 4),
+                          SizedBox(
+                            height: 24,
+                            child: Switch(
+                              value: _suggested[space.id] == true,
+                              onChanged: checked && !_loading
+                                  ? (v) => setState(
+                                      () => _suggested[space.id] = v,
+                                    )
+                                  : null,
+                            ),
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
       ),
       actions: [
