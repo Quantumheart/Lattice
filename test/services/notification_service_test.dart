@@ -399,6 +399,108 @@ void main() {
     });
   });
 
+  group('message grouping', () {
+    const secondUserId = '@bob:example.com';
+
+    Future<void> skipFirstSync() async {
+      service.startListening();
+      mockClient.onSync.add(SyncUpdate(nextBatch: 'batch_0'));
+      await Future<void>.delayed(Duration.zero);
+    }
+
+    setUp(() {
+      when(mockRoom.unsafeGetUserFromMemoryOrFallback(secondUserId))
+          .thenReturn(User(secondUserId, room: mockRoom, displayName: 'Bob'));
+    });
+
+    test('single message shows sender: body format', () async {
+      await skipFirstSync();
+
+      final update = makeSyncUpdate(
+        roomId: roomId,
+        events: [makeMessageEvent(body: 'hello')],
+      );
+      mockClient.onSync.add(update);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      verify(mockPlugin.show(any, 'General', 'Alice: hello', any, payload: roomId))
+          .called(1);
+    });
+
+    test('multiple messages from same sender are grouped', () async {
+      await skipFirstSync();
+
+      final update = makeSyncUpdate(
+        roomId: roomId,
+        events: [
+          makeMessageEvent(body: 'hello'),
+          makeMessageEvent(body: 'world'),
+        ],
+      );
+      mockClient.onSync.add(update);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      verify(mockPlugin.show(
+        any,
+        argThat(contains('2 messages')),
+        argThat(allOf(contains('Alice: hello'), contains('Alice: world'))),
+        any,
+        payload: roomId,
+      ),).called(1);
+    });
+
+    test('multiple messages from different senders are grouped', () async {
+      await skipFirstSync();
+
+      final update = makeSyncUpdate(
+        roomId: roomId,
+        events: [
+          makeMessageEvent(body: 'hi there'),
+          makeMessageEvent(senderId: secondUserId, body: 'hey'),
+        ],
+      );
+      mockClient.onSync.add(update);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      verify(mockPlugin.show(
+        any,
+        argThat(contains('2 messages')),
+        argThat(allOf(contains('Alice: hi there'), contains('Bob: hey'))),
+        any,
+        payload: roomId,
+      ),).called(1);
+    });
+
+    test('more than 3 messages shows overflow count', () async {
+      await skipFirstSync();
+
+      final update = makeSyncUpdate(
+        roomId: roomId,
+        events: [
+          makeMessageEvent(body: 'msg1'),
+          makeMessageEvent(body: 'msg2'),
+          makeMessageEvent(body: 'msg3'),
+          makeMessageEvent(body: 'msg4'),
+        ],
+      );
+      mockClient.onSync.add(update);
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      verify(mockPlugin.show(
+        any,
+        argThat(contains('4 messages')),
+        argThat(allOf(
+          contains('Alice: msg1'),
+          contains('Alice: msg2'),
+          contains('Alice: msg3'),
+          contains('... and 1 more'),
+        ),),
+        any,
+        payload: roomId,
+      ),).called(1);
+    });
+  });
+
   group('encrypted events', () {
     test('falls back to "Encrypted message" for encrypted events', () async {
       service.startListening();

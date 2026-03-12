@@ -4,10 +4,15 @@ import 'dart:io';
 import 'package:desktop_notifications/desktop_notifications.dart' as dn;
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
+import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/utils/media_auth.dart';
 import 'package:lattice/core/utils/notification_filter.dart';
 import 'package:matrix/matrix.dart';
+import 'package:path_provider/path_provider.dart';
 
 bool get _isLinux => !kIsWeb && Platform.isLinux;
 
@@ -35,12 +40,14 @@ class NotificationService {
   NotificationService({
     required this.matrixService,
     required this.preferencesService,
+    this.router,
     @visibleForTesting FlutterLocalNotificationsPlugin? plugin,
   })  : _plugin = plugin ?? FlutterLocalNotificationsPlugin(),
         _useLinux = plugin == null && _isLinux;
 
   final MatrixService matrixService;
   final PreferencesService preferencesService;
+  final GoRouter? router;
   final FlutterLocalNotificationsPlugin _plugin;
   final bool _useLinux;
 
@@ -184,25 +191,31 @@ class NotificationService {
 
       // Find who sent the invite from the invite state.
       var inviterName = 'Someone';
+      Uri? inviterAvatarUrl;
       final inviteEvents = update.inviteState;
       if (inviteEvents != null) {
         for (final event in inviteEvents) {
           if (event.type == EventTypes.RoomMember &&
               event.stateKey == client.userID) {
-            inviterName = room
-                    ?.unsafeGetUserFromMemoryOrFallback(event.senderId)
-                    .calcDisplayname() ??
-                event.senderId;
+            final inviter =
+                room?.unsafeGetUserFromMemoryOrFallback(event.senderId);
+            inviterName = inviter?.calcDisplayname() ?? event.senderId;
+            inviterAvatarUrl = inviter?.avatarUrl;
             break;
           }
         }
       }
+
+      final avatarPath = _useLinux
+          ? await downloadAvatarToTemp(client, inviterAvatarUrl, inviterName)
+          : null;
 
       await _showNotification(
         roomId: roomId,
         title: roomName,
         senderName: inviterName,
         body: 'invited you to join',
+        avatarPath: avatarPath,
       );
       _notifiedInvites.add(roomId);
     } finally {
@@ -260,6 +273,8 @@ class NotificationService {
             .toLowerCase()
         : null;
 
+    final notifiable = <(String senderName, String body, Uri? avatarUrl)>[];
+
     for (final matrixEvent in events) {
       if (matrixEvent.type != EventTypes.Message &&
           matrixEvent.type != EventTypes.Encrypted) {
@@ -289,15 +304,47 @@ class NotificationService {
 
       if (_disposed) return;
 
-      final senderName = room
-          .unsafeGetUserFromMemoryOrFallback(matrixEvent.senderId)
-          .calcDisplayname();
+      final sender =
+          room.unsafeGetUserFromMemoryOrFallback(matrixEvent.senderId);
+      notifiable.add((sender.calcDisplayname(), body, sender.avatarUrl));
+    }
 
+    if (notifiable.isEmpty) return;
+
+    String? avatarPath;
+    if (_useLinux) {
+      avatarPath = await downloadAvatarToTemp(
+        client,
+        notifiable.first.$3,
+        notifiable.first.$1,
+      );
+    }
+
+    final roomName = room.getLocalizedDisplayname();
+
+    if (notifiable.length == 1) {
       await _showNotification(
         roomId: roomId,
-        title: room.getLocalizedDisplayname(),
-        senderName: senderName,
-        body: body,
+        title: roomName,
+        senderName: notifiable.first.$1,
+        body: notifiable.first.$2,
+        avatarPath: avatarPath,
+      );
+    } else {
+      final lines = <String>[];
+      for (final (name, body, _) in notifiable.take(3)) {
+        lines.add('$name: $body');
+      }
+      if (notifiable.length > 3) {
+        lines.add('... and ${notifiable.length - 3} more');
+      }
+      await _showNotification(
+        roomId: roomId,
+        title: '$roomName · ${notifiable.length} messages',
+        senderName: '',
+        body: lines.join('\n'),
+        avatarPath: avatarPath,
+        isGrouped: true,
       );
     }
   }
@@ -316,6 +363,41 @@ class NotificationService {
     }
   }
 
+  // ── Avatar download ─────────────────────────────────────────
+
+  @visibleForTesting
+  Future<String?> downloadAvatarToTemp(
+    Client client,
+    Uri? avatarUrl,
+    String userId,
+  ) async {
+    if (avatarUrl == null) return null;
+    try {
+      final tempDir = await getTemporaryDirectory();
+      final sanitized = userId.replaceAll(RegExp('[^a-zA-Z0-9]'), '_');
+      final path = '${tempDir.path}/lattice_avatar_$sanitized.png';
+      final file = File(path);
+      if (file.existsSync()) return path;
+
+      final uri = await avatarUrl.getThumbnailUri(
+        client,
+        width: 128,
+        height: 128,
+      );
+      final headers = mediaAuthHeaders(client, uri.toString());
+      final response = await http
+          .get(uri, headers: headers)
+          .timeout(const Duration(seconds: 5));
+      if (response.statusCode == 200) {
+        await file.writeAsBytes(response.bodyBytes);
+        return path;
+      }
+    } catch (e) {
+      debugPrint('[Lattice] Failed to download avatar for $userId: $e');
+    }
+    return null;
+  }
+
   // ── Show notification ────────────────────────────────────────
 
   Future<void> _showNotification({
@@ -323,6 +405,8 @@ class NotificationService {
     required String title,
     required String senderName,
     required String body,
+    String? avatarPath,
+    bool isGrouped = false,
   }) async {
     if (_useLinux) {
       await _showLinuxNotification(
@@ -330,6 +414,8 @@ class NotificationService {
         title: title,
         senderName: senderName,
         body: body,
+        avatarPath: avatarPath,
+        isGrouped: isGrouped,
       );
       return;
     }
@@ -358,10 +444,12 @@ class NotificationService {
       macOS: darwinDetails,
     );
 
+    final displayBody = isGrouped ? body : '$senderName: $body';
+
     await _plugin.show(
       notificationId,
       title,
-      '$senderName: $body',
+      displayBody,
       details,
       payload: roomId,
     );
@@ -374,23 +462,65 @@ class NotificationService {
     required String title,
     required String senderName,
     required String body,
+    String? avatarPath,
+    bool isGrouped = false,
   }) async {
     try {
+      final hints = <dn.NotificationHint>[
+        dn.NotificationHint.soundName('message-new-instant'),
+        dn.NotificationHint.desktopEntry('lattice'),
+        dn.NotificationHint.category(dn.NotificationCategory.im()),
+        if (avatarPath != null) dn.NotificationHint.imagePath(avatarPath),
+      ];
+
+      final displayBody = isGrouped ? body : '$senderName: $body';
+
       final notification = await _linuxClient!.notify(
         title,
-        body: '$senderName: $body',
+        body: displayBody,
         replacesId: _linuxNotifications[roomId]?.id ?? 0,
         appName: 'Lattice',
-        hints: [dn.NotificationHint.soundName('message-new-instant')],
+        appIcon: 'lattice',
+        hints: hints,
+        actions: const [
+          dn.NotificationAction('default', ''),
+          dn.NotificationAction('reply', 'Reply'),
+          dn.NotificationAction('mark_read', 'Mark as Read'),
+        ],
       );
-      unawaited(notification.action.then((_) {
+      unawaited(notification.action.then((actionKey) {
         if (_disposed) return;
-        debugPrint('[Lattice] Linux notification tapped for room $roomId');
-        matrixService.selectRoom(roomId);
-      },),);
+        final client = matrixService.client;
+        final room = client.getRoomById(roomId);
+        if (actionKey == 'mark_read') {
+          debugPrint(
+            '[Lattice] Linux notification mark_read for room $roomId',
+          );
+          final lastEventId = room?.lastEvent?.eventId;
+          if (room != null && lastEventId != null) {
+            unawaited(
+              room.setReadMarker(lastEventId).catchError((Object e) {
+                debugPrint('[Lattice] Failed to mark room as read: $e');
+              }),
+            );
+          }
+          _linuxNotifications.remove(roomId);
+          unawaited(
+            notification.close().catchError((Object e) {
+              debugPrint('[Lattice] Failed to close notification: $e');
+            }),
+          );
+        } else {
+          debugPrint(
+            '[Lattice] Linux notification tapped for room $roomId',
+          );
+          _navigateToRoom(roomId);
+        }
+      }),);
       _linuxNotifications[roomId] = notification;
       debugPrint(
-          '[Lattice] Linux notification shown for room $roomId (id=${notification.id})',);
+        '[Lattice] Linux notification shown for room $roomId (id=${notification.id})',
+      );
     } catch (e) {
       debugPrint('[Lattice] Failed to show Linux notification: $e');
     }
@@ -398,11 +528,19 @@ class NotificationService {
 
   // ── Notification tap ─────────────────────────────────────────
 
+  void _navigateToRoom(String roomId) {
+    if (router != null) {
+      router!.goNamed(Routes.room, pathParameters: {'roomId': roomId});
+    } else {
+      matrixService.selectRoom(roomId);
+    }
+  }
+
   void _onNotificationTap(NotificationResponse response) {
     final roomId = response.payload;
     if (roomId != null && roomId.isNotEmpty) {
       debugPrint('[Lattice] Notification tapped, selecting room $roomId');
-      matrixService.selectRoom(roomId);
+      _navigateToRoom(roomId);
     }
   }
 

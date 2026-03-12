@@ -85,6 +85,7 @@ class _LatticeAppState extends State<LatticeApp> {
               return _NotificationServiceHolder(
                 matrixService: matrix,
                 preferencesService: prefs,
+                router: router,
                 child: ChangeNotifierProvider<MatrixService>.value(
                   value: matrix,
                   child: ChangeNotifierProxyProvider<MatrixService, InboxController>(
@@ -157,11 +158,13 @@ class _NotificationServiceHolder extends StatefulWidget {
   const _NotificationServiceHolder({
     required this.matrixService,
     required this.preferencesService,
+    required this.router,
     required this.child,
   });
 
   final MatrixService matrixService;
   final PreferencesService preferencesService;
+  final GoRouter router;
   final Widget child;
 
   @override
@@ -187,6 +190,7 @@ class _NotificationServiceHolderState
     final service = NotificationService(
       matrixService: widget.matrixService,
       preferencesService: widget.preferencesService,
+      router: widget.router,
     );
     await service.init();
     final loggedIn = widget.matrixService.isLoggedIn;
