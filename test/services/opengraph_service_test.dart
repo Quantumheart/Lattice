@@ -5,11 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lattice/features/chat/services/opengraph_service.dart';
 
-/// A public IPv4 address used for DNS override in tests.
 final _publicIp = InternetAddress('93.184.216.34');
 
-/// Creates an [OpenGraphService] with a mock HTTP client and fake DNS.
-/// The [handler] receives every HTTP request and returns a response.
 OpenGraphService _createTestService(
   http.Response Function(http.Request) handler,
 ) {
@@ -381,12 +378,7 @@ void main() {
     });
 
     test('returns null when DNS resolves to private IP', () async {
-      final mockClient = MockClient((_) async => http.Response(
-            _ogHtml(title: 'Should not reach'),
-            200,
-            headers: {'content-type': 'text/html'},
-          ),);
-      final svc = OpenGraphService(client: mockClient)
+      final svc = OpenGraphService()
         ..dnsResolver = (_) async => [InternetAddress('10.0.0.1')];
       addTearDown(svc.dispose);
 

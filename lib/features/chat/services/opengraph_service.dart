@@ -46,24 +46,23 @@ class OpenGraphService {
   static const _maxRedirects = 5;
   static const _cacheTtl = Duration(minutes: 30);
 
-  /// LRU cache: URL → cache entry (wraps both positive and negative results).
   final _cache = <String, _CacheEntry>{};
-  // Use as LinkedHashMap (Dart default) for LRU key ordering.
 
-  /// In-flight requests to deduplicate concurrent fetches.
   final _inFlight = <String, Future<OpenGraphData?>>{};
 
-  /// Reusable HTTP client for connection pooling.
   final http.Client _client;
+  bool _disposed = false;
 
-  /// Close the underlying HTTP client. Call when the service is disposed.
-  void dispose() => _client.close();
+  void dispose() {
+    _disposed = true;
+    _client.close();
+  }
 
   /// Fetch OpenGraph metadata for the given [url].
   ///
   /// Returns `null` if the URL is unsupported, unreachable, or has no OG tags.
   Future<OpenGraphData?> fetch(String url) async {
-    if (!_isSupported(url)) return null;
+    if (_disposed || !_isSupported(url)) return null;
 
     // Cache hit — move to end for LRU behaviour.
     if (_cache.containsKey(url)) {
@@ -165,32 +164,22 @@ class OpenGraphService {
     return addresses;
   }
 
-  /// Sends a GET request to [uri], connecting via [pinnedAddress] to prevent
-  /// DNS rebinding attacks. The Host header is set to the original hostname.
-  Future<http.StreamedResponse> _sendPinned(
-      Uri uri, InternetAddress pinnedAddress,) async {
-    // Rewrite the URI to connect to the pinned IP directly.
-    final pinnedUri = uri.replace(host: pinnedAddress.address);
-    final request = http.Request('GET', pinnedUri)
-      ..headers['User-Agent'] = 'Lattice/1.0 (Flutter Matrix client)'
-      ..headers['Host'] = uri.host
-      ..followRedirects = false;
-    return _client.send(request).timeout(_fetchTimeout);
-  }
-
   Future<OpenGraphData?> _doFetch(String url) async {
     try {
       var uri = Uri.parse(url);
 
       for (var i = 0; i <= _maxRedirects; i++) {
-        // DNS lookup to prevent SSRF — pin the resolved IP for the request.
         final addresses = await _resolvePublicAddresses(uri.host);
         if (addresses == null) return null;
 
-        final streamed = await _sendPinned(uri, addresses.first);
+        final request = http.Request('GET', uri)
+          ..headers['User-Agent'] = 'Lattice/1.0 (Flutter Matrix client)'
+          ..followRedirects = false;
+        final streamed =
+            await _client.send(request).timeout(_fetchTimeout);
 
         if (streamed.statusCode >= 300 && streamed.statusCode < 400) {
-          if (i == _maxRedirects) return null; // Too many redirects.
+          if (i == _maxRedirects) return null;
           final location = streamed.headers['location'];
           if (location == null) return null;
           uri = uri.resolve(location);
