@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:lattice/features/calling/models/call_participant.dart' as ui;
+import 'package:lattice/features/calling/models/call_participant_mapper.dart';
 import 'package:lattice/features/calling/models/call_state.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
 import 'package:matrix/matrix.dart';
@@ -119,8 +120,8 @@ class LiveKitService {
 
     final local = _livekitRoom!.localParticipant;
     if (local != null) {
-      final localId = ui.CallParticipant.extractMatrixId(local.identity);
-      result.add(ui.CallParticipant.fromLiveKit(
+      final localId = CallParticipantMapper.extractMatrixId(local.identity);
+      result.add(CallParticipantMapper.fromLiveKit(
         local,
         activeSpeakers: _activeSpeakers,
         isLocal: true,
@@ -128,8 +129,8 @@ class LiveKitService {
       ),);
     }
     for (final p in _participants) {
-      final pId = ui.CallParticipant.extractMatrixId(p.identity);
-      result.add(ui.CallParticipant.fromLiveKit(
+      final pId = CallParticipantMapper.extractMatrixId(p.identity);
+      result.add(CallParticipantMapper.fromLiveKit(
         p,
         activeSpeakers: _activeSpeakers,
         avatarUrl: avatarFor(pId),

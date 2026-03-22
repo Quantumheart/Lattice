@@ -84,9 +84,11 @@ class _VideoGridState extends State<VideoGrid> {
   Widget build(BuildContext context) {
     final participants = widget.participants;
 
-    final screenSharer = participants.where((p) => p.isScreenSharing).firstOrNull;
+    final screenSharer =
+        participants.where((p) => p.screenShareTrack != null).firstOrNull;
     if (screenSharer != null) {
-      final others = participants.where((p) => !p.isScreenSharing).toList();
+      final others =
+          participants.where((p) => p.screenShareTrack == null).toList();
       return ScreenShareLayout(screenSharer: screenSharer, others: others);
     }
 

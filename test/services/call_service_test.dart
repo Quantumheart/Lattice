@@ -18,6 +18,8 @@ import 'call_service_test.mocks.dart';
 import 'call_test_helpers.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late MockClient mockClient;
   late CallService service;
 

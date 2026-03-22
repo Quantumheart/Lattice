@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/features/calling/models/call_participant.dart';
+import 'package:lattice/features/calling/models/call_participant_mapper.dart';
 
 import '../services/call_test_helpers.dart';
 
@@ -9,24 +10,24 @@ void main() {
   group('extractMatrixId', () {
     test('extracts valid matrix ID', () {
       expect(
-        CallParticipant.extractMatrixId('@alice:example.com'),
+        CallParticipantMapper.extractMatrixId('@alice:example.com'),
         '@alice:example.com',
       );
     });
 
     test('extracts matrix ID embedded in longer string', () {
       expect(
-        CallParticipant.extractMatrixId('prefix_@bob:matrix.org'),
+        CallParticipantMapper.extractMatrixId('prefix_@bob:matrix.org'),
         '@bob:matrix.org',
       );
     });
 
     test('returns input when no match', () {
-      expect(CallParticipant.extractMatrixId('not-a-matrix-id'), 'not-a-matrix-id');
+      expect(CallParticipantMapper.extractMatrixId('not-a-matrix-id'), 'not-a-matrix-id');
     });
 
     test('returns input for empty string', () {
-      expect(CallParticipant.extractMatrixId(''), '');
+      expect(CallParticipantMapper.extractMatrixId(''), '');
     });
   });
 
@@ -34,21 +35,21 @@ void main() {
 
   group('displayName from identity', () {
     test('extracts localpart from matrix ID', () {
-      final p = CallParticipant.fromLiveKit(
+      final p = CallParticipantMapper.fromLiveKit(
         FakeRemoteParticipant(identity: '@charlie:example.com', name: ''),
       );
       expect(p.displayName, 'charlie');
     });
 
     test('uses name when available', () {
-      final p = CallParticipant.fromLiveKit(
+      final p = CallParticipantMapper.fromLiveKit(
         FakeRemoteParticipant(identity: '@charlie:example.com', name: 'Charlie'),
       );
       expect(p.displayName, 'Charlie');
     });
 
     test('falls back to identity for non-matrix string', () {
-      final p = CallParticipant.fromLiveKit(
+      final p = CallParticipantMapper.fromLiveKit(
         FakeRemoteParticipant(identity: 'some-random-id', name: ''),
       );
       expect(p.displayName, 'some-random-id');
@@ -60,7 +61,7 @@ void main() {
   group('fromLiveKit factory', () {
     test('maps local participant', () {
       final local = FakeLocalParticipant();
-      final p = CallParticipant.fromLiveKit(local, isLocal: true);
+      final p = CallParticipantMapper.fromLiveKit(local, isLocal: true);
       expect(p.isLocal, true);
       expect(p.id, 'local');
       expect(p.displayName, 'Local User');
@@ -71,7 +72,7 @@ void main() {
         identity: '@bob:example.com',
         name: 'Bob',
       );
-      final p = CallParticipant.fromLiveKit(remote);
+      final p = CallParticipantMapper.fromLiveKit(remote);
       expect(p.isLocal, false);
       expect(p.id, '@bob:example.com');
       expect(p.displayName, 'Bob');
@@ -79,13 +80,13 @@ void main() {
 
     test('uses identity fallback when name is empty', () {
       final remote = FakeRemoteParticipant(identity: '@alice:server.com', name: '');
-      final p = CallParticipant.fromLiveKit(remote);
+      final p = CallParticipantMapper.fromLiveKit(remote);
       expect(p.displayName, 'alice');
     });
 
     test('detects active speaker', () {
       final remote = FakeRemoteParticipant(identity: '@bob:ex.com', name: 'Bob');
-      final p = CallParticipant.fromLiveKit(
+      final p = CallParticipantMapper.fromLiveKit(
         remote,
         activeSpeakers: [remote],
       );
@@ -94,26 +95,26 @@ void main() {
 
     test('isAudioOnly true when no video tracks', () {
       final remote = FakeRemoteParticipant();
-      final p = CallParticipant.fromLiveKit(remote);
+      final p = CallParticipantMapper.fromLiveKit(remote);
       expect(p.isAudioOnly, true);
     });
 
     test('isMuted from participant', () {
       final remote = FakeRemoteParticipant();
-      final p = CallParticipant.fromLiveKit(remote);
+      final p = CallParticipantMapper.fromLiveKit(remote);
       expect(p.isMuted, false);
     });
 
     test('audioLevel from participant', () {
       final local = FakeLocalParticipant();
-      final p = CallParticipant.fromLiveKit(local);
+      final p = CallParticipantMapper.fromLiveKit(local);
       expect(p.audioLevel, 0.0);
     });
 
     test('passes avatar URL through', () {
       final url = Uri.parse('mxc://example.com/avatar');
       final remote = FakeRemoteParticipant();
-      final p = CallParticipant.fromLiveKit(remote, avatarUrl: url);
+      final p = CallParticipantMapper.fromLiveKit(remote, avatarUrl: url);
       expect(p.avatarUrl, url);
     });
   });

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:lattice/features/calling/models/call_participant.dart' as ui;
 import 'package:lattice/features/calling/models/call_state.dart';
 import 'package:lattice/features/calling/models/incoming_call_info.dart' as model;
@@ -22,7 +23,7 @@ export 'package:lattice/features/calling/services/rtc_membership_service.dart'
 
 // ── Call Service ────────────────────────────────────────────
 
-class CallService extends ChangeNotifier {
+class CallService extends ChangeNotifier with WidgetsBindingObserver {
   CallService({
     required Client client,
     RingtoneService? ringtoneService,
@@ -191,6 +192,7 @@ class CallService extends ChangeNotifier {
   void init() {
     if (_initialized) return;
     _initialized = true;
+    WidgetsBinding.instance.addObserver(this);
     unawaited(_liveKit.fetchWellKnownLiveKit());
     _signaling.startSignalingListener(
       getActiveCallId: () => _activeCallId,
@@ -237,7 +239,18 @@ class CallService extends ChangeNotifier {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused &&
+        !kIsWeb &&
+        (Platform.isAndroid || Platform.isIOS) &&
+        _liveKit.isScreenShareEnabled) {
+      unawaited(toggleScreenShare());
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _nativeUi.dispose();
     _resetState();
     _ringing.dispose();
