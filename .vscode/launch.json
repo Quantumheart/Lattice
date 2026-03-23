@@ -16,6 +16,20 @@
             "type": "dart"
         },
         {
+            "name": "lattice (linux)",
+            "request": "launch",
+            "type": "dart",
+            "args": [
+                "-d",
+                "linux"
+            ]
+        },
+        {
+            "name": "lattice (attach)",
+            "request": "attach",
+            "type": "dart"
+        },
+        {
             "name": "lattice (profile mode)",
             "request": "launch",
             "type": "dart",
