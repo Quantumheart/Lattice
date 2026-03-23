@@ -576,9 +576,11 @@ packages:
   flutter_webrtc:
     dependency: "direct main"
     description:
-      path: "../flutter-webrtc/flutter-webrtc"
-      relative: true
-    source: path
+      path: "."
+      ref: ee651c1
+      resolved-ref: ee651c1040b8387fef7cad41cebc92be9d728b7c
+      url: "https://github.com/Quantumheart/flutter-webrtc.git"
+    source: git
     version: "1.4.0"
   frontend_server_client:
     dependency: transitive
