@@ -10,6 +10,13 @@ import 'package:provider/provider.dart';
 class ConnectedCallView extends StatelessWidget {
   const ConnectedCallView({super.key});
 
+  Future<void> _toggleScreenShare(
+    BuildContext context,
+    CallService callService,
+  ) async {
+    await callService.toggleScreenShare();
+  }
+
   @override
   Widget build(BuildContext context) {
     final callService = context.watch<CallService>();
@@ -48,7 +55,7 @@ class ConnectedCallView extends StatelessWidget {
           isScreenSharing: callService.isScreenShareEnabled,
           onToggleMic: callService.toggleMicrophone,
           onToggleCamera: callService.toggleCamera,
-          onToggleScreenShare: callService.toggleScreenShare,
+          onToggleScreenShare: () => _toggleScreenShare(context, callService),
           onHangUp: callService.leaveCall,
         ),
       ],

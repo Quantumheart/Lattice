@@ -100,7 +100,8 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> toggleMicrophone() => _liveKit.toggleMicrophone();
   Future<void> toggleCamera() => _liveKit.toggleCamera();
-  Future<void> toggleScreenShare() => _liveKit.toggleScreenShare();
+  Future<void> toggleScreenShare({String? sourceId}) =>
+      _liveKit.toggleScreenShare(sourceId: sourceId);
 
   model.IncomingCallInfo? get incomingCall => _ringing.incomingCall;
   Stream<model.IncomingCallInfo> get incomingCallStream =>
@@ -241,6 +242,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused &&
+        _callState == LatticeCallState.connected &&
         _activeCallRoomId != null &&
         _liveKit.isScreenShareEnabled) {
       if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {

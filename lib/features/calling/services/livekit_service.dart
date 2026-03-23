@@ -109,9 +109,8 @@ class LiveKitService {
     final result = <ui.CallParticipant>[];
     if (_livekitRoom == null) return result;
 
-    final room = activeCallRoomId != null
-        ? _client.getRoomById(activeCallRoomId)
-        : null;
+    final room =
+        activeCallRoomId != null ? _client.getRoomById(activeCallRoomId) : null;
 
     Uri? avatarFor(String matrixId) {
       if (room == null) return null;
@@ -121,20 +120,24 @@ class LiveKitService {
     final local = _livekitRoom!.localParticipant;
     if (local != null) {
       final localId = CallParticipantMapper.extractMatrixId(local.identity);
-      result.add(CallParticipantMapper.fromLiveKit(
-        local,
-        activeSpeakers: _activeSpeakers,
-        isLocal: true,
-        avatarUrl: avatarFor(localId),
-      ),);
+      result.add(
+        CallParticipantMapper.fromLiveKit(
+          local,
+          activeSpeakers: _activeSpeakers,
+          isLocal: true,
+          avatarUrl: avatarFor(localId),
+        ),
+      );
     }
     for (final p in _participants) {
       final pId = CallParticipantMapper.extractMatrixId(p.identity);
-      result.add(CallParticipantMapper.fromLiveKit(
-        p,
-        activeSpeakers: _activeSpeakers,
-        avatarUrl: avatarFor(pId),
-      ),);
+      result.add(
+        CallParticipantMapper.fromLiveKit(
+          p,
+          activeSpeakers: _activeSpeakers,
+          avatarUrl: avatarFor(pId),
+        ),
+      );
     }
 
     return result;
@@ -184,15 +187,22 @@ class LiveKitService {
     );
   }
 
-  Future<void> toggleScreenShare() async {
+  Future<void> toggleScreenShare({String? sourceId}) async {
     final localParticipant = _livekitRoom?.localParticipant;
     if (localParticipant == null) return;
+
+    final options = sourceId != null
+        ? livekit.ScreenShareCaptureOptions(sourceId: sourceId)
+        : null;
 
     await _toggleTrack(
       currentValue: _isScreenShareEnabled,
       updateField: (v) => _isScreenShareEnabled = v,
       label: 'screen share',
-      apply: localParticipant.setScreenShareEnabled,
+      apply: (enabled) => localParticipant.setScreenShareEnabled(
+        enabled,
+        screenShareCaptureOptions: options,
+      ),
     );
   }
 
@@ -225,12 +235,18 @@ class LiveKitService {
 
       for (var i = 0; i < _maxRedirects; i++) {
         final response = await httpPostForTest(
-          httpClient, currentUrl, headers: headers, body: body,
+          httpClient,
+          currentUrl,
+          headers: headers,
+          body: body,
         );
         final code = response.statusCode;
 
-        if (code == 301 || code == 302 || code == 303 ||
-            code == 307 || code == 308) {
+        if (code == 301 ||
+            code == 302 ||
+            code == 303 ||
+            code == 307 ||
+            code == 308) {
           final location = response.headers['location'];
           if (location == null) return response;
           currentUrl = currentUrl.resolve(location);
@@ -274,11 +290,13 @@ class LiveKitService {
     final response = await _postWithRedirects(
       url,
       headers: headers,
-      body: utf8.encode(jsonEncode({
-        'room': livekitAlias,
-        'openid_token': openIdPayload,
-        'device_id': _client.deviceID,
-      }),),
+      body: utf8.encode(
+        jsonEncode({
+          'room': livekitAlias,
+          'openid_token': openIdPayload,
+          'device_id': _client.deviceID,
+        }),
+      ),
     );
 
     if (response.statusCode != 200) {
@@ -387,8 +405,7 @@ class LiveKitService {
   }
 
   void _syncParticipants() {
-    _participants =
-        _livekitRoom?.remoteParticipants.values.toList() ?? [];
+    _participants = _livekitRoom?.remoteParticipants.values.toList() ?? [];
   }
 
   Future<void> cleanupLiveKit() async {
@@ -406,14 +423,14 @@ class LiveKitService {
     _isScreenShareEnabled = false;
 
     try {
-      await listener?.dispose();
-    } catch (e) {
-      debugPrint('[Lattice] Error disposing LiveKit listener: $e');
-    }
-    try {
       await room?.disconnect();
     } catch (e) {
       debugPrint('[Lattice] Error disconnecting LiveKit: $e');
+    }
+    try {
+      await listener?.dispose();
+    } catch (e) {
+      debugPrint('[Lattice] Error disposing LiveKit listener: $e');
     }
     try {
       await room?.dispose();
@@ -445,8 +462,8 @@ class LiveKitService {
   Future<void> fetchWellKnownLiveKit() async {
     try {
       final wellKnown = await _client.getWellknown();
-      final fociList =
-          wellKnown.additionalProperties['org.matrix.msc4143.rtc_foci'] as List?;
+      final fociList = wellKnown
+          .additionalProperties['org.matrix.msc4143.rtc_foci'] as List?;
       if (fociList == null || fociList.isEmpty) return;
 
       for (final foci in fociList) {

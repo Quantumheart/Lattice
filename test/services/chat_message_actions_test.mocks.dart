@@ -10885,6 +10885,15 @@ class MockMatrixService extends _i1.Mock implements _i17.MatrixService {
       ) as bool);
 
   @override
+  void notifyListeners() => super.noSuchMethod(
+        Invocation.method(
+          #notifyListeners,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
   void completeUiaWithPassword(
     _i2.UiaRequest<dynamic>? request,
     String? password,
@@ -10962,6 +10971,16 @@ class MockMatrixService extends _i1.Mock implements _i17.MatrixService {
   _i6.Future<void> disableChatBackup() => (super.noSuchMethod(
         Invocation.method(
           #disableChatBackup,
+          [],
+        ),
+        returnValue: _i6.Future<void>.value(),
+        returnValueForMissingStub: _i6.Future<void>.value(),
+      ) as _i6.Future<void>);
+
+  @override
+  _i6.Future<void> tryAutoUnlockBackup() => (super.noSuchMethod(
+        Invocation.method(
+          #tryAutoUnlockBackup,
           [],
         ),
         returnValue: _i6.Future<void>.value(),
@@ -11204,15 +11223,6 @@ class MockMatrixService extends _i1.Mock implements _i17.MatrixService {
         Invocation.method(
           #removeListener,
           [listener],
-        ),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  void notifyListeners() => super.noSuchMethod(
-        Invocation.method(
-          #notifyListeners,
-          [],
         ),
         returnValueForMissingStub: null,
       );
