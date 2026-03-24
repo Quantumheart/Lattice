@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:matrix/matrix.dart' as matrix_sdk;
-import 'package:matrix/matrix.dart' show Client;
+import 'package:matrix/matrix.dart' show Client, Membership;
 
 // ── Filter enum ──────────────────────────────────────────────
-enum InboxFilter { all, mentions }
+enum InboxFilter { all, mentions, invitations }
 
 // ── Grouped notification model ───────────────────────────────
 class NotificationGroup {
@@ -128,9 +128,16 @@ class InboxController extends ChangeNotifier {
 
   // ── Filter ─────────────────────────────────────────────────
 
+  int get invitationCount =>
+      _client.rooms.where((r) => r.membership == Membership.invite).length;
+
   void setFilter(InboxFilter newFilter) {
     if (_filter == newFilter) return;
     _filter = newFilter;
+    if (newFilter == InboxFilter.invitations) {
+      if (!_disposed) notifyListeners();
+      return;
+    }
     _grouped = [];
     _nextToken = null;
     _updateUnreadCount();

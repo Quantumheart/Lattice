@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/utils/reply_fallback.dart';
 import 'package:lattice/core/utils/time_format.dart';
+import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/notifications/services/inbox_controller.dart';
+import 'package:lattice/features/rooms/widgets/invite_tile.dart';
 import 'package:lattice/shared/widgets/room_avatar.dart';
 import 'package:matrix/matrix.dart' as matrix_sdk;
 import 'package:provider/provider.dart';
@@ -66,78 +68,91 @@ class _InboxScreenState extends State<InboxScreen> {
                   selected: controller.filter == InboxFilter.mentions,
                   onSelected: (_) => controller.setFilter(InboxFilter.mentions),
                 ),
+                const SizedBox(width: 8),
+                FilterChip(
+                  label: Text(
+                    controller.invitationCount > 0
+                        ? 'Invitations (${controller.invitationCount})'
+                        : 'Invitations',
+                  ),
+                  selected: controller.filter == InboxFilter.invitations,
+                  onSelected: (_) =>
+                      controller.setFilter(InboxFilter.invitations),
+                ),
               ],
             ),
           ),
 
           // ── Content ──
           Expanded(
-            child: controller.isLoading && controller.grouped.isEmpty
-                ? const Center(child: CircularProgressIndicator())
-                : controller.error != null && controller.grouped.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.error_outline,
-                                size: 48,
-                                color: cs.error.withValues(alpha: 0.6),),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Failed to load notifications',
-                              style: tt.bodyMedium?.copyWith(
-                                color: cs.onSurfaceVariant,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            FilledButton.tonal(
-                              onPressed: controller.fetch,
-                              child: const Text('Retry'),
-                            ),
-                          ],
-                        ),
-                      )
-                    : controller.grouped.isEmpty
+            child: controller.filter == InboxFilter.invitations
+                ? _InvitationsView(cs: cs, tt: tt)
+                : controller.isLoading && controller.grouped.isEmpty
+                    ? const Center(child: CircularProgressIndicator())
+                    : controller.error != null && controller.grouped.isEmpty
                         ? Center(
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.notifications_none_rounded,
-                                    size: 56,
-                                    color: cs.onSurfaceVariant
-                                        .withValues(alpha: 0.3),),
-                                const SizedBox(height: 16),
+                                Icon(Icons.error_outline,
+                                    size: 48,
+                                    color: cs.error.withValues(alpha: 0.6),),
+                                const SizedBox(height: 12),
                                 Text(
-                                  'No notifications',
-                                  style: tt.titleMedium?.copyWith(
-                                    color: cs.onSurfaceVariant
-                                        .withValues(alpha: 0.5),
+                                  'Failed to load notifications',
+                                  style: tt.bodyMedium?.copyWith(
+                                    color: cs.onSurfaceVariant,
                                   ),
+                                ),
+                                const SizedBox(height: 8),
+                                FilledButton.tonal(
+                                  onPressed: controller.fetch,
+                                  child: const Text('Retry'),
                                 ),
                               ],
                             ),
                           )
-                        : RefreshIndicator(
-                            onRefresh: controller.fetch,
-                            child: ListView.builder(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 4,),
-                              itemCount: controller.grouped.length +
-                                  (controller.hasMore ? 1 : 0),
-                              itemBuilder: (context, i) {
-                                if (i == controller.grouped.length) {
-                                  return _LoadMoreButton(
-                                    isLoading: controller.isLoading,
-                                    onPressed: controller.loadMore,
-                                  );
-                                }
-                                return _NotificationGroupTile(
-                                  group: controller.grouped[i],
-                                  controller: controller,
-                                );
-                              },
-                            ),
-                          ),
+                        : controller.grouped.isEmpty
+                            ? Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.notifications_none_rounded,
+                                        size: 56,
+                                        color: cs.onSurfaceVariant
+                                            .withValues(alpha: 0.3),),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'No notifications',
+                                      style: tt.titleMedium?.copyWith(
+                                        color: cs.onSurfaceVariant
+                                            .withValues(alpha: 0.5),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : RefreshIndicator(
+                                onRefresh: controller.fetch,
+                                child: ListView.builder(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 4,),
+                                  itemCount: controller.grouped.length +
+                                      (controller.hasMore ? 1 : 0),
+                                  itemBuilder: (context, i) {
+                                    if (i == controller.grouped.length) {
+                                      return _LoadMoreButton(
+                                        isLoading: controller.isLoading,
+                                        onPressed: controller.loadMore,
+                                      );
+                                    }
+                                    return _NotificationGroupTile(
+                                      group: controller.grouped[i],
+                                      controller: controller,
+                                    );
+                                  },
+                                ),
+                              ),
           ),
         ],
       ),
@@ -332,6 +347,73 @@ class _NotificationTile extends StatelessWidget {
 
     // Fallback for state events, etc.
     return '';
+  }
+}
+
+// ── Invitations view ──────────────────────────────────────────
+class _InvitationsView extends StatelessWidget {
+  const _InvitationsView({required this.cs, required this.tt});
+
+  final ColorScheme cs;
+  final TextTheme tt;
+
+  @override
+  Widget build(BuildContext context) {
+    final matrix = context.watch<MatrixService>();
+    final invitedRooms = matrix.invitedRooms;
+    final invitedSpaces = matrix.invitedSpaces;
+
+    if (invitedRooms.isEmpty && invitedSpaces.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.mail_outline_rounded,
+                size: 56,
+                color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+            const SizedBox(height: 16),
+            Text(
+              'No pending invitations',
+              style: tt.titleMedium?.copyWith(
+                color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      children: [
+        if (invitedSpaces.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+            child: Text(
+              'Spaces',
+              style: tt.labelLarge?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          for (final space in invitedSpaces) InviteTile(room: space),
+        ],
+        if (invitedRooms.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+            child: Text(
+              'Rooms',
+              style: tt.labelLarge?.copyWith(
+                color: cs.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          for (final room in invitedRooms) InviteTile(room: room),
+        ],
+      ],
+    );
   }
 }
 

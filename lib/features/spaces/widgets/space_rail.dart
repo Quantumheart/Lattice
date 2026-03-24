@@ -49,6 +49,8 @@ class _SpaceRailState extends State<SpaceRail> {
     final spaces = matrix.topLevelSpaces;
 
     final inboxUnread = context.select<InboxController, int>((c) => c.unreadCount);
+    final inviteCount = matrix.invitedRooms.length + matrix.invitedSpaces.length;
+    final totalInboxBadge = inboxUnread + inviteCount;
 
     return Container(
       width: 64,
@@ -269,7 +271,7 @@ class _SpaceRailState extends State<SpaceRail> {
               isSelected: false,
               color: cs.outlineVariant,
               outlined: true,
-              unreadCount: inboxUnread > 0 ? inboxUnread : null,
+              unreadCount: totalInboxBadge > 0 ? totalInboxBadge : null,
               onTap: () => context.goNamed(Routes.inbox),
             ),
           ),
