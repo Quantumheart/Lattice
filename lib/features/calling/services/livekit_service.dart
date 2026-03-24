@@ -221,7 +221,6 @@ class LiveKitService {
   static const _androidBgConfig = FlutterBackgroundAndroidConfig(
     notificationTitle: 'Lattice',
     notificationText: 'Sharing screen',
-    notificationImportance: AndroidNotificationImportance.normal,
   );
 
   Future<void> _startAndroidMediaProjectionService() async {
