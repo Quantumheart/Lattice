@@ -70,4 +70,4 @@ dependency_overrides:
   flutter_webrtc:
     git:
       url: https://github.com/Quantumheart/flutter-webrtc.git
-      ref: "f312a21"
+      ref: "8ddad29"
