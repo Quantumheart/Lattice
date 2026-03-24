@@ -23,9 +23,9 @@ class ConnectedCallView extends StatelessWidget {
       return;
     }
 
-    final isDesktop =
-        !kIsWeb && !Platform.isAndroid && !Platform.isIOS;
-    if (isDesktop) {
+    final needsSourcePicker =
+        !kIsWeb && (Platform.isMacOS || Platform.isWindows);
+    if (needsSourcePicker) {
       final source = await showScreenSourcePicker(context);
       if (source == null) return;
       await callService.toggleScreenShare(sourceId: source.id);

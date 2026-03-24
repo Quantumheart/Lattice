@@ -126,3 +126,20 @@ if(NOT CMAKE_BUILD_TYPE MATCHES "Debug")
   install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_LIB_DIR}"
     COMPONENT Runtime)
 endif()
+
+# Install .desktop file into the bundle for packaging.
+install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/${APPLICATION_ID}.desktop"
+  DESTINATION "${INSTALL_BUNDLE_DATA_DIR}" COMPONENT Runtime)
+
+# In debug builds, symlink the .desktop file into the user's local applications
+# directory so xdg-desktop-portal can resolve the app identity during development.
+if(CMAKE_BUILD_TYPE MATCHES "Debug")
+  set(_DESKTOP_SRC "${CMAKE_CURRENT_SOURCE_DIR}/${APPLICATION_ID}.desktop")
+  set(_DESKTOP_DST "$ENV{HOME}/.local/share/applications/${APPLICATION_ID}.desktop")
+  install(CODE "
+    if(NOT EXISTS \"${_DESKTOP_DST}\")
+      execute_process(COMMAND ${CMAKE_COMMAND} -E create_symlink
+        \"${_DESKTOP_SRC}\" \"${_DESKTOP_DST}\")
+    endif()
+  " COMPONENT Runtime)
+endif()

@@ -209,6 +209,7 @@ class LiveKitService {
       label: 'screen share',
       apply: (enabled) => localParticipant.setScreenShareEnabled(
         enabled,
+        captureScreenAudio: true,
         screenShareCaptureOptions: options,
       ),
     );
