@@ -423,12 +423,12 @@ class LiveKitService {
     _isScreenShareEnabled = false;
 
     try {
-      await room?.disconnect();
+      await listener?.dispose();
     } catch (e) {
       debugPrint('[Lattice] Error disconnecting LiveKit: $e');
     }
     try {
-      await listener?.dispose();
+      await room?.disconnect();
     } catch (e) {
       debugPrint('[Lattice] Error disposing LiveKit listener: $e');
     }
