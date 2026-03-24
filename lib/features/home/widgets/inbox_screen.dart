@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
+import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/utils/reply_fallback.dart';
 import 'package:lattice/core/utils/time_format.dart';
-import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/notifications/services/inbox_controller.dart';
 import 'package:lattice/features/rooms/widgets/invite_tile.dart';
 import 'package:lattice/shared/widgets/room_avatar.dart';
@@ -370,7 +370,7 @@ class _InvitationsView extends StatelessWidget {
           children: [
             Icon(Icons.mail_outline_rounded,
                 size: 56,
-                color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+                color: cs.onSurfaceVariant.withValues(alpha: 0.3),),
             const SizedBox(height: 16),
             Text(
               'No pending invitations',
