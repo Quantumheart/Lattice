@@ -1,7 +1,11 @@
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/features/calling/widgets/call_control_bar.dart';
 import 'package:lattice/features/calling/widgets/pip_self_view.dart';
+import 'package:lattice/features/calling/widgets/screen_source_picker.dart';
 import 'package:lattice/features/calling/widgets/video_grid.dart';
 import 'package:provider/provider.dart';
 
@@ -14,7 +18,20 @@ class ConnectedCallView extends StatelessWidget {
     BuildContext context,
     CallService callService,
   ) async {
-    await callService.toggleScreenShare();
+    if (callService.isScreenShareEnabled) {
+      await callService.toggleScreenShare();
+      return;
+    }
+
+    final isDesktop =
+        !kIsWeb && !Platform.isAndroid && !Platform.isIOS;
+    if (isDesktop) {
+      final source = await showScreenSourcePicker(context);
+      if (source == null) return;
+      await callService.toggleScreenShare(sourceId: source.id);
+    } else {
+      await callService.toggleScreenShare();
+    }
   }
 
   @override
