@@ -28,6 +28,8 @@
 	<string>Lattice needs camera access for video calls.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Lattice needs microphone access for voice and video calls.</string>
+	<key>NSScreenCaptureUsageDescription</key>
+	<string>Lattice needs screen capture access for screen sharing in calls.</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>
