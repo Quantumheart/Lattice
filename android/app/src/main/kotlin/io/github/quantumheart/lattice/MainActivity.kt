@@ -1,4 +1,4 @@
-package com.example.lattice
+package io.github.quantumheart.lattice
 
 import io.flutter.embedding.android.FlutterActivity
 
