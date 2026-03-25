@@ -14,6 +14,9 @@ import 'package:lattice/core/utils/notification_filter.dart';
 import 'package:matrix/matrix.dart';
 import 'package:path_provider/path_provider.dart';
 
+const _windowsAumid = 'io.github.quantumheart.lattice';
+const _windowsGuid = 'ef82b5e7-fd65-431d-bcbb-9c7fa9acb761';
+
 bool get _isLinux => !kIsWeb && Platform.isLinux;
 
 /// Stable 31-bit positive integer hash for notification IDs.
@@ -82,8 +85,8 @@ class NotificationService {
 
     const windowsSettings = WindowsInitializationSettings(
       appName: 'Lattice',
-      appUserModelId: 'io.github.quantumheart.lattice',
-      guid: 'ef82b5e7-fd65-431d-bcbb-9c7fa9acb761',
+      appUserModelId: _windowsAumid,
+      guid: _windowsGuid,
     );
 
     const settings = InitializationSettings(
@@ -93,10 +96,20 @@ class NotificationService {
       windows: windowsSettings,
     );
 
-    await _plugin.initialize(
+    if (Platform.isWindows) {
+      await _registerWindowsComServer();
+    }
+
+    final initialized = await _plugin.initialize(
       settings: settings,
       onDidReceiveNotificationResponse: _onNotificationTap,
     );
+    if (initialized != true) {
+      debugPrint(
+        '[Lattice] Warning: Notification plugin initialization returned $initialized',
+      );
+      return;
+    }
 
     if (defaultTargetPlatform == TargetPlatform.android) {
       await _plugin
@@ -106,6 +119,21 @@ class NotificationService {
     }
 
     debugPrint('[Lattice] NotificationService initialized');
+  }
+
+  Future<void> _registerWindowsComServer() async {
+    const keyPath =
+        r'HKCU\Software\Classes\CLSID\{' + _windowsGuid + r'}\LocalServer32';
+    final exe = Platform.resolvedExecutable;
+    final result =
+        await Process.run('reg', ['add', keyPath, '/ve', '/d', exe, '/f']);
+    if (result.exitCode != 0) {
+      debugPrint(
+        '[Lattice] Failed to register Windows COM server: ${result.stderr}',
+      );
+    } else {
+      debugPrint('[Lattice] Windows COM server registered at $exe');
+    }
   }
 
   // ── Start / stop listening ───────────────────────────────────
@@ -445,7 +473,13 @@ class NotificationService {
       presentSound: preferencesService.notificationSoundEnabled,
     );
 
-    const windowsDetails = WindowsNotificationDetails();
+    final windowsDetails = WindowsNotificationDetails(
+      audio: preferencesService.notificationSoundEnabled
+          ? WindowsNotificationAudio.preset(
+              sound: WindowsNotificationSound.im,
+            )
+          : WindowsNotificationAudio.silent(),
+    );
 
     final details = NotificationDetails(
       android: androidDetails,
