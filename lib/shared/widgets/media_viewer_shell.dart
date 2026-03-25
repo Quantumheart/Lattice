@@ -78,6 +78,7 @@ class _MediaViewerShellState extends State<MediaViewerShell> {
     try {
       final file = await widget.event.downloadAndDecryptAttachment();
       final path = await FilePicker.platform.saveFile(
+        dialogTitle: 'Lattice',
         fileName: widget.event.body,
         bytes: file.bytes,
       );
