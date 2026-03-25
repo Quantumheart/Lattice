@@ -46,3 +46,7 @@ app.*.map.json
 /.metadata
 .claude/settings.json
 lattice.code-workspace
+
+# Flatpak
+flatpak/.flatpak-builder-build/
+.flatpak-builder/
