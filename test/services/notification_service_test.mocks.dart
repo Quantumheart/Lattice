@@ -15,8 +15,7 @@ import 'package:flutter_local_notifications/src/notification_details.dart'
     as _i19;
 import 'package:flutter_local_notifications/src/platform_specifics/android/schedule_mode.dart'
     as _i22;
-import 'package:flutter_local_notifications/src/platform_specifics/ios/enums.dart'
-    as _i21;
+import 'package:timezone/timezone.dart' as _i21;
 import 'package:flutter_local_notifications/src/types.dart' as _i23;
 import 'package:flutter_local_notifications_platform_interface/flutter_local_notifications_platform_interface.dart'
     as _i18;
@@ -32,7 +31,6 @@ import 'package:matrix/src/utils/cached_stream_controller.dart' as _i4;
 import 'package:matrix/src/utils/space_child.dart' as _i14;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i9;
-import 'package:timezone/timezone.dart' as _i20;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values

@@ -255,9 +255,13 @@ void main() {
       mockClient.onSync.add(update);
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      verify(mockPlugin.show(id: anyNamed('id'), title: 'General', body: argThat(contains('invited you to join'), named: 'body'), notificationDetails: anyNamed('notificationDetails'),
-              payload: roomId))
-          .called(1);
+      verify(mockPlugin.show(
+        id: anyNamed('id'),
+        title: 'General',
+        body: argThat(contains('invited you to join'), named: 'body'),
+        notificationDetails: anyNamed('notificationDetails'),
+        payload: roomId,
+      ),).called(1);
     });
 
     test('deduplicates invite notifications across syncs', () async {
@@ -423,7 +427,7 @@ void main() {
       mockClient.onSync.add(update);
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      verify(mockPlugin.show(any, 'General', 'Alice: hello', any, payload: roomId))
+      verify(mockPlugin.show(id: anyNamed('id'), title: 'General', body: 'Alice: hello', notificationDetails: anyNamed('notificationDetails'), payload: roomId))
           .called(1);
     });
 
@@ -441,10 +445,10 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       verify(mockPlugin.show(
-        any,
-        argThat(contains('2 messages')),
-        argThat(allOf(contains('Alice: hello'), contains('Alice: world'))),
-        any,
+        id: anyNamed('id'),
+        title: argThat(contains('2 messages'), named: 'title'),
+        body: argThat(allOf(contains('Alice: hello'), contains('Alice: world')), named: 'body'),
+        notificationDetails: anyNamed('notificationDetails'),
         payload: roomId,
       ),).called(1);
     });
@@ -463,10 +467,10 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       verify(mockPlugin.show(
-        any,
-        argThat(contains('2 messages')),
-        argThat(allOf(contains('Alice: hi there'), contains('Bob: hey'))),
-        any,
+        id: anyNamed('id'),
+        title: argThat(contains('2 messages'), named: 'title'),
+        body: argThat(allOf(contains('Alice: hi there'), contains('Bob: hey')), named: 'body'),
+        notificationDetails: anyNamed('notificationDetails'),
         payload: roomId,
       ),).called(1);
     });
@@ -487,15 +491,18 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
       verify(mockPlugin.show(
-        any,
-        argThat(contains('4 messages')),
-        argThat(allOf(
-          contains('Alice: msg1'),
-          contains('Alice: msg2'),
-          contains('Alice: msg3'),
-          contains('... and 1 more'),
-        ),),
-        any,
+        id: anyNamed('id'),
+        title: argThat(contains('4 messages'), named: 'title'),
+        body: argThat(
+          allOf(
+            contains('Alice: msg1'),
+            contains('Alice: msg2'),
+            contains('Alice: msg3'),
+            contains('... and 1 more'),
+          ),
+          named: 'body',
+        ),
+        notificationDetails: anyNamed('notificationDetails'),
         payload: roomId,
       ),).called(1);
     });
@@ -516,9 +523,13 @@ void main() {
       mockClient.onSync.add(update);
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      verify(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: argThat(contains('Encrypted message'), named: 'body'), notificationDetails: anyNamed('notificationDetails'),
-              payload: roomId))
-          .called(1);
+      verify(mockPlugin.show(
+        id: anyNamed('id'),
+        title: anyNamed('title'),
+        body: argThat(contains('Encrypted message'), named: 'body'),
+        notificationDetails: anyNamed('notificationDetails'),
+        payload: roomId,
+      ),).called(1);
     });
   });
 }
