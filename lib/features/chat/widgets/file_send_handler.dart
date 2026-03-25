@@ -19,6 +19,7 @@ Future<void> pickAndSendFile(
   final matrix = context.read<MatrixService>();
 
   final result = await FilePicker.platform.pickFiles(
+    dialogTitle: 'Lattice',
     withData: true,
   );
   if (result == null || result.files.isEmpty) return;
@@ -42,6 +43,7 @@ Future<void> pickAndSendFile(
 
 Future<PendingAttachment?> pickFileAsAttachment() async {
   final result = await FilePicker.platform.pickFiles(
+    dialogTitle: 'Lattice',
     withData: true,
   );
   if (result == null || result.files.isEmpty) return null;
