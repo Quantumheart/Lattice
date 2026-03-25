@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lattice/core/extensions/device_extension.dart';
+import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/e2ee/widgets/key_verification_dialog.dart';
 import 'package:lattice/features/settings/widgets/device_list_item.dart';
@@ -318,7 +320,13 @@ class _DevicesScreenState extends State<DevicesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Devices')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.goNamed(Routes.settings),
+        ),
+        title: const Text('Devices'),
+      ),
       body: _buildBody(),
     );
   }

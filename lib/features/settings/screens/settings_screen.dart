@@ -9,7 +9,6 @@ import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/e2ee/widgets/backup_info_dialog.dart';
 import 'package:lattice/features/e2ee/widgets/bootstrap_dialog.dart';
-import 'package:lattice/features/home/screens/home_shell.dart';
 import 'package:lattice/features/settings/widgets/density_picker_dialog.dart';
 import 'package:lattice/features/settings/widgets/theme_picker_dialog.dart';
 import 'package:lattice/shared/widgets/section_header.dart';
@@ -158,12 +157,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        leading: MediaQuery.sizeOf(context).width < HomeShell.wideBreakpoint
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => context.goNamed(Routes.home),
-              )
-            : null,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.goNamed(Routes.home),
+        ),
         title: const Text('Settings'),
       ),
       body: ListView(
