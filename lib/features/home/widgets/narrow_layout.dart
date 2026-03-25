@@ -49,7 +49,12 @@ class NarrowLayout extends StatelessWidget {
       content = routerChild;
     }
 
-    final hideRail = (name == Routes.room || name == Routes.call) && roomId != null;
+    final hideRail =
+        ((name == Routes.room || name == Routes.call || name == Routes.roomDetails) && roomId != null) ||
+        name == Routes.settings ||
+        name == Routes.settingsNotifications ||
+        name == Routes.settingsDevices ||
+        name == Routes.spaceDetails;
     if (hideRail) {
       return Scaffold(body: content);
     }

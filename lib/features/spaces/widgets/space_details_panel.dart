@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/rooms/widgets/admin_settings_section.dart';
 import 'package:lattice/features/rooms/widgets/invite_user_dialog.dart';
@@ -89,6 +91,10 @@ class _SpaceDetailsPanelState extends State<SpaceDetailsPanel> {
     if (widget.isFullPage) {
       return Scaffold(
         appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.goNamed(Routes.home),
+          ),
           title: Text(space.getLocalizedDisplayname()),
         ),
         body: content,

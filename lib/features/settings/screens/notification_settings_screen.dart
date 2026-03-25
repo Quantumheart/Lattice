@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/shared/widgets/section_header.dart';
 import 'package:provider/provider.dart';
@@ -45,7 +47,13 @@ class _NotificationSettingsScreenState
     final keywords = prefs.notificationKeywords;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Notifications')),
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.goNamed(Routes.settings),
+        ),
+        title: const Text('Notifications'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
