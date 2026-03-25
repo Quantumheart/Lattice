@@ -7,6 +7,11 @@ MANIFEST="$SCRIPT_DIR/io.github.quantumheart.lattice.json"
 
 cd "$PROJECT_DIR"
 
+if ! command -v flatpak-builder &>/dev/null; then
+  echo "Error: flatpak-builder not found. Install it with: sudo dnf install flatpak-builder"
+  exit 1
+fi
+
 echo "Building Flutter release..."
 flutter build linux --release
 

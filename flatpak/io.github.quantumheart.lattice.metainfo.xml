@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.quantumheart.lattice</id>
+  <name>Lattice</name>
+  <summary>A Matrix chat client</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <description>
+    <p>
+      Lattice is a Flutter-based Matrix chat client with adaptive layouts,
+      end-to-end encryption, voice/video calling, and screen sharing support.
+    </p>
+  </description>
+  <launchable type="desktop-id">io.github.quantumheart.lattice.desktop</launchable>
+  <url type="homepage">https://github.com/Quantumheart/lattice</url>
+  <url type="bugtracker">https://github.com/Quantumheart/lattice/issues</url>
+  <content_rating type="oars-1.1">
+    <content_attribute id="social-chat">intense</content_attribute>
+    <content_attribute id="social-audio">intense</content_attribute>
+  </content_rating>
+  <categories>
+    <category>Network</category>
+    <category>InstantMessaging</category>
+    <category>Chat</category>
+  </categories>
+  <requires>
+    <display_length compare="ge">360</display_length>
+  </requires>
+  <releases>
+    <release version="1.0.0" date="2026-03-25"/>
+  </releases>
+</component>

@@ -13,9 +13,16 @@
     "--filesystem=xdg-run/pipewire-0",
     "--device=all",
     "--filesystem=xdg-download",
+    "--talk-name=org.freedesktop.portal.Desktop",
     "--talk-name=org.freedesktop.Notifications",
     "--talk-name=org.freedesktop.secrets",
-    "--socket=system-bus"
+    "--system-talk-name=org.freedesktop.NetworkManager"
+  ],
+  "cleanup": [
+    "/include",
+    "/lib/pkgconfig",
+    "*.a",
+    "*.la"
   ],
   "modules": [
     {
@@ -71,11 +78,11 @@
       "name": "lattice",
       "buildsystem": "simple",
       "build-commands": [
-        "ln -s /usr/lib/x86_64-linux-gnu/libsqlite3.so.0 /app/lib/libsqlite3.so",
         "cp -r bundle/ /app/lattice/",
         "mkdir -p /app/bin",
         "ln -s /app/lattice/lattice /app/bin/lattice",
         "install -Dm644 io.github.quantumheart.lattice.desktop /app/share/applications/io.github.quantumheart.lattice.desktop",
+        "install -Dm644 io.github.quantumheart.lattice.metainfo.xml /app/share/metainfo/io.github.quantumheart.lattice.metainfo.xml",
         "install -Dm644 io.github.quantumheart.lattice.png /app/share/icons/hicolor/512x512/apps/io.github.quantumheart.lattice.png"
       ],
       "sources": [
@@ -83,6 +90,10 @@
           "type": "dir",
           "path": "../build/linux/x64/release/bundle",
           "dest": "bundle"
+        },
+        {
+          "type": "file",
+          "path": "io.github.quantumheart.lattice.metainfo.xml"
         },
         {
           "type": "file",
