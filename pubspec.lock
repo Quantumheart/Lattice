@@ -585,8 +585,8 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: b632324
-      resolved-ref: b6323240bff44da8f3079239ef049e2db6ddbe0c
+      ref: bebc809
+      resolved-ref: bebc80907cbc27c0c581edafc87332736c86cd84
       url: "https://github.com/Quantumheart/flutter-webrtc.git"
     source: git
     version: "1.3.0"
