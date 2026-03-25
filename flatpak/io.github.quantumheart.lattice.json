@@ -14,7 +14,8 @@
     "--device=all",
     "--filesystem=xdg-download",
     "--talk-name=org.freedesktop.Notifications",
-    "--talk-name=org.freedesktop.secrets"
+    "--talk-name=org.freedesktop.secrets",
+    "--socket=system-bus"
   ],
   "modules": [
     {
