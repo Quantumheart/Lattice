@@ -9,6 +9,7 @@ import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/notifications/services/push_service.dart';
 import 'package:lattice/shared/widgets/section_header.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -40,47 +41,80 @@ class _NotificationSettingsScreenState
     _keywordFocus.requestFocus();
   }
 
-  // ── Push settings dialogs ──────────────────────────────────
+  // ── Push settings ──────────────────────────────────────────
 
   static bool get _showPushSettings => !kIsWeb && Platform.isAndroid;
 
-  Future<void> _showDistributorPicker() async {
-    final pushService = context.read<PushService>();
-    final distributors = await pushService.getDistributors();
-    if (!mounted || distributors.isEmpty) return;
+  static const List<({String name, String package, String description, String url})> _distributors = [
+    (
+      name: 'ntfy',
+      package: 'io.heckel.ntfy',
+      description: 'Lightweight, self-hostable push service',
+      url: 'https://f-droid.org/packages/io.heckel.ntfy/',
+    ),
+    (
+      name: 'NextPush',
+      package: 'org.unifiedpush.distributor.nextpush',
+      description: 'Push via Nextcloud server',
+      url: 'https://f-droid.org/packages/org.unifiedpush.distributor.nextpush/',
+    ),
+  ];
 
+  Future<void> _setupDistributor() async {
+    final pushService = context.read<PushService>();
     final prefs = context.read<PreferencesService>();
-    final current = prefs.pushDistributor;
+    final installed = await pushService.getDistributors();
+
+    if (!mounted) return;
 
     await showDialog<void>(
       context: context,
-      builder: (ctx) => SimpleDialog(
-        title: const Text('Select push distributor'),
-        children: [
-          RadioGroup<String>(
-            groupValue: current,
-            onChanged: (value) {
-              if (value != null) {
-                unawaited(pushService.selectDistributor(value));
-                Navigator.of(ctx).pop();
-              }
-            },
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: distributors
-                  .map(
-                    (d) => RadioListTile<String>(
-                      title: Text(d.split('.').last),
-                      subtitle: Text(d, overflow: TextOverflow.ellipsis),
-                      value: d,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Push distributor'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: _distributors.map((d) {
+            final isInstalled = installed.any((i) => i.contains(d.package));
+            return ListTile(
+              title: Text(d.name),
+              subtitle: Text(
+                isInstalled ? 'Installed' : d.description,
+              ),
+              trailing: isInstalled
+                  ? const Icon(Icons.check_circle, color: Colors.green)
+                  : TextButton(
+                      onPressed: () => unawaited(
+                        launchUrl(
+                            Uri.parse(d.url),
+                            mode: LaunchMode.externalApplication,
+                        ),
+                      ),
+                      child: const Text('Install'),
                     ),
-                  )
-                  .toList(),
-            ),
+              onTap: isInstalled
+                  ? () {
+                      final match = installed
+                          .firstWhere((i) => i.contains(d.package));
+                      unawaited(pushService.selectDistributor(match));
+                      Navigator.of(ctx).pop();
+                    }
+                  : null,
+            );
+          }).toList(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
           ),
         ],
       ),
     );
+
+    if (mounted && prefs.pushDistributor != null) {
+      unawaited(prefs.setPushEnabled(true));
+      unawaited(pushService.register());
+    }
   }
 
 
@@ -242,35 +276,37 @@ class _NotificationSettingsScreenState
           // ── Push notifications (Android only) ────────────────
           if (_showPushSettings) ...[
             const SizedBox(height: 24),
-            const SectionHeader(label: 'PUSH NOTIFICATIONS'),
+            const SectionHeader(label: 'BACKGROUND PUSH'),
             Card(
               child: Column(
                 children: [
                   SwitchListTile(
-                    title: const Text('Enable push notifications'),
-                    subtitle: const Text(
-                      'Receive notifications when the app is closed',
+                    title: const Text('Background push notifications'),
+                    subtitle: Text(
+                      prefs.pushEnabled
+                          ? 'Via ${prefs.pushDistributor?.split('.').last ?? 'UnifiedPush'}'
+                          : 'Receive notifications when the app is closed',
                     ),
                     value: prefs.pushEnabled,
                     onChanged: (value) {
-                      final pushService = context.read<PushService>();
-                      unawaited(prefs.setPushEnabled(value));
                       if (value) {
-                        unawaited(pushService.register());
+                        unawaited(_setupDistributor());
                       } else {
+                        final pushService = context.read<PushService>();
+                        unawaited(prefs.setPushEnabled(false));
                         unawaited(pushService.unregister());
                       }
                     },
                   ),
-                  ListTile(
-                    title: const Text('Distributor'),
-                    subtitle: Text(
-                      prefs.pushDistributor?.split('.').last ?? 'Default',
+                  if (prefs.pushEnabled)
+                    ListTile(
+                      title: const Text('Change distributor'),
+                      subtitle: Text(
+                        prefs.pushDistributor?.split('.').last ?? 'None',
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: _setupDistributor,
                     ),
-                    trailing: const Icon(Icons.chevron_right),
-                    enabled: prefs.pushEnabled,
-                    onTap: prefs.pushEnabled ? _showDistributorPicker : null,
-                  ),
                 ],
               ),
             ),

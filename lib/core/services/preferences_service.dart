@@ -286,7 +286,7 @@ class PreferencesService extends ChangeNotifier {
   static const _pushEnabledKey = 'push_enabled';
   static const _pushDistributorKey = 'push_distributor';
 
-  bool get pushEnabled => _prefs?.getBool(_pushEnabledKey) ?? true;
+  bool get pushEnabled => _prefs?.getBool(_pushEnabledKey) ?? false;
 
   Future<void> setPushEnabled(bool value) async {
     await _prefs?.setBool(_pushEnabledKey, value);
