@@ -2,14 +2,18 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/notifications/services/notification_service.dart';
+import 'package:lattice/features/notifications/services/push_service.dart';
+import 'package:provider/provider.dart';
 
 class NotificationLifecycleObserver extends StatefulWidget {
   const NotificationLifecycleObserver({
     required this.matrixService,
     required this.preferencesService,
+    required this.callService,
     required this.router,
     required this.child,
     super.key,
@@ -17,6 +21,7 @@ class NotificationLifecycleObserver extends StatefulWidget {
 
   final MatrixService matrixService;
   final PreferencesService preferencesService;
+  final CallService callService;
   final GoRouter router;
   final Widget child;
 
@@ -25,9 +30,10 @@ class NotificationLifecycleObserver extends StatefulWidget {
       _NotificationLifecycleObserverState();
 }
 
-class _NotificationLifecycleObserverState extends State<NotificationLifecycleObserver>
-    with WidgetsBindingObserver {
+class _NotificationLifecycleObserverState
+    extends State<NotificationLifecycleObserver> with WidgetsBindingObserver {
   NotificationService? _notificationService;
+  PushService? _pushService;
   bool _wasLoggedIn = false;
   String? _lastSelectedRoomId;
 
@@ -36,23 +42,35 @@ class _NotificationLifecycleObserverState extends State<NotificationLifecycleObs
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     widget.matrixService.addListener(_onMatrixChanged);
-    unawaited(_initNotifications());
+    unawaited(_initServices());
   }
 
-  Future<void> _initNotifications() async {
-    final service = NotificationService(
+  Future<void> _initServices() async {
+    final notificationService = NotificationService(
       matrixService: widget.matrixService,
       preferencesService: widget.preferencesService,
       router: widget.router,
     );
-    await service.init();
+    await notificationService.init();
+
+    final pushService = PushService(
+      matrixService: widget.matrixService,
+      preferencesService: widget.preferencesService,
+      notificationService: notificationService,
+      callService: widget.callService,
+    );
+    await pushService.init();
+
     final loggedIn = widget.matrixService.isLoggedIn;
     if (loggedIn) {
-      service.startListening();
+      notificationService.startListening();
+      unawaited(pushService.register());
     }
+
     if (mounted) {
       setState(() {
-        _notificationService = service;
+        _notificationService = notificationService;
+        _pushService = pushService;
         _wasLoggedIn = loggedIn;
       });
     }
@@ -85,7 +103,9 @@ class _NotificationLifecycleObserverState extends State<NotificationLifecycleObs
       widget.matrixService.addListener(_onMatrixChanged);
       _notificationService?.dispose();
       _notificationService = null;
-      unawaited(_initNotifications());
+      _pushService?.dispose();
+      _pushService = null;
+      unawaited(_initServices());
       return;
     }
     final loggedIn = widget.matrixService.isLoggedIn;
@@ -93,9 +113,11 @@ class _NotificationLifecycleObserverState extends State<NotificationLifecycleObs
       _wasLoggedIn = loggedIn;
       if (loggedIn) {
         _notificationService?.startListening();
+        unawaited(_pushService?.register());
       } else {
         _notificationService?.stopListening();
         unawaited(_notificationService?.cancelAll());
+        unawaited(_pushService?.unregister());
       }
     }
   }
@@ -105,9 +127,19 @@ class _NotificationLifecycleObserverState extends State<NotificationLifecycleObs
     WidgetsBinding.instance.removeObserver(this);
     widget.matrixService.removeListener(_onMatrixChanged);
     _notificationService?.dispose();
+    _pushService?.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) => widget.child;
+  Widget build(BuildContext context) {
+    final pushService = _pushService;
+    if (pushService != null) {
+      return Provider<PushService>.value(
+        value: pushService,
+        child: widget.child,
+      );
+    }
+    return widget.child;
+  }
 }

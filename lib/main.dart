@@ -85,55 +85,57 @@ class _LatticeAppState extends State<LatticeApp> {
               final matrix = manager.activeService;
               final router = _ensureRouter(matrix);
 
-              return NotificationLifecycleObserver(
-                matrixService: matrix,
-                preferencesService: prefs,
-                router: router,
-                child: ChangeNotifierProvider<MatrixService>.value(
-                  value: matrix,
-                  child: ChangeNotifierProxyProvider<MatrixService,
-                      InboxController>(
-                    create: (ctx) => InboxController(
-                      client: ctx.read<MatrixService>().client,
-                    ),
+              return ChangeNotifierProvider<MatrixService>.value(
+                value: matrix,
+                child: ChangeNotifierProxyProvider<MatrixService,
+                    InboxController>(
+                  create: (ctx) => InboxController(
+                    client: ctx.read<MatrixService>().client,
+                  ),
+                  update: (_, matrix, previous) {
+                    if (previous == null) {
+                      return InboxController(client: matrix.client);
+                    }
+                    previous.updateClient(matrix.client);
+                    return previous;
+                  },
+                  child:
+                      ChangeNotifierProxyProvider<MatrixService, CallService>(
+                    create: (ctx) {
+                      final cs = CallService(
+                        client: ctx.read<MatrixService>().client,
+                        ringtoneService: RingtoneService(),
+                      );
+                      if (ctx.read<MatrixService>().isLoggedIn) cs.init();
+                      return cs;
+                    },
                     update: (_, matrix, previous) {
                       if (previous == null) {
-                        return InboxController(client: matrix.client);
-                      }
-                      previous.updateClient(matrix.client);
-                      return previous;
-                    },
-                    child:
-                        ChangeNotifierProxyProvider<MatrixService, CallService>(
-                      create: (ctx) {
                         final cs = CallService(
-                          client: ctx.read<MatrixService>().client,
+                          client: matrix.client,
                           ringtoneService: RingtoneService(),
                         );
-                        if (ctx.read<MatrixService>().isLoggedIn) cs.init();
+                        if (matrix.isLoggedIn) cs.init();
                         return cs;
-                      },
-                      update: (_, matrix, previous) {
-                        if (previous == null) {
-                          final cs = CallService(
-                            client: matrix.client,
-                            ringtoneService: RingtoneService(),
-                          );
-                          if (matrix.isLoggedIn) cs.init();
-                          return cs;
-                        }
-                        previous.updateClient(matrix.client);
-                        if (matrix.isLoggedIn) {
-                          previous.init();
-                        }
-                        return previous;
-                      },
-                      child: Builder(
-                        builder: (context) {
-                          final theme = LatticeTheme.light(lightDynamic);
-                          final darkTheme = LatticeTheme.dark(darkDynamic);
+                      }
+                      previous.updateClient(matrix.client);
+                      if (matrix.isLoggedIn) {
+                        previous.init();
+                      }
+                      return previous;
+                    },
+                    child: Builder(
+                      builder: (context) {
+                        final callService = context.read<CallService>();
+                        final theme = LatticeTheme.light(lightDynamic);
+                        final darkTheme = LatticeTheme.dark(darkDynamic);
 
-                          return MaterialApp.router(
+                        return NotificationLifecycleObserver(
+                          matrixService: matrix,
+                          preferencesService: prefs,
+                          callService: callService,
+                          router: router,
+                          child: MaterialApp.router(
                             title: 'Lattice',
                             debugShowCheckedModeBanner: false,
                             theme: theme,
@@ -144,9 +146,9 @@ class _LatticeAppState extends State<LatticeApp> {
                               router: router,
                               child: child ?? const SizedBox.shrink(),
                             ),
-                          );
-                        },
-                      ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),

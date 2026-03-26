@@ -280,4 +280,29 @@ class PreferencesService extends ChangeNotifier {
         '[Lattice] Foreground notifications ${value ? "enabled" : "disabled"}',);
     notifyListeners();
   }
+
+  // ── Push notifications ─────────────────────────────────────────
+
+  static const _pushEnabledKey = 'push_enabled';
+  static const _pushDistributorKey = 'push_distributor';
+
+  bool get pushEnabled => _prefs?.getBool(_pushEnabledKey) ?? true;
+
+  Future<void> setPushEnabled(bool value) async {
+    await _prefs?.setBool(_pushEnabledKey, value);
+    debugPrint('[Lattice] Push notifications ${value ? "enabled" : "disabled"}');
+    notifyListeners();
+  }
+
+  String? get pushDistributor => _prefs?.getString(_pushDistributorKey);
+
+  Future<void> setPushDistributor(String? distributor) async {
+    if (distributor == null) {
+      await _prefs?.remove(_pushDistributorKey);
+    } else {
+      await _prefs?.setString(_pushDistributorKey, distributor);
+    }
+    debugPrint('[Lattice] Push distributor set to $distributor');
+    notifyListeners();
+  }
 }

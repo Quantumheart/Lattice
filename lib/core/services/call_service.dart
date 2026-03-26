@@ -509,6 +509,36 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
   int callParticipantCount(String roomId, String groupCallId) =>
       RtcMembershipService.callParticipantCount(_client, roomId, groupCallId);
 
+  // ── Push Call Handling ─────────────────────────────────────
+
+  void handlePushCallInvite({
+    required String roomId,
+    required String? callId,
+    required String callerName,
+    required bool isVideo,
+  }) {
+    if (!_initialized) init();
+    _activeCallId = callId;
+    final info = model.IncomingCallInfo(
+      roomId: roomId,
+      callId: callId,
+      callerName: callerName,
+      isVideo: isVideo,
+    );
+    _ringing.pushIncomingCall(info);
+    _setCallState(LatticeCallState.ringingIncoming);
+    _nativeUi.showNativeIncomingCall(
+      callId: callId,
+      roomId: roomId,
+      callerName: callerName,
+      callerAvatarUrl: null,
+      isVideo: isVideo,
+    );
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS)) {
+      _ringing.playRingtone();
+    }
+  }
+
   // ── Event Handlers ─────────────────────────────────────────
 
   void _onSignalingEvent(SignalingEvent event) {
