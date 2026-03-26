@@ -45,6 +45,7 @@ dependencies:
   sqflite: ^2.4.2
   sqflite_common_ffi: ^2.3.7+1
   sqlite3_flutter_libs: ^0.5.0
+  unifiedpush: ^6.0.0
   url_launcher: ^6.3.2
   vodozemac: ^0.5.0
   webrtc_interface: ^1.1.4

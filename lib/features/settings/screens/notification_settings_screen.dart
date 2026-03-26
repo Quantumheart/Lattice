@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/features/notifications/services/push_service.dart';
 import 'package:lattice/shared/widgets/section_header.dart';
 import 'package:provider/provider.dart';
 
@@ -36,6 +39,50 @@ class _NotificationSettingsScreenState
     _keywordController.clear();
     _keywordFocus.requestFocus();
   }
+
+  // ── Push settings dialogs ──────────────────────────────────
+
+  static bool get _showPushSettings => !kIsWeb && Platform.isAndroid;
+
+  Future<void> _showDistributorPicker() async {
+    final pushService = context.read<PushService>();
+    final distributors = await pushService.getDistributors();
+    if (!mounted || distributors.isEmpty) return;
+
+    final prefs = context.read<PreferencesService>();
+    final current = prefs.pushDistributor;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('Select push distributor'),
+        children: [
+          RadioGroup<String>(
+            groupValue: current,
+            onChanged: (value) {
+              if (value != null) {
+                unawaited(pushService.selectDistributor(value));
+                Navigator.of(ctx).pop();
+              }
+            },
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: distributors
+                  .map(
+                    (d) => RadioListTile<String>(
+                      title: Text(d.split('.').last),
+                      subtitle: Text(d, overflow: TextOverflow.ellipsis),
+                      value: d,
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   // ── Build ───────────────────────────────────────────────────
 
@@ -191,6 +238,43 @@ class _NotificationSettingsScreenState
               ],
             ),
           ),
+
+          // ── Push notifications (Android only) ────────────────
+          if (_showPushSettings) ...[
+            const SizedBox(height: 24),
+            const SectionHeader(label: 'PUSH NOTIFICATIONS'),
+            Card(
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    title: const Text('Enable push notifications'),
+                    subtitle: const Text(
+                      'Receive notifications when the app is closed',
+                    ),
+                    value: prefs.pushEnabled,
+                    onChanged: (value) {
+                      final pushService = context.read<PushService>();
+                      unawaited(prefs.setPushEnabled(value));
+                      if (value) {
+                        unawaited(pushService.register());
+                      } else {
+                        unawaited(pushService.unregister());
+                      }
+                    },
+                  ),
+                  ListTile(
+                    title: const Text('Distributor'),
+                    subtitle: Text(
+                      prefs.pushDistributor?.split('.').last ?? 'Default',
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    enabled: prefs.pushEnabled,
+                    onTap: prefs.pushEnabled ? _showDistributorPicker : null,
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

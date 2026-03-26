@@ -465,6 +465,7 @@ class NotificationService {
       priority: Priority.high,
       playSound: preferencesService.notificationSoundEnabled,
       enableVibration: preferencesService.notificationVibrationEnabled,
+      groupKey: 'io.github.quantumheart.lattice.MESSAGES',
     );
 
     final darwinDetails = DarwinNotificationDetails(
@@ -586,6 +587,22 @@ class NotificationService {
       debugPrint('[Lattice] Notification tapped, selecting room $roomId');
       _navigateToRoom(roomId);
     }
+  }
+
+  // ── Push notification entry point ───────────────────────────
+
+  Future<void> showPushNotification({
+    required String roomId,
+    required String title,
+    required String body,
+    String senderName = '',
+  }) async {
+    await _showNotification(
+      roomId: roomId,
+      title: title,
+      senderName: senderName,
+      body: body,
+    );
   }
 
   // ── Cleanup ──────────────────────────────────────────────────
