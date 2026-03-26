@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/update_service.dart';
 import 'package:lattice/features/home/widgets/narrow_layout.dart';
 import 'package:lattice/features/home/widgets/wide_layout.dart';
 import 'package:lattice/features/spaces/widgets/space_reparent_controller.dart';
@@ -27,6 +29,8 @@ class _HomeShellState extends State<HomeShell> {
   bool _showRoomDetails = false;
   bool _syncScheduled = false;
   bool _wasWide = false;
+  bool _shownUpdateSnackbar = false;
+  UpdateService? _updateService;
 
   static const double _wideBreakpoint = HomeShell.wideBreakpoint;
 
@@ -49,6 +53,26 @@ class _HomeShellState extends State<HomeShell> {
     });
   }
 
+  void _onUpdateChanged() {
+    if (_shownUpdateSnackbar || !mounted) return;
+    final update = context.read<UpdateService>();
+    if (update.status == UpdateStatus.updateAvailable) {
+      _shownUpdateSnackbar = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lattice v${update.latestVersion} is available'),
+            action: SnackBarAction(
+              label: 'View',
+              onPressed: () => context.goNamed(Routes.settings),
+            ),
+          ),
+        );
+      });
+    }
+  }
+
   @override
   void didUpdateWidget(covariant HomeShell old) {
     super.didUpdateWidget(old);
@@ -65,6 +89,11 @@ class _HomeShellState extends State<HomeShell> {
   void initState() {
     super.initState();
     _syncRoomSelection();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _updateService = context.read<UpdateService>();
+      _updateService!.addListener(_onUpdateChanged);
+    });
   }
 
   @override
@@ -76,6 +105,12 @@ class _HomeShellState extends State<HomeShell> {
       _showRoomDetails = false;
     }
     _wasWide = isWide;
+  }
+
+  @override
+  void dispose() {
+    _updateService?.removeListener(_onUpdateChanged);
+    super.dispose();
   }
 
   @override

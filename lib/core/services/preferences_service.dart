@@ -233,6 +233,17 @@ class PreferencesService extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ── Auto-update ────────────────────────────────────────────
+  static const _autoUpdateKey = 'auto_update_enabled';
+
+  bool get autoUpdateEnabled => _prefs?.getBool(_autoUpdateKey) ?? true;
+
+  Future<void> setAutoUpdateEnabled(bool value) async {
+    await _prefs?.setBool(_autoUpdateKey, value);
+    debugPrint('[Lattice] Auto-update ${value ? "enabled" : "disabled"}');
+    notifyListeners();
+  }
+
   // ── OS notification toggles ──────────────────────────────────
 
   static const _osNotificationsEnabledKey = 'os_notifications_enabled';
