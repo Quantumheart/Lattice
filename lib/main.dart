@@ -39,15 +39,15 @@ class LatticeApp extends StatefulWidget {
 
 class _LatticeAppState extends State<LatticeApp> {
   GoRouter? _router;
-  MatrixService? _routerService;
+  MatrixService? _routerMatrixService;
 
   /// Rebuild the router when the active [MatrixService] changes (account
   /// switch) so that `refreshListenable` points at the right instance.
   GoRouter _ensureRouter(MatrixService matrix) {
-    if (_routerService != matrix) {
+    if (_routerMatrixService != matrix) {
       _router?.dispose();
       _router = buildRouter(matrix);
-      _routerService = matrix;
+      _routerMatrixService = matrix;
     }
     return _router!;
   }
@@ -63,12 +63,15 @@ class _LatticeAppState extends State<LatticeApp> {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<ClientManager>.value(
-            value: widget.clientManager,),
-        ChangeNotifierProvider(create: (_) {
-          final prefs = PreferencesService();
-          unawaited(prefs.init());
-          return prefs;
-        },),
+          value: widget.clientManager,
+        ),
+        ChangeNotifierProvider(
+          create: (_) {
+            final prefs = PreferencesService();
+            unawaited(prefs.init());
+            return prefs;
+          },
+        ),
         ChangeNotifierProvider(create: (_) => MediaPlaybackService()),
         Provider(
           create: (_) => OpenGraphService(),
@@ -88,16 +91,20 @@ class _LatticeAppState extends State<LatticeApp> {
                 router: router,
                 child: ChangeNotifierProvider<MatrixService>.value(
                   value: matrix,
-                  child: ChangeNotifierProxyProvider<MatrixService, InboxController>(
+                  child: ChangeNotifierProxyProvider<MatrixService,
+                      InboxController>(
                     create: (ctx) => InboxController(
                       client: ctx.read<MatrixService>().client,
                     ),
                     update: (_, matrix, previous) {
-                      if (previous == null) return InboxController(client: matrix.client);
+                      if (previous == null) {
+                        return InboxController(client: matrix.client);
+                      }
                       previous.updateClient(matrix.client);
                       return previous;
                     },
-                    child: ChangeNotifierProxyProvider<MatrixService, CallService>(
+                    child:
+                        ChangeNotifierProxyProvider<MatrixService, CallService>(
                       create: (ctx) {
                         final cs = CallService(
                           client: ctx.read<MatrixService>().client,
