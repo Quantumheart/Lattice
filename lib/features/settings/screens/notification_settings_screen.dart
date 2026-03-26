@@ -33,12 +33,12 @@ class _NotificationSettingsScreenState
 
   // ── Keyword actions ─────────────────────────────────────────
 
-  void _addKeyword() {
+  Future<void> _addKeyword() async {
     final text = _keywordController.text;
     if (text.trim().isEmpty) return;
-    unawaited(context.read<PreferencesService>().addNotificationKeyword(text));
     _keywordController.clear();
     _keywordFocus.requestFocus();
+    await context.read<PreferencesService>().addNotificationKeyword(text);
   }
 
   // ── Push settings ──────────────────────────────────────────
@@ -73,34 +73,50 @@ class _NotificationSettingsScreenState
         title: const Text('Push distributor'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
-          children: _distributors.map((d) {
-            final isInstalled = installed.any((i) => i.contains(d.package));
-            return ListTile(
-              title: Text(d.name),
-              subtitle: Text(
-                isInstalled ? 'Installed' : d.description,
-              ),
-              trailing: isInstalled
-                  ? const Icon(Icons.check_circle, color: Colors.green)
-                  : TextButton(
-                      onPressed: () => unawaited(
-                        launchUrl(
-                            Uri.parse(d.url),
-                            mode: LaunchMode.externalApplication,
+          children: [
+            ..._distributors.map((d) {
+              final isInstalled = installed.any((i) => i.contains(d.package));
+              return ListTile(
+                title: Text(d.name),
+                subtitle: Text(
+                  isInstalled ? 'Installed' : d.description,
+                ),
+                trailing: isInstalled
+                    ? const Icon(Icons.check_circle, color: Colors.green)
+                    : TextButton(
+                        onPressed: () => unawaited(
+                          launchUrl(
+                              Uri.parse(d.url),
+                              mode: LaunchMode.externalApplication,
+                          ),
                         ),
+                        child: const Text('Install'),
                       ),
-                      child: const Text('Install'),
-                    ),
-              onTap: isInstalled
-                  ? () {
-                      final match = installed
-                          .firstWhere((i) => i.contains(d.package));
-                      unawaited(pushService.selectDistributor(match));
-                      Navigator.of(ctx).pop();
-                    }
-                  : null,
-            );
-          }).toList(),
+                onTap: isInstalled
+                    ? () {
+                        final match = installed
+                            .firstWhere((i) => i.contains(d.package));
+                        unawaited(prefs.setPushEnabled(true));
+                        unawaited(pushService.selectDistributor(match));
+                        Navigator.of(ctx).pop();
+                      }
+                    : null,
+              );
+            }),
+            ...installed
+                .where((i) => !_distributors.any((d) => i.contains(d.package)))
+                .map((pkg) => ListTile(
+                      title: Text(pkg.split('.').last),
+                      subtitle: const Text('Installed'),
+                      trailing:
+                          const Icon(Icons.check_circle, color: Colors.green),
+                      onTap: () {
+                        unawaited(prefs.setPushEnabled(true));
+                        unawaited(pushService.selectDistributor(pkg));
+                        Navigator.of(ctx).pop();
+                      },
+                    ),),
+          ],
         ),
         actions: [
           TextButton(
@@ -111,12 +127,7 @@ class _NotificationSettingsScreenState
       ),
     );
 
-    if (mounted && prefs.pushDistributor != null) {
-      unawaited(prefs.setPushEnabled(true));
-      unawaited(pushService.register());
-    }
   }
-
 
   // ── Build ───────────────────────────────────────────────────
 

@@ -25,6 +25,7 @@ class PushService {
 
   String? _currentEndpoint;
   bool _initialized = false;
+  bool _disposed = false;
 
   static const _appId = 'io.github.quantumheart.lattice';
   static const _defaultGatewayUrl =
@@ -109,6 +110,7 @@ class PushService {
   // ── Pusher registration ──────────────────────────────────────
 
   Future<void> _registerPusher(String endpoint) async {
+    if (_disposed) return;
     final client = matrixService.client;
     if (client.userID == null) return;
 
@@ -147,6 +149,7 @@ class PushService {
   // ── Push message processing ──────────────────────────────────
 
   Future<void> _processPushMessage(Uint8List rawContent) async {
+    if (_disposed) return;
     try {
       final payload =
           json.decode(utf8.decode(rawContent)) as Map<String, dynamic>;
@@ -279,6 +282,7 @@ class PushService {
   // ── Lifecycle ────────────────────────────────────────────────
 
   void dispose() {
+    _disposed = true;
     _initialized = false;
   }
 }
