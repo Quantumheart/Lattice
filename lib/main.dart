@@ -9,6 +9,7 @@ import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/services/update_service.dart';
 import 'package:lattice/core/theme/lattice_theme.dart';
 import 'package:lattice/features/calling/services/ringtone_service.dart';
 import 'package:lattice/features/calling/widgets/incoming_call_overlay.dart';
@@ -70,6 +71,17 @@ class _LatticeAppState extends State<LatticeApp> {
             final prefs = PreferencesService();
             unawaited(prefs.init());
             return prefs;
+          },
+        ),
+        ChangeNotifierProxyProvider<PreferencesService, UpdateService>(
+          create: (ctx) {
+            final update = UpdateService(prefs: ctx.read<PreferencesService>());
+            unawaited(update.init());
+            return update;
+          },
+          update: (_, prefs, previous) {
+            previous?.updatePrefs(prefs);
+            return previous ?? UpdateService(prefs: prefs);
           },
         ),
         ChangeNotifierProvider(create: (_) => MediaPlaybackService()),

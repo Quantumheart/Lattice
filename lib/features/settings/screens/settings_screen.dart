@@ -7,6 +7,7 @@ import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/services/update_service.dart';
 import 'package:lattice/features/e2ee/widgets/backup_info_dialog.dart';
 import 'package:lattice/features/e2ee/widgets/bootstrap_dialog.dart';
 import 'package:lattice/features/settings/widgets/density_picker_dialog.dart';
@@ -385,6 +386,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   value: prefs.readReceipts,
                   onChanged: prefs.setReadReceipts,
                 ),
+                if (context.read<UpdateService>().isDesktop) ...[
+                  const Divider(height: 1, indent: 56),
+                  SwitchListTile(
+                    secondary: const Icon(Icons.system_update_alt_rounded),
+                    title: const Text('Auto-update'),
+                    subtitle: const Text('Check for new versions automatically'),
+                    value: prefs.autoUpdateEnabled,
+                    onChanged: prefs.setAutoUpdateEnabled,
+                  ),
+                ],
               ],
             ),
           ),
@@ -432,25 +443,53 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // ── About ──
           const SectionHeader(label: 'ABOUT'),
           Card(
-            child: Column(
-              children: [
-                _SettingsTile(
-                  icon: Icons.info_outline_rounded,
-                  title: 'Lattice',
-                  subtitle: 'v1.0.0 • Built with Flutter',
-                  onTap: () {},
-                ),
-                const Divider(height: 1, indent: 56),
-                _SettingsTile(
-                  icon: Icons.code_rounded,
-                  title: 'Source code',
-                  subtitle: 'View on GitHub',
-                  onTap: () {
-                    unawaited(launchUrl(Uri.parse('https://github.com/Quantumheart/Lattice')));
-                  },
-                ),
-              ],
-            ),
+            child: Builder(builder: (context) {
+              final update = context.watch<UpdateService>();
+              final version = update.currentVersion ?? '…';
+              final hasUpdate = update.status == UpdateStatus.updateAvailable;
+              return Column(
+                children: [
+                  _SettingsTile(
+                    icon: hasUpdate
+                        ? Icons.system_update_rounded
+                        : Icons.info_outline_rounded,
+                    title: 'Lattice',
+                    subtitle: hasUpdate
+                        ? 'Update available: v${update.latestVersion}'
+                        : 'v$version • Built with Flutter',
+                    onTap: hasUpdate && update.releaseUrl != null
+                        ? () => unawaited(launchUrl(Uri.parse(update.releaseUrl!)))
+                        : () {},
+                  ),
+                  if (update.isDesktop) ...[
+                    const Divider(height: 1, indent: 56),
+                    _SettingsTile(
+                      icon: Icons.refresh_rounded,
+                      title: 'Check for updates',
+                      subtitle: update.status == UpdateStatus.checking
+                          ? 'Checking…'
+                          : update.status == UpdateStatus.error
+                              ? update.errorMessage ?? 'Check failed'
+                              : hasUpdate
+                                  ? 'v${update.latestVersion} available'
+                                  : "You're up to date",
+                      onTap: update.status == UpdateStatus.checking
+                          ? () {}
+                          : () => unawaited(update.checkForUpdate()),
+                    ),
+                  ],
+                  const Divider(height: 1, indent: 56),
+                  _SettingsTile(
+                    icon: Icons.code_rounded,
+                    title: 'Source code',
+                    subtitle: 'View on GitHub',
+                    onTap: () {
+                      unawaited(launchUrl(Uri.parse('https://github.com/Quantumheart/Lattice')));
+                    },
+                  ),
+                ],
+              );
+            },),
           ),
 
           const SizedBox(height: 24),

@@ -5,12 +5,14 @@ import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/services/update_service.dart';
 import 'package:lattice/features/settings/screens/settings_screen.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/matrix_service_test.mocks.dart' show MockFlutterSecureStorage;
 import 'settings_screen_test.mocks.dart';
@@ -96,12 +98,19 @@ void main() {
   // ── Test app builder ──────────────────────────────────────────────
 
   Widget buildSettingsApp() {
+    SharedPreferences.setMockInitialValues({});
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<MatrixService>.value(value: matrixService),
         ChangeNotifierProvider(create: (ctx) => CallService(client: ctx.read<MatrixService>().client)),
         ChangeNotifierProvider<ClientManager>.value(value: clientManager),
         ChangeNotifierProvider(create: (_) => PreferencesService()),
+        ChangeNotifierProvider(
+          create: (ctx) {
+            final prefs = ctx.read<PreferencesService>();
+            return UpdateService(prefs: prefs);
+          },
+        ),
       ],
       child: const MaterialApp(home: SettingsScreen()),
     );

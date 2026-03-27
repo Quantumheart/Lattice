@@ -8212,6 +8212,13 @@ class MockPreferencesService extends _i1.Mock
       ) as bool);
 
   @override
+  bool get autoUpdateEnabled => (super.noSuchMethod(
+        Invocation.getter(#autoUpdateEnabled),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
   bool get osNotificationsEnabled => (super.noSuchMethod(
         Invocation.getter(#osNotificationsEnabled),
         returnValue: false,
@@ -8376,6 +8383,16 @@ class MockPreferencesService extends _i1.Mock
   _i5.Future<void> setReadReceipts(bool? value) => (super.noSuchMethod(
         Invocation.method(
           #setReadReceipts,
+          [value],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> setAutoUpdateEnabled(bool? value) => (super.noSuchMethod(
+        Invocation.method(
+          #setAutoUpdateEnabled,
           [value],
         ),
         returnValue: _i5.Future<void>.value(),
