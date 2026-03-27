@@ -1,11 +1,15 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/features/notifications/services/push_service.dart';
 import 'package:lattice/shared/widgets/section_header.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
   const NotificationSettingsScreen({super.key});
@@ -29,12 +33,100 @@ class _NotificationSettingsScreenState
 
   // ── Keyword actions ─────────────────────────────────────────
 
-  void _addKeyword() {
+  Future<void> _addKeyword() async {
     final text = _keywordController.text;
     if (text.trim().isEmpty) return;
-    unawaited(context.read<PreferencesService>().addNotificationKeyword(text));
     _keywordController.clear();
     _keywordFocus.requestFocus();
+    await context.read<PreferencesService>().addNotificationKeyword(text);
+  }
+
+  // ── Push settings ──────────────────────────────────────────
+
+  static bool get _showPushSettings => !kIsWeb && Platform.isAndroid;
+
+  static const List<({String name, String package, String description, String url})> _distributors = [
+    (
+      name: 'ntfy',
+      package: 'io.heckel.ntfy',
+      description: 'Lightweight, self-hostable push service',
+      url: 'https://f-droid.org/packages/io.heckel.ntfy/',
+    ),
+    (
+      name: 'NextPush',
+      package: 'org.unifiedpush.distributor.nextpush',
+      description: 'Push via Nextcloud server',
+      url: 'https://f-droid.org/packages/org.unifiedpush.distributor.nextpush/',
+    ),
+  ];
+
+  Future<void> _setupDistributor() async {
+    final pushService = context.read<PushService>();
+    final prefs = context.read<PreferencesService>();
+    final installed = await pushService.getDistributors();
+
+    if (!mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Push distributor'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ..._distributors.map((d) {
+              final isInstalled = installed.any((i) => i.contains(d.package));
+              return ListTile(
+                title: Text(d.name),
+                subtitle: Text(
+                  isInstalled ? 'Installed' : d.description,
+                ),
+                trailing: isInstalled
+                    ? const Icon(Icons.check_circle, color: Colors.green)
+                    : TextButton(
+                        onPressed: () => unawaited(
+                          launchUrl(
+                              Uri.parse(d.url),
+                              mode: LaunchMode.externalApplication,
+                          ),
+                        ),
+                        child: const Text('Install'),
+                      ),
+                onTap: isInstalled
+                    ? () {
+                        final match = installed
+                            .firstWhere((i) => i.contains(d.package));
+                        unawaited(prefs.setPushEnabled(true));
+                        unawaited(pushService.selectDistributor(match));
+                        Navigator.of(ctx).pop();
+                      }
+                    : null,
+              );
+            }),
+            ...installed
+                .where((i) => !_distributors.any((d) => i.contains(d.package)))
+                .map((pkg) => ListTile(
+                      title: Text(pkg.split('.').last),
+                      subtitle: const Text('Installed'),
+                      trailing:
+                          const Icon(Icons.check_circle, color: Colors.green),
+                      onTap: () {
+                        unawaited(prefs.setPushEnabled(true));
+                        unawaited(pushService.selectDistributor(pkg));
+                        Navigator.of(ctx).pop();
+                      },
+                    ),),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
+
   }
 
   // ── Build ───────────────────────────────────────────────────
@@ -191,6 +283,45 @@ class _NotificationSettingsScreenState
               ],
             ),
           ),
+
+          // ── Push notifications (Android only) ────────────────
+          if (_showPushSettings) ...[
+            const SizedBox(height: 24),
+            const SectionHeader(label: 'BACKGROUND PUSH'),
+            Card(
+              child: Column(
+                children: [
+                  SwitchListTile(
+                    title: const Text('Background push notifications'),
+                    subtitle: Text(
+                      prefs.pushEnabled
+                          ? 'Via ${prefs.pushDistributor?.split('.').last ?? 'UnifiedPush'}'
+                          : 'Receive notifications when the app is closed',
+                    ),
+                    value: prefs.pushEnabled,
+                    onChanged: (value) {
+                      if (value) {
+                        unawaited(_setupDistributor());
+                      } else {
+                        final pushService = context.read<PushService>();
+                        unawaited(prefs.setPushEnabled(false));
+                        unawaited(pushService.unregister());
+                      }
+                    },
+                  ),
+                  if (prefs.pushEnabled)
+                    ListTile(
+                      title: const Text('Change distributor'),
+                      subtitle: Text(
+                        prefs.pushDistributor?.split('.').last ?? 'None',
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: _setupDistributor,
+                    ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

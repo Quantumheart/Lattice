@@ -57,6 +57,10 @@ android {
     }
 }
 
+configurations.all {
+    exclude(group = "com.google.crypto.tink", module = "tink")
+}
+
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
