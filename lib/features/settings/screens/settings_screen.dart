@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -388,7 +386,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   value: prefs.readReceipts,
                   onChanged: prefs.setReadReceipts,
                 ),
-                if (!kIsWeb && (Platform.isLinux || Platform.isWindows)) ...[
+                if (context.read<UpdateService>().isDesktop) ...[
                   const Divider(height: 1, indent: 56),
                   SwitchListTile(
                     secondary: const Icon(Icons.system_update_alt_rounded),
@@ -463,7 +461,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ? () => unawaited(launchUrl(Uri.parse(update.releaseUrl!)))
                         : () {},
                   ),
-                  if (!kIsWeb && (Platform.isLinux || Platform.isWindows)) ...[
+                  if (update.isDesktop) ...[
                     const Divider(height: 1, indent: 56),
                     _SettingsTile(
                       icon: Icons.refresh_rounded,

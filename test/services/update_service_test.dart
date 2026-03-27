@@ -287,9 +287,6 @@ void main() {
 
       service.dispose();
 
-      // After dispose, _notify() should be a no-op.
-      // We can't call checkForUpdate again, but the internal guard
-      // should have prevented any notifications post-dispose.
       expect(countBeforeDispose, greaterThan(0));
     });
   });

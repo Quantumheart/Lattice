@@ -25,6 +25,9 @@ class UpdateService extends ChangeNotifier {
   UpdateStatus _status = UpdateStatus.idle;
   String? _errorMessage;
 
+  static final bool _isDesktopPlatform =
+      !kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS);
+
   // ── Public getters ──────────────────────────────────────────
 
   String? get currentVersion => _currentVersion;
@@ -32,9 +35,7 @@ class UpdateService extends ChangeNotifier {
   String? get releaseUrl => _releaseUrl;
   UpdateStatus get status => _status;
   String? get errorMessage => _errorMessage;
-
-  bool get isDesktop =>
-      !kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS);
+  bool get isDesktop => _isDesktopPlatform;
 
   @visibleForTesting
   set currentVersion(String? v) => _currentVersion = v;
@@ -74,43 +75,50 @@ class UpdateService extends ChangeNotifier {
     super.dispose();
   }
 
+  void _setStatus(UpdateStatus newStatus, {String? error}) {
+    final changed = _status != newStatus || _errorMessage != error;
+    _status = newStatus;
+    _errorMessage = error;
+    if (changed) _notify();
+  }
+
   void _notify() {
     if (!_disposed) notifyListeners();
   }
 
   // ── Update check ────────────────────────────────────────────
 
-  static const _releaseUrl_ =
+  static const _latestReleaseUrl =
       'https://api.github.com/repos/Quantumheart/Lattice/releases/latest';
 
   Future<void> checkForUpdate() async {
     if (!isDesktop) return;
     if (_status == UpdateStatus.checking) return;
 
-    _status = UpdateStatus.checking;
-    _errorMessage = null;
-    _notify();
+    _setStatus(UpdateStatus.checking);
 
     try {
-      final uri = Uri.parse(_releaseUrl_);
+      final uri = Uri.parse(_latestReleaseUrl);
       final headers = {'Accept': 'application/vnd.github+json'};
       final response = _httpClient != null
           ? await _httpClient!.get(uri, headers: headers)
           : await http.get(uri, headers: headers);
 
       if (response.statusCode == 403) {
-        _status = UpdateStatus.error;
-        _errorMessage = 'GitHub API rate limit reached. Try again later.';
+        _setStatus(
+          UpdateStatus.error,
+          error: 'GitHub API rate limit reached. Try again later.',
+        );
         debugPrint('[Lattice] Update check rate limited');
-        _notify();
         return;
       }
 
       if (response.statusCode != 200) {
-        _status = UpdateStatus.error;
-        _errorMessage = 'GitHub returned status ${response.statusCode}';
+        _setStatus(
+          UpdateStatus.error,
+          error: 'GitHub returned status ${response.statusCode}',
+        );
         debugPrint('[Lattice] Update check failed: ${response.statusCode}');
-        _notify();
         return;
       }
 
@@ -118,16 +126,13 @@ class UpdateService extends ChangeNotifier {
 
       if (json['draft'] == true || json['prerelease'] == true) {
         debugPrint('[Lattice] Latest release is draft/prerelease, skipping');
-        _status = UpdateStatus.idle;
-        _notify();
+        _setStatus(UpdateStatus.idle);
         return;
       }
 
       final tagName = json['tag_name'] as String?;
       if (tagName == null) {
-        _status = UpdateStatus.error;
-        _errorMessage = 'Invalid response from GitHub';
-        _notify();
+        _setStatus(UpdateStatus.error, error: 'Invalid response from GitHub');
         return;
       }
 
@@ -136,27 +141,28 @@ class UpdateService extends ChangeNotifier {
       if (isNewer(remoteVersion, _currentVersion ?? '0.0.0')) {
         _latestVersion = remoteVersion;
         _releaseUrl = json['html_url'] as String?;
-        _status = UpdateStatus.updateAvailable;
+        _setStatus(UpdateStatus.updateAvailable);
         debugPrint('[Lattice] Update available: v$remoteVersion');
       } else {
-        _status = UpdateStatus.idle;
+        _setStatus(UpdateStatus.idle);
         debugPrint('[Lattice] App is up to date (v$_currentVersion)');
       }
     } on SocketException {
-      _status = UpdateStatus.error;
-      _errorMessage = 'Could not reach GitHub. Check your internet connection.';
+      _setStatus(
+        UpdateStatus.error,
+        error: 'Could not reach GitHub. Check your internet connection.',
+      );
       debugPrint('[Lattice] Update check failed: no internet');
     } on FormatException {
-      _status = UpdateStatus.error;
-      _errorMessage = 'Invalid response from GitHub';
+      _setStatus(
+        UpdateStatus.error,
+        error: 'Invalid response from GitHub',
+      );
       debugPrint('[Lattice] Update check failed: invalid JSON');
     } catch (e) {
-      _status = UpdateStatus.error;
-      _errorMessage = 'Update check failed';
+      _setStatus(UpdateStatus.error, error: 'Update check failed');
       debugPrint('[Lattice] Update check failed: $e');
     }
-
-    _notify();
   }
 
   // ── Version comparison ──────────────────────────────────────

@@ -91,16 +91,15 @@ class _HomeShellState extends State<HomeShell> {
   void initState() {
     super.initState();
     _syncRoomSelection();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _updateService = context.read<UpdateService>();
-      _updateService!.addListener(_onUpdateChanged);
-    });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (_updateService == null) {
+      _updateService = context.read<UpdateService>();
+      _updateService!.addListener(_onUpdateChanged);
+    }
     final width = MediaQuery.sizeOf(context).width;
     final isWide = width >= _wideBreakpoint;
     if (_wasWide && !isWide) {
