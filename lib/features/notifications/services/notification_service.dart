@@ -11,6 +11,7 @@ import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/core/utils/media_auth.dart';
 import 'package:lattice/core/utils/notification_filter.dart';
+import 'package:lattice/features/calling/models/call_constants.dart';
 import 'package:lattice/features/notifications/models/notification_constants.dart';
 import 'package:matrix/matrix.dart';
 import 'package:path_provider/path_provider.dart';
@@ -318,7 +319,9 @@ class NotificationService {
       String body;
 
       if (matrixEvent.type == EventTypes.Encrypted) {
-        body = await _tryDecrypt(room, event);
+        final decrypted = await _tryDecrypt(room, event);
+        if (decrypted == null) continue;
+        body = decrypted;
       } else {
         body = event.body;
       }
@@ -384,11 +387,14 @@ class NotificationService {
 
   // ── Decryption ───────────────────────────────────────────────
 
-  Future<String> _tryDecrypt(Room room, Event event) async {
+  Future<String?> _tryDecrypt(Room room, Event event) async {
     try {
       final decrypted = await room.client.encryption
           ?.decryptRoomEvent(event)
           .timeout(const Duration(seconds: 3));
+      if (decrypted != null && callEventTypes.contains(decrypted.type)) {
+        return null;
+      }
       return decrypted?.body ?? NotificationText.encryptedMessage;
     } catch (e) {
       debugPrint('[Lattice] Decryption failed for notification: $e');
