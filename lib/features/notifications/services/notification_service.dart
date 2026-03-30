@@ -319,9 +319,7 @@ class NotificationService {
       String body;
 
       if (matrixEvent.type == EventTypes.Encrypted) {
-        final decrypted = await _tryDecrypt(room, event);
-        if (decrypted == null) continue;
-        body = decrypted;
+        body = await _tryDecrypt(room, event);
       } else {
         body = event.body;
       }
@@ -387,18 +385,38 @@ class NotificationService {
 
   // ── Decryption ───────────────────────────────────────────────
 
-  Future<String?> _tryDecrypt(Room room, Event event) async {
+  Future<String> _tryDecrypt(Room room, Event event) async {
     try {
       final decrypted = await room.client.encryption
           ?.decryptRoomEvent(event)
           .timeout(const Duration(seconds: 3));
       if (decrypted != null && callEventTypes.contains(decrypted.type)) {
-        return null;
+        return _formatCallEvent(decrypted);
       }
       return decrypted?.body ?? NotificationText.encryptedMessage;
     } catch (e) {
       debugPrint('[Lattice] Decryption failed for notification: $e');
       return NotificationText.encryptedMessage;
+    }
+  }
+
+  static String _formatCallEvent(Event event) {
+    final sender = event.senderFromMemoryOrFallback.calcDisplayname();
+    switch (event.type) {
+      case kCallInvite:
+        return NotificationText.callStarted(sender);
+      case kCallAnswer:
+        return NotificationText.callAnswered(sender);
+      case kCallReject:
+        return NotificationText.callDeclined(sender);
+      case kCallHangup:
+        final reason = event.content.tryGet<String>('reason');
+        if (reason == kHangupInviteTimeout) {
+          return NotificationText.callMissed(sender);
+        }
+        return NotificationText.callEnded;
+      default:
+        return NotificationText.callEnded;
     }
   }
 

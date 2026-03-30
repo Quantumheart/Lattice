@@ -29,6 +29,12 @@ abstract class NotificationText {
   static const replyAction = 'Reply';
   static const markAsReadAction = 'Mark as Read';
 
+  static String callStarted(String sender) => '$sender started a call';
+  static String callAnswered(String sender) => '$sender answered the call';
+  static String callDeclined(String sender) => '$sender declined the call';
+  static String callMissed(String sender) => 'Missed call from $sender';
+  static const callEnded = 'Call ended';
+
   static String senderBody(String name, String body) => '$name: $body';
 
   static String moreMessages(int count) => '... and $count more';
