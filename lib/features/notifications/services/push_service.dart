@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/utils/notification_filter.dart';
 import 'package:lattice/features/notifications/models/notification_constants.dart';
 import 'package:lattice/features/notifications/services/notification_service.dart';
 import 'package:matrix/matrix.dart';
@@ -152,6 +153,9 @@ class PushService {
 
   Future<void> _processPushMessage(Uint8List rawContent) async {
     if (_disposed) return;
+    if (!preferencesService.osNotificationsEnabled) return;
+    if (preferencesService.notificationLevel == NotificationLevel.off) return;
+
     try {
       final payload =
           json.decode(utf8.decode(rawContent)) as Map<String, dynamic>;
@@ -165,6 +169,8 @@ class PushService {
 
       final client = matrixService.client;
       final room = client.getRoomById(roomId);
+
+      if (room?.pushRuleState == PushRuleState.dontNotify) return;
 
       if (eventId == null) {
         await notificationService.showPushNotification(
@@ -222,6 +228,16 @@ class PushService {
       body = await _tryDecrypt(room, event);
     } else {
       body = event.body;
+    }
+
+    if (!shouldNotifyForEvent(
+      eventBody: body,
+      senderId: matrixEvent.senderId,
+      ownUserId: client.userID,
+      room: room,
+      prefs: preferencesService,
+    )) {
+      return;
     }
 
     final sender =
