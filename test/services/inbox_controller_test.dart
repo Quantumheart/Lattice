@@ -51,9 +51,13 @@ void main() {
   late MockClient mockClient;
   late InboxController controller;
 
+  late MockRoom defaultRoom;
+
   setUp(() {
     mockClient = MockClient();
-    when(mockClient.getRoomById(any)).thenReturn(null);
+    defaultRoom = MockRoom();
+    when(defaultRoom.membership).thenReturn(Membership.join);
+    when(mockClient.getRoomById(any)).thenReturn(defaultRoom);
     controller = InboxController(client: mockClient);
   });
 
@@ -261,6 +265,7 @@ void main() {
   group('markRoomAsRead()', () {
     test('calls setReadMarker with latest eventId and refreshes', () async {
       final mockRoom = MockRoom();
+      when(mockRoom.membership).thenReturn(Membership.join);
       when(mockRoom.lastEvent).thenReturn(null);
       when(mockRoom.setReadMarker(any, mRead: anyNamed('mRead'))).thenAnswer((_) async {});
       when(mockClient.getRoomById('!r1:x')).thenReturn(mockRoom);
@@ -281,6 +286,7 @@ void main() {
 
     test('optimistically removes group before server call', () async {
       final mockRoom = MockRoom();
+      when(mockRoom.membership).thenReturn(Membership.join);
       when(mockRoom.lastEvent).thenReturn(null);
       when(mockRoom.setReadMarker(any, mRead: anyNamed('mRead'))).thenAnswer((_) async {});
       when(mockClient.getRoomById('!r1:x')).thenReturn(mockRoom);
@@ -471,6 +477,41 @@ void main() {
         expect(controller.grouped[0].notifications[0].event.eventId, 'e2');
       });
     });
+    test('excludes notifications for rooms with non-join membership', () async {
+      final leftRoom = MockRoom();
+      when(leftRoom.membership).thenReturn(Membership.leave);
+      when(mockClient.getRoomById('!left:x')).thenReturn(leftRoom);
+
+      when(mockClient.getNotifications(
+        limit: anyNamed('limit'),
+        only: anyNamed('only'),
+      ),).thenAnswer((_) async => _makeResponse([
+            _makeNotification(eventId: 'e1', roomId: '!r1:x'),
+            _makeNotification(eventId: 'e2', roomId: '!left:x'),
+          ]),);
+
+      await controller.fetch();
+
+      expect(controller.grouped, hasLength(1));
+      expect(controller.grouped[0].roomId, '!r1:x');
+    });
+
+    test('excludes notifications for rooms not in client', () async {
+      when(mockClient.getRoomById('!gone:x')).thenReturn(null);
+
+      when(mockClient.getNotifications(
+        limit: anyNamed('limit'),
+        only: anyNamed('only'),
+      ),).thenAnswer((_) async => _makeResponse([
+            _makeNotification(eventId: 'e1', roomId: '!r1:x'),
+            _makeNotification(eventId: 'e2', roomId: '!gone:x'),
+          ]),);
+
+      await controller.fetch();
+
+      expect(controller.grouped, hasLength(1));
+      expect(controller.grouped[0].roomId, '!r1:x');
+    });
   });
 
   // ── markRoomAsRead max ts ─────────────────────────────────
@@ -478,6 +519,7 @@ void main() {
   group('markRoomAsRead() event selection', () {
     test('uses notification with highest ts, not last in list', () async {
       final mockRoom = MockRoom();
+      when(mockRoom.membership).thenReturn(Membership.join);
       when(mockRoom.lastEvent).thenReturn(null);
       when(mockRoom.setReadMarker(any, mRead: anyNamed('mRead'))).thenAnswer((_) async {});
       when(mockClient.getRoomById('!r1:x')).thenReturn(mockRoom);
@@ -571,7 +613,7 @@ void main() {
       expect(controller.error, isNull);
 
       final newClient = MockClient();
-      when(newClient.getRoomById(any)).thenReturn(null);
+      when(newClient.getRoomById(any)).thenReturn(defaultRoom);
       when(newClient.getNotifications(
         limit: anyNamed('limit'),
         only: anyNamed('only'),
@@ -602,7 +644,7 @@ void main() {
       expect(controller.grouped, hasLength(1));
 
       final newClient = MockClient();
-      when(newClient.getRoomById(any)).thenReturn(null);
+      when(newClient.getRoomById(any)).thenReturn(defaultRoom);
       when(newClient.getNotifications(
         limit: anyNamed('limit'),
         only: anyNamed('only'),

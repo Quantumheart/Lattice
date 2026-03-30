@@ -286,6 +286,8 @@ class InboxController extends ChangeNotifier {
 
     for (final n in notifications) {
       if (n.read) continue;
+      final room = _client.getRoomById(n.roomId);
+      if (room == null || room.membership != Membership.join) continue;
       map.putIfAbsent(n.roomId, () {
         order.add(n.roomId);
         return [];

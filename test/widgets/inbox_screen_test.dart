@@ -6,13 +6,14 @@ import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/home/widgets/inbox_screen.dart';
 import 'package:lattice/features/notifications/services/inbox_controller.dart';
 import 'package:matrix/matrix.dart' as matrix_sdk;
-import 'package:matrix/matrix.dart' show Client, GetNotificationsResponse, MatrixEvent, Room;
+import 'package:matrix/matrix.dart' show Client, GetNotificationsResponse, MatrixEvent, Membership, Room, User;
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
+  MockSpec<Room>(),
 ])
 import 'inbox_screen_test.mocks.dart';
 
@@ -70,7 +71,14 @@ void main() {
 
   setUp(() {
     mockClient = MockClient();
-    when(mockClient.getRoomById(any)).thenReturn(null);
+    final joinedRoom = MockRoom();
+    when(joinedRoom.membership).thenReturn(Membership.join);
+    when(joinedRoom.client).thenReturn(mockClient);
+    when(joinedRoom.getLocalizedDisplayname(any)).thenReturn('Test Room');
+    when(joinedRoom.unsafeGetUserFromMemoryOrFallback(any)).thenReturn(
+      User('@alice:example.com', displayName: 'Alice', room: joinedRoom),
+    );
+    when(mockClient.getRoomById(any)).thenReturn(joinedRoom);
     controller = InboxController(client: mockClient);
     fakeMatrix = _FakeMatrixService();
   });
@@ -163,8 +171,8 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      // Room name (falls back to roomId when no room found)
-      expect(find.text('!r1:x'), findsOneWidget);
+      // Room name from stubbed getLocalizedDisplayname
+      expect(find.text('Test Room'), findsOneWidget);
       // Event body
       expect(find.text('Test message content'), findsOneWidget);
     });
