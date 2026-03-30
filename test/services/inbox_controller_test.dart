@@ -262,7 +262,7 @@ void main() {
     test('calls setReadMarker with latest eventId and refreshes', () async {
       final mockRoom = MockRoom();
       when(mockRoom.lastEvent).thenReturn(null);
-      when(mockRoom.setReadMarker(any)).thenAnswer((_) async {});
+      when(mockRoom.setReadMarker(any, mRead: anyNamed('mRead'))).thenAnswer((_) async {});
       when(mockClient.getRoomById('!r1:x')).thenReturn(mockRoom);
 
       when(mockClient.getNotifications(
@@ -270,19 +270,19 @@ void main() {
         only: anyNamed('only'),
       ),).thenAnswer((_) async => _makeResponse([
             _makeNotification(eventId: 'e1', roomId: '!r1:x'),
-            _makeNotification(eventId: 'e2', roomId: '!r1:x'),
+            _makeNotification(eventId: 'e2', roomId: '!r1:x', ts: 2000),
           ]),);
 
       await controller.fetch();
       await controller.markRoomAsRead('!r1:x');
 
-      verify(mockRoom.setReadMarker('e2')).called(1);
+      verify(mockRoom.setReadMarker('e2', mRead: 'e2')).called(1);
     });
 
     test('optimistically removes group before server call', () async {
       final mockRoom = MockRoom();
       when(mockRoom.lastEvent).thenReturn(null);
-      when(mockRoom.setReadMarker(any)).thenAnswer((_) async {});
+      when(mockRoom.setReadMarker(any, mRead: anyNamed('mRead'))).thenAnswer((_) async {});
       when(mockClient.getRoomById('!r1:x')).thenReturn(mockRoom);
 
       when(mockClient.getNotifications(
@@ -416,6 +416,174 @@ void main() {
 
       await controller.loadMore();
       expect(controller.unreadCount, 2);
+    });
+  });
+
+  // ── read filtering ─────────────────────────────────────────
+
+  group('read filtering', () {
+    test('fetch excludes read notifications from grouped', () async {
+      when(mockClient.getNotifications(
+        limit: anyNamed('limit'),
+        only: anyNamed('only'),
+      ),).thenAnswer((_) async => _makeResponse([
+            _makeNotification(eventId: 'e1', roomId: '!r1:x'),
+            _makeNotification(eventId: 'e2', roomId: '!r1:x', read: true),
+            _makeNotification(eventId: 'e3', roomId: '!r2:x', read: true),
+          ]),);
+
+      await controller.fetch();
+
+      expect(controller.grouped, hasLength(1));
+      expect(controller.grouped[0].roomId, '!r1:x');
+      expect(controller.grouped[0].notifications, hasLength(1));
+    });
+
+    test('polling updates stale local read state from server', () {
+      fakeAsync((async) {
+        when(mockClient.getNotifications(
+          limit: anyNamed('limit'),
+          only: anyNamed('only'),
+        ),).thenAnswer((_) async => _makeResponse([
+              _makeNotification(eventId: 'e1', roomId: '!r1:x'),
+              _makeNotification(eventId: 'e2', roomId: '!r1:x'),
+            ]),);
+
+        unawaited(controller.fetch());
+        async.flushMicrotasks();
+        expect(controller.grouped[0].notifications, hasLength(2));
+
+        when(mockClient.getNotifications(
+          limit: anyNamed('limit'),
+          only: anyNamed('only'),
+        ),).thenAnswer((_) async => _makeResponse([
+              _makeNotification(eventId: 'e1', roomId: '!r1:x', read: true),
+              _makeNotification(eventId: 'e2', roomId: '!r1:x'),
+            ]),);
+
+        controller.startPolling();
+        async.elapse(const Duration(seconds: 7));
+        async.flushMicrotasks();
+        controller.stopPolling();
+
+        expect(controller.grouped, hasLength(1));
+        expect(controller.grouped[0].notifications, hasLength(1));
+        expect(controller.grouped[0].notifications[0].event.eventId, 'e2');
+      });
+    });
+  });
+
+  // ── markRoomAsRead max ts ─────────────────────────────────
+
+  group('markRoomAsRead() event selection', () {
+    test('uses notification with highest ts, not last in list', () async {
+      final mockRoom = MockRoom();
+      when(mockRoom.lastEvent).thenReturn(null);
+      when(mockRoom.setReadMarker(any, mRead: anyNamed('mRead'))).thenAnswer((_) async {});
+      when(mockClient.getRoomById('!r1:x')).thenReturn(mockRoom);
+
+      when(mockClient.getNotifications(
+        limit: anyNamed('limit'),
+        only: anyNamed('only'),
+      ),).thenAnswer((_) async => _makeResponse([
+            _makeNotification(eventId: 'e-newer', roomId: '!r1:x', ts: 3000),
+            _makeNotification(eventId: 'e-older', roomId: '!r1:x'),
+          ]),);
+
+      await controller.fetch();
+      await controller.markRoomAsRead('!r1:x');
+
+      verify(mockRoom.setReadMarker('e-newer', mRead: 'e-newer')).called(1);
+    });
+  });
+
+  // ── token expiry ──────────────────────────────────────────
+
+  group('token expiry', () {
+    test('fetch suppresses error logging on M_UNKNOWN_TOKEN', () async {
+      when(mockClient.getNotifications(
+        limit: anyNamed('limit'),
+        only: anyNamed('only'),
+      ),).thenThrow(MatrixException.fromJson({
+        'errcode': 'M_UNKNOWN_TOKEN',
+        'error': 'Access token has expired',
+      }),);
+
+      await controller.fetch();
+
+      expect(controller.error, isNull);
+    });
+
+    test('polling stops after M_UNKNOWN_TOKEN', () {
+      fakeAsync((async) {
+        var callCount = 0;
+        when(mockClient.getNotifications(
+          limit: anyNamed('limit'),
+          only: anyNamed('only'),
+        ),).thenAnswer((_) {
+          callCount++;
+          throw MatrixException.fromJson({
+            'errcode': 'M_UNKNOWN_TOKEN',
+            'error': 'Access token has expired',
+          });
+        });
+
+        controller.startPolling();
+        async.elapse(const Duration(seconds: 7));
+        expect(callCount, 1);
+
+        async.elapse(const Duration(seconds: 7));
+        expect(callCount, 1);
+
+        controller.stopPolling();
+      });
+    });
+
+    test('markRoomAsRead is no-op when token is expired', () async {
+      when(mockClient.getNotifications(
+        limit: anyNamed('limit'),
+        only: anyNamed('only'),
+      ),).thenThrow(MatrixException.fromJson({
+        'errcode': 'M_UNKNOWN_TOKEN',
+        'error': 'Access token has expired',
+      }),);
+
+      await controller.fetch();
+
+      final mockRoom = MockRoom();
+      when(mockClient.getRoomById('!r1:x')).thenReturn(mockRoom);
+
+      await controller.markRoomAsRead('!r1:x');
+
+      verifyNever(mockRoom.setReadMarker(any, mRead: anyNamed('mRead')));
+    });
+
+    test('updateClient resets token expiry flag', () async {
+      when(mockClient.getNotifications(
+        limit: anyNamed('limit'),
+        only: anyNamed('only'),
+      ),).thenThrow(MatrixException.fromJson({
+        'errcode': 'M_UNKNOWN_TOKEN',
+        'error': 'Access token has expired',
+      }),);
+
+      await controller.fetch();
+      expect(controller.error, isNull);
+
+      final newClient = MockClient();
+      when(newClient.getRoomById(any)).thenReturn(null);
+      when(newClient.getNotifications(
+        limit: anyNamed('limit'),
+        only: anyNamed('only'),
+      ),).thenAnswer((_) async => _makeResponse([
+            _makeNotification(eventId: 'e1', roomId: '!r1:x'),
+          ]),);
+
+      controller.updateClient(newClient);
+      await Future<void>.delayed(Duration.zero);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(controller.grouped, hasLength(1));
     });
   });
 

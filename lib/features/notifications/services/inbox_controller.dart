@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:matrix/matrix.dart' as matrix_sdk;
-import 'package:matrix/matrix.dart' show Client, Membership;
+import 'package:matrix/matrix.dart' show Client, MatrixException, Membership;
 
 // ── Filter enum ──────────────────────────────────────────────
 enum InboxFilter { all, mentions, invitations }
@@ -41,6 +41,7 @@ class InboxController extends ChangeNotifier {
   Timer? _pollTimer;
   int _pollingRefCount = 0;
   bool _markingAsRead = false;
+  bool _tokenExpired = false;
 
   int _fetchGeneration = 0;
   int _cachedUnreadCount = 0;
@@ -80,6 +81,11 @@ class InboxController extends ChangeNotifier {
       _updateUnreadCount();
     } catch (e) {
       if (_disposed || gen != _fetchGeneration) return;
+      if (_isTokenExpired(e)) {
+        _tokenExpired = true;
+        _isLoading = false;
+        return;
+      }
       _error = e.toString();
       debugPrint('[Lattice] Inbox fetch error: $e');
     } finally {
@@ -168,7 +174,7 @@ class InboxController extends ChangeNotifier {
   }
 
   Future<void> _pollOnce() async {
-    if (_isLoading || _markingAsRead) return;
+    if (_isLoading || _markingAsRead || _tokenExpired) return;
     try {
       final response = await _client.getNotifications(
         limit: 30,
@@ -176,28 +182,29 @@ class InboxController extends ChangeNotifier {
       );
       if (_disposed) return;
 
-      // Merge polled notifications into existing groups so we don't
-      // discard results the user loaded via loadMore().
-      final all = <matrix_sdk.Notification>[];
-      final existingIds = <String>{};
-      for (final group in _grouped) {
-        all.addAll(group.notifications);
-        for (final n in group.notifications) {
-          existingIds.add(n.event.eventId);
-        }
-      }
+      final freshIds = <String>{};
       for (final n in response.notifications) {
-        if (!existingIds.contains(n.event.eventId)) {
-          all.add(n);
+        freshIds.add(n.event.eventId);
+      }
+
+      final all = <matrix_sdk.Notification>[...response.notifications];
+      for (final group in _grouped) {
+        for (final n in group.notifications) {
+          if (!freshIds.contains(n.event.eventId)) {
+            all.add(n);
+          }
         }
       }
       _grouped = _groupByRoom(all);
       _updateUnreadCount();
       _error = null;
-      // Only update nextToken if we didn't already paginate further.
       _nextToken ??= response.nextToken;
       if (!_disposed) notifyListeners();
     } catch (e) {
+      if (_isTokenExpired(e)) {
+        _tokenExpired = true;
+        return;
+      }
       debugPrint('[Lattice] Inbox poll error: $e');
     }
   }
@@ -205,13 +212,20 @@ class InboxController extends ChangeNotifier {
   // ── Mark as read ───────────────────────────────────────────
 
   Future<void> markRoomAsRead(String roomId) async {
+    if (_tokenExpired) return;
     final room = _client.getRoomById(roomId);
     if (room == null) return;
 
     String? eventId;
+    var latestTs = -1;
     for (final group in _grouped) {
-      if (group.roomId == roomId && group.notifications.isNotEmpty) {
-        eventId = group.notifications.last.event.eventId;
+      if (group.roomId == roomId) {
+        for (final n in group.notifications) {
+          if (n.ts > latestTs) {
+            latestTs = n.ts;
+            eventId = n.event.eventId;
+          }
+        }
         break;
       }
     }
@@ -227,9 +241,14 @@ class InboxController extends ChangeNotifier {
     if (!_disposed) notifyListeners();
 
     try {
-      await room.setReadMarker(eventId);
+      await room.setReadMarker(eventId, mRead: eventId);
       await fetch();
     } catch (e) {
+      if (_isTokenExpired(e)) {
+        _tokenExpired = true;
+        _markingAsRead = false;
+        return;
+      }
       debugPrint('[Lattice] Inbox markRoomAsRead error: $e');
       await fetch();
     } finally {
@@ -240,6 +259,7 @@ class InboxController extends ChangeNotifier {
   // ── Account switching ──────────────────────────────────────
 
   void updateClient(Client newClient) {
+    _tokenExpired = false;
     if (identical(_client, newClient)) return;
     _client = newClient;
     _grouped = [];
@@ -252,6 +272,11 @@ class InboxController extends ChangeNotifier {
     unawaited(fetch().catchError((Object e) => debugPrint('[Lattice] Inbox fetch error: $e')));
   }
 
+  // ── Token expiry guard ─────────────────────────────────────
+
+  static bool _isTokenExpired(Object e) =>
+      e is MatrixException && e.errcode == 'M_UNKNOWN_TOKEN';
+
   // ── Helpers ────────────────────────────────────────────────
 
   List<NotificationGroup> _groupByRoom(
@@ -260,6 +285,7 @@ class InboxController extends ChangeNotifier {
     final order = <String>[];
 
     for (final n in notifications) {
+      if (n.read) continue;
       map.putIfAbsent(n.roomId, () {
         order.add(n.roomId);
         return [];

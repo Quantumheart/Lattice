@@ -2,10 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/home/widgets/inbox_screen.dart';
 import 'package:lattice/features/notifications/services/inbox_controller.dart';
 import 'package:matrix/matrix.dart' as matrix_sdk;
-import 'package:matrix/matrix.dart' show Client, GetNotificationsResponse, MatrixEvent;
+import 'package:matrix/matrix.dart' show Client, GetNotificationsResponse, MatrixEvent, Room;
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
@@ -51,23 +52,40 @@ GetNotificationsResponse _makeResponse(
   );
 }
 
+class _FakeMatrixService extends ChangeNotifier implements MatrixService {
+  @override
+  List<Room> get invitedRooms => [];
+
+  @override
+  List<Room> get invitedSpaces => [];
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
 void main() {
   late MockClient mockClient;
   late InboxController controller;
+  late _FakeMatrixService fakeMatrix;
 
   setUp(() {
     mockClient = MockClient();
     when(mockClient.getRoomById(any)).thenReturn(null);
     controller = InboxController(client: mockClient);
+    fakeMatrix = _FakeMatrixService();
   });
 
   tearDown(() {
     controller.dispose();
+    fakeMatrix.dispose();
   });
 
   Widget buildTestWidget() {
-    return ChangeNotifierProvider<InboxController>.value(
-      value: controller,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<InboxController>.value(value: controller),
+        ChangeNotifierProvider<MatrixService>.value(value: fakeMatrix),
+      ],
       child: const MaterialApp(
         home: InboxScreen(),
       ),
@@ -181,8 +199,11 @@ void main() {
 
       // Navigate away to trigger dispose of InboxScreen (not the controller)
       await tester.pumpWidget(
-        ChangeNotifierProvider<InboxController>.value(
-          value: controller,
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<InboxController>.value(value: controller),
+            ChangeNotifierProvider<MatrixService>.value(value: fakeMatrix),
+          ],
           child: const MaterialApp(home: Scaffold()),
         ),
       );

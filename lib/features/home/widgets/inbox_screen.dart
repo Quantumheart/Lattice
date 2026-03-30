@@ -44,6 +44,9 @@ class _InboxScreenState extends State<InboxScreen> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<InboxController>();
+    final matrix = context.watch<MatrixService>();
+    final inviteCount =
+        matrix.invitedRooms.length + matrix.invitedSpaces.length;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -72,10 +75,8 @@ class _InboxScreenState extends State<InboxScreen> {
                 const SizedBox(width: 8),
                 FilterChip(
                   label: Text(
-                    controller.invitationCount > 0
-                        ? InboxText.invitationsWithCount(
-                            controller.invitationCount,
-                          )
+                    inviteCount > 0
+                        ? InboxText.invitationsWithCount(inviteCount)
                         : InboxText.filterInvitations,
                   ),
                   selected: controller.filter == InboxFilter.invitations,

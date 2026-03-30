@@ -568,7 +568,7 @@ class NotificationService {
           final lastEventId = room?.lastEvent?.eventId;
           if (room != null && lastEventId != null) {
             unawaited(
-              room.setReadMarker(lastEventId).catchError((Object e) {
+              room.setReadMarker(lastEventId, mRead: lastEventId).catchError((Object e) {
                 debugPrint('[Lattice] Failed to mark room as read: $e');
               }),
             );
