@@ -466,7 +466,13 @@ class MatrixService extends ChangeNotifier {
   // ── Private: Session Restore ───────────────────────────────────
 
   Future<void> _restoreSession() async {
-    final keys = await _readSessionKeys();
+    final ({String? token, String? userId, String? homeserver, String? deviceId}) keys;
+    try {
+      keys = await _readSessionKeys();
+    } catch (e) {
+      debugPrint('[Lattice] Failed to read session keys: $e');
+      return;
+    }
 
     if (keys.token == null ||
         keys.userId == null ||
