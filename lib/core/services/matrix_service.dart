@@ -31,7 +31,13 @@ class MatrixService extends ChangeNotifier {
     FlutterSecureStorage? storage,
     this.clientName = 'default',
   })  : _client = client,
-        _storage = storage ?? const FlutterSecureStorage() {
+        _storage = storage ??
+              const FlutterSecureStorage(
+                webOptions: WebOptions(
+                  dbName: 'LatticeEncryptedStorage',
+                  publicKey: 'LatticeSecureStorage',
+                ),
+              ) {
     _uia = UiaService(client: _client);
     _chatBackup = ChatBackupService(
       client: _client,

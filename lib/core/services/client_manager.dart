@@ -26,7 +26,13 @@ class ClientManager extends ChangeNotifier {
     FlutterSecureStorage? storage,
     SharedPreferences? prefs,
     MatrixServiceFactory? serviceFactory,
-  })  : _storage = storage ?? const FlutterSecureStorage(),
+  })  : _storage = storage ??
+              const FlutterSecureStorage(
+                webOptions: WebOptions(
+                  dbName: 'LatticeEncryptedStorage',
+                  publicKey: 'LatticeSecureStorage',
+                ),
+              ),
         _prefs = prefs,
         _serviceFactory = serviceFactory;
 
