@@ -38,9 +38,13 @@ class VoiceRecordingController extends ChangeNotifier {
       return false;
     }
 
-    final dir = await getTemporaryDirectory();
-    _filePath =
-        '${dir.path}/lattice_voice_${DateTime.now().millisecondsSinceEpoch}.mp3';
+    if (kIsWeb) {
+      _filePath = 'recording.opus';
+    } else {
+      final dir = await getTemporaryDirectory();
+      _filePath =
+          '${dir.path}/lattice_voice_${DateTime.now().millisecondsSinceEpoch}.mp3';
+    }
 
     await _service.start(_filePath!);
 
@@ -80,7 +84,7 @@ class VoiceRecordingController extends ChangeNotifier {
     _timer = null;
     await _service.cancel();
 
-    if (_filePath != null) {
+    if (_filePath != null && !kIsWeb) {
       try {
         await File(_filePath!).delete();
       } catch (_) {}
