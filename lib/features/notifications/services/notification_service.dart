@@ -73,6 +73,7 @@ class NotificationService {
   // ── Initialization ───────────────────────────────────────────
 
   Future<void> init() async {
+    if (kIsWeb) return;
     if (_useLinux) {
       _linuxClient = dn.NotificationsClient();
       debugPrint('[Lattice] NotificationService initialized (Linux D-Bus)');
@@ -453,6 +454,7 @@ class NotificationService {
     String? avatarPath,
     bool isGrouped = false,
   }) async {
+    if (kIsWeb) return;
     if (_useLinux) {
       await _showLinuxNotification(
         roomId: roomId,
@@ -621,6 +623,7 @@ class NotificationService {
 
   /// Dismiss the notification for a specific room.
   Future<void> cancelForRoom(String roomId) async {
+    if (kIsWeb) return;
     if (_useLinux) {
       final notification = _linuxNotifications.remove(roomId);
       if (notification != null) {
@@ -638,6 +641,7 @@ class NotificationService {
 
   /// Dismiss all active notifications from the system tray.
   Future<void> cancelAll() async {
+    if (kIsWeb) return;
     if (_useLinux) {
       for (final notification in _linuxNotifications.values) {
         try {
