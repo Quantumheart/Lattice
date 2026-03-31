@@ -15,6 +15,7 @@ import 'package:lattice/core/utils/notification_filter.dart';
 import 'package:lattice/core/utils/platform_info.dart';
 import 'package:lattice/features/calling/models/call_constants.dart';
 import 'package:lattice/features/notifications/models/notification_constants.dart';
+import 'package:lattice/features/notifications/services/web_notifications.dart';
 import 'package:lattice/features/notifications/services/windows_com_register.dart';
 import 'package:matrix/matrix.dart';
 import 'package:path_provider/path_provider.dart';
@@ -73,7 +74,11 @@ class NotificationService {
   // ── Initialization ───────────────────────────────────────────
 
   Future<void> init() async {
-    if (kIsWeb) return;
+    if (kIsWeb) {
+      await requestWebNotificationPermission();
+      debugPrint('[Lattice] NotificationService initialized (Web)');
+      return;
+    }
     if (_useLinux) {
       _linuxClient = dn.NotificationsClient();
       debugPrint('[Lattice] NotificationService initialized (Linux D-Bus)');
@@ -335,7 +340,17 @@ class NotificationService {
     if (notifiable.isEmpty) return;
 
     String? avatarPath;
-    if (_useLinux) {
+    String? avatarUrl;
+    if (kIsWeb && notifiable.first.$3 != null) {
+      try {
+        final uri = await notifiable.first.$3!.getThumbnailUri(
+          client,
+          width: 128,
+          height: 128,
+        );
+        avatarUrl = uri.toString();
+      } catch (_) {}
+    } else if (_useLinux) {
       avatarPath = await downloadAvatarToTemp(
         client,
         notifiable.first.$3,
@@ -352,6 +367,7 @@ class NotificationService {
         senderName: notifiable.first.$1,
         body: notifiable.first.$2,
         avatarPath: avatarPath,
+        avatarUrl: avatarUrl,
       );
     } else {
       final lines = <String>[];
@@ -367,6 +383,7 @@ class NotificationService {
         senderName: '',
         body: lines.join('\n'),
         avatarPath: avatarPath,
+        avatarUrl: avatarUrl,
         isGrouped: true,
       );
     }
@@ -452,9 +469,21 @@ class NotificationService {
     required String senderName,
     required String body,
     String? avatarPath,
+    String? avatarUrl,
     bool isGrouped = false,
   }) async {
-    if (kIsWeb) return;
+    if (kIsWeb) {
+      showWebNotification(
+        title: title,
+        body: senderName.isNotEmpty
+            ? NotificationText.senderBody(senderName, body)
+            : body,
+        icon: avatarUrl,
+        tag: roomId,
+        onClick: () => _navigateToRoom(roomId),
+      );
+      return;
+    }
     if (_useLinux) {
       await _showLinuxNotification(
         roomId: roomId,
@@ -623,7 +652,10 @@ class NotificationService {
 
   /// Dismiss the notification for a specific room.
   Future<void> cancelForRoom(String roomId) async {
-    if (kIsWeb) return;
+    if (kIsWeb) {
+      closeWebNotification(roomId);
+      return;
+    }
     if (_useLinux) {
       final notification = _linuxNotifications.remove(roomId);
       if (notification != null) {
@@ -641,7 +673,10 @@ class NotificationService {
 
   /// Dismiss all active notifications from the system tray.
   Future<void> cancelAll() async {
-    if (kIsWeb) return;
+    if (kIsWeb) {
+      closeAllWebNotifications();
+      return;
+    }
     if (_useLinux) {
       for (final notification in _linuxNotifications.values) {
         try {
