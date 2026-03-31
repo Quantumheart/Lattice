@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_background/flutter_background.dart';
 import 'package:http/http.dart' as http;
+import 'package:lattice/core/utils/platform_info.dart';
 import 'package:lattice/features/calling/models/call_participant.dart' as ui;
 import 'package:lattice/features/calling/models/call_participant_mapper.dart';
 import 'package:lattice/features/calling/models/call_state.dart';
@@ -195,7 +195,7 @@ class LiveKitService {
 
     final willEnable = !_isScreenShareEnabled;
 
-    if (!kIsWeb && Platform.isAndroid && willEnable) {
+    if (isNativeAndroid && willEnable) {
       await _startAndroidMediaProjectionService();
     }
 
@@ -214,7 +214,7 @@ class LiveKitService {
       ),
     );
 
-    if (!kIsWeb && Platform.isAndroid && !_isScreenShareEnabled) {
+    if (isNativeAndroid && !_isScreenShareEnabled) {
       await _stopAndroidMediaProjectionService();
     }
   }

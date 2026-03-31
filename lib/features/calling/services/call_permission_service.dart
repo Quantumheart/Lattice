@@ -1,12 +1,10 @@
-import 'dart:io' show Platform;
-
-import 'package:flutter/foundation.dart';
+import 'package:lattice/core/utils/platform_info.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 // coverage:ignore-start
 abstract class CallPermissionService {
   static bool get _needsPermissionRequest =>
-      !kIsWeb && (Platform.isAndroid || Platform.isIOS || Platform.isMacOS);
+      isNativeAndroid || isNativeIOS || isNativeMacOS;
 
   static Future<bool> request() async {
     if (!_needsPermissionRequest) return true;

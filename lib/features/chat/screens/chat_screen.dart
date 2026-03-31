@@ -1,12 +1,12 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:lattice/core/models/pending_attachment.dart';
 import 'package:lattice/core/models/upload_state.dart';
 import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/utils/platform_info.dart';
 import 'package:lattice/features/calling/models/call_constants.dart';
 import 'package:lattice/features/chat/services/chat_message_actions.dart';
 import 'package:lattice/features/chat/services/chat_search_controller.dart';
@@ -80,10 +80,7 @@ class _ChatScreenState extends State<ChatScreen>
   String get voiceRoomId => widget.roomId;
 
   bool get _isDesktop =>
-      !kIsWeb &&
-      (defaultTargetPlatform == TargetPlatform.linux ||
-          defaultTargetPlatform == TargetPlatform.windows ||
-          defaultTargetPlatform == TargetPlatform.macOS);
+      isNativeDesktop;
 
   // ── Message actions ──────────────────────────────────────
   late ChatMessageActions _actions;

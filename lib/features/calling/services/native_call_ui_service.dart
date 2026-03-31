@@ -1,12 +1,11 @@
 import 'dart:async';
-import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter_callkit_incoming/entities/android_params.dart';
 import 'package:flutter_callkit_incoming/entities/call_event.dart';
 import 'package:flutter_callkit_incoming/entities/call_kit_params.dart';
 import 'package:flutter_callkit_incoming/entities/ios_params.dart';
 import 'package:flutter_callkit_incoming/flutter_callkit_incoming.dart';
+import 'package:lattice/core/utils/platform_info.dart';
 
 // coverage:ignore-start
 
@@ -42,7 +41,7 @@ class NativeCallUiService {
   Stream<String> get nativeAcceptedCallStream =>
       _nativeAcceptedCallController.stream;
 
-  bool get _isMobile => !kIsWeb && (Platform.isAndroid || Platform.isIOS);
+  bool get _isMobile => isNativeMobile;
 
   void init({
     required String Function() getCallState,

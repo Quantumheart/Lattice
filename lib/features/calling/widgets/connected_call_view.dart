@@ -1,8 +1,6 @@
-import 'dart:io';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lattice/core/services/call_service.dart';
+import 'package:lattice/core/utils/platform_info.dart';
 import 'package:lattice/features/calling/widgets/call_control_bar.dart';
 import 'package:lattice/features/calling/widgets/pip_self_view.dart';
 import 'package:lattice/features/calling/widgets/screen_source_picker.dart';
@@ -24,7 +22,7 @@ class ConnectedCallView extends StatelessWidget {
     }
 
     final needsSourcePicker =
-        !kIsWeb && (Platform.isMacOS || Platform.isWindows);
+        isNativeMacOS || isNativeWindows;
     if (needsSourcePicker) {
       final source = await showScreenSourcePicker(context);
       if (source == null) return;

@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/call_service.dart';
+import 'package:lattice/core/utils/platform_info.dart';
 import 'package:lattice/features/calling/models/incoming_call_info.dart';
 import 'package:lattice/shared/widgets/pulsing_avatar.dart';
 import 'package:provider/provider.dart';
@@ -26,7 +26,7 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay> {
   IncomingCallInfo? _incoming;
   CallService? _callService;
 
-  bool get _isDesktop => kIsWeb || (!Platform.isAndroid && !Platform.isIOS);
+  bool get _isDesktop => kIsWeb || isNativeDesktop;
 
   @override
   void didChangeDependencies() {
