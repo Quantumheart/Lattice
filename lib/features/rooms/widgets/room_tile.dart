@@ -1,7 +1,5 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
@@ -10,6 +8,7 @@ import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/core/utils/notification_filter.dart';
 import 'package:lattice/core/utils/order_utils.dart' as order_utils;
+import 'package:lattice/core/utils/platform_info.dart';
 import 'package:lattice/core/utils/reply_fallback.dart';
 import 'package:lattice/features/calling/models/call_constants.dart';
 import 'package:lattice/features/chat/widgets/typing_indicator.dart' show TypingIndicator;
@@ -20,7 +19,7 @@ import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
 bool get _isDesktop =>
-    !kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS);
+    isNativeDesktop;
 
 // ── Room tile ───────────────────────────────────────────────
 class RoomTile extends StatelessWidget {

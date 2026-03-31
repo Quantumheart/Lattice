@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/core/utils/notification_filter.dart';
+import 'package:lattice/core/utils/platform_info.dart';
 import 'package:lattice/features/notifications/models/notification_constants.dart';
 import 'package:lattice/features/notifications/services/notification_service.dart';
 import 'package:matrix/matrix.dart';
@@ -36,7 +36,7 @@ class PushService {
   // ── Initialization ───────────────────────────────────────────
 
   Future<void> init() async {
-    if (kIsWeb || !Platform.isAndroid) return;
+    if (!isNativeAndroid) return;
     if (_initialized) return;
     _initialized = true;
 
@@ -58,7 +58,7 @@ class PushService {
   // ── Registration ─────────────────────────────────────────────
 
   Future<void> register() async {
-    if (kIsWeb || !Platform.isAndroid) return;
+    if (!isNativeAndroid) return;
     if (!preferencesService.pushEnabled) return;
 
     final hasDistributor = await UnifiedPush.tryUseCurrentOrDefaultDistributor();
@@ -72,7 +72,7 @@ class PushService {
   }
 
   Future<void> unregister() async {
-    if (kIsWeb || !Platform.isAndroid) return;
+    if (!isNativeAndroid) return;
     try {
       await _unregisterPusher();
     } catch (e) {

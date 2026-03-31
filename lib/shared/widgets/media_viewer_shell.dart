@@ -1,8 +1,9 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:lattice/core/utils/media_cache_io.dart'
+    if (dart.library.js_interop) 'package:lattice/core/utils/media_cache_web.dart';
 import 'package:lattice/core/utils/time_format.dart';
 import 'package:lattice/shared/widgets/user_avatar.dart';
 import 'package:matrix/matrix.dart';

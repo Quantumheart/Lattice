@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:desktop_notifications/desktop_notifications.dart' as dn;
 import 'package:flutter/foundation.dart';
@@ -10,13 +9,17 @@ import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/core/utils/media_auth.dart';
+import 'package:lattice/core/utils/media_cache_io.dart'
+    if (dart.library.js_interop) 'package:lattice/core/utils/media_cache_web.dart';
 import 'package:lattice/core/utils/notification_filter.dart';
+import 'package:lattice/core/utils/platform_info.dart';
 import 'package:lattice/features/calling/models/call_constants.dart';
 import 'package:lattice/features/notifications/models/notification_constants.dart';
+import 'package:lattice/features/notifications/services/windows_com_register.dart';
 import 'package:matrix/matrix.dart';
 import 'package:path_provider/path_provider.dart';
 
-bool get _isLinux => !kIsWeb && Platform.isLinux;
+bool get _isLinux => isNativeLinux;
 
 /// Stable 31-bit positive integer hash for notification IDs.
 /// Unlike [String.hashCode], this is deterministic across isolates and runs.
@@ -95,8 +98,8 @@ class NotificationService {
       windows: windowsSettings,
     );
 
-    if (Platform.isWindows) {
-      await _registerWindowsComServer();
+    if (isNativeWindows) {
+      await registerWindowsComServer();
     }
 
     final initialized = await _plugin.initialize(
@@ -118,21 +121,6 @@ class NotificationService {
     }
 
     debugPrint('[Lattice] NotificationService initialized');
-  }
-
-  Future<void> _registerWindowsComServer() async {
-    const keyPath =
-        r'HKCU\Software\Classes\CLSID\{' + NotificationChannel.windowsGuid + r'}\LocalServer32';
-    final exe = Platform.resolvedExecutable;
-    final result =
-        await Process.run('reg', ['add', keyPath, '/ve', '/d', exe, '/f']);
-    if (result.exitCode != 0) {
-      debugPrint(
-        '[Lattice] Failed to register Windows COM server: ${result.stderr}',
-      );
-    } else {
-      debugPrint('[Lattice] Windows COM server registered at $exe');
-    }
   }
 
   // ── Start / stop listening ───────────────────────────────────

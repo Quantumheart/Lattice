@@ -1,11 +1,10 @@
 import 'dart:async';
-import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/utils/platform_info.dart';
 import 'package:lattice/features/notifications/services/push_service.dart';
 import 'package:lattice/shared/widgets/section_header.dart';
 import 'package:provider/provider.dart';
@@ -43,7 +42,7 @@ class _NotificationSettingsScreenState
 
   // ── Push settings ──────────────────────────────────────────
 
-  static bool get _showPushSettings => !kIsWeb && Platform.isAndroid;
+  static bool get _showPushSettings => isNativeAndroid;
 
   static const List<({String name, String package, String description, String url})> _distributors = [
     (
