@@ -1,7 +1,6 @@
 import 'dart:async';
-import 'dart:io' show Platform;
 
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show TargetPlatform, defaultTargetPlatform, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:lattice/core/models/pending_attachment.dart';
 import 'package:lattice/core/models/upload_state.dart';
@@ -81,7 +80,10 @@ class _ChatScreenState extends State<ChatScreen>
   String get voiceRoomId => widget.roomId;
 
   bool get _isDesktop =>
-      !kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS);
+      !kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.linux ||
+          defaultTargetPlatform == TargetPlatform.windows ||
+          defaultTargetPlatform == TargetPlatform.macOS);
 
   // ── Message actions ──────────────────────────────────────
   late ChatMessageActions _actions;

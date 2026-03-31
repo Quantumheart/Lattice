@@ -1,8 +1,8 @@
-import 'dart:io';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:lattice/core/utils/format_file_size.dart';
+import 'package:lattice/core/utils/media_cache_io.dart'
+    if (dart.library.js_interop) 'package:lattice/core/utils/media_cache_web.dart';
 import 'package:matrix/matrix.dart';
 
 // coverage:ignore-start

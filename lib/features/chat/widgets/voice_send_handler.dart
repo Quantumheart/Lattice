@@ -1,8 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:lattice/core/models/upload_state.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/utils/media_cache_io.dart'
+    if (dart.library.js_interop) 'package:lattice/core/utils/media_cache_web.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 

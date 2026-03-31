@@ -1,10 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:http/http.dart' as http;
+import 'package:lattice/features/chat/services/opengraph_io.dart'
+    if (dart.library.js_interop) 'package:lattice/features/chat/services/opengraph_web.dart';
 
 // ── OpenGraph data model ─────────────────────────────────────
 
