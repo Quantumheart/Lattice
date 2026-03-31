@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cached_network_image_platform_interface/cached_network_image_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:lattice/core/utils/media_auth.dart';
 import 'package:matrix/matrix.dart';
@@ -73,6 +74,7 @@ class _UserAvatarState extends State<UserAvatar> {
             ? CachedNetworkImage(
                 imageUrl: _resolvedUrl!,
                 httpHeaders: mediaAuthHeaders(widget.client, _resolvedUrl!),
+                imageRenderMethodForWeb: ImageRenderMethodForWeb.HttpGet,
                 fit: BoxFit.cover,
                 placeholder: (_, __) => _Fallback(
                   initial: initial,
