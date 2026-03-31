@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lattice/core/models/upload_state.dart';
 import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/utils/media_cache_io.dart'
-    if (dart.library.js_interop) 'package:lattice/core/utils/media_cache_web.dart';
+import 'package:lattice/features/chat/services/read_file_bytes.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
@@ -20,8 +19,7 @@ Future<void> sendVoiceMessage(
   final room = matrix.client.getRoomById(roomId);
   if (room == null) return;
 
-  final file = File(filePath);
-  final bytes = await file.readAsBytes();
+  final bytes = await readFileBytes(filePath);
   final name = filePath.split('/').last;
 
   uploadNotifier.value = UploadState(
@@ -61,7 +59,7 @@ Future<void> sendVoiceMessage(
     );
   } finally {
     try {
-      await file.delete();
+      await deleteFile(filePath);
     } catch (_) {}
   }
 }
