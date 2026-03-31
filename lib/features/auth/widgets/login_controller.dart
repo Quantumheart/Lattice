@@ -6,7 +6,6 @@ import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/auth/services/sso_callback_server.dart';
 import 'package:lattice/features/auth/widgets/registration_controller.dart' show RegistrationController;
-import 'package:url_launcher/url_launcher.dart';
 
 // ── LoginState ──────────────────────────────────────────────────────────────
 
@@ -103,7 +102,7 @@ class LoginController extends ChangeNotifier {
 
     _ssoServer?.dispose();
 
-    final server = SsoCallbackServer();
+    final server = SsoCallbackServer(homeserver: _homeserver);
     _ssoServer = server;
 
     try {
@@ -129,9 +128,7 @@ class LoginController extends ChangeNotifier {
 
       debugPrint('[Lattice] Opening SSO URL: $ssoUrl');
 
-      if (!await launchUrl(ssoUrl, mode: LaunchMode.externalApplication)) {
-        throw SsoException('Could not open browser');
-      }
+      await server.launch(ssoUrl);
 
       // Wait for the callback with the login token.
       final loginToken = await server.tokenFuture;

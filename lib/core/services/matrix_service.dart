@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -11,6 +10,7 @@ import 'package:lattice/core/services/sub_services/chat_backup_service.dart';
 import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/core/services/sub_services/sync_service.dart';
 import 'package:lattice/core/services/sub_services/uia_service.dart';
+import 'package:lattice/core/utils/network_error.dart';
 import 'package:matrix/matrix.dart';
 // ignore: implementation_imports, no public API for ClientInitException
 import 'package:matrix/src/utils/client_init_exception.dart';
@@ -20,7 +20,7 @@ String latticeKey(String clientName, String suffix) =>
 
 class MatrixService extends ChangeNotifier {
   static String friendlyAuthError(Object e) {
-    if (e is SocketException) return 'Could not reach server';
+    if (isNetworkError(e)) return 'Could not reach server';
     if (e is TimeoutException) return 'Connection timed out';
     if (e is FormatException) return 'Invalid server response';
     return e.toString();

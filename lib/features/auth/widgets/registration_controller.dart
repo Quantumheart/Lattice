@@ -1,12 +1,11 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/utils/network_error.dart';
 import 'package:lattice/features/auth/services/recaptcha_server.dart';
 import 'package:lattice/features/e2ee/widgets/bootstrap_controller.dart' show BootstrapController;
 import 'package:matrix/matrix.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 /// States for the registration flow state machine.
 enum RegistrationState {
@@ -355,12 +354,7 @@ class RegistrationController extends ChangeNotifier {
       final url = await server.start();
       debugPrint('[Lattice] Opening reCAPTCHA page: $url');
 
-      if (!await launchUrl(
-        Uri.parse(url),
-        mode: LaunchMode.externalApplication,
-      )) {
-        throw Exception('Could not open browser');
-      }
+      await server.launch(Uri.parse(url));
 
       _recaptchaWaiting = true;
       _notify();
@@ -436,7 +430,7 @@ class RegistrationController extends ChangeNotifier {
 
   /// Converts common non-Matrix exceptions to user-friendly messages.
   static String _friendlyError(Object e) {
-    if (e is SocketException) return 'Could not reach server';
+    if (isNetworkError(e)) return 'Could not reach server';
     if (e is TimeoutException) return 'Connection timed out';
     if (e is FormatException) return 'Invalid server response';
     return e.toString();

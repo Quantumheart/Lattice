@@ -48,6 +48,7 @@ dependencies:
   unifiedpush: ^6.0.0
   url_launcher: ^6.3.2
   vodozemac: ^0.5.0
+  web: ^1.1.0
   webrtc_interface: ^1.1.4
 
 dev_dependencies:

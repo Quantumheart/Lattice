@@ -10,6 +10,7 @@ import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/core/theme/lattice_theme.dart';
+import 'package:lattice/features/auth/services/sso_web_init.dart';
 import 'package:lattice/features/calling/services/ringtone_service.dart';
 import 'package:lattice/features/calling/widgets/incoming_call_overlay.dart';
 import 'package:lattice/features/chat/services/media_playback_service.dart';
@@ -25,6 +26,15 @@ void main() async {
   await vod.init();
   final clientManager = ClientManager();
   await clientManager.init();
+
+  final pendingSso = await checkPendingSsoLogin();
+  if (pendingSso != null) {
+    await clientManager.activeService.completeSsoLogin(
+      homeserver: pendingSso.homeserver,
+      loginToken: pendingSso.loginToken,
+    );
+  }
+
   runApp(LatticeApp(clientManager: clientManager));
 }
 
