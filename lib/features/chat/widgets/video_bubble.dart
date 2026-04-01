@@ -265,47 +265,48 @@ class _VideoBubbleState extends State<VideoBubble> {
   }
 
   Widget _buildInlinePlayer(ColorScheme cs) {
-    return GestureDetector(
-      onTap: _togglePlayPause,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 280, maxHeight: 260),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Video(
-                controller: _controller!,
-                controls: (state) => const SizedBox.shrink(),
-              ),
-              if (!_isPlaying)
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.4),
-                    shape: BoxShape.circle,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 280, maxHeight: 260),
+        child: Video(
+          controller: _controller!,
+          controls: (state) => GestureDetector(
+            onTap: _togglePlayPause,
+            behavior: HitTestBehavior.opaque,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                const SizedBox.expand(),
+                if (!_isPlaying)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.4),
+                      shape: BoxShape.circle,
+                    ),
+                    padding: const EdgeInsets.all(12),
+                    child: const Icon(
+                      Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 32,
+                    ),
                   ),
-                  padding: const EdgeInsets.all(12),
-                  child: const Icon(
-                    Icons.play_arrow_rounded,
-                    color: Colors.white,
-                    size: 32,
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: IconButton.filled(
+                    onPressed: _openFullscreen,
+                    icon: const Icon(Icons.fullscreen_rounded, size: 20),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.black.withValues(alpha: 0.5),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.all(4),
+                      minimumSize: const Size(32, 32),
+                    ),
                   ),
                 ),
-              Positioned(
-                top: 6,
-                right: 6,
-                child: IconButton.filled(
-                  onPressed: _openFullscreen,
-                  icon: const Icon(Icons.fullscreen_rounded, size: 20),
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.black.withValues(alpha: 0.5),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.all(4),
-                    minimumSize: const Size(32, 32),
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
