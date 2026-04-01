@@ -16,5 +16,6 @@ class InternetAddress {
 
   static InternetAddress? tryParse(String address) => null;
 
-  static Future<List<InternetAddress>> lookup(String host) async => [];
+  static Future<List<InternetAddress>> lookup(String host) async =>
+      [InternetAddress._(host)];
 }

@@ -15,7 +15,7 @@ class SsoCallbackServer {
   Future<String> get tokenFuture => _tokenCompleter.future;
 
   static const _timeoutDuration = Duration(minutes: 5);
-  static const _storageKey = 'lattice_ssohomeserver';
+  static const _storageKey = 'lattice_sso_homeserver';
 
   Future<String> start() async {
     _timeout = Timer(_timeoutDuration, () {
@@ -27,8 +27,13 @@ class SsoCallbackServer {
       }
     });
 
-    final base = Uri.base.replace(query: '', fragment: '');
-    return base.toString();
+    final base = Uri.base;
+    return Uri(
+      scheme: base.scheme,
+      host: base.host,
+      port: base.port,
+      path: base.path,
+    ).toString();
   }
 
   Future<void> launch(Uri url) async {
