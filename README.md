@@ -83,8 +83,8 @@ Then open `http://localhost:8080`.
 Pull the latest release image from GHCR:
 
 ```bash
-docker pull ghcr.io/<owner>/lattice:latest
-docker run -p 8080:80 ghcr.io/<owner>/lattice:latest
+docker pull ghcr.io/quantumheart/lattice:latest
+docker run -p 8080:80 ghcr.io/quantumheart/lattice:latest
 ```
 
 ## Architecture
