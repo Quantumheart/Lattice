@@ -14,9 +14,8 @@ import 'package:flutter_local_notifications/src/initialization_settings.dart'
 import 'package:flutter_local_notifications/src/notification_details.dart'
     as _i19;
 import 'package:flutter_local_notifications/src/platform_specifics/android/schedule_mode.dart'
-    as _i22;
-import 'package:timezone/timezone.dart' as _i21;
-import 'package:flutter_local_notifications/src/types.dart' as _i23;
+    as _i21;
+import 'package:flutter_local_notifications/src/types.dart' as _i22;
 import 'package:flutter_local_notifications_platform_interface/flutter_local_notifications_platform_interface.dart'
     as _i18;
 import 'package:http/http.dart' as _i5;
@@ -31,6 +30,7 @@ import 'package:matrix/src/utils/cached_stream_controller.dart' as _i4;
 import 'package:matrix/src/utils/space_child.dart' as _i14;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i9;
+import 'package:timezone/timezone.dart' as _i20;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -1253,6 +1253,16 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
   _i6.Future<void> logout() => (super.noSuchMethod(
         Invocation.method(
           #logout,
+          [],
+        ),
+        returnValue: _i6.Future<void>.value(),
+        returnValueForMissingStub: _i6.Future<void>.value(),
+      ) as _i6.Future<void>);
+
+  @override
+  _i6.Future<void> deactivateAccount() => (super.noSuchMethod(
+        Invocation.method(
+          #deactivateAccount,
           [],
         ),
         returnValue: _i6.Future<void>.value(),
@@ -9934,13 +9944,13 @@ class MockFlutterLocalNotificationsPlugin extends _i1.Mock
   @override
   _i6.Future<void> zonedSchedule({
     required int? id,
-    required _i21.TZDateTime? scheduledDate,
+    required _i20.TZDateTime? scheduledDate,
     required _i19.NotificationDetails? notificationDetails,
-    required _i22.AndroidScheduleMode? androidScheduleMode,
+    required _i21.AndroidScheduleMode? androidScheduleMode,
     String? title,
     String? body,
     String? payload,
-    _i23.DateTimeComponents? matchDateTimeComponents,
+    _i22.DateTimeComponents? matchDateTimeComponents,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -9966,7 +9976,7 @@ class MockFlutterLocalNotificationsPlugin extends _i1.Mock
     required int? id,
     required _i18.RepeatInterval? repeatInterval,
     required _i19.NotificationDetails? notificationDetails,
-    required _i22.AndroidScheduleMode? androidScheduleMode,
+    required _i21.AndroidScheduleMode? androidScheduleMode,
     String? title,
     String? body,
     String? payload,
@@ -9996,8 +10006,8 @@ class MockFlutterLocalNotificationsPlugin extends _i1.Mock
     required _i19.NotificationDetails? notificationDetails,
     String? title,
     String? body,
-    _i22.AndroidScheduleMode? androidScheduleMode =
-        _i22.AndroidScheduleMode.exact,
+    _i21.AndroidScheduleMode? androidScheduleMode =
+        _i21.AndroidScheduleMode.exact,
     String? payload,
   }) =>
       (super.noSuchMethod(

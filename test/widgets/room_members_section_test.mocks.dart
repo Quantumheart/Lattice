@@ -8090,6 +8090,16 @@ class MockMatrixService extends _i1.Mock implements _i11.MatrixService {
       ) as _i5.Future<void>);
 
   @override
+  _i5.Future<void> deactivateAccount() => (super.noSuchMethod(
+        Invocation.method(
+          #deactivateAccount,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
   _i5.Future<void> handleSoftLogout() => (super.noSuchMethod(
         Invocation.method(
           #handleSoftLogout,

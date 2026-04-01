@@ -1299,6 +1299,16 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
       ) as _i6.Future<void>);
 
   @override
+  _i6.Future<void> deactivateAccount() => (super.noSuchMethod(
+        Invocation.method(
+          #deactivateAccount,
+          [],
+        ),
+        returnValue: _i6.Future<void>.value(),
+        returnValueForMissingStub: _i6.Future<void>.value(),
+      ) as _i6.Future<void>);
+
+  @override
   _i6.Future<void> handleSoftLogout() => (super.noSuchMethod(
         Invocation.method(
           #handleSoftLogout,
@@ -11467,6 +11477,27 @@ class MockCallService extends _i1.Mock implements _i16.CallService {
         returnValue: 0,
         returnValueForMissingStub: 0,
       ) as int);
+
+  @override
+  void handlePushCallInvite({
+    required String? roomId,
+    required String? callId,
+    required String? callerName,
+    required bool? isVideo,
+  }) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #handlePushCallInvite,
+          [],
+          {
+            #roomId: roomId,
+            #callId: callId,
+            #callerName: callerName,
+            #isVideo: isVideo,
+          },
+        ),
+        returnValueForMissingStub: null,
+      );
 
   @override
   void addListener(_i11.VoidCallback? listener) => super.noSuchMethod(
