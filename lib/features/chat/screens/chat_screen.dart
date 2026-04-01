@@ -469,7 +469,7 @@ class _ChatScreenState extends State<ChatScreen>
     );
 
     return DesktopDropWrapper(
-      enabled: _isDesktop,
+      enabled: _isDesktop || kIsWeb,
       onFileDropped: _addAttachment,
       child: column,
     );
