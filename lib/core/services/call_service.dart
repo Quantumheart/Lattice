@@ -509,6 +509,9 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
   int callParticipantCount(String roomId, String groupCallId) =>
       RtcMembershipService.callParticipantCount(_client, roomId, groupCallId);
 
+  Set<String> callParticipantUserIds(String roomId) =>
+      RtcMembershipService.activeCallParticipantUserIds(_client, roomId);
+
   // ── Push Call Handling ─────────────────────────────────────
 
   void handlePushCallInvite({

@@ -117,6 +117,47 @@ class RtcMembershipService {
     return false;
   }
 
+  static final _stateKeyUserIdRegex = RegExp('_(@[^:]+:[^_]+)_');
+
+  static Set<String> activeCallParticipantUserIds(
+    Client client,
+    String roomId,
+  ) {
+    final room = client.getRoomById(roomId);
+    if (room == null) return const {};
+    final states = room.states[callMemberEventType];
+    if (states == null) return const {};
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final userIds = <String>{};
+
+    for (final entry in states.entries) {
+      final content = entry.value.content;
+      if (content.isEmpty) continue;
+      final originTs = entry.value is Event
+          ? (entry.value as Event).originServerTs.millisecondsSinceEpoch
+          : now;
+
+      final memberships = content['memberships'];
+      bool hasActive;
+      if (memberships is List) {
+        hasActive = memberships.any(
+          (m) =>
+              m is Map<String, dynamic> &&
+              _isMembershipActive(m, originTs, now),
+        );
+      } else {
+        hasActive = _isMembershipActive(content, originTs, now);
+      }
+
+      if (hasActive) {
+        final match = _stateKeyUserIdRegex.firstMatch(entry.key);
+        if (match != null) userIds.add(match.group(1)!);
+      }
+    }
+    return userIds;
+  }
+
   static List<String> activeCallIdsForRoom(Client client, String roomId) {
     final room = client.getRoomById(roomId);
     if (room == null) return const [];

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
+import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/features/calling/widgets/voice_banner.dart';
 import 'package:lattice/features/home/widgets/narrow_layout.dart';
 import 'package:lattice/features/home/widgets/wide_layout.dart';
 import 'package:lattice/features/spaces/widgets/space_reparent_controller.dart';
@@ -85,6 +87,9 @@ class _HomeShellState extends State<HomeShell> {
 
     final matrix = context.read<MatrixService>();
     context.select<MatrixService, int>((m) => Object.hashAll(m.spaces.map((s) => s.id)));
+    context.select<CallService, (LatticeCallState, String?)>(
+      (s) => (s.callState, s.activeCallRoomId),
+    );
 
     final child = isWide
         ? WideLayout(
@@ -107,7 +112,12 @@ class _HomeShellState extends State<HomeShell> {
         bindings: _buildKeyBindings(matrix),
         child: Focus(
           autofocus: true,
-          child: child,
+          child: Column(
+            children: [
+              VoiceBanner(currentViewingRoomId: _routeRoomId),
+              Expanded(child: child),
+            ],
+          ),
         ),
       ),
     );

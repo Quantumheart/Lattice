@@ -11469,6 +11469,37 @@ class MockCallService extends _i1.Mock implements _i16.CallService {
       ) as int);
 
   @override
+  Set<String> callParticipantUserIds(String? roomId) => (super.noSuchMethod(
+        Invocation.method(
+          #callParticipantUserIds,
+          [roomId],
+        ),
+        returnValue: <String>{},
+        returnValueForMissingStub: <String>{},
+      ) as Set<String>);
+
+  @override
+  void handlePushCallInvite({
+    required String? roomId,
+    required String? callId,
+    required String? callerName,
+    required bool? isVideo,
+  }) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #handlePushCallInvite,
+          [],
+          {
+            #roomId: roomId,
+            #callId: callId,
+            #callerName: callerName,
+            #isVideo: isVideo,
+          },
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
   void addListener(_i11.VoidCallback? listener) => super.noSuchMethod(
         Invocation.method(
           #addListener,

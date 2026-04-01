@@ -11,6 +11,9 @@ import 'package:lattice/core/utils/order_utils.dart' as order_utils;
 import 'package:lattice/core/utils/platform_info.dart';
 import 'package:lattice/core/utils/reply_fallback.dart';
 import 'package:lattice/features/calling/models/call_constants.dart';
+import 'package:lattice/features/calling/services/call_navigator.dart';
+import 'package:lattice/features/calling/widgets/call_state_views.dart'
+    show formatCallElapsed;
 import 'package:lattice/features/chat/widgets/typing_indicator.dart' show TypingIndicator;
 import 'package:lattice/features/rooms/widgets/room_context_menu.dart';
 import 'package:lattice/features/spaces/widgets/space_reparent_controller.dart';
@@ -22,7 +25,7 @@ bool get _isDesktop =>
     isNativeDesktop;
 
 // ── Room tile ───────────────────────────────────────────────
-class RoomTile extends StatelessWidget {
+class RoomTile extends StatefulWidget {
   const RoomTile({
     required this.room, required this.isSelected, required this.memberships, required this.hasContextMenu, super.key,
     this.parentSpaceId,
@@ -36,14 +39,43 @@ class RoomTile extends StatelessWidget {
   final String? parentSpaceId;
   final List<Room>? sectionRooms;
 
+  @override
+  State<RoomTile> createState() => _RoomTileState();
+}
+
+class _RoomTileState extends State<RoomTile> {
+  bool _participantsExpanded = false;
+  Timer? _elapsedTimer;
+  bool _timerActive = false;
+
+  void _startElapsedTimer() {
+    if (_timerActive) return;
+    _timerActive = true;
+    _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  void _stopElapsedTimer() {
+    _timerActive = false;
+    _elapsedTimer?.cancel();
+    _elapsedTimer = null;
+  }
+
+  @override
+  void dispose() {
+    _stopElapsedTimer();
+    super.dispose();
+  }
+
   void _openContextMenu(BuildContext context, RelativeRect position) {
-    if (!hasContextMenu) return;
+    if (!widget.hasContextMenu) return;
     unawaited(showRoomContextMenu(
       context,
       position,
-      room,
-      parentSpaceId: parentSpaceId,
-      sectionRooms: sectionRooms,
+      widget.room,
+      parentSpaceId: widget.parentSpaceId,
+      sectionRooms: widget.sectionRooms,
     ),);
   }
 
@@ -53,16 +85,29 @@ class RoomTile extends StatelessWidget {
     context.select<PreferencesService, (NotificationLevel, String, bool)>(
       (p) => (p.notificationLevel, p.notificationKeywords.join(','), p.typingIndicators),
     );
+    final callService = context.watch<CallService>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final room = widget.room;
     final unread = effectiveUnreadCount(room, prefs);
     final lastEvent = room.lastEvent;
-    final hasMenu = hasContextMenu;
+    final hasMenu = widget.hasContextMenu;
+
+    final hasActiveCall = callService.roomHasActiveCall(room.id);
+    final isUserInThisCall = hasActiveCall &&
+        callService.activeCallRoomId == room.id &&
+        callService.callState == LatticeCallState.connected;
+
+    if (isUserInThisCall) {
+      _startElapsedTimer();
+    } else {
+      _stopElapsedTimer();
+    }
 
     Widget tile = Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Material(
-        color: isSelected
+        color: widget.isSelected
             ? cs.primaryContainer.withValues(alpha: 0.5)
             : Colors.transparent,
         borderRadius: BorderRadius.circular(14),
@@ -104,98 +149,118 @@ class RoomTile extends StatelessWidget {
           child: Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                // Avatar
-                RoomAvatarWidget(room: room, size: 48),
+                Row(
+                  children: [
+                    // Avatar
+                    RoomAvatarWidget(room: room, size: 48),
 
-                const SizedBox(width: 12),
+                    const SizedBox(width: 12),
 
-                // Name + last message
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                    // Name + last message
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Flexible(
-                            child: Text(
-                              room.getLocalizedDisplayname(),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: tt.titleMedium?.copyWith(
-                                fontWeight: unread > 0
-                                    ? FontWeight.w700
-                                    : FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          _CallIndicator(roomId: room.id),
-                          if (memberships.length >= 2) ...[
-                            const SizedBox(width: 6),
-                            for (var j = 0;
-                                j < memberships.length && j < 4;
-                                j++)
-                              Padding(
-                                padding: const EdgeInsets.only(right: 2),
-                                child: Container(
-                                  width: 6,
-                                  height: 6,
-                                  decoration: BoxDecoration(
-                                    color: _dotColor(j, cs),
-                                    shape: BoxShape.circle,
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  room.getLocalizedDisplayname(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: tt.titleMedium?.copyWith(
+                                    fontWeight: unread > 0
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
                                   ),
                                 ),
                               ),
-                          ],
+                              _CallIndicator(roomId: room.id),
+                              if (widget.memberships.length >= 2) ...[
+                                const SizedBox(width: 6),
+                                for (var j = 0;
+                                    j < widget.memberships.length && j < 4;
+                                    j++)
+                                  Padding(
+                                    padding: const EdgeInsets.only(right: 2),
+                                    child: Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: BoxDecoration(
+                                        color: _dotColor(j, cs),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          _buildSubtitle(context, prefs, lastEvent, cs, tt),
                         ],
                       ),
-                      const SizedBox(height: 2),
-                      _buildSubtitle(context, prefs, lastEvent, cs, tt),
-                    ],
-                  ),
-                ),
+                    ),
 
-                const SizedBox(width: 8),
+                    const SizedBox(width: 8),
 
-                // Timestamp + badge
-                ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 44),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        _formatTime(lastEvent?.originServerTs),
-                        style: tt.bodyMedium?.copyWith(
-                          fontSize: 11,
-                          color: unread > 0
-                              ? cs.primary
-                              : cs.onSurfaceVariant
-                                  .withValues(alpha: 0.5),
+                    // Trailing: call controls or timestamp + badge
+                    if (hasActiveCall)
+                      _CallControls(
+                        roomId: room.id,
+                        isUserInThisCall: isUserInThisCall,
+                        callService: callService,
+                      )
+                    else
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 44),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              _formatTime(lastEvent?.originServerTs),
+                              style: tt.bodyMedium?.copyWith(
+                                fontSize: 11,
+                                color: unread > 0
+                                    ? cs.primary
+                                    : cs.onSurfaceVariant
+                                        .withValues(alpha: 0.5),
+                              ),
+                            ),
+                            if (unread > 0) ...[
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2,),
+                                decoration: BoxDecoration(
+                                  color: cs.primary,
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  unread > 99 ? '99+' : '$unread',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w700,
+                                    color: cs.onPrimary,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
-                      if (unread > 0) ...[
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2,),
-                          decoration: BoxDecoration(
-                            color: cs.primary,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Text(
-                            unread > 99 ? '99+' : '$unread',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w700,
-                              color: cs.onPrimary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
+                  ],
                 ),
+
+                if (hasActiveCall)
+                  _CallParticipantList(
+                    roomId: room.id,
+                    isExpanded: _participantsExpanded,
+                    onToggle: () => setState(() => _participantsExpanded = !_participantsExpanded),
+                  ),
               ],
             ),
           ),
@@ -204,10 +269,10 @@ class RoomTile extends StatelessWidget {
     );
 
     // On desktop, wrap in LongPressDraggable for reparenting.
-    if (_isDesktop && parentSpaceId != null) {
+    if (_isDesktop && widget.parentSpaceId != null) {
       final dragData = RoomDragData(
         roomId: room.id,
-        currentParentSpaceId: parentSpaceId,
+        currentParentSpaceId: widget.parentSpaceId,
       );
       tile = LongPressDraggable<ReparentDragData>(
         data: dragData,
@@ -246,11 +311,11 @@ class RoomTile extends StatelessWidget {
       );
     }
 
-    if (_isDesktop && parentSpaceId != null && sectionRooms != null) {
+    if (_isDesktop && widget.parentSpaceId != null && widget.sectionRooms != null) {
       tile = _ReorderDragTarget(
         room: room,
-        parentSpaceId: parentSpaceId!,
-        sectionRooms: sectionRooms!,
+        parentSpaceId: widget.parentSpaceId!,
+        sectionRooms: widget.sectionRooms!,
         child: tile,
       );
     }
@@ -266,7 +331,7 @@ class RoomTile extends StatelessWidget {
     TextTheme tt,
   ) {
     final userId = context.read<MatrixService>().client.userID;
-    final typers = room.typingUsers
+    final typers = widget.room.typingUsers
         .where((u) => u.id != userId)
         .toList();
     if (typers.isNotEmpty && prefs.typingIndicators) {
@@ -347,6 +412,165 @@ class RoomTile extends StatelessWidget {
     if (diff.inHours < 24) return '${diff.inHours}h';
     if (diff.inDays < 7) return '${diff.inDays}d';
     return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}';
+  }
+}
+
+// ── Call controls (trailing area) ─────────────────────────────
+class _CallControls extends StatelessWidget {
+  const _CallControls({
+    required this.roomId,
+    required this.isUserInThisCall,
+    required this.callService,
+  });
+
+  final String roomId;
+  final bool isUserInThisCall;
+  final CallService callService;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    if (isUserInThisCall) {
+      final elapsed = callService.callElapsed;
+      return ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 80),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            if (elapsed != null)
+              Text(
+                formatCallElapsed(elapsed),
+                style: tt.bodySmall?.copyWith(
+                  color: Colors.green,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            const SizedBox(height: 4),
+            SizedBox(
+              height: 28,
+              child: TextButton(
+                onPressed: () => CallNavigator.endCall(context),
+                style: TextButton.styleFrom(
+                  foregroundColor: cs.error,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                child: const Text('Leave', style: TextStyle(fontSize: 12)),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 28,
+      child: FilledButton.tonal(
+        onPressed: () => CallNavigator.startCall(context, roomId: roomId),
+        style: FilledButton.styleFrom(
+          backgroundColor: Colors.green.withValues(alpha: 0.15),
+          foregroundColor: Colors.green,
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        child: const Text('Join', style: TextStyle(fontSize: 12)),
+      ),
+    );
+  }
+}
+
+// ── Call participant list ─────────────────────────────────────
+class _CallParticipantList extends StatelessWidget {
+  const _CallParticipantList({
+    required this.roomId,
+    required this.isExpanded,
+    required this.onToggle,
+  });
+
+  final String roomId;
+  final bool isExpanded;
+  final VoidCallback onToggle;
+
+  static const _maxVisible = 5;
+
+  @override
+  Widget build(BuildContext context) {
+    final callService = context.watch<CallService>();
+    final matrixService = context.read<MatrixService>();
+    final room = matrixService.client.getRoomById(roomId);
+    if (room == null) return const SizedBox.shrink();
+
+    final myUserId = matrixService.client.userID;
+    final participantIds = callService.callParticipantUserIds(roomId).toList();
+    if (participantIds.isEmpty) return const SizedBox.shrink();
+
+    final isConnected = callService.activeCallRoomId == roomId;
+    if (isConnected && myUserId != null && participantIds.remove(myUserId)) {
+      participantIds.insert(0, myUserId);
+    }
+
+    final names = participantIds.map((id) {
+      if (id == myUserId && isConnected) return 'You';
+      return room.unsafeGetUserFromMemoryOrFallback(id).displayName ?? id;
+    }).toList();
+
+    final overflow = names.length - _maxVisible;
+    final visible = isExpanded ? names : names.take(_maxVisible).toList();
+
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final nameStyle = tt.bodySmall?.copyWith(
+      color: cs.onSurfaceVariant.withValues(alpha: 0.7),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 60, top: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.3)),
+          const SizedBox(height: 4),
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            alignment: Alignment.topCenter,
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final name in visible)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 1),
+                    child: Text(name, style: nameStyle, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ),
+                if (!isExpanded && overflow > 0)
+                  GestureDetector(
+                    onTap: onToggle,
+                    child: Text(
+                      '+ $overflow more',
+                      style: tt.bodySmall?.copyWith(color: cs.primary),
+                    ),
+                  ),
+                if (isExpanded && overflow > 0)
+                  GestureDetector(
+                    onTap: onToggle,
+                    child: Text(
+                      'Show less',
+                      style: tt.bodySmall?.copyWith(color: cs.primary),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

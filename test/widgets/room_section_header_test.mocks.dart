@@ -8240,6 +8240,13 @@ class MockPreferencesService extends _i1.Mock
       ) as bool);
 
   @override
+  bool get pushEnabled => (super.noSuchMethod(
+        Invocation.getter(#pushEnabled),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
   bool get hasListeners => (super.noSuchMethod(
         Invocation.getter(#hasListeners),
         returnValue: false,
@@ -8421,6 +8428,27 @@ class MockPreferencesService extends _i1.Mock
         Invocation.method(
           #setForegroundNotificationsEnabled,
           [value],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> setPushEnabled(bool? value) => (super.noSuchMethod(
+        Invocation.method(
+          #setPushEnabled,
+          [value],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> setPushDistributor(String? distributor) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #setPushDistributor,
+          [distributor],
         ),
         returnValue: _i5.Future<void>.value(),
         returnValueForMissingStub: _i5.Future<void>.value(),

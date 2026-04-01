@@ -559,4 +559,125 @@ void main() {
       expect(ids, ['c1']);
     });
   });
+
+  // ── activeCallParticipantUserIds ────────────────────────────
+
+  group('activeCallParticipantUserIds', () {
+    test('returns correct user IDs from state keys', () {
+      final mockRoom = MockRoom();
+      when(mockClient.getRoomById('!r:x')).thenReturn(mockRoom);
+      final now = DateTime.now().millisecondsSinceEpoch;
+      when(mockRoom.states).thenReturn({
+        callMemberEventType: {
+          '_@alice:example.com_DEV1_m.call': FakeEvent(
+            content: {'expires_ts': now + 60000},
+            originServerTs: now,
+          ),
+          '_@bob:server.org_ABCD_m.call': FakeEvent(
+            content: {'expires_ts': now + 60000},
+            originServerTs: now,
+          ),
+        },
+      });
+
+      final userIds = RtcMembershipService.activeCallParticipantUserIds(
+        mockClient,
+        '!r:x',
+      );
+      expect(userIds, {'@alice:example.com', '@bob:server.org'});
+    });
+
+    test('returns empty set when no active memberships', () {
+      final mockRoom = MockRoom();
+      when(mockClient.getRoomById('!r:x')).thenReturn(mockRoom);
+      when(mockRoom.states).thenReturn({});
+
+      final userIds = RtcMembershipService.activeCallParticipantUserIds(
+        mockClient,
+        '!r:x',
+      );
+      expect(userIds, isEmpty);
+    });
+
+    test('returns empty set when room is null', () {
+      when(mockClient.getRoomById(any)).thenReturn(null);
+      final userIds = RtcMembershipService.activeCallParticipantUserIds(
+        mockClient,
+        '!r:x',
+      );
+      expect(userIds, isEmpty);
+    });
+
+    test('deduplicates user across multiple devices', () {
+      final mockRoom = MockRoom();
+      when(mockClient.getRoomById('!r:x')).thenReturn(mockRoom);
+      final now = DateTime.now().millisecondsSinceEpoch;
+      when(mockRoom.states).thenReturn({
+        callMemberEventType: {
+          '_@alice:example.com_DEV1_m.call': FakeEvent(
+            content: {'expires_ts': now + 60000},
+            originServerTs: now,
+          ),
+          '_@alice:example.com_DEV2_m.call': FakeEvent(
+            content: {'expires_ts': now + 60000},
+            originServerTs: now,
+          ),
+        },
+      });
+
+      final userIds = RtcMembershipService.activeCallParticipantUserIds(
+        mockClient,
+        '!r:x',
+      );
+      expect(userIds, {'@alice:example.com'});
+    });
+
+    test('excludes expired memberships', () {
+      final mockRoom = MockRoom();
+      when(mockClient.getRoomById('!r:x')).thenReturn(mockRoom);
+      final now = DateTime.now().millisecondsSinceEpoch;
+      when(mockRoom.states).thenReturn({
+        callMemberEventType: {
+          '_@alice:example.com_DEV1_m.call': FakeEvent(
+            content: {'expires_ts': now + 60000},
+            originServerTs: now,
+          ),
+          '_@bob:server.org_ABCD_m.call': FakeEvent(
+            content: {'expires_ts': now - 60000},
+            originServerTs: now,
+          ),
+        },
+      });
+
+      final userIds = RtcMembershipService.activeCallParticipantUserIds(
+        mockClient,
+        '!r:x',
+      );
+      expect(userIds, {'@alice:example.com'});
+    });
+
+    test('handles nested memberships list format', () {
+      final mockRoom = MockRoom();
+      when(mockClient.getRoomById('!r:x')).thenReturn(mockRoom);
+      final now = DateTime.now().millisecondsSinceEpoch;
+      when(mockRoom.states).thenReturn({
+        callMemberEventType: {
+          '_@alice:example.com_DEV1_m.call': FakeEvent(
+            content: {
+              'memberships': [
+                {'call_id': 'c1', 'expires_ts': now + 60000},
+              ],
+            },
+            originServerTs: now,
+          ),
+        },
+      });
+
+      final userIds = RtcMembershipService.activeCallParticipantUserIds(
+        mockClient,
+        '!r:x',
+      );
+      expect(userIds, {'@alice:example.com'});
+    });
+  });
 }

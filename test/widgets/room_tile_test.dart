@@ -418,4 +418,163 @@ void main() {
       expect(find.text('15/03'), findsOneWidget);
     });
   });
+
+  // ── Active call controls ──────────────────────────────────
+
+  group('Active call controls', () {
+    testWidgets('shows Join button when room has active call and user is not connected',
+        (tester) async {
+      when(mockCallService.roomHasActiveCall('!room:example.com'))
+          .thenReturn(true);
+      when(mockCallService.activeCallRoomId).thenReturn(null);
+      when(mockCallService.callState).thenReturn(LatticeCallState.idle);
+      when(mockCallService.callParticipantUserIds('!room:example.com'))
+          .thenReturn({});
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Join'), findsOneWidget);
+      expect(find.text('Leave'), findsNothing);
+    });
+
+    testWidgets('shows Leave button and elapsed time when user connected to this call',
+        (tester) async {
+      when(mockCallService.roomHasActiveCall('!room:example.com'))
+          .thenReturn(true);
+      when(mockCallService.activeCallRoomId).thenReturn('!room:example.com');
+      when(mockCallService.callState).thenReturn(LatticeCallState.connected);
+      when(mockCallService.callElapsed)
+          .thenReturn(const Duration(seconds: 42));
+      when(mockCallService.callParticipantUserIds('!room:example.com'))
+          .thenReturn({});
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pump();
+
+      expect(find.text('Leave'), findsOneWidget);
+      expect(find.text('00:42'), findsOneWidget);
+      expect(find.text('Join'), findsNothing);
+    });
+
+    testWidgets('hides call controls when no active call', (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Join'), findsNothing);
+      expect(find.text('Leave'), findsNothing);
+    });
+  });
+
+  // ── Call participant list ─────────────────────────────────
+
+  group('Call participant list', () {
+    late MockUser mockAlice;
+    late MockUser mockBob;
+
+    setUp(() {
+      mockAlice = MockUser();
+      when(mockAlice.displayName).thenReturn('Alice');
+      when(mockAlice.id).thenReturn('@alice:example.com');
+
+      mockBob = MockUser();
+      when(mockBob.displayName).thenReturn('Bob');
+      when(mockBob.id).thenReturn('@bob:example.com');
+    });
+
+    testWidgets('shows participant names when call is active', (tester) async {
+      when(mockCallService.roomHasActiveCall('!room:example.com'))
+          .thenReturn(true);
+      when(mockCallService.activeCallRoomId).thenReturn(null);
+      when(mockCallService.callState).thenReturn(LatticeCallState.idle);
+      when(mockCallService.callParticipantUserIds('!room:example.com'))
+          .thenReturn({'@alice:example.com', '@bob:example.com'});
+      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
+      when(mockRoom.unsafeGetUserFromMemoryOrFallback('@alice:example.com'))
+          .thenReturn(mockAlice);
+      when(mockRoom.unsafeGetUserFromMemoryOrFallback('@bob:example.com'))
+          .thenReturn(mockBob);
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Alice'), findsOneWidget);
+      expect(find.text('Bob'), findsOneWidget);
+    });
+
+    testWidgets('shows You first when user is connected', (tester) async {
+      when(mockCallService.roomHasActiveCall('!room:example.com'))
+          .thenReturn(true);
+      when(mockCallService.activeCallRoomId).thenReturn('!room:example.com');
+      when(mockCallService.callState).thenReturn(LatticeCallState.connected);
+      when(mockCallService.callElapsed)
+          .thenReturn(const Duration(seconds: 10));
+      when(mockCallService.callParticipantUserIds('!room:example.com'))
+          .thenReturn({'@alice:example.com', '@me:example.com'});
+      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
+      when(mockRoom.unsafeGetUserFromMemoryOrFallback('@alice:example.com'))
+          .thenReturn(mockAlice);
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pump();
+
+      expect(find.text('You'), findsOneWidget);
+      expect(find.text('Alice'), findsOneWidget);
+    });
+
+    testWidgets('shows + N more when more than 5 participants', (tester) async {
+      final userIds = <String>{};
+      for (var i = 0; i < 7; i++) {
+        final id = '@user$i:example.com';
+        userIds.add(id);
+        final user = MockUser();
+        when(user.displayName).thenReturn('User $i');
+        when(user.id).thenReturn(id);
+        when(mockRoom.unsafeGetUserFromMemoryOrFallback(id)).thenReturn(user);
+      }
+
+      when(mockCallService.roomHasActiveCall('!room:example.com'))
+          .thenReturn(true);
+      when(mockCallService.activeCallRoomId).thenReturn(null);
+      when(mockCallService.callState).thenReturn(LatticeCallState.idle);
+      when(mockCallService.callParticipantUserIds('!room:example.com'))
+          .thenReturn(userIds);
+      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      expect(find.text('+ 2 more'), findsOneWidget);
+    });
+
+    testWidgets('expands on tap and shows Show less', (tester) async {
+      final userIds = <String>{};
+      for (var i = 0; i < 7; i++) {
+        final id = '@user$i:example.com';
+        userIds.add(id);
+        final user = MockUser();
+        when(user.displayName).thenReturn('User $i');
+        when(user.id).thenReturn(id);
+        when(mockRoom.unsafeGetUserFromMemoryOrFallback(id)).thenReturn(user);
+      }
+
+      when(mockCallService.roomHasActiveCall('!room:example.com'))
+          .thenReturn(true);
+      when(mockCallService.activeCallRoomId).thenReturn(null);
+      when(mockCallService.callState).thenReturn(LatticeCallState.idle);
+      when(mockCallService.callParticipantUserIds('!room:example.com'))
+          .thenReturn(userIds);
+      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
+
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('+ 2 more'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Show less'), findsOneWidget);
+      expect(find.text('User 6'), findsOneWidget);
+      expect(find.text('+ 2 more'), findsNothing);
+    });
+  });
 }
