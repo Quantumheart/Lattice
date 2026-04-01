@@ -69,6 +69,24 @@ flutter build linux --release
 flutter build windows --release
 ```
 
+### Web Deployment (Docker)
+
+Build and run the containerized web app locally:
+
+```bash
+docker build -t lattice-web .
+docker run -p 8080:80 lattice-web
+```
+
+Then open `http://localhost:8080`.
+
+Pull the latest release image from GHCR:
+
+```bash
+docker pull ghcr.io/<owner>/lattice:latest
+docker run -p 8080:80 ghcr.io/<owner>/lattice:latest
+```
+
 ## Architecture
 
 Feature-based organization under `lib/`:
@@ -144,7 +162,7 @@ GitHub Actions runs on push/PR to `master`:
 2. **Test** — mock generation + `flutter test`
 3. **Build** — Linux release build
 
-Tagged releases (`v*`) build Linux (tar.gz) and Windows (Inno Setup installer) artifacts and publish a GitHub Release.
+Tagged releases (`v*`) build Linux (tar.gz) and Windows (Inno Setup installer) artifacts and publish a GitHub Release. A separate workflow builds and pushes a web Docker image to `ghcr.io`.
 
 ## License
 

@@ -1,0 +1,13 @@
+:80
+
+root * /srv
+try_files {path} /index.html
+file_server
+
+encode zstd gzip
+
+header {
+	Cross-Origin-Opener-Policy "same-origin"
+	Cross-Origin-Embedder-Policy "require-corp"
+}
+header /assets/* Cache-Control "public, max-age=31536000, immutable"
