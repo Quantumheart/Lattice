@@ -9,7 +9,7 @@ class InternetAddress {
 
   final String address;
 
-  InternetAddressType get type => InternetAddressType.IPv4;
+  InternetAddressType get type => InternetAddressType.any;
   Uint8List get rawAddress => Uint8List(0);
   bool get isLoopback => false;
   bool get isLinkLocal => false;
