@@ -339,6 +339,24 @@ class MatrixService extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ── Account Deactivation ──────────────────────────────────────
+
+  Future<void> deactivateAccount() async {
+    unawaited(_loginStateSub?.cancel());
+    _sync.cancelSyncSub();
+    _isLoggedIn = false;
+    await _auth.awaitPostLoginSync();
+    await _client.deactivateAccount(auth: AuthenticationData());
+    await _auth.clearSessionKeys();
+    await SessionBackup.delete(clientName: clientName, storage: _storage);
+    await _chatBackup.deleteStoredRecoveryKey();
+    _uia.clearCachedPassword();
+    _uia.cancelUiaSub();
+    _selection.resetSelection();
+    _chatBackup.resetChatBackupState();
+    notifyListeners();
+  }
+
   // ── Soft Logout ──────────────────────────────────────────────
 
   Future<void> handleSoftLogout() async {

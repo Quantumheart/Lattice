@@ -31,15 +31,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _displayName;
   final _displayNameController = TextEditingController();
   bool _displayNameSaving = false;
+  StreamSubscription<UiaRequest<dynamic>>? _uiaSub;
 
   @override
   void initState() {
     super.initState();
+    final matrix = context.read<MatrixService>();
+    _uiaSub = matrix.onUiaRequest.listen(_showUiaPasswordPrompt);
     unawaited(_fetchProfile());
   }
 
   @override
   void dispose() {
+    unawaited(_uiaSub?.cancel());
     _displayNameController.dispose();
     super.dispose();
   }
@@ -469,6 +473,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: const Text('Sign Out'),
           ),
 
+          const SizedBox(height: 12),
+
+          // ── Deactivate Account ──
+          FilledButton.tonal(
+            onPressed: () => _confirmDeactivateAccount(context),
+            style: FilledButton.styleFrom(
+              backgroundColor: cs.error,
+              foregroundColor: cs.onError,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: const Text('Deactivate Account'),
+          ),
+
           const SizedBox(height: 32),
         ],
       ),
@@ -560,6 +580,111 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ),);
   }
 
+  void _confirmDeactivateAccount(BuildContext context) {
+    final matrix = context.read<MatrixService>();
+    final manager = context.read<ClientManager>();
+
+    unawaited(showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Deactivate account?'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.warning_amber_rounded,
+                    color: Theme.of(ctx).colorScheme.error),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'This action is permanent and cannot be undone.',
+                    style: TextStyle(
+                        color: Theme.of(ctx).colorScheme.error),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Your account will be permanently deactivated. '
+              'You will lose access to all your messages, rooms, '
+              'and contacts on this homeserver.',
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+              foregroundColor: Theme.of(ctx).colorScheme.onError,
+            ),
+            onPressed: () async {
+              final nav = Navigator.of(context);
+              Navigator.pop(ctx);
+              try {
+                await matrix.deactivateAccount();
+                await manager.removeService(matrix);
+                if (nav.canPop()) nav.pop();
+              } catch (e) {
+                debugPrint('[Lattice] Account deactivation failed: $e');
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to deactivate account: $e')),
+                  );
+                }
+              }
+            },
+            child: const Text('Deactivate'),
+          ),
+        ],
+      ),
+    ));
+  }
+
+  Future<void> _showUiaPasswordPrompt(UiaRequest<dynamic> request) async {
+    if (!mounted) return;
+    final password = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        final passwordController = TextEditingController();
+        return AlertDialog(
+          title: const Text('Authentication required'),
+          content: TextField(
+            controller: passwordController,
+            obscureText: true,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Password',
+              border: OutlineInputBorder(),
+            ),
+            onSubmitted: (value) => Navigator.pop(ctx, value),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, passwordController.text),
+              child: const Text('Submit'),
+            ),
+          ],
+        );
+      },
+    );
+    if (password != null && password.isNotEmpty && mounted) {
+      context.read<MatrixService>().completeUiaWithPassword(request, password);
+    } else {
+      request.cancel();
+    }
+  }
 }
 
 class _DisableBackupDialog extends StatefulWidget {
