@@ -14,5 +14,7 @@ windows/
 linux/
 flatpak/
 test/
+docs/
+.github/
 *.iml
 *.log
