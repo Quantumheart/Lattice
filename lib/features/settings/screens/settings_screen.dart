@@ -587,13 +587,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             Row(
               children: [
                 Icon(Icons.warning_amber_rounded,
-                    color: Theme.of(ctx).colorScheme.error),
+                    color: Theme.of(ctx).colorScheme.error,),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'This action is permanent and cannot be undone.',
                     style: TextStyle(
-                        color: Theme.of(ctx).colorScheme.error),
+                        color: Theme.of(ctx).colorScheme.error,),
                   ),
                 ),
               ],
@@ -636,7 +636,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
         ],
       ),
-    ));
+    ),);
+
   }
 
   Future<void> _showUiaPasswordPrompt(UiaRequest<dynamic> request) async {
@@ -761,7 +762,7 @@ class _SettingsTile extends StatelessWidget {
     return ListTile(
       leading: Icon(icon, color: titleColor ?? cs.onSurfaceVariant),
       title: Text(title, style: titleColor != null
-          ? TextStyle(color: titleColor) : null),
+          ? TextStyle(color: titleColor) : null,),
       subtitle: Text(subtitle),
       trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
       mouseCursor: SystemMouseCursors.click,
