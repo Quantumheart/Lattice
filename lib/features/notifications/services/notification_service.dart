@@ -234,9 +234,21 @@ class NotificationService {
         }
       }
 
-      final avatarPath = _useLinux
-          ? await downloadAvatarToTemp(client, inviterAvatarUrl, inviterName)
-          : null;
+      String? avatarPath;
+      String? avatarUrl;
+      if (kIsWeb && inviterAvatarUrl != null) {
+        try {
+          final uri = await inviterAvatarUrl.getThumbnailUri(
+            client,
+            width: 128,
+            height: 128,
+          );
+          avatarUrl = uri.toString();
+        } catch (_) {}
+      } else if (_useLinux) {
+        avatarPath =
+            await downloadAvatarToTemp(client, inviterAvatarUrl, inviterName);
+      }
 
       await _showNotification(
         roomId: roomId,
@@ -244,6 +256,7 @@ class NotificationService {
         senderName: inviterName,
         body: NotificationText.inviteBody,
         avatarPath: avatarPath,
+        avatarUrl: avatarUrl,
       );
       _notifiedInvites.add(roomId);
     } finally {

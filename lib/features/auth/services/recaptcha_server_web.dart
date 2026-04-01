@@ -22,6 +22,7 @@ class RecaptchaServer {
   Timer? _timeout;
   web.Window? _popup;
   JSFunction? _messageListener;
+  String? _blobUrl;
 
   Future<String> get tokenFuture => _tokenCompleter.future;
 
@@ -40,7 +41,9 @@ class RecaptchaServer {
 
     _messageListener = (web.Event event) {
       if (event.type != 'message') return;
-      final data = (event as web.MessageEvent).data;
+      final messageEvent = event as web.MessageEvent;
+      if (_popup != null && messageEvent.source != _popup) return;
+      final data = messageEvent.data;
       if (data == null) return;
 
       final map = data.dartify();
@@ -62,7 +65,8 @@ class RecaptchaServer {
       [html.toJS].toJS,
       web.BlobPropertyBag(type: 'text/html'),
     );
-    return web.URL.createObjectURL(blob);
+    _blobUrl = web.URL.createObjectURL(blob);
+    return _blobUrl!;
   }
 
   Future<void> launch(Uri url) async {
@@ -122,6 +126,10 @@ class RecaptchaServer {
     _timeout = null;
     _popup?.close();
     _popup = null;
+    if (_blobUrl != null) {
+      web.URL.revokeObjectURL(_blobUrl!);
+      _blobUrl = null;
+    }
     if (_messageListener != null) {
       web.window.removeEventListener('message', _messageListener);
       _messageListener = null;
