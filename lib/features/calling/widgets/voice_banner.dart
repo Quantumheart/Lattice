@@ -18,18 +18,25 @@ class VoiceBanner extends StatefulWidget {
 
 class _VoiceBannerState extends State<VoiceBanner> {
   Timer? _elapsedTimer;
+  bool _timerActive = false;
 
-  @override
-  void initState() {
-    super.initState();
+  void _startTimer() {
+    if (_timerActive) return;
+    _timerActive = true;
     _elapsedTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (mounted) setState(() {});
     });
   }
 
+  void _stopTimer() {
+    _timerActive = false;
+    _elapsedTimer?.cancel();
+    _elapsedTimer = null;
+  }
+
   @override
   void dispose() {
-    _elapsedTimer?.cancel();
+    _stopTimer();
     super.dispose();
   }
 
@@ -41,7 +48,12 @@ class _VoiceBannerState extends State<VoiceBanner> {
     final viewingDifferentRoom =
         activeRoomId != null && activeRoomId != widget.currentViewingRoomId;
 
-    if (!isConnected || !viewingDifferentRoom) return const SizedBox.shrink();
+    if (!isConnected || !viewingDifferentRoom) {
+      _stopTimer();
+      return const SizedBox.shrink();
+    }
+
+    _startTimer();
 
     final room = callService.client.getRoomById(activeRoomId);
     final roomName = room?.getLocalizedDisplayname() ?? 'Unknown room';

@@ -485,7 +485,7 @@ void main() {
       when(mockBob.id).thenReturn('@bob:example.com');
     });
 
-    testWidgets('shows participant names when call is active', (tester) async {
+    testWidgets('shows participant avatars with tooltips when call is active', (tester) async {
       when(mockCallService.roomHasActiveCall('!room:example.com'))
           .thenReturn(true);
       when(mockCallService.activeCallRoomId).thenReturn(null);
@@ -501,11 +501,16 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('Alice'), findsOneWidget);
-      expect(find.text('Bob'), findsOneWidget);
+      final tooltips = tester.widgetList<Tooltip>(find.byType(Tooltip))
+          .where((t) => t.message == 'Alice' || t.message == 'Bob');
+      expect(tooltips.length, 2);
     });
 
-    testWidgets('shows You first when user is connected', (tester) async {
+    testWidgets('shows You tooltip first when user is connected', (tester) async {
+      final mockMe = MockUser();
+      when(mockMe.displayName).thenReturn('Me');
+      when(mockMe.id).thenReturn('@me:example.com');
+
       when(mockCallService.roomHasActiveCall('!room:example.com'))
           .thenReturn(true);
       when(mockCallService.activeCallRoomId).thenReturn('!room:example.com');
@@ -517,17 +522,21 @@ void main() {
       when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
       when(mockRoom.unsafeGetUserFromMemoryOrFallback('@alice:example.com'))
           .thenReturn(mockAlice);
+      when(mockRoom.unsafeGetUserFromMemoryOrFallback('@me:example.com'))
+          .thenReturn(mockMe);
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pump();
 
-      expect(find.text('You'), findsOneWidget);
-      expect(find.text('Alice'), findsOneWidget);
+      final tooltips = tester.widgetList<Tooltip>(find.byType(Tooltip)).toList();
+      final callTooltips = tooltips.where((t) => t.message == 'You' || t.message == 'Alice').toList();
+      expect(callTooltips.length, 2);
+      expect(callTooltips.first.message, 'You');
     });
 
-    testWidgets('shows + N more when more than 5 participants', (tester) async {
+    testWidgets('shows overflow indicator when more than 8 participants', (tester) async {
       final userIds = <String>{};
-      for (var i = 0; i < 7; i++) {
+      for (var i = 0; i < 10; i++) {
         final id = '@user$i:example.com';
         userIds.add(id);
         final user = MockUser();
@@ -547,12 +556,12 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('+ 2 more'), findsOneWidget);
+      expect(find.text('+2'), findsOneWidget);
     });
 
-    testWidgets('expands on tap and shows Show less', (tester) async {
+    testWidgets('expands on tap and shows collapse icon', (tester) async {
       final userIds = <String>{};
-      for (var i = 0; i < 7; i++) {
+      for (var i = 0; i < 10; i++) {
         final id = '@user$i:example.com';
         userIds.add(id);
         final user = MockUser();
@@ -572,12 +581,14 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('+ 2 more'));
+      await tester.tap(find.text('+2'));
       await tester.pumpAndSettle();
 
-      expect(find.text('Show less'), findsOneWidget);
-      expect(find.text('User 6'), findsOneWidget);
-      expect(find.text('+ 2 more'), findsNothing);
+      expect(find.byIcon(Icons.expand_less), findsOneWidget);
+      expect(find.text('+2'), findsNothing);
+      final tooltips = tester.widgetList<Tooltip>(find.byType(Tooltip))
+          .where((t) => t.message == 'User 9');
+      expect(tooltips.length, 1);
     });
   });
 }

@@ -1,19 +1,19 @@
-  {                                                                                        
-    "files.watcherExclude": {                                                              
-      "**/.dart_tool/**": true,                                                            
-      "**/.flutter-plugins*": true,          
-      "**/build/**": true,                                                                 
-      "**/.pub-cache/**": true,                                                            
-      "**/*.mocks.dart": true             
-    },                                                                                     
-    "search.exclude": {                                                                    
-      "**/.dart_tool/**": true,           
-      "**/build/**": true,                                                                 
-      "**/.pub-cache/**": true,  
-      "**/pubspec.lock": true             
-    },                                                                                     
-    "files.exclude": {
-      "**/.dart_tool": true,                                                               
-      "**/build": true           
-    }                                     
-  }  
+{
+  "files.watcherExclude": {
+    "**/.dart_tool/**": true,
+    "**/.flutter-plugins*": true,
+    "**/build/**": true,
+    "**/.pub-cache/**": true,
+    "**/*.mocks.dart": true
+  },
+  "search.exclude": {
+    "**/.dart_tool/**": true,
+    "**/build/**": true,
+    "**/.pub-cache/**": true,
+    "**/pubspec.lock": true
+  },
+  "files.exclude": {
+    "**/.dart_tool": true,
+    "**/build": true
+  }
+}

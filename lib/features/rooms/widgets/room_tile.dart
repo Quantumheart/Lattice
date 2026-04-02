@@ -581,17 +581,20 @@ class _CallParticipantList extends StatelessWidget {
             runSpacing: 4,
             children: [
               for (final id in visibleIds)
-                Tooltip(
-                  message: id == myUserId && isConnected
-                      ? 'You'
-                      : room.unsafeGetUserFromMemoryOrFallback(id).displayName ?? id,
-                  child: UserAvatar(
-                    client: client,
-                    avatarUrl: room.unsafeGetUserFromMemoryOrFallback(id).avatarUrl,
-                    userId: id,
-                    size: _avatarSize,
-                  ),
-                ),
+                Builder(builder: (context) {
+                  final user = room.unsafeGetUserFromMemoryOrFallback(id);
+                  return Tooltip(
+                    message: id == myUserId && isConnected
+                        ? 'You'
+                        : user.displayName ?? id,
+                    child: UserAvatar(
+                      client: client,
+                      avatarUrl: user.avatarUrl,
+                      userId: id,
+                      size: _avatarSize,
+                    ),
+                  );
+                },),
               if (!isExpanded && overflow > 0)
                 GestureDetector(
                   onTap: onToggle,
