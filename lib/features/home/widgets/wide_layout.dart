@@ -119,6 +119,7 @@ class _WideLayoutState extends State<WideLayout> {
     final name = widget.routeName;
 
     if (name == Routes.settings ||
+        name == Routes.settingsAppearance ||
         name == Routes.settingsNotifications ||
         name == Routes.settingsDevices ||
         name == Routes.spaces ||

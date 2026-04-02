@@ -52,6 +52,7 @@ class NarrowLayout extends StatelessWidget {
     final hideRail =
         ((name == Routes.room || name == Routes.call || name == Routes.roomDetails) && roomId != null) ||
         name == Routes.settings ||
+        name == Routes.settingsAppearance ||
         name == Routes.settingsNotifications ||
         name == Routes.settingsDevices ||
         name == Routes.spaceDetails;

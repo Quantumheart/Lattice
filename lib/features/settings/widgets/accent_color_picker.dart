@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lattice/core/services/preferences_service.dart';
 import 'package:provider/provider.dart';
-
-import '../../../core/services/preferences_service.dart';
 
 class AccentColorPicker extends StatelessWidget {
   const AccentColorPicker({super.key});
@@ -79,9 +78,9 @@ class _ColorSwatch extends StatelessWidget {
             shape: BoxShape.circle,
             border: selected
                 ? Border.all(color: cs.primary, width: 3)
-                : Border.all(color: cs.outlineVariant, width: 1),
+                : Border.all(color: cs.outlineVariant),
             gradient: isAuto
-                ? SweepGradient(
+                ? const SweepGradient(
                     colors: [
                       Colors.blue,
                       Colors.teal,
