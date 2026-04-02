@@ -9,7 +9,6 @@ import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/e2ee/widgets/backup_info_dialog.dart';
 import 'package:lattice/features/e2ee/widgets/bootstrap_dialog.dart';
-import 'package:lattice/features/settings/widgets/density_picker_dialog.dart';
 import 'package:lattice/shared/widgets/section_header.dart';
 import 'package:lattice/shared/widgets/user_avatar.dart';
 import 'package:matrix/matrix.dart';
@@ -349,13 +348,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: 'Notifications',
                   subtitle: prefs.notificationLevelLabel,
                   onTap: () => context.goNamed(Routes.settingsNotifications),
-                ),
-                const Divider(height: 1, indent: 56),
-                _SettingsTile(
-                  icon: Icons.text_fields_rounded,
-                  title: 'Message density',
-                  subtitle: prefs.messageDensity.label,
-                  onTap: () => DensityPickerDialog.show(context),
                 ),
                 const Divider(height: 1, indent: 56),
                 SwitchListTile(

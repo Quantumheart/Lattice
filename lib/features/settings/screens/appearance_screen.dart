@@ -51,6 +51,25 @@ class AppearanceScreen extends StatelessWidget {
 
           const SizedBox(height: 24),
 
+          // ── Message density ────────────────────────────────
+          const SectionHeader(label: 'MESSAGE DENSITY'),
+          Card(
+            child: RadioGroup<MessageDensity>(
+              groupValue: prefs.messageDensity,
+              onChanged: (v) => prefs.setMessageDensity(v!),
+              child: Column(
+                children: MessageDensity.values.map((density) {
+                  return RadioListTile<MessageDensity>(
+                    title: Text(density.label),
+                    value: density,
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
           // ── Accent color ────────────────────────────────────
           const SectionHeader(label: 'ACCENT COLOR'),
           Card(
