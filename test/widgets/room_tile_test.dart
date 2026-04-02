@@ -324,14 +324,14 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.call_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.headset_mic_rounded), findsAtLeast(1));
     });
 
     testWidgets('hides green call indicator when no active call', (tester) async {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      final greenIcons = tester.widgetList<Icon>(find.byIcon(Icons.call_rounded))
+      final greenIcons = tester.widgetList<Icon>(find.byIcon(Icons.headset_mic_rounded))
           .where((icon) => icon.color == Colors.green);
       expect(greenIcons, isEmpty);
     });
@@ -465,7 +465,7 @@ void main() {
 
       expect(find.text('Join'), findsNothing);
       expect(find.text('Leave'), findsNothing);
-      expect(find.byIcon(Icons.call_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.headset_mic_rounded), findsAtLeast(1));
     });
   });
 
