@@ -138,15 +138,34 @@ class _LatticeAppState extends State<LatticeApp> {
                     child: Builder(
                       builder: (context) {
                         final callService = context.read<CallService>();
-                        final preset = getPreset(prefs.themePreset);
-                        final theme = LatticeTheme.light(
-                          dynamic: lightDynamic,
-                          preset: preset,
-                        );
-                        final darkTheme = LatticeTheme.dark(
-                          dynamic: darkDynamic,
-                          preset: preset,
-                        );
+                        final isCustom = prefs.themePreset == 'custom';
+                        final preset = isCustom
+                            ? null
+                            : getPreset(prefs.themePreset);
+                        final customScheme = isCustom
+                            ? prefs.customTheme
+                            : null;
+
+                        final theme = customScheme != null
+                            ? LatticeTheme.light(
+                                dynamic: customScheme.toColorScheme(
+                                    Brightness.light,),)
+                            : LatticeTheme.light(
+                                dynamic: lightDynamic,
+                                preset: preset,
+                              );
+                        final darkTheme = customScheme != null
+                            ? LatticeTheme.dark(
+                                dynamic: customScheme.toColorScheme(
+                                    Brightness.dark,),)
+                            : LatticeTheme.dark(
+                                dynamic: darkDynamic,
+                                preset: preset,
+                              );
+
+                        final themeMode = isCustom
+                            ? prefs.customThemeMode
+                            : (preset?.forcedMode ?? prefs.themeMode);
 
                         return NotificationLifecycleObserver(
                           matrixService: matrix,
@@ -158,7 +177,7 @@ class _LatticeAppState extends State<LatticeApp> {
                             debugShowCheckedModeBanner: false,
                             theme: theme,
                             darkTheme: darkTheme,
-                            themeMode: preset?.forcedMode ?? prefs.themeMode,
+                            themeMode: themeMode,
                             routerConfig: router,
                             builder: (context, child) => IncomingCallOverlay(
                               router: router,

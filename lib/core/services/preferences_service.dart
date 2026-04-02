@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:lattice/core/theme/custom_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Controls how compact or spacious message bubbles appear.
@@ -98,6 +99,42 @@ class PreferencesService extends ChangeNotifier {
       await _prefs?.setString(_themePresetKey, id);
     }
     debugPrint('[Lattice] Theme preset set to $id');
+    notifyListeners();
+  }
+
+  // ── Custom theme ─────────────────────────────────────────
+
+  static const _customThemeKey = 'custom_theme';
+  static const _customThemeModeKey = 'custom_theme_mode';
+
+  CustomTheme get customTheme {
+    final json = _prefs?.getString(_customThemeKey);
+    if (json == null) return CustomTheme.defaults;
+    try {
+      return CustomTheme.fromJsonString(json);
+    } catch (_) {
+      return CustomTheme.defaults;
+    }
+  }
+
+  Future<void> setCustomTheme(CustomTheme theme) async {
+    await _prefs?.setString(_customThemeKey, theme.toJsonString());
+    debugPrint('[Lattice] Custom theme updated');
+    notifyListeners();
+  }
+
+  ThemeMode get customThemeMode {
+    final stored = _prefs?.getString(_customThemeModeKey);
+    if (stored == null) return ThemeMode.dark;
+    return ThemeMode.values.firstWhere(
+      (m) => m.name == stored,
+      orElse: () => ThemeMode.dark,
+    );
+  }
+
+  Future<void> setCustomThemeMode(ThemeMode mode) async {
+    await _prefs?.setString(_customThemeModeKey, mode.name);
+    debugPrint('[Lattice] Custom theme mode set to ${mode.name}');
     notifyListeners();
   }
 

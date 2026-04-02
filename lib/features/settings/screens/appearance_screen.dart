@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/features/settings/widgets/custom_theme_editor.dart';
 import 'package:lattice/features/settings/widgets/theme_preset_picker.dart';
 import 'package:lattice/shared/widgets/section_header.dart';
 import 'package:provider/provider.dart';
@@ -38,6 +39,8 @@ class AppearanceScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   const ThemePresetPicker(),
+                  if (prefs.themePreset == 'custom')
+                    const CustomThemeEditor(),
                 ],
               ),
             ),

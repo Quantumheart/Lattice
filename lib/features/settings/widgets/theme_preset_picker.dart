@@ -11,24 +11,44 @@ class ThemePresetPicker extends StatelessWidget {
     final prefs = context.watch<PreferencesService>();
     final selected = prefs.themePreset;
 
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: [
+    final chips = [
+      _PresetChip(
+        label: 'System',
+        color: Theme.of(context).colorScheme.primary,
+        selected: selected == null,
+        onTap: () => prefs.setThemePreset(null),
+      ),
+      for (final preset in themePresetList)
         _PresetChip(
-          label: 'System',
-          color: Theme.of(context).colorScheme.primary,
-          selected: selected == null,
-          onTap: () => prefs.setThemePreset(null),
+          label: preset.name,
+          color: preset.seedColor,
+          selected: selected == preset.id,
+          onTap: () => prefs.setThemePreset(preset.id),
         ),
-        for (final preset in themePresetList)
-          _PresetChip(
-            label: preset.name,
-            color: preset.seedColor,
-            selected: selected == preset.id,
-            onTap: () => prefs.setThemePreset(preset.id),
-          ),
-      ],
+      _PresetChip(
+        label: 'Custom',
+        color: Theme.of(context).colorScheme.tertiary,
+        selected: selected == 'custom',
+        onTap: () => prefs.setThemePreset('custom'),
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 8.0;
+        const columns = 6;
+        final chipWidth =
+            (constraints.maxWidth - spacing * (columns - 1)) / columns;
+
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: [
+            for (final chip in chips)
+              SizedBox(width: chipWidth, child: chip),
+          ],
+        );
+      },
     );
   }
 }
