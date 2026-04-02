@@ -477,6 +477,7 @@ class MatrixService extends ChangeNotifier {
     if (keys.token == null ||
         keys.userId == null ||
         keys.homeserver == null) {
+      await _tryDatabaseRestore();
       return;
     }
 
