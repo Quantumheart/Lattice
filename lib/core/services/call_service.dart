@@ -180,7 +180,10 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
         !hasRemote) {
       debugPrint('[Lattice] All remote members left, ending call');
       unawaited(leaveCall());
+      return;
     }
+
+    notifyListeners();
   }
 
   void _stopMembershipWatcher() {

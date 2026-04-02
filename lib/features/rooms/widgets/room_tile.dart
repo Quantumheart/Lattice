@@ -18,6 +18,7 @@ import 'package:lattice/features/chat/widgets/typing_indicator.dart' show Typing
 import 'package:lattice/features/rooms/widgets/room_context_menu.dart';
 import 'package:lattice/features/spaces/widgets/space_reparent_controller.dart';
 import 'package:lattice/shared/widgets/room_avatar.dart';
+import 'package:lattice/shared/widgets/user_avatar.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
@@ -93,10 +94,10 @@ class _RoomTileState extends State<RoomTile> {
     final lastEvent = room.lastEvent;
     final hasMenu = widget.hasContextMenu;
 
-    final hasActiveCall = callService.roomHasActiveCall(room.id);
-    final isUserInThisCall = hasActiveCall &&
-        callService.activeCallRoomId == room.id &&
+    final isUserInThisCall = callService.activeCallRoomId == room.id &&
         callService.callState == LatticeCallState.connected;
+    final hasActiveCall = callService.roomHasActiveCall(room.id) ||
+        isUserInThisCall;
 
     if (isUserInThisCall) {
       _startElapsedTimer();
@@ -535,37 +536,37 @@ class _CallParticipantList extends StatelessWidget {
   final bool isExpanded;
   final VoidCallback onToggle;
 
-  static const _maxVisible = 5;
+  static const _maxVisible = 8;
+  static const _avatarSize = 22.0;
 
   @override
   Widget build(BuildContext context) {
     final callService = context.watch<CallService>();
     final matrixService = context.read<MatrixService>();
-    final room = matrixService.client.getRoomById(roomId);
+    final client = matrixService.client;
+    final room = client.getRoomById(roomId);
     if (room == null) return const SizedBox.shrink();
 
-    final myUserId = matrixService.client.userID;
+    final myUserId = client.userID;
     final participantIds = callService.callParticipantUserIds(roomId).toList();
-    if (participantIds.isEmpty) return const SizedBox.shrink();
+    final isConnected = callService.activeCallRoomId == roomId &&
+        callService.callState == LatticeCallState.connected;
 
-    final isConnected = callService.activeCallRoomId == roomId;
-    if (isConnected && myUserId != null && participantIds.remove(myUserId)) {
-      participantIds.insert(0, myUserId);
+    if (myUserId != null) {
+      if (isConnected) {
+        participantIds.remove(myUserId);
+        participantIds.insert(0, myUserId);
+      } else {
+        participantIds.remove(myUserId);
+      }
     }
 
-    final names = participantIds.map((id) {
-      if (id == myUserId && isConnected) return 'You';
-      return room.unsafeGetUserFromMemoryOrFallback(id).displayName ?? id;
-    }).toList();
+    if (participantIds.isEmpty) return const SizedBox.shrink();
 
-    final overflow = names.length - _maxVisible;
-    final visible = isExpanded ? names : names.take(_maxVisible).toList();
+    final overflow = participantIds.length - _maxVisible;
+    final visibleIds = isExpanded ? participantIds : participantIds.take(_maxVisible).toList();
 
     final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final nameStyle = tt.bodySmall?.copyWith(
-      color: cs.onSurfaceVariant.withValues(alpha: 0.7),
-    );
 
     return Padding(
       padding: const EdgeInsets.only(left: 60, top: 6),
@@ -575,38 +576,54 @@ class _CallParticipantList extends StatelessWidget {
         children: [
           Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.3)),
           const SizedBox(height: 4),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
-            alignment: Alignment.topCenter,
-            clipBehavior: Clip.antiAlias,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                for (final name in visible)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 1),
-                    child: Text(name, style: nameStyle, maxLines: 1, overflow: TextOverflow.ellipsis),
+          Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            children: [
+              for (final id in visibleIds)
+                Tooltip(
+                  message: id == myUserId && isConnected
+                      ? 'You'
+                      : room.unsafeGetUserFromMemoryOrFallback(id).displayName ?? id,
+                  child: UserAvatar(
+                    client: client,
+                    avatarUrl: room.unsafeGetUserFromMemoryOrFallback(id).avatarUrl,
+                    userId: id,
+                    size: _avatarSize,
                   ),
-                if (!isExpanded && overflow > 0)
-                  GestureDetector(
-                    onTap: onToggle,
+                ),
+              if (!isExpanded && overflow > 0)
+                GestureDetector(
+                  onTap: onToggle,
+                  child: Container(
+                    width: _avatarSize,
+                    height: _avatarSize,
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest,
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
                     child: Text(
-                      '+ $overflow more',
-                      style: tt.bodySmall?.copyWith(color: cs.primary),
+                      '+$overflow',
+                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: cs.onSurfaceVariant),
                     ),
                   ),
-                if (isExpanded && overflow > 0)
-                  GestureDetector(
-                    onTap: onToggle,
-                    child: Text(
-                      'Show less',
-                      style: tt.bodySmall?.copyWith(color: cs.primary),
+                ),
+              if (isExpanded && overflow > 0)
+                GestureDetector(
+                  onTap: onToggle,
+                  child: Container(
+                    width: _avatarSize,
+                    height: _avatarSize,
+                    decoration: BoxDecoration(
+                      color: cs.surfaceContainerHighest,
+                      shape: BoxShape.circle,
                     ),
+                    alignment: Alignment.center,
+                    child: Icon(Icons.expand_less, size: 14, color: cs.onSurfaceVariant),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
         ],
       ),
