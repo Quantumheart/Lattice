@@ -327,11 +327,13 @@ void main() {
       expect(find.byIcon(Icons.call_rounded), findsOneWidget);
     });
 
-    testWidgets('hides call icon when no active call', (tester) async {
+    testWidgets('hides green call indicator when no active call', (tester) async {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.call_rounded), findsNothing);
+      final greenIcons = tester.widgetList<Icon>(find.byIcon(Icons.call_rounded))
+          .where((icon) => icon.color == Colors.green);
+      expect(greenIcons, isEmpty);
     });
   });
 
@@ -457,12 +459,13 @@ void main() {
       expect(find.text('Join'), findsNothing);
     });
 
-    testWidgets('hides call controls when no active call', (tester) async {
+    testWidgets('shows call icon button when no active call', (tester) async {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
       expect(find.text('Join'), findsNothing);
       expect(find.text('Leave'), findsNothing);
+      expect(find.byIcon(Icons.call_rounded), findsOneWidget);
     });
   });
 

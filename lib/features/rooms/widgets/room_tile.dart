@@ -208,49 +208,18 @@ class _RoomTileState extends State<RoomTile> {
                     const SizedBox(width: 8),
 
                     // Trailing: call controls or timestamp + badge
-                    if (hasActiveCall)
+                    if (isUserInThisCall || hasActiveCall)
                       _CallControls(
                         roomId: room.id,
                         isUserInThisCall: isUserInThisCall,
                         callService: callService,
                       )
                     else
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 44),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Text(
-                              _formatTime(lastEvent?.originServerTs),
-                              style: tt.bodyMedium?.copyWith(
-                                fontSize: 11,
-                                color: unread > 0
-                                    ? cs.primary
-                                    : cs.onSurfaceVariant
-                                        .withValues(alpha: 0.5),
-                              ),
-                            ),
-                            if (unread > 0) ...[
-                              const SizedBox(height: 4),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 2,),
-                                decoration: BoxDecoration(
-                                  color: cs.primary,
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Text(
-                                  unread > 99 ? '99+' : '$unread',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w700,
-                                    color: cs.onPrimary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
+                      _TrailingTimeBadge(
+                        lastEvent: lastEvent,
+                        unread: unread,
+                        callService: callService,
+                        roomId: room.id,
                       ),
                   ],
                 ),
@@ -402,6 +371,22 @@ class _RoomTileState extends State<RoomTile> {
     return body;
   }
 
+}
+
+// ── Trailing timestamp + badge + join button ──────────────────
+class _TrailingTimeBadge extends StatelessWidget {
+  const _TrailingTimeBadge({
+    required this.lastEvent,
+    required this.unread,
+    required this.callService,
+    required this.roomId,
+  });
+
+  final Event? lastEvent;
+  final int unread;
+  final CallService callService;
+  final String roomId;
+
   String _formatTime(DateTime? ts) {
     if (ts == null) return '';
     final local = ts.toLocal();
@@ -412,6 +397,61 @@ class _RoomTileState extends State<RoomTile> {
     if (diff.inHours < 24) return '${diff.inHours}h';
     if (diff.inDays < 7) return '${diff.inDays}d';
     return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 56),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Text(
+            _formatTime(lastEvent?.originServerTs),
+            style: tt.bodyMedium?.copyWith(
+              fontSize: 11,
+              color: unread > 0
+                  ? cs.primary
+                  : cs.onSurfaceVariant.withValues(alpha: 0.5),
+            ),
+          ),
+          const SizedBox(height: 4),
+          if (unread > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: cs.primary,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                unread > 99 ? '99+' : '$unread',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: cs.onPrimary,
+                ),
+              ),
+            )
+          else
+            SizedBox(
+              height: 24,
+              child: IconButton(
+                onPressed: () => CallNavigator.startCall(context, roomId: roomId),
+                icon: const Icon(Icons.call_rounded, size: 16),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                tooltip: 'Start call',
+                style: IconButton.styleFrom(
+                  foregroundColor: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 
