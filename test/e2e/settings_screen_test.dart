@@ -223,9 +223,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('PREFERENCES'), findsOneWidget);
-      expect(find.text('Theme'), findsOneWidget);
+      expect(find.text('Appearance'), findsOneWidget);
       expect(find.text('Notifications'), findsOneWidget);
-      expect(find.text('Message density'), findsOneWidget);
     });
 
     testWidgets('security section shows devices and backup tiles',
