@@ -11,6 +11,7 @@ import 'package:lattice/features/chat/screens/chat_screen.dart';
 import 'package:lattice/features/home/screens/home_shell.dart';
 import 'package:lattice/features/home/widgets/inbox_screen.dart';
 import 'package:lattice/features/rooms/widgets/room_details_panel.dart';
+import 'package:lattice/features/settings/screens/appearance_screen.dart';
 import 'package:lattice/features/settings/screens/devices_screen.dart';
 import 'package:lattice/features/settings/screens/notification_settings_screen.dart';
 import 'package:lattice/features/settings/screens/settings_screen.dart';
@@ -132,6 +133,12 @@ GoRouter buildRouter(MatrixService matrixService) {
                 name: Routes.settings,
                 builder: (context, state) => const SettingsScreen(),
                 routes: [
+                  GoRoute(
+                    path: 'appearance',
+                    name: Routes.settingsAppearance,
+                    builder: (context, state) =>
+                        const AppearanceScreen(),
+                  ),
                   GoRoute(
                     path: 'notifications',
                     name: Routes.settingsNotifications,

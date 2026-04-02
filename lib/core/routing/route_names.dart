@@ -8,6 +8,7 @@ abstract class Routes {
   static const roomDetails = 'room-details';
   static const spaces = 'spaces';
   static const settings = 'settings';
+  static const settingsAppearance = 'settings-appearance';
   static const settingsNotifications = 'settings-notifications';
   static const settingsDevices = 'settings-devices';
   static const inbox = 'inbox';

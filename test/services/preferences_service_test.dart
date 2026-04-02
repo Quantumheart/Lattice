@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -124,6 +126,32 @@ void main() {
       var notified = false;
       prefs.addListener(() => notified = true);
       await prefs.setReadReceipts(false);
+      expect(notified, isTrue);
+    });
+  });
+
+  group('accent color', () {
+    test('defaults to null', () {
+      expect(prefs.accentColor, isNull);
+    });
+
+    test('round-trips a color value', () async {
+      const blue = Color(0xFF1976D2);
+      await prefs.setAccentColor(blue);
+      expect(prefs.accentColor, blue);
+    });
+
+    test('clears to null', () async {
+      const blue = Color(0xFF1976D2);
+      await prefs.setAccentColor(blue);
+      await prefs.setAccentColor(null);
+      expect(prefs.accentColor, isNull);
+    });
+
+    test('notifies listeners on change', () async {
+      var notified = false;
+      prefs.addListener(() => notified = true);
+      await prefs.setAccentColor(const Color(0xFFF44336));
       expect(notified, isTrue);
     });
   });

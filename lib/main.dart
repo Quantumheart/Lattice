@@ -137,8 +137,15 @@ class _LatticeAppState extends State<LatticeApp> {
                     child: Builder(
                       builder: (context) {
                         final callService = context.read<CallService>();
-                        final theme = LatticeTheme.light(lightDynamic);
-                        final darkTheme = LatticeTheme.dark(darkDynamic);
+                        final accent = prefs.accentColor;
+                        final theme = LatticeTheme.light(
+                          dynamic: lightDynamic,
+                          accent: accent,
+                        );
+                        final darkTheme = LatticeTheme.dark(
+                          dynamic: darkDynamic,
+                          accent: accent,
+                        );
 
                         return NotificationLifecycleObserver(
                           matrixService: matrix,

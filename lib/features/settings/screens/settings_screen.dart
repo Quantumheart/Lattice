@@ -10,7 +10,6 @@ import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/e2ee/widgets/backup_info_dialog.dart';
 import 'package:lattice/features/e2ee/widgets/bootstrap_dialog.dart';
 import 'package:lattice/features/settings/widgets/density_picker_dialog.dart';
-import 'package:lattice/features/settings/widgets/theme_picker_dialog.dart';
 import 'package:lattice/shared/widgets/section_header.dart';
 import 'package:lattice/shared/widgets/user_avatar.dart';
 import 'package:matrix/matrix.dart';
@@ -339,10 +338,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               children: [
                 _SettingsTile(
-                  icon: Icons.dark_mode_outlined,
-                  title: 'Theme',
+                  icon: Icons.palette_outlined,
+                  title: 'Appearance',
                   subtitle: prefs.themeModeLabel,
-                  onTap: () => ThemePickerDialog.show(context),
+                  onTap: () => context.goNamed(Routes.settingsAppearance),
                 ),
                 const Divider(height: 1, indent: 56),
                 _SettingsTile(
