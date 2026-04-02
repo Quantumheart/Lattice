@@ -55,7 +55,7 @@ class _VoiceBannerState extends State<VoiceBanner> {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         child: Row(
           children: [
-            Icon(Icons.call_rounded, size: 16, color: cs.onPrimaryContainer),
+            Icon(Icons.headset_mic_rounded, size: 16, color: cs.onPrimaryContainer),
             const SizedBox(width: 8),
             Expanded(
               child: Text(

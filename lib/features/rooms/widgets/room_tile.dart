@@ -441,7 +441,7 @@ class _TrailingTimeBadge extends StatelessWidget {
               height: 24,
               child: IconButton(
                 onPressed: () => CallNavigator.startCall(context, roomId: roomId),
-                icon: const Icon(Icons.call_rounded, size: 16),
+                icon: const Icon(Icons.headset_mic_rounded, size: 16),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 tooltip: 'Start call',
@@ -630,7 +630,7 @@ class _CallIndicator extends StatelessWidget {
 
     return const Padding(
       padding: EdgeInsets.only(left: 6),
-      child: Icon(Icons.call_rounded, size: 14, color: Colors.green),
+      child: Icon(Icons.headset_mic_rounded, size: 14, color: Colors.green),
     );
   }
 }
