@@ -1,9 +1,3 @@
 {
-  "defaultHomeserver": "quantum-matrix.xyz",
-  "suggestedServers": [
-    "quantum-matrix.xyz",
-    "matrix.org",
-    "envs.net",
-    "tchncs.de"
-  ]
+  "defaultHomeserver": "quantum-matrix.xyz"
 }

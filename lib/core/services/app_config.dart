@@ -1,15 +1,14 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
 class AppConfig {
   AppConfig._({
     required this.defaultHomeserver,
-    required this.suggestedServers,
   });
 
   final String defaultHomeserver;
-  final List<String> suggestedServers;
 
   static AppConfig? _instance;
 
@@ -22,6 +21,19 @@ class AppConfig {
 
   static const String _fallbackHomeserver = 'matrix.org';
 
+  @visibleForTesting
+  factory AppConfig.testInstance({
+    String defaultHomeserver = _fallbackHomeserver,
+  }) {
+    return AppConfig._(defaultHomeserver: defaultHomeserver);
+  }
+
+  @visibleForTesting
+  static void setInstance(AppConfig config) => _instance = config;
+
+  @visibleForTesting
+  static void reset() => _instance = null;
+
   static Future<void> load() async {
     try {
       final raw = await rootBundle.loadString(_assetPath);
@@ -29,14 +41,11 @@ class AppConfig {
       _instance = AppConfig._(
         defaultHomeserver:
             json['defaultHomeserver'] as String? ?? _fallbackHomeserver,
-        suggestedServers: (json['suggestedServers'] as List<dynamic>?)
-                ?.cast<String>() ??
-            [_fallbackHomeserver],
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[Lattice] Failed to load app config: $e');
       _instance = AppConfig._(
         defaultHomeserver: _fallbackHomeserver,
-        suggestedServers: [_fallbackHomeserver],
       );
     }
   }
