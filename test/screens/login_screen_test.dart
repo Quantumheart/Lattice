@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/models/server_auth_capabilities.dart';
+import 'package:lattice/core/services/app_config.dart';
 import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/auth/screens/login_screen.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/matrix_service_test.mocks.dart';
 
@@ -30,8 +33,13 @@ void main() {
   late MockFlutterSecureStorage mockStorage;
   late MatrixService matrixService;
   late ClientManager clientManager;
+  late PreferencesService prefsService;
 
-  setUp(() {
+  setUp(() async {
+    AppConfig.setInstance(AppConfig.testInstance());
+    SharedPreferences.setMockInitialValues({});
+    final sp = await SharedPreferences.getInstance();
+    prefsService = PreferencesService(prefs: sp);
     mockClient = MockClient();
     mockStorage = MockFlutterSecureStorage();
     when(mockClient.rooms).thenReturn([]);
@@ -46,6 +54,8 @@ void main() {
     );
   });
 
+  tearDown(AppConfig.reset);
+
   Widget buildTestWidget({
     String homeserver = 'matrix.org',
     ServerAuthCapabilities capabilities = const ServerAuthCapabilities(
@@ -57,6 +67,7 @@ void main() {
         ChangeNotifierProvider<MatrixService>.value(value: matrixService),
         ChangeNotifierProvider(create: (ctx) => CallService(client: ctx.read<MatrixService>().client)),
         ChangeNotifierProvider<ClientManager>.value(value: clientManager),
+        ChangeNotifierProvider<PreferencesService>.value(value: prefsService),
       ],
       child: MaterialApp(
         home: LoginScreen(

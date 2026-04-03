@@ -152,6 +152,30 @@ void main() {
     });
   });
 
+  group('default homeserver', () {
+    test('defaults to null', () {
+      expect(prefs.defaultHomeserver, isNull);
+    });
+
+    test('round-trips a server', () async {
+      await prefs.setDefaultHomeserver('example.com');
+      expect(prefs.defaultHomeserver, 'example.com');
+    });
+
+    test('clears to null', () async {
+      await prefs.setDefaultHomeserver('example.com');
+      await prefs.setDefaultHomeserver(null);
+      expect(prefs.defaultHomeserver, isNull);
+    });
+
+    test('notifies listeners on change', () async {
+      var notified = false;
+      prefs.addListener(() => notified = true);
+      await prefs.setDefaultHomeserver('example.com');
+      expect(notified, isTrue);
+    });
+  });
+
   group('OS notification toggles', () {
     test('osNotificationsEnabled defaults to true', () {
       expect(prefs.osNotificationsEnabled, isTrue);
