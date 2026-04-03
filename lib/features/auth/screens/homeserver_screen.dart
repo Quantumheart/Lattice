@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/app_config.dart';
 import 'package:lattice/core/services/matrix_service.dart' show MatrixService;
+import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/auth/widgets/app_logo_header.dart';
 import 'package:lattice/features/auth/widgets/homeserver_controller.dart';
 import 'package:provider/provider.dart';
@@ -18,17 +19,24 @@ class HomeserverScreen extends StatefulWidget {
 
 class _HomeserverScreenState extends State<HomeserverScreen>
     with SingleTickerProviderStateMixin {
-  final _homeserverCtrl =
-      TextEditingController(text: AppConfig.instance.defaultHomeserver);
+  late final TextEditingController _homeserverCtrl;
 
   late final AnimationController _fadeCtrl;
   late final Animation<double> _fadeAnim;
 
   late final HomeserverController _controller;
+  late final PreferencesService _prefs;
+  bool _setAsDefault = false;
 
   @override
   void initState() {
     super.initState();
+    _prefs = context.read<PreferencesService>();
+    final saved = _prefs.defaultHomeserver;
+    final initial = saved ?? AppConfig.instance.defaultHomeserver;
+    _homeserverCtrl = TextEditingController(text: initial);
+    _setAsDefault = saved != null;
+
     _fadeCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
@@ -61,6 +69,9 @@ class _HomeserverScreenState extends State<HomeserverScreen>
     if (text.isEmpty) return;
     final caps = await _controller.checkServer(text);
     if (!mounted || caps == null) return;
+    unawaited(
+      _prefs.setDefaultHomeserver(_setAsDefault ? text : null),
+    );
     context.goNamed(
       Routes.loginServer,
       pathParameters: {'homeserver': text},
@@ -122,7 +133,40 @@ class _HomeserverScreenState extends State<HomeserverScreen>
                     textInputAction: TextInputAction.done,
                     onSubmitted: isChecking ? null : (_) => _continue(),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 4),
+
+                  // ── Set as default ──
+                  Transform.translate(
+                    offset: const Offset(-8, 0),
+                    child: GestureDetector(
+                      onTap: isChecking
+                          ? null
+                          : () => setState(
+                              () => _setAsDefault = !_setAsDefault,),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Checkbox.adaptive(
+                            value: _setAsDefault,
+                            visualDensity: VisualDensity.compact,
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            splashRadius: 16,
+                            onChanged: isChecking
+                                ? null
+                                : (v) => setState(
+                                    () => _setAsDefault = v ?? false,),
+                          ),
+                          Text(
+                            'Set as default',
+                            style: Theme.of(context).textTheme.labelSmall
+                                ?.copyWith(color: cs.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
 
                   // ── Continue button ──
                   SizedBox(

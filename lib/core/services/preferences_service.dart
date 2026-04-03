@@ -36,6 +36,7 @@ class PreferencesService extends ChangeNotifier {
   PreferencesService({SharedPreferences? prefs}) : _prefs = prefs;
 
   SharedPreferences? _prefs;
+  static const _defaultHomeserverKey = 'default_homeserver';
   static const _densityKey = 'message_density';
   static const _themeModeKey = 'theme_mode';
   static const _themePresetKey = 'theme_preset';
@@ -45,6 +46,21 @@ class PreferencesService extends ChangeNotifier {
   Future<void> init() async {
     _prefs ??= await SharedPreferences.getInstance();
     await _prefs?.remove('room_filter');
+    notifyListeners();
+  }
+
+  // ── Default homeserver ────────────────────────────────────────
+
+  String? get defaultHomeserver =>
+      _prefs?.getString(_defaultHomeserverKey);
+
+  Future<void> setDefaultHomeserver(String? server) async {
+    if (server == null) {
+      await _prefs?.remove(_defaultHomeserverKey);
+    } else {
+      await _prefs?.setString(_defaultHomeserverKey, server);
+    }
+    debugPrint('[Lattice] Default homeserver set to $server');
     notifyListeners();
   }
 
