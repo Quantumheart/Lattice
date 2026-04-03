@@ -315,7 +315,7 @@ class _RoomListState extends State<RoomList>
           // ── FAB + speed dial ──
           Positioned(
             right: 16,
-            bottom: 16,
+            bottom: MediaQuery.paddingOf(context).bottom + 16,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.end,
