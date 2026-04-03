@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/core/utils/platform_info.dart';
 import 'package:lattice/features/notifications/services/push_service.dart';
+import 'package:lattice/features/notifications/services/web_push_service_export.dart';
 import 'package:lattice/shared/widgets/section_header.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -318,6 +320,42 @@ class _NotificationSettingsScreenState
                       onTap: _setupDistributor,
                     ),
                 ],
+              ),
+            ),
+          ],
+
+          // ── Web push notifications ──────────────────────────────
+          if (kIsWeb) ...[
+            const SizedBox(height: 24),
+            const SectionHeader(label: 'BACKGROUND PUSH'),
+            Card(
+              child: SwitchListTile(
+                title: const Text('Web push notifications'),
+                subtitle: Text(
+                  prefs.webPushEnabled
+                      ? 'Receiving push notifications via service worker'
+                      : 'Receive notifications when the tab is closed',
+                ),
+                value: prefs.webPushEnabled,
+                onChanged: (value) {
+                  unawaited(prefs.setWebPushEnabled(value));
+                  if (value) {
+                    final vapidKey = prefs.vapidPublicKey;
+                    if (vapidKey != null && vapidKey.isNotEmpty) {
+                      final webPushService = WebPushService(
+                        matrixService: context.read(),
+                        preferencesService: prefs,
+                      );
+                      unawaited(webPushService.register(vapidKey));
+                    }
+                  } else {
+                    final webPushService = WebPushService(
+                      matrixService: context.read(),
+                      preferencesService: prefs,
+                    );
+                    unawaited(webPushService.unregister());
+                  }
+                },
               ),
             ),
           ],

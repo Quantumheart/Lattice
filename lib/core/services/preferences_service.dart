@@ -373,4 +373,29 @@ class PreferencesService extends ChangeNotifier {
     debugPrint('[Lattice] Push distributor set to $distributor');
     notifyListeners();
   }
+
+  // ── Web push notifications ────────────────────────────────────
+
+  static const _webPushEnabledKey = 'web_push_enabled';
+  static const _vapidPublicKeyKey = 'vapid_public_key';
+
+  bool get webPushEnabled => _prefs?.getBool(_webPushEnabledKey) ?? false;
+
+  Future<void> setWebPushEnabled(bool value) async {
+    await _prefs?.setBool(_webPushEnabledKey, value);
+    debugPrint(
+        '[Lattice] Web push notifications ${value ? "enabled" : "disabled"}',);
+    notifyListeners();
+  }
+
+  String? get vapidPublicKey => _prefs?.getString(_vapidPublicKeyKey);
+
+  Future<void> setVapidPublicKey(String? key) async {
+    if (key == null) {
+      await _prefs?.remove(_vapidPublicKeyKey);
+    } else {
+      await _prefs?.setString(_vapidPublicKeyKey, key);
+    }
+    notifyListeners();
+  }
 }
