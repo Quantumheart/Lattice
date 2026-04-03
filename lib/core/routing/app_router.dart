@@ -4,6 +4,7 @@ import 'package:lattice/core/models/server_auth_capabilities.dart';
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/app_config.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/auth/screens/homeserver_screen.dart';
 import 'package:lattice/features/auth/screens/login_screen.dart';
 import 'package:lattice/features/auth/screens/registration_screen.dart';
@@ -17,6 +18,7 @@ import 'package:lattice/features/settings/screens/devices_screen.dart';
 import 'package:lattice/features/settings/screens/notification_settings_screen.dart';
 import 'package:lattice/features/settings/screens/settings_screen.dart';
 import 'package:lattice/features/spaces/widgets/space_details_panel.dart';
+import 'package:provider/provider.dart';
 
 /// Creates the app router with auth-aware redirects.
 ///
@@ -62,8 +64,9 @@ GoRouter buildRouter(MatrixService matrixService) {
         path: '/register',
         name: Routes.register,
         builder: (context, state) {
-          final homeserver =
-              state.extra as String? ?? AppConfig.instance.defaultHomeserver;
+          final homeserver = state.extra as String? ??
+              context.read<PreferencesService>().defaultHomeserver ??
+              AppConfig.instance.defaultHomeserver;
           return RegistrationScreen(initialHomeserver: homeserver);
         },
       ),
