@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
 
 import 'package:flutter/foundation.dart';
 import 'package:lattice/core/services/matrix_service.dart';
@@ -8,30 +9,19 @@ import 'package:lattice/features/notifications/models/notification_constants.dar
 import 'package:matrix/matrix.dart';
 import 'package:web/web.dart' as web;
 
-// ── JS interop bindings ───────────────────────────────────────
+// ── JS interop helpers ────────────────────────────────────────
 
-extension type _PushSubscriptionOptions._(JSObject _) implements JSObject {
-  external factory _PushSubscriptionOptions({
-    bool userVisibleOnly,
-    JSObject? applicationServerKey,
-  });
-}
+@JS('Object')
+external JSObject _jsObject();
 
-extension type _PushSubscription._(JSObject _) implements JSObject {
-  external String get endpoint;
-  external JSArrayBuffer? getKey(String name);
-  external JSPromise<JSBoolean> unsubscribe();
-}
-
-extension type _PushManager._(JSObject _) implements JSObject {
-  external JSPromise<_PushSubscription?> subscribe(
-    _PushSubscriptionOptions options,
-  );
-  external JSPromise<_PushSubscription?> getSubscription();
-}
-
-extension type _ServiceWorkerRegistration._(JSObject _) implements JSObject {
-  external _PushManager get pushManager;
+JSObject _createSubscribeOptions({
+  required bool userVisibleOnly,
+  required JSUint8Array applicationServerKey,
+}) {
+  final obj = _jsObject();
+  obj.setProperty('userVisibleOnly'.toJS, userVisibleOnly.toJS);
+  obj.setProperty('applicationServerKey'.toJS, applicationServerKey);
+  return obj;
 }
 
 // ── WebPushService ────────────────────────────────────────────
@@ -63,23 +53,28 @@ class WebPushService {
       }
 
       final applicationServerKey = _urlBase64ToUint8Array(vapidPublicKey);
+      final options = _createSubscribeOptions(
+        userVisibleOnly: true,
+        applicationServerKey: applicationServerKey,
+      );
 
-      final subscription = await registration.pushManager
-          .subscribe(
-            _PushSubscriptionOptions(
-              userVisibleOnly: true,
-              applicationServerKey: applicationServerKey,
-            ),
-          )
-          .toDart;
+      final regObj = registration as JSObject;
+      final pushManager =
+          regObj.getProperty<JSObject>('pushManager'.toJS);
+      final subscriptionPromise =
+          pushManager.callMethod<JSPromise<JSObject?>>('subscribe'.toJS, options);
+      final subscription = await subscriptionPromise.toDart;
 
       if (subscription == null) {
         debugPrint('[Lattice] Web push subscription failed');
         return;
       }
 
-      await _registerPusher(subscription);
-      debugPrint('[Lattice] Web push registered: ${subscription.endpoint}');
+      final endpoint =
+          subscription.getProperty<JSString>('endpoint'.toJS).toDart;
+
+      await _registerPusher(endpoint);
+      debugPrint('[Lattice] Web push registered: $endpoint');
     } catch (e) {
       debugPrint('[Lattice] Web push registration error: $e');
     }
@@ -90,12 +85,22 @@ class WebPushService {
       final registration = await _getRegistration();
       if (registration == null) return;
 
-      final subscription =
-          await registration.pushManager.getSubscription().toDart;
+      final regObj = registration as JSObject;
+      final pushManager =
+          regObj.getProperty<JSObject>('pushManager'.toJS);
+      final subPromise =
+          pushManager.callMethod<JSPromise<JSObject?>>('getSubscription'.toJS);
+      final subscription = await subPromise.toDart;
       if (subscription == null) return;
 
-      await _unregisterPusher(subscription.endpoint);
-      await subscription.unsubscribe().toDart;
+      final endpoint =
+          subscription.getProperty<JSString>('endpoint'.toJS).toDart;
+
+      await _unregisterPusher(endpoint);
+
+      final unsubPromise =
+          subscription.callMethod<JSPromise<JSBoolean>>('unsubscribe'.toJS);
+      await unsubPromise.toDart;
       debugPrint('[Lattice] Web push unregistered');
     } catch (e) {
       debugPrint('[Lattice] Web push unregister error: $e');
@@ -104,7 +109,7 @@ class WebPushService {
 
   // ── Pusher registration ──────────────────────────────────────
 
-  Future<void> _registerPusher(_PushSubscription subscription) async {
+  Future<void> _registerPusher(String endpoint) async {
     if (_disposed) return;
     final client = matrixService.client;
     if (client.userID == null) return;
@@ -112,7 +117,7 @@ class WebPushService {
     await client.postPusher(
       Pusher(
         appId: _appId,
-        pushkey: subscription.endpoint,
+        pushkey: endpoint,
         appDisplayName: NotificationChannel.appName,
         deviceDisplayName:
             client.deviceName ?? NotificationChannel.webDefaultDeviceName,
@@ -139,10 +144,10 @@ class WebPushService {
 
   // ── Helpers ──────────────────────────────────────────────────
 
-  Future<_ServiceWorkerRegistration?> _getRegistration() async {
+  Future<web.ServiceWorkerRegistration?> _getRegistration() async {
     final container = web.window.navigator.serviceWorker;
     final reg = await container.ready.toDart;
-    return reg as _ServiceWorkerRegistration?;
+    return reg;
   }
 
   static JSUint8Array _urlBase64ToUint8Array(String base64String) {
