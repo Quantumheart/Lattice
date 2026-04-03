@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/services/call_service.dart';
@@ -7,6 +8,7 @@ import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/notifications/services/notification_service.dart';
 import 'package:lattice/features/notifications/services/push_service.dart';
+import 'package:lattice/features/notifications/services/web_push_service_export.dart';
 import 'package:provider/provider.dart';
 
 class NotificationLifecycleObserver extends StatefulWidget {
@@ -34,6 +36,7 @@ class _NotificationLifecycleObserverState
     extends State<NotificationLifecycleObserver> with WidgetsBindingObserver {
   NotificationService? _notificationService;
   PushService? _pushService;
+  WebPushService? _webPushService;
   bool _wasLoggedIn = false;
   String? _lastSelectedRoomId;
 
@@ -61,19 +64,36 @@ class _NotificationLifecycleObserverState
     );
     await pushService.init();
 
+    final webPushService = WebPushService(
+      matrixService: widget.matrixService,
+      preferencesService: widget.preferencesService,
+    );
+
     final loggedIn = widget.matrixService.isLoggedIn;
     if (loggedIn) {
       notificationService.startListening();
       unawaited(pushService.register());
+      if (kIsWeb) {
+        unawaited(_registerWebPush(webPushService));
+      }
     }
 
     if (mounted) {
       setState(() {
         _notificationService = notificationService;
         _pushService = pushService;
+        _webPushService = webPushService;
         _wasLoggedIn = loggedIn;
       });
     }
+  }
+
+  Future<void> _registerWebPush(WebPushService service) async {
+    final prefs = widget.preferencesService;
+    if (!prefs.webPushEnabled) return;
+    final vapidKey = prefs.vapidPublicKey;
+    if (vapidKey == null || vapidKey.isEmpty) return;
+    await service.register(vapidKey);
   }
 
   void _onMatrixChanged() {
@@ -105,6 +125,8 @@ class _NotificationLifecycleObserverState
       _notificationService = null;
       _pushService?.dispose();
       _pushService = null;
+      _webPushService?.dispose();
+      _webPushService = null;
       unawaited(_initServices());
       return;
     }
@@ -114,10 +136,14 @@ class _NotificationLifecycleObserverState
       if (loggedIn) {
         _notificationService?.startListening();
         unawaited(_pushService?.register());
+        if (kIsWeb && _webPushService != null) {
+          unawaited(_registerWebPush(_webPushService!));
+        }
       } else {
         _notificationService?.stopListening();
         unawaited(_notificationService?.cancelAll());
         unawaited(_pushService?.unregister());
+        unawaited(_webPushService?.unregister());
       }
     }
   }
@@ -128,6 +154,7 @@ class _NotificationLifecycleObserverState
     widget.matrixService.removeListener(_onMatrixChanged);
     _notificationService?.dispose();
     _pushService?.dispose();
+    _webPushService?.dispose();
     super.dispose();
   }
 

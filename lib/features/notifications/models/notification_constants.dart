@@ -18,6 +18,11 @@ abstract class NotificationChannel {
       'https://matrix.gateway.unifiedpush.org/_matrix/push/v1/notify';
   static const defaultDeviceName = 'Android';
   static const defaultLang = 'en';
+
+  static const webPushAppId = 'io.github.quantumheart.lattice.web';
+  static const webPushGatewayUrl =
+      'https://sygnal.example.com/_matrix/push/v1/notify';
+  static const webDefaultDeviceName = 'Web';
 }
 
 abstract class NotificationText {
