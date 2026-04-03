@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
+import 'package:lattice/core/services/app_config.dart';
 import 'package:lattice/core/services/matrix_service.dart' show MatrixService;
 import 'package:lattice/features/auth/widgets/app_logo_header.dart';
 import 'package:lattice/features/auth/widgets/homeserver_controller.dart';
@@ -17,7 +18,8 @@ class HomeserverScreen extends StatefulWidget {
 
 class _HomeserverScreenState extends State<HomeserverScreen>
     with SingleTickerProviderStateMixin {
-  final _homeserverCtrl = TextEditingController(text: 'matrix.org');
+  final _homeserverCtrl =
+      TextEditingController(text: AppConfig.instance.defaultHomeserver);
 
   late final AnimationController _fadeCtrl;
   late final Animation<double> _fadeAnim;

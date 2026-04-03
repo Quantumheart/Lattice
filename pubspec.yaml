@@ -69,6 +69,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/audio/
+    - assets/config/
     - assets/vodozemac/
 
 dependency_overrides:

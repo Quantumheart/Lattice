@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/models/server_auth_capabilities.dart';
+import 'package:lattice/core/services/app_config.dart';
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/auth/screens/homeserver_screen.dart';
@@ -61,7 +62,8 @@ GoRouter buildRouter(MatrixService matrixService) {
         path: '/register',
         name: Routes.register,
         builder: (context, state) {
-          final homeserver = state.extra as String? ?? 'matrix.org';
+          final homeserver =
+              state.extra as String? ?? AppConfig.instance.defaultHomeserver;
           return RegistrationScreen(initialHomeserver: homeserver);
         },
       ),
