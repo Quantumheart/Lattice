@@ -14,6 +14,7 @@ import 'package:lattice/core/utils/vodozemac_init.dart';
 import 'package:lattice/features/auth/services/sso_web_init.dart';
 import 'package:lattice/features/calling/services/ringtone_service.dart';
 import 'package:lattice/features/calling/widgets/incoming_call_overlay.dart';
+import 'package:lattice/features/e2ee/widgets/verification_request_listener.dart';
 import 'package:lattice/features/chat/services/media_playback_service.dart';
 import 'package:lattice/features/chat/services/opengraph_service.dart';
 import 'package:lattice/features/notifications/services/inbox_controller.dart';
@@ -179,9 +180,12 @@ class _LatticeAppState extends State<LatticeApp> {
                             darkTheme: darkTheme,
                             themeMode: themeMode,
                             routerConfig: router,
-                            builder: (context, child) => IncomingCallOverlay(
-                              router: router,
-                              child: child ?? const SizedBox.shrink(),
+                            builder: (context, child) =>
+                                VerificationRequestListener(
+                              child: IncomingCallOverlay(
+                                router: router,
+                                child: child ?? const SizedBox.shrink(),
+                              ),
                             ),
                           ),
                         );
