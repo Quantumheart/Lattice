@@ -3,6 +3,7 @@ import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
 import 'package:flutter/foundation.dart';
+import 'package:lattice/core/services/app_config.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/notifications/models/notification_constants.dart';
@@ -38,11 +39,17 @@ class WebPushService {
   bool _disposed = false;
 
   static const String _appId = NotificationChannel.webPushAppId;
-  static const String _gatewayUrl = NotificationChannel.webPushGatewayUrl;
 
   // ── Registration ─────────────────────────────────────────────
 
-  Future<void> register(String vapidPublicKey) async {
+  Future<void> register() async {
+    final config = AppConfig.instance;
+    if (!config.webPushConfigured) {
+      debugPrint('[Lattice] Web push not configured — skipping registration');
+      return;
+    }
+    final vapidPublicKey = config.vapidPublicKey!;
+    final gatewayUrl = config.webPushGatewayUrl!;
     if (_disposed) return;
 
     try {
@@ -73,7 +80,7 @@ class WebPushService {
       final endpoint =
           subscription.getProperty<JSString>('endpoint'.toJS).toDart;
 
-      await _registerPusher(endpoint);
+      await _registerPusher(endpoint, gatewayUrl);
       debugPrint('[Lattice] Web push registered: $endpoint');
     } catch (e) {
       debugPrint('[Lattice] Web push registration error: $e');
@@ -109,7 +116,7 @@ class WebPushService {
 
   // ── Pusher registration ──────────────────────────────────────
 
-  Future<void> _registerPusher(String endpoint) async {
+  Future<void> _registerPusher(String endpoint, String gatewayUrl) async {
     if (_disposed) return;
     final client = matrixService.client;
     if (client.userID == null) return;
@@ -124,14 +131,14 @@ class WebPushService {
         kind: 'http',
         lang: NotificationChannel.defaultLang,
         data: PusherData(
-          url: Uri.parse(_gatewayUrl),
+          url: Uri.parse(gatewayUrl),
           format: 'event_id_only',
         ),
         profileTag: client.deviceID,
       ),
       append: true,
     );
-    debugPrint('[Lattice] Web pusher registered with gateway $_gatewayUrl');
+    debugPrint('[Lattice] Web pusher registered with gateway $gatewayUrl');
   }
 
   Future<void> _unregisterPusher(String endpoint) async {

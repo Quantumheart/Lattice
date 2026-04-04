@@ -6,9 +6,16 @@ import 'package:flutter/services.dart';
 class AppConfig {
   AppConfig._({
     required this.defaultHomeserver,
+    this.webPushGatewayUrl,
+    this.vapidPublicKey,
   });
 
   final String defaultHomeserver;
+  final String? webPushGatewayUrl;
+  final String? vapidPublicKey;
+
+  bool get webPushConfigured =>
+      webPushGatewayUrl != null && vapidPublicKey != null;
 
   static AppConfig? _instance;
 
@@ -24,8 +31,14 @@ class AppConfig {
   @visibleForTesting
   factory AppConfig.testInstance({
     String defaultHomeserver = _fallbackHomeserver,
+    String? webPushGatewayUrl,
+    String? vapidPublicKey,
   }) {
-    return AppConfig._(defaultHomeserver: defaultHomeserver);
+    return AppConfig._(
+      defaultHomeserver: defaultHomeserver,
+      webPushGatewayUrl: webPushGatewayUrl,
+      vapidPublicKey: vapidPublicKey,
+    );
   }
 
   @visibleForTesting
@@ -41,6 +54,8 @@ class AppConfig {
       _instance = AppConfig._(
         defaultHomeserver:
             json['defaultHomeserver'] as String? ?? _fallbackHomeserver,
+        webPushGatewayUrl: json['webPushGatewayUrl'] as String?,
+        vapidPublicKey: json['vapidPublicKey'] as String?,
       );
     } catch (e) {
       debugPrint('[Lattice] Failed to load app config: $e');

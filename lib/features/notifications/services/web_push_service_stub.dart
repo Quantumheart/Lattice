@@ -10,7 +10,7 @@ class WebPushService {
   final MatrixService matrixService;
   final PreferencesService preferencesService;
 
-  Future<void> register(String vapidPublicKey) async {}
+  Future<void> register() async {}
 
   Future<void> unregister() async {}
 

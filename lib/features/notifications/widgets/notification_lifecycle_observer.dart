@@ -89,11 +89,8 @@ class _NotificationLifecycleObserverState
   }
 
   Future<void> _registerWebPush(WebPushService service) async {
-    final prefs = widget.preferencesService;
-    if (!prefs.webPushEnabled) return;
-    final vapidKey = prefs.vapidPublicKey;
-    if (vapidKey == null || vapidKey.isEmpty) return;
-    await service.register(vapidKey);
+    if (!widget.preferencesService.webPushEnabled) return;
+    await service.register();
   }
 
   void _onMatrixChanged() {

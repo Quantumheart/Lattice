@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
+import 'package:lattice/core/services/app_config.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/core/utils/platform_info.dart';
 import 'package:lattice/features/notifications/services/push_service.dart';
@@ -325,7 +326,7 @@ class _NotificationSettingsScreenState
           ],
 
           // ── Web push notifications ──────────────────────────────
-          if (kIsWeb) ...[
+          if (kIsWeb && AppConfig.instance.webPushConfigured) ...[
             const SizedBox(height: 24),
             const SectionHeader(label: 'BACKGROUND PUSH'),
             Card(
@@ -339,20 +340,13 @@ class _NotificationSettingsScreenState
                 value: prefs.webPushEnabled,
                 onChanged: (value) {
                   unawaited(prefs.setWebPushEnabled(value));
+                  final webPushService = WebPushService(
+                    matrixService: context.read(),
+                    preferencesService: prefs,
+                  );
                   if (value) {
-                    final vapidKey = prefs.vapidPublicKey;
-                    if (vapidKey != null && vapidKey.isNotEmpty) {
-                      final webPushService = WebPushService(
-                        matrixService: context.read(),
-                        preferencesService: prefs,
-                      );
-                      unawaited(webPushService.register(vapidKey));
-                    }
+                    unawaited(webPushService.register());
                   } else {
-                    final webPushService = WebPushService(
-                      matrixService: context.read(),
-                      preferencesService: prefs,
-                    );
                     unawaited(webPushService.unregister());
                   }
                 },

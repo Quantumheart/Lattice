@@ -8278,6 +8278,13 @@ class MockPreferencesService extends _i1.Mock
       ) as bool);
 
   @override
+  bool get webPushEnabled => (super.noSuchMethod(
+        Invocation.getter(#webPushEnabled),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
   bool get hasListeners => (super.noSuchMethod(
         Invocation.getter(#hasListeners),
         returnValue: false,
@@ -8289,6 +8296,16 @@ class MockPreferencesService extends _i1.Mock
         Invocation.method(
           #init,
           [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> setDefaultHomeserver(String? server) => (super.noSuchMethod(
+        Invocation.method(
+          #setDefaultHomeserver,
+          [server],
         ),
         returnValue: _i5.Future<void>.value(),
         returnValueForMissingStub: _i5.Future<void>.value(),
@@ -8512,6 +8529,16 @@ class MockPreferencesService extends _i1.Mock
         Invocation.method(
           #setPushDistributor,
           [distributor],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> setWebPushEnabled(bool? value) => (super.noSuchMethod(
+        Invocation.method(
+          #setWebPushEnabled,
+          [value],
         ),
         returnValue: _i5.Future<void>.value(),
         returnValueForMissingStub: _i5.Future<void>.value(),

@@ -20,8 +20,6 @@ abstract class NotificationChannel {
   static const defaultLang = 'en';
 
   static const webPushAppId = 'io.github.quantumheart.lattice.web';
-  static const webPushGatewayUrl =
-      'https://sygnal.example.com/_matrix/push/v1/notify';
   static const webDefaultDeviceName = 'Web';
 }
 
