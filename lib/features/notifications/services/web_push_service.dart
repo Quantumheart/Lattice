@@ -15,6 +15,9 @@ import 'package:web/web.dart' as web;
 @JS('Object')
 external JSObject _jsObject();
 
+@JS('JSON.stringify')
+external JSString _jsonStringify(JSObject obj);
+
 JSObject _createSubscribeOptions({
   required bool userVisibleOnly,
   required JSUint8Array applicationServerKey,
@@ -77,11 +80,10 @@ class WebPushService {
         return;
       }
 
-      final endpoint =
-          subscription.getProperty<JSString>('endpoint'.toJS).toDart;
+      final pushkey = _jsonStringify(subscription).toDart;
 
-      await _registerPusher(endpoint, gatewayUrl);
-      debugPrint('[Lattice] Web push registered: $endpoint');
+      await _registerPusher(pushkey, gatewayUrl);
+      debugPrint('[Lattice] Web push registered');
     } catch (e) {
       debugPrint('[Lattice] Web push registration error: $e');
     }
@@ -100,10 +102,9 @@ class WebPushService {
       final subscription = await subPromise.toDart;
       if (subscription == null) return;
 
-      final endpoint =
-          subscription.getProperty<JSString>('endpoint'.toJS).toDart;
+      final pushkey = _jsonStringify(subscription).toDart;
 
-      await _unregisterPusher(endpoint);
+      await _unregisterPusher(pushkey);
 
       final unsubPromise =
           subscription.callMethod<JSPromise<JSBoolean>>('unsubscribe'.toJS);
@@ -116,7 +117,7 @@ class WebPushService {
 
   // ── Pusher registration ──────────────────────────────────────
 
-  Future<void> _registerPusher(String endpoint, String gatewayUrl) async {
+  Future<void> _registerPusher(String pushkey, String gatewayUrl) async {
     if (_disposed) return;
     final client = matrixService.client;
     if (client.userID == null) return;
@@ -124,7 +125,7 @@ class WebPushService {
     await client.postPusher(
       Pusher(
         appId: _appId,
-        pushkey: endpoint,
+        pushkey: pushkey,
         appDisplayName: NotificationChannel.appName,
         deviceDisplayName:
             client.deviceName ?? NotificationChannel.webDefaultDeviceName,
@@ -141,10 +142,10 @@ class WebPushService {
     debugPrint('[Lattice] Web pusher registered with gateway $gatewayUrl');
   }
 
-  Future<void> _unregisterPusher(String endpoint) async {
+  Future<void> _unregisterPusher(String pushkey) async {
     final client = matrixService.client;
     await client.deletePusher(
-      PusherId(appId: _appId, pushkey: endpoint),
+      PusherId(appId: _appId, pushkey: pushkey),
     );
     debugPrint('[Lattice] Web pusher unregistered from homeserver');
   }
