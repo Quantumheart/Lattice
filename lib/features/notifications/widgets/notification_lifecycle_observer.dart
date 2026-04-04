@@ -158,13 +158,21 @@ class _NotificationLifecycleObserverState
 
   @override
   Widget build(BuildContext context) {
-    final pushService = _pushService;
-    if (pushService != null) {
-      return Provider<PushService>.value(
-        value: pushService,
-        child: widget.child,
+    var child = widget.child;
+    final webPush = _webPushService;
+    if (webPush != null) {
+      child = Provider<WebPushService>.value(
+        value: webPush,
+        child: child,
       );
     }
-    return widget.child;
+    final pushService = _pushService;
+    if (pushService != null) {
+      child = Provider<PushService>.value(
+        value: pushService,
+        child: child,
+      );
+    }
+    return child;
   }
 }

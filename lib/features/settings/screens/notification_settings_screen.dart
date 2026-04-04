@@ -255,7 +255,14 @@ class _NotificationSettingsScreenState
                   subtitle:
                       const Text('Show system notifications for new messages'),
                   value: prefs.osNotificationsEnabled,
-                  onChanged: prefs.setOsNotificationsEnabled,
+                  onChanged: (value) async {
+                    if (value && kIsWeb) {
+                      final granted =
+                          await WebPushService.requestPermission();
+                      if (!granted || !context.mounted) return;
+                    }
+                    await prefs.setOsNotificationsEnabled(value);
+                  },
                 ),
                 SwitchListTile(
                   title: const Text('Notification sound'),
@@ -338,12 +345,14 @@ class _NotificationSettingsScreenState
                       : 'Receive notifications when the tab is closed',
                 ),
                 value: prefs.webPushEnabled,
-                onChanged: (value) {
+                onChanged: (value) async {
+                  if (value) {
+                    final granted = await WebPushService.requestPermission();
+                    if (!granted) return;
+                  }
+                  if (!context.mounted) return;
                   unawaited(prefs.setWebPushEnabled(value));
-                  final webPushService = WebPushService(
-                    matrixService: context.read(),
-                    preferencesService: prefs,
-                  );
+                  final webPushService = context.read<WebPushService>();
                   if (value) {
                     unawaited(webPushService.register());
                   } else {

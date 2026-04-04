@@ -58,10 +58,8 @@ class WebPushService {
     if (_disposed) return;
 
     try {
-      final permission = web.Notification.requestPermission();
-      final result = (await permission.toDart).toDart;
-      if (result != 'granted') {
-        debugPrint('[Lattice] Notification permission denied: $result');
+      if (web.Notification.permission != 'granted') {
+        debugPrint('[Lattice] Notification permission not granted');
         return;
       }
 
@@ -167,22 +165,33 @@ class WebPushService {
     final gatewayUrl = config.webPushGatewayUrl!;
 
     _messageListener = (web.Event event) {
-      final msgEvent = event as web.MessageEvent;
-      final data = msgEvent.data;
-      if (data == null) return;
-      final obj = data as JSObject;
-      final type = obj.getProperty<JSString>('type'.toJS).toDart;
-      if (type != 'pushsubscriptionchange') return;
+      try {
+        final msgEvent = event as web.MessageEvent;
+        final data = msgEvent.data;
+        if (data == null) return;
+        final obj = data as JSObject;
+        final type = obj.getProperty<JSString>('type'.toJS).toDart;
+        if (type != 'pushsubscriptionchange') return;
 
-      final newSubJs =
-          obj.getProperty<JSObject>('newSubscription'.toJS);
-      final newPushkey = _jsonStringify(newSubJs).toDart;
-      unawaited(_registerPusher(newPushkey, gatewayUrl));
-      debugPrint('[Lattice] Web push subscription renewed');
+        final newSubJs =
+            obj.getProperty<JSObject>('newSubscription'.toJS);
+        final newPushkey = _jsonStringify(newSubJs).toDart;
+        unawaited(_registerPusher(newPushkey, gatewayUrl));
+        debugPrint('[Lattice] Web push subscription renewed');
+      } catch (e) {
+        debugPrint('[Lattice] Error handling service worker message: $e');
+      }
     }.toJS;
 
     web.window.navigator.serviceWorker
         .addEventListener('message', _messageListener);
+  }
+
+  // ── Permissions ─────────────────────────────────────────────
+
+  static Future<bool> requestPermission() async {
+    final result = (await web.Notification.requestPermission().toDart).toDart;
+    return result == 'granted';
   }
 
   // ── Helpers ──────────────────────────────────────────────────

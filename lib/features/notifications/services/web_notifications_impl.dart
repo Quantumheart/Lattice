@@ -1,18 +1,8 @@
 import 'dart:js_interop';
 
-import 'package:flutter/foundation.dart';
 import 'package:web/web.dart' as web;
 
 final Map<String, web.Notification> _active = {};
-
-Future<void> requestWebNotificationPermission() async {
-  try {
-    await web.Notification.requestPermission().toDart;
-    debugPrint('[Lattice] Web notification permission: ${web.Notification.permission}');
-  } catch (e) {
-    debugPrint('[Lattice] Failed to request notification permission: $e');
-  }
-}
 
 void showWebNotification({
   required String title,

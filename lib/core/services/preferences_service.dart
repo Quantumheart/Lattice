@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lattice/core/theme/custom_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -311,7 +312,7 @@ class PreferencesService extends ChangeNotifier {
       'foreground_notifications_enabled';
 
   bool get osNotificationsEnabled =>
-      _prefs?.getBool(_osNotificationsEnabledKey) ?? true;
+      _prefs?.getBool(_osNotificationsEnabledKey) ?? !kIsWeb;
 
   Future<void> setOsNotificationsEnabled(bool value) async {
     await _prefs?.setBool(_osNotificationsEnabledKey, value);

@@ -75,7 +75,6 @@ class NotificationService {
 
   Future<void> init() async {
     if (kIsWeb) {
-      await requestWebNotificationPermission();
       debugPrint('[Lattice] NotificationService initialized (Web)');
       return;
     }

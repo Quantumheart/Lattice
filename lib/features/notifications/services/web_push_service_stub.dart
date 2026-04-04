@@ -10,6 +10,8 @@ class WebPushService {
   final MatrixService matrixService;
   final PreferencesService preferencesService;
 
+  static Future<bool> requestPermission() async => false;
+
   Future<void> register() async {}
 
   Future<void> unregister() async {}

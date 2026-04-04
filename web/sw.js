@@ -5,7 +5,7 @@
 try {
   importScripts('./flutter_service_worker.js');
 } catch (e) {
-  // flutter_service_worker.js not available (e.g. dev mode) — continue without caching.
+  console.warn('[Lattice SW] flutter_service_worker.js not loaded:', e.message);
 }
 
 // ── Push event ────────────────────────────────────────────────
@@ -68,8 +68,9 @@ self.addEventListener('notificationclick', function (event) {
 
 // ── Subscription change ──────────────────────────────────────
 self.addEventListener('pushsubscriptionchange', function (event) {
+  var options = (event.oldSubscription && event.oldSubscription.options) || {};
   event.waitUntil(
-    self.registration.pushManager.subscribe(event.oldSubscription.options)
+    self.registration.pushManager.subscribe(options)
       .then(function (newSubscription) {
         return self.clients.matchAll({ type: 'window' }).then(function (clientList) {
           for (var i = 0; i < clientList.length; i++) {

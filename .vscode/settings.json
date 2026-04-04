@@ -4,16 +4,24 @@
     "**/.flutter-plugins*": true,
     "**/build/**": true,
     "**/.pub-cache/**": true,
-    "**/*.mocks.dart": true
+    "**/*.mocks.dart": true,
+    "**/.flatpak-builder/**": true,
+    "**/flatpak/.flatpak-builder-build/**": true
   },
   "search.exclude": {
     "**/.dart_tool/**": true,
     "**/build/**": true,
     "**/.pub-cache/**": true,
-    "**/pubspec.lock": true
+    "**/pubspec.lock": true,
+    "**/.flatpak-builder/**": true,
+    "**/flatpak/.flatpak-builder-build/**": true
   },
   "files.exclude": {
     "**/.dart_tool": true,
     "**/build": true
-  }
+  },
+  "npm.exclude": [
+    "**/.flatpak-builder/**",
+    "**/flatpak/**"
+  ]
 }
