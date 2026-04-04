@@ -34,6 +34,10 @@ self.addEventListener('push', function (event) {
       tag: roomId || 'lattice-push',
       renotify: !!roomId,
       data: { roomId: roomId, unreadCount: counts.unread || 0 },
+    }).then(function () {
+      if (navigator.setAppBadge) {
+        navigator.setAppBadge(counts.unread || 0);
+      }
     })
   );
 });
@@ -41,6 +45,9 @@ self.addEventListener('push', function (event) {
 // ── Notification click ────────────────────────────────────────
 self.addEventListener('notificationclick', function (event) {
   event.notification.close();
+  if (navigator.clearAppBadge) {
+    navigator.clearAppBadge();
+  }
 
   var roomId = (event.notification.data || {}).roomId;
   var urlPath = roomId ? '/#/rooms/' + encodeURIComponent(roomId) : '/';
