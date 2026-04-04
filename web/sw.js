@@ -66,6 +66,24 @@ self.addEventListener('notificationclick', function (event) {
   );
 });
 
+// ── Subscription change ──────────────────────────────────────
+self.addEventListener('pushsubscriptionchange', function (event) {
+  event.waitUntil(
+    self.registration.pushManager.subscribe(event.oldSubscription.options)
+      .then(function (newSubscription) {
+        return self.clients.matchAll({ type: 'window' }).then(function (clientList) {
+          for (var i = 0; i < clientList.length; i++) {
+            clientList[i].postMessage({
+              type: 'pushsubscriptionchange',
+              oldEndpoint: event.oldSubscription ? event.oldSubscription.endpoint : null,
+              newSubscription: newSubscription.toJSON(),
+            });
+          }
+        });
+      })
+  );
+});
+
 // ── Lifecycle ─────────────────────────────────────────────────
 self.addEventListener('install', function () {
   self.skipWaiting();

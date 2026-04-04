@@ -75,6 +75,7 @@ class _NotificationLifecycleObserverState
       unawaited(pushService.register());
       if (kIsWeb) {
         unawaited(_registerWebPush(webPushService));
+        webPushService.listenForSubscriptionChanges();
       }
     }
 

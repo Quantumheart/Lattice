@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
@@ -40,6 +41,7 @@ class WebPushService {
   final PreferencesService preferencesService;
 
   bool _disposed = false;
+  web.EventListener? _messageListener;
 
   static const String _appId = NotificationChannel.webPushAppId;
 
@@ -56,6 +58,13 @@ class WebPushService {
     if (_disposed) return;
 
     try {
+      final permission = web.Notification.requestPermission();
+      final result = (await permission.toDart).toDart;
+      if (result != 'granted') {
+        debugPrint('[Lattice] Notification permission denied: $result');
+        return;
+      }
+
       final registration = await _getRegistration();
       if (registration == null) {
         debugPrint('[Lattice] No service worker registration found');
@@ -150,6 +159,32 @@ class WebPushService {
     debugPrint('[Lattice] Web pusher unregistered from homeserver');
   }
 
+  // ── Subscription change listener ─────────────────────────────
+
+  void listenForSubscriptionChanges() {
+    final config = AppConfig.instance;
+    if (!config.webPushConfigured) return;
+    final gatewayUrl = config.webPushGatewayUrl!;
+
+    _messageListener = (web.Event event) {
+      final msgEvent = event as web.MessageEvent;
+      final data = msgEvent.data;
+      if (data == null) return;
+      final obj = data as JSObject;
+      final type = obj.getProperty<JSString>('type'.toJS).toDart;
+      if (type != 'pushsubscriptionchange') return;
+
+      final newSubJs =
+          obj.getProperty<JSObject>('newSubscription'.toJS);
+      final newPushkey = _jsonStringify(newSubJs).toDart;
+      unawaited(_registerPusher(newPushkey, gatewayUrl));
+      debugPrint('[Lattice] Web push subscription renewed');
+    }.toJS;
+
+    web.window.navigator.serviceWorker
+        .addEventListener('message', _messageListener);
+  }
+
   // ── Helpers ──────────────────────────────────────────────────
 
   Future<web.ServiceWorkerRegistration?> _getRegistration() async {
@@ -171,5 +206,11 @@ class WebPushService {
 
   void dispose() {
     _disposed = true;
+    final listener = _messageListener;
+    if (listener != null) {
+      web.window.navigator.serviceWorker
+          .removeEventListener('message', listener);
+      _messageListener = null;
+    }
   }
 }

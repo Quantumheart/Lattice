@@ -14,5 +14,7 @@ class WebPushService {
 
   Future<void> unregister() async {}
 
+  void listenForSubscriptionChanges() {}
+
   void dispose() {}
 }
