@@ -57,7 +57,7 @@ class NarrowLayout extends StatelessWidget {
         name == Routes.settingsDevices ||
         name == Routes.spaceDetails;
     if (hideRail) {
-      return Scaffold(body: content);
+      return content;
     }
 
     return Scaffold(
