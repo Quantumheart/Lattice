@@ -46,7 +46,9 @@ class RecaptchaServer {
       final messageEvent = event as web.MessageEvent;
       if (_popup != null && messageEvent.source != _popup) return;
       if (messageEvent.origin != expectedOrigin &&
-          messageEvent.origin != 'null') return;
+          messageEvent.origin != 'null') {
+        return;
+      }
       final data = messageEvent.data;
       if (data == null) return;
 
