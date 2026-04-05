@@ -148,11 +148,14 @@ void main() {
   });
 
   group('clearSessionKeys', () {
-    test('deletes all 5 storage keys', () async {
+    test('deletes all 6 storage keys', () async {
       await service.clearSessionKeys();
 
       verify(
         mockStorage.delete(key: 'lattice_test_access_token'),
+      ).called(1);
+      verify(
+        mockStorage.delete(key: 'lattice_test_refresh_token'),
       ).called(1);
       verify(
         mockStorage.delete(key: 'lattice_test_user_id'),
@@ -206,8 +209,9 @@ void main() {
   });
 
   group('persistCredentials', () {
-    test('writes all 4 storage keys', () async {
+    test('writes all 5 storage keys', () async {
       when(mockClient.accessToken).thenReturn('token');
+      when(mockClient.refreshToken).thenReturn('refresh_tok');
       when(mockClient.userID).thenReturn('@user:e.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://e.com'));
       when(mockClient.deviceID).thenReturn('D1');
@@ -218,6 +222,12 @@ void main() {
         mockStorage.write(
           key: 'lattice_test_access_token',
           value: 'token',
+        ),
+      ).called(1);
+      verify(
+        mockStorage.write(
+          key: 'lattice_test_refresh_token',
+          value: 'refresh_tok',
         ),
       ).called(1);
       verify(

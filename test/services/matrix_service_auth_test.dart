@@ -276,12 +276,14 @@ void main() {
         any,
         token: anyNamed('token'),
         initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+        refreshToken: anyNamed('refreshToken'),
       ),).thenAnswer((_) async => LoginResponse.fromJson({
             'access_token': 'sso_token',
             'device_id': 'SSO_DEV',
             'user_id': '@ssouser:example.com',
           }),);
       when(mockClient.accessToken).thenReturn('sso_token');
+      when(mockClient.refreshToken).thenReturn('sso_refresh');
       when(mockClient.userID).thenReturn('@ssouser:example.com');
       when(mockClient.homeserver)
           .thenReturn(Uri.parse('https://example.com'));
@@ -304,11 +306,15 @@ void main() {
         LoginType.mLoginToken,
         token: 'test_sso_token',
         initialDeviceDisplayName: 'Lattice Flutter',
+        refreshToken: true,
       ),).called(1);
 
       // Verify credentials persisted
       verify(mockStorage.write(
               key: 'lattice_test_access_token', value: 'sso_token',),)
+          .called(1);
+      verify(mockStorage.write(
+              key: 'lattice_test_refresh_token', value: 'sso_refresh',),)
           .called(1);
       verify(mockStorage.write(
               key: 'lattice_test_user_id', value: '@ssouser:example.com',),)
@@ -326,6 +332,7 @@ void main() {
         any,
         token: anyNamed('token'),
         initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+        refreshToken: anyNamed('refreshToken'),
       ),).thenThrow(Exception('Invalid login token'));
 
       final result = await service.completeSsoLogin(
@@ -344,6 +351,7 @@ void main() {
         any,
         token: anyNamed('token'),
         initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+        refreshToken: anyNamed('refreshToken'),
       ),).thenThrow(Exception('first error'));
       await service.completeSsoLogin(
         homeserver: 'example.com',
@@ -356,12 +364,14 @@ void main() {
         any,
         token: anyNamed('token'),
         initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+        refreshToken: anyNamed('refreshToken'),
       ),).thenAnswer((_) async => LoginResponse.fromJson({
             'access_token': 'tok',
             'device_id': 'D1',
             'user_id': '@u:e.com',
           }),);
       when(mockClient.accessToken).thenReturn('tok');
+      when(mockClient.refreshToken).thenReturn('refresh_tok');
       when(mockClient.userID).thenReturn('@u:e.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://e.com'));
       when(mockClient.deviceID).thenReturn('D1');
@@ -386,6 +396,7 @@ void main() {
     setUp(() {
       syncController = CachedStreamController<SyncUpdate>();
       when(mockClient.accessToken).thenReturn('reg_token');
+      when(mockClient.refreshToken).thenReturn('reg_refresh');
       when(mockClient.userID).thenReturn('@newuser:example.com');
       when(mockClient.homeserver)
           .thenReturn(Uri.parse('https://example.com'));
@@ -410,6 +421,9 @@ void main() {
       expect(service.isLoggedIn, isTrue);
       verify(mockStorage.write(
               key: 'lattice_test_access_token', value: 'reg_token',),)
+          .called(1);
+      verify(mockStorage.write(
+              key: 'lattice_test_refresh_token', value: 'reg_refresh',),)
           .called(1);
       verify(mockStorage.write(
               key: 'lattice_test_user_id', value: '@newuser:example.com',),)

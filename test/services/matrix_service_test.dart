@@ -192,12 +192,14 @@ void main() {
         identifier: anyNamed('identifier'),
         password: anyNamed('password'),
         initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+        refreshToken: anyNamed('refreshToken'),
       ),).thenAnswer((_) async => LoginResponse.fromJson({
             'access_token': 'token123',
             'device_id': 'DEV1',
             'user_id': '@user:example.com',
           }),);
       when(mockClient.accessToken).thenReturn('token123');
+      when(mockClient.refreshToken).thenReturn('refresh123');
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
       when(mockClient.deviceID).thenReturn('DEV1');
@@ -225,6 +227,9 @@ void main() {
       // Verify namespaced storage keys.
       verify(mockStorage.write(
               key: 'lattice_test_access_token', value: 'token123',),)
+          .called(1);
+      verify(mockStorage.write(
+              key: 'lattice_test_refresh_token', value: 'refresh123',),)
           .called(1);
       verify(mockStorage.write(
               key: 'lattice_test_user_id', value: '@user:example.com',),)
@@ -272,12 +277,14 @@ void main() {
         identifier: anyNamed('identifier'),
         password: anyNamed('password'),
         initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+        refreshToken: anyNamed('refreshToken'),
       ),).thenAnswer((_) async => LoginResponse.fromJson({
             'access_token': 'token123',
             'device_id': 'DEV1',
             'user_id': '@user:example.com',
           }),);
       when(mockClient.accessToken).thenReturn('token123');
+      when(mockClient.refreshToken).thenReturn('refresh123');
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
       when(mockClient.deviceID).thenReturn('DEV1');
@@ -303,6 +310,7 @@ void main() {
       expect(service.selectedRoomId, isNull);
       // Verify namespaced key deletion.
       verify(mockStorage.delete(key: 'lattice_test_access_token')).called(1);
+      verify(mockStorage.delete(key: 'lattice_test_refresh_token')).called(1);
       verify(mockStorage.delete(key: 'lattice_test_user_id')).called(1);
       verify(mockStorage.delete(key: 'lattice_test_homeserver')).called(1);
       verify(mockStorage.delete(key: 'lattice_test_device_id')).called(1);
@@ -331,12 +339,14 @@ void main() {
         identifier: anyNamed('identifier'),
         password: anyNamed('password'),
         initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+        refreshToken: anyNamed('refreshToken'),
       ),).thenAnswer((_) async => LoginResponse.fromJson({
             'access_token': 'token123',
             'device_id': 'DEV1',
             'user_id': '@user:example.com',
           }),);
       when(mockClient.accessToken).thenReturn('token123');
+      when(mockClient.refreshToken).thenReturn('refresh123');
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
       when(mockClient.deviceID).thenReturn('DEV1');
@@ -406,12 +416,14 @@ void main() {
         identifier: anyNamed('identifier'),
         password: anyNamed('password'),
         initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+        refreshToken: anyNamed('refreshToken'),
       ),).thenAnswer((_) async => LoginResponse.fromJson({
             'access_token': 'token123',
             'device_id': 'DEV1',
             'user_id': '@user:example.com',
           }),);
       when(mockClient.accessToken).thenReturn('token123');
+      when(mockClient.refreshToken).thenReturn('refresh123');
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
       when(mockClient.deviceID).thenReturn('DEV1');
@@ -1265,12 +1277,14 @@ void main() {
         identifier: anyNamed('identifier'),
         password: anyNamed('password'),
         initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+        refreshToken: anyNamed('refreshToken'),
       ),).thenAnswer((_) async => LoginResponse.fromJson({
             'access_token': 'token123',
             'device_id': 'DEV1',
             'user_id': '@user:example.com',
           }),);
       when(mockClient.accessToken).thenReturn('token123');
+      when(mockClient.refreshToken).thenReturn('refresh123');
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
       when(mockClient.deviceID).thenReturn('DEV1');
