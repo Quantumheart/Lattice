@@ -39,10 +39,14 @@ class RecaptchaServer {
       }
     });
 
+    final expectedOrigin = Uri.base.origin;
+
     _messageListener = (web.Event event) {
       if (event.type != 'message') return;
       final messageEvent = event as web.MessageEvent;
       if (_popup != null && messageEvent.source != _popup) return;
+      if (messageEvent.origin != expectedOrigin &&
+          messageEvent.origin != 'null') return;
       final data = messageEvent.data;
       if (data == null) return;
 
@@ -113,7 +117,7 @@ class RecaptchaServer {
   </div>
   <script>
     function onCaptchaComplete(token) {
-      window.opener.postMessage({type: 'recaptcha-token', token: token}, '*');
+      window.opener.postMessage({type: 'recaptcha-token', token: token}, window.location.origin);
       window.close();
     }
   </script>
