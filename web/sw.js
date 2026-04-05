@@ -1,13 +1,5 @@
 'use strict';
 
-// Import Flutter's service worker for caching/offline support.
-// This file is generated during `flutter build web` and may not exist in dev.
-try {
-  importScripts('./flutter_service_worker.js');
-} catch (e) {
-  console.warn('[Lattice SW] flutter_service_worker.js not loaded:', e.message);
-}
-
 // ── Push event ────────────────────────────────────────────────
 self.addEventListener('push', function (event) {
   if (!event.data) return;
