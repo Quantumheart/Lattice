@@ -7,6 +7,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class SessionBackup {
   SessionBackup({
     required this.accessToken,
+    this.refreshToken,
     required this.userId,
     required this.homeserver,
     required this.deviceId,
@@ -15,6 +16,7 @@ class SessionBackup {
   });
 
   final String accessToken;
+  final String? refreshToken;
   final String userId;
   final String homeserver;
   final String deviceId;
@@ -23,6 +25,7 @@ class SessionBackup {
 
   Map<String, dynamic> toJson() => {
         'accessToken': accessToken,
+        if (refreshToken != null) 'refreshToken': refreshToken,
         'userId': userId,
         'homeserver': homeserver,
         'deviceId': deviceId,
@@ -32,6 +35,7 @@ class SessionBackup {
 
   factory SessionBackup.fromJson(Map<String, dynamic> json) => SessionBackup(
         accessToken: json['accessToken'] as String,
+        refreshToken: json['refreshToken'] as String?,
         userId: json['userId'] as String,
         homeserver: json['homeserver'] as String,
         deviceId: json['deviceId'] as String,

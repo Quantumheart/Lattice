@@ -140,6 +140,7 @@ class AuthService {
   Future<void> clearSessionKeys() async {
     await Future.wait([
       _storage.delete(key: latticeKey(_clientName, 'access_token')),
+      _storage.delete(key: latticeKey(_clientName, 'refresh_token')),
       _storage.delete(key: latticeKey(_clientName, 'user_id')),
       _storage.delete(key: latticeKey(_clientName, 'homeserver')),
       _storage.delete(key: latticeKey(_clientName, 'device_id')),
@@ -181,6 +182,9 @@ class AuthService {
       _storage.write(
           key: latticeKey(_clientName, 'access_token'),
           value: _client.accessToken,),
+      _storage.write(
+          key: latticeKey(_clientName, 'refresh_token'),
+          value: _client.refreshToken,),
       _storage.write(
           key: latticeKey(_clientName, 'user_id'), value: _client.userID,),
       _storage.write(

@@ -181,6 +181,7 @@ class MatrixService extends ChangeNotifier {
   Future<void> saveSessionBackup() async {
     final backup = SessionBackup(
       accessToken: _client.accessToken!,
+      refreshToken: _client.refreshToken,
       userId: _client.userID!,
       homeserver: _client.homeserver.toString(),
       deviceId: _client.deviceID!,
@@ -230,6 +231,7 @@ class MatrixService extends ChangeNotifier {
         identifier: AuthenticationUserIdentifier(user: username.trim()),
         password: password,
         initialDeviceDisplayName: 'Lattice Flutter',
+        refreshToken: true,
       );
       debugPrint('[Lattice] Login complete – '
           'deviceId=${_client.deviceID}, '
@@ -276,6 +278,7 @@ class MatrixService extends ChangeNotifier {
         LoginType.mLoginToken,
         token: loginToken,
         initialDeviceDisplayName: 'Lattice Flutter',
+        refreshToken: true,
       );
       debugPrint('[Lattice] SSO login complete – '
           'deviceId=${_client.deviceID}, '
@@ -351,9 +354,14 @@ class MatrixService extends ChangeNotifier {
     debugPrint('[Lattice] Soft logout detected, attempting token refresh...');
     try {
       await _client.refreshAccessToken();
-      await _storage.write(
-          key: latticeKey(clientName, 'access_token'),
-          value: _client.accessToken,);
+      await Future.wait([
+        _storage.write(
+            key: latticeKey(clientName, 'access_token'),
+            value: _client.accessToken,),
+        _storage.write(
+            key: latticeKey(clientName, 'refresh_token'),
+            value: _client.refreshToken,),
+      ]);
       await saveSessionBackup();
       debugPrint('[Lattice] Token refreshed successfully');
     } catch (e) {
@@ -445,28 +453,31 @@ class MatrixService extends ChangeNotifier {
   Future<
       ({
         String? token,
+        String? refreshToken,
         String? userId,
         String? homeserver,
         String? deviceId
       })> _readSessionKeys() async {
     final results = await Future.wait([
       _storage.read(key: latticeKey(clientName, 'access_token')),
+      _storage.read(key: latticeKey(clientName, 'refresh_token')),
       _storage.read(key: latticeKey(clientName, 'user_id')),
       _storage.read(key: latticeKey(clientName, 'homeserver')),
       _storage.read(key: latticeKey(clientName, 'device_id')),
     ]);
     return (
       token: results[0],
-      userId: results[1],
-      homeserver: results[2],
-      deviceId: results[3],
+      refreshToken: results[1],
+      userId: results[2],
+      homeserver: results[3],
+      deviceId: results[4],
     );
   }
 
   // ── Private: Session Restore ───────────────────────────────────
 
   Future<void> _restoreSession() async {
-    final ({String? token, String? userId, String? homeserver, String? deviceId}) keys;
+    final ({String? token, String? refreshToken, String? userId, String? homeserver, String? deviceId}) keys;
     try {
       keys = await _readSessionKeys();
     } catch (e) {
@@ -495,6 +506,7 @@ class MatrixService extends ChangeNotifier {
       _client.homeserver = homeserverUri;
       await _client.init(
         newToken: keys.token,
+        newRefreshToken: keys.refreshToken ?? backup?.refreshToken,
         newUserID: keys.userId,
         newDeviceID: keys.deviceId,
         newHomeserver: homeserverUri,
@@ -530,10 +542,16 @@ class MatrixService extends ChangeNotifier {
       await _client.init();
       if (_client.isLogged()) {
         if (_client.accessToken != null) {
-          await _storage.write(
-            key: latticeKey(clientName, 'access_token'),
-            value: _client.accessToken,
-          );
+          await Future.wait([
+            _storage.write(
+              key: latticeKey(clientName, 'access_token'),
+              value: _client.accessToken,
+            ),
+            _storage.write(
+              key: latticeKey(clientName, 'refresh_token'),
+              value: _client.refreshToken,
+            ),
+          ]);
         }
         await _activateSession();
         await saveSessionBackup();
