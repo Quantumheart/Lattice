@@ -20,6 +20,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/matrix_service_test.mocks.dart';
 
+class _FakeDatabase extends Fake implements DatabaseApi {
+  @override
+  Future<Map<String, dynamic>?> getClient(String name) async => null;
+}
+
 class _FixedServiceFactory extends MatrixServiceFactory {
   _FixedServiceFactory(this._service);
   final MatrixService _service;
@@ -50,6 +55,7 @@ void main() {
     mockClient = MockClient();
     mockStorage = MockFlutterSecureStorage();
     when(mockClient.rooms).thenReturn([]);
+    when(mockClient.database).thenReturn(_FakeDatabase());
     matrixService = MatrixService(
       client: mockClient,
       storage: mockStorage,
@@ -62,7 +68,10 @@ void main() {
     syncController = CachedStreamController<SyncUpdate>();
   });
 
-  tearDown(AppConfig.reset);
+  tearDown(() {
+    matrixService.clearCachedPassword();
+    AppConfig.reset();
+  });
 
   // ── Stubs ────────────────────────────────────────────────────────────────
 
@@ -145,6 +154,7 @@ void main() {
       identifier: anyNamed('identifier'),
       password: anyNamed('password'),
       initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+      refreshToken: anyNamed('refreshToken'),
     ),).thenAnswer((_) async => LoginResponse(
           accessToken: 'token_123',
           deviceId: 'DEVICE_1',
@@ -169,6 +179,7 @@ void main() {
       identifier: anyNamed('identifier'),
       password: anyNamed('password'),
       initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+      refreshToken: anyNamed('refreshToken'),
     ),).thenThrow(
       MatrixException.fromJson({
         'errcode': 'M_FORBIDDEN',
