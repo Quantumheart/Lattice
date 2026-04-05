@@ -21,6 +21,11 @@ import 'package:mockito/mockito.dart';
 ])
 import 'matrix_service_test.mocks.dart';
 
+class _FakeDatabase extends Fake implements DatabaseApi {
+  @override
+  Future<Map<String, dynamic>?> getClient(String name) async => null;
+}
+
 void main() {
   late MockClient mockClient;
   late MockFlutterSecureStorage mockStorage;
@@ -30,6 +35,7 @@ void main() {
     mockClient = MockClient();
     mockStorage = MockFlutterSecureStorage();
     when(mockClient.rooms).thenReturn([]);
+    when(mockClient.database).thenReturn(_FakeDatabase());
     service = MatrixService(
       client: mockClient,
       storage: mockStorage,
@@ -199,7 +205,6 @@ void main() {
             'user_id': '@user:example.com',
           }),);
       when(mockClient.accessToken).thenReturn('token123');
-      when(mockClient.refreshToken).thenReturn('refresh123');
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
       when(mockClient.deviceID).thenReturn('DEV1');
@@ -229,7 +234,7 @@ void main() {
               key: 'lattice_test_access_token', value: 'token123',),)
           .called(1);
       verify(mockStorage.write(
-              key: 'lattice_test_refresh_token', value: 'refresh123',),)
+              key: 'lattice_test_refresh_token', value: null,),)
           .called(1);
       verify(mockStorage.write(
               key: 'lattice_test_user_id', value: '@user:example.com',),)
@@ -284,7 +289,6 @@ void main() {
             'user_id': '@user:example.com',
           }),);
       when(mockClient.accessToken).thenReturn('token123');
-      when(mockClient.refreshToken).thenReturn('refresh123');
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
       when(mockClient.deviceID).thenReturn('DEV1');
@@ -346,7 +350,6 @@ void main() {
             'user_id': '@user:example.com',
           }),);
       when(mockClient.accessToken).thenReturn('token123');
-      when(mockClient.refreshToken).thenReturn('refresh123');
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
       when(mockClient.deviceID).thenReturn('DEV1');
@@ -423,7 +426,6 @@ void main() {
             'user_id': '@user:example.com',
           }),);
       when(mockClient.accessToken).thenReturn('token123');
-      when(mockClient.refreshToken).thenReturn('refresh123');
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
       when(mockClient.deviceID).thenReturn('DEV1');
@@ -1284,7 +1286,6 @@ void main() {
             'user_id': '@user:example.com',
           }),);
       when(mockClient.accessToken).thenReturn('token123');
-      when(mockClient.refreshToken).thenReturn('refresh123');
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
       when(mockClient.deviceID).thenReturn('DEV1');

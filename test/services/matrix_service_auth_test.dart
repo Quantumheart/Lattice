@@ -6,6 +6,11 @@ import 'package:mockito/mockito.dart';
 
 import 'matrix_service_test.mocks.dart';
 
+class _FakeDatabase extends Fake implements DatabaseApi {
+  @override
+  Future<Map<String, dynamic>?> getClient(String name) async => null;
+}
+
 void main() {
   late MockClient mockClient;
   late MockFlutterSecureStorage mockStorage;
@@ -15,6 +20,7 @@ void main() {
     mockClient = MockClient();
     mockStorage = MockFlutterSecureStorage();
     when(mockClient.rooms).thenReturn([]);
+    when(mockClient.database).thenReturn(_FakeDatabase());
     service = MatrixService(
       client: mockClient,
       storage: mockStorage,
@@ -283,7 +289,6 @@ void main() {
             'user_id': '@ssouser:example.com',
           }),);
       when(mockClient.accessToken).thenReturn('sso_token');
-      when(mockClient.refreshToken).thenReturn('sso_refresh');
       when(mockClient.userID).thenReturn('@ssouser:example.com');
       when(mockClient.homeserver)
           .thenReturn(Uri.parse('https://example.com'));
@@ -301,6 +306,8 @@ void main() {
       expect(result, isTrue);
       expect(service.isLoggedIn, isTrue);
 
+      await service.postLoginSyncFuture;
+
       // Verify login was called with mLoginToken
       verify(mockClient.login(
         LoginType.mLoginToken,
@@ -314,7 +321,7 @@ void main() {
               key: 'lattice_test_access_token', value: 'sso_token',),)
           .called(1);
       verify(mockStorage.write(
-              key: 'lattice_test_refresh_token', value: 'sso_refresh',),)
+              key: 'lattice_test_refresh_token', value: null,),)
           .called(1);
       verify(mockStorage.write(
               key: 'lattice_test_user_id', value: '@ssouser:example.com',),)
@@ -371,7 +378,6 @@ void main() {
             'user_id': '@u:e.com',
           }),);
       when(mockClient.accessToken).thenReturn('tok');
-      when(mockClient.refreshToken).thenReturn('refresh_tok');
       when(mockClient.userID).thenReturn('@u:e.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://e.com'));
       when(mockClient.deviceID).thenReturn('D1');
@@ -396,7 +402,6 @@ void main() {
     setUp(() {
       syncController = CachedStreamController<SyncUpdate>();
       when(mockClient.accessToken).thenReturn('reg_token');
-      when(mockClient.refreshToken).thenReturn('reg_refresh');
       when(mockClient.userID).thenReturn('@newuser:example.com');
       when(mockClient.homeserver)
           .thenReturn(Uri.parse('https://example.com'));
@@ -423,7 +428,7 @@ void main() {
               key: 'lattice_test_access_token', value: 'reg_token',),)
           .called(1);
       verify(mockStorage.write(
-              key: 'lattice_test_refresh_token', value: 'reg_refresh',),)
+              key: 'lattice_test_refresh_token', value: null,),)
           .called(1);
       verify(mockStorage.write(
               key: 'lattice_test_user_id', value: '@newuser:example.com',),)

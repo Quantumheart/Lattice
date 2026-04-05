@@ -5,6 +5,11 @@ import 'package:mockito/mockito.dart';
 
 import 'matrix_service_test.mocks.dart';
 
+class _FakeDatabase extends Fake implements DatabaseApi {
+  @override
+  Future<Map<String, dynamic>?> getClient(String name) async => null;
+}
+
 void main() {
   late MockClient mockClient;
   late MockFlutterSecureStorage mockStorage;
@@ -14,6 +19,7 @@ void main() {
     mockClient = MockClient();
     mockStorage = MockFlutterSecureStorage();
     when(mockClient.rooms).thenReturn([]);
+    when(mockClient.database).thenReturn(_FakeDatabase());
     service = AuthService(
       client: mockClient,
       storage: mockStorage,
@@ -211,7 +217,6 @@ void main() {
   group('persistCredentials', () {
     test('writes all 5 storage keys', () async {
       when(mockClient.accessToken).thenReturn('token');
-      when(mockClient.refreshToken).thenReturn('refresh_tok');
       when(mockClient.userID).thenReturn('@user:e.com');
       when(mockClient.homeserver).thenReturn(Uri.parse('https://e.com'));
       when(mockClient.deviceID).thenReturn('D1');
@@ -227,7 +232,7 @@ void main() {
       verify(
         mockStorage.write(
           key: 'lattice_test_refresh_token',
-          value: 'refresh_tok',
+          value: null,
         ),
       ).called(1);
       verify(

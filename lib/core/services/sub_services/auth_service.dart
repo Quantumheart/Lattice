@@ -178,13 +178,15 @@ class AuthService {
   // ── Credential Persistence ──────────────────────────────────
 
   Future<void> persistCredentials() async {
+    final stored = await _client.database.getClient(_clientName);
+    final refreshToken = stored?.tryGet<String>('refresh_token');
     await Future.wait([
       _storage.write(
           key: latticeKey(_clientName, 'access_token'),
           value: _client.accessToken,),
       _storage.write(
           key: latticeKey(_clientName, 'refresh_token'),
-          value: _client.refreshToken,),
+          value: refreshToken,),
       _storage.write(
           key: latticeKey(_clientName, 'user_id'), value: _client.userID,),
       _storage.write(

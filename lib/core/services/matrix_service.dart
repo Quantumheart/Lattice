@@ -168,6 +168,11 @@ class MatrixService extends ChangeNotifier {
   ) =>
       _auth.getServerAuthCapabilities(homeserver, isLoggedIn: _isLoggedIn);
 
+  Future<String?> _readRefreshToken() async {
+    final stored = await _client.database.getClient(clientName);
+    return stored?.tryGet<String>('refresh_token');
+  }
+
   // ── Public API ──────────────────────────────────────────────────
 
   Future<void> init({bool restoreSession = true}) async {
@@ -181,7 +186,7 @@ class MatrixService extends ChangeNotifier {
   Future<void> saveSessionBackup() async {
     final backup = SessionBackup(
       accessToken: _client.accessToken!,
-      refreshToken: _client.refreshToken,
+      refreshToken: await _readRefreshToken(),
       userId: _client.userID!,
       homeserver: _client.homeserver.toString(),
       deviceId: _client.deviceID!,
@@ -354,13 +359,14 @@ class MatrixService extends ChangeNotifier {
     debugPrint('[Lattice] Soft logout detected, attempting token refresh...');
     try {
       await _client.refreshAccessToken();
+      final refreshToken = await _readRefreshToken();
       await Future.wait([
         _storage.write(
             key: latticeKey(clientName, 'access_token'),
             value: _client.accessToken,),
         _storage.write(
             key: latticeKey(clientName, 'refresh_token'),
-            value: _client.refreshToken,),
+            value: refreshToken,),
       ]);
       await saveSessionBackup();
       debugPrint('[Lattice] Token refreshed successfully');
@@ -542,6 +548,7 @@ class MatrixService extends ChangeNotifier {
       await _client.init();
       if (_client.isLogged()) {
         if (_client.accessToken != null) {
+          final refreshToken = await _readRefreshToken();
           await Future.wait([
             _storage.write(
               key: latticeKey(clientName, 'access_token'),
@@ -549,7 +556,7 @@ class MatrixService extends ChangeNotifier {
             ),
             _storage.write(
               key: latticeKey(clientName, 'refresh_token'),
-              value: _client.refreshToken,
+              value: refreshToken,
             ),
           ]);
         }
