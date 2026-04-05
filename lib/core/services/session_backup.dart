@@ -7,10 +7,10 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class SessionBackup {
   SessionBackup({
     required this.accessToken,
-    this.refreshToken,
     required this.userId,
     required this.homeserver,
     required this.deviceId,
+    this.refreshToken,
     this.deviceName,
     this.olmAccount,
   });
