@@ -31,8 +31,62 @@
 
   <title>lattice</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #FEF7FF;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body { background-color: #1C1B1F; }
+      .loader circle { stroke: rgba(255,255,255,.12); }
+      .loader circle:last-child { stroke: #90CAF9; }
+    }
+
+    .loader {
+      width: 36px;
+      height: 36px;
+      animation: rotate 1.4s linear infinite;
+    }
+
+    .loader circle {
+      fill: none;
+      stroke: rgba(0,0,0,.12);
+      stroke-width: 3.5;
+    }
+
+    .loader circle:last-child {
+      stroke: #1976D2;
+      stroke-dasharray: 80, 200;
+      stroke-dashoffset: 0;
+      stroke-linecap: round;
+      animation: sweep 1.4s ease-in-out infinite;
+    }
+
+    @keyframes rotate { to { transform: rotate(360deg); } }
+    @keyframes sweep {
+      0%   { stroke-dasharray: 1, 200; stroke-dashoffset: 0; }
+      50%  { stroke-dasharray: 80, 200; stroke-dashoffset: -35; }
+      100% { stroke-dasharray: 1, 200; stroke-dashoffset: -125; }
+    }
+  </style>
 </head>
 <body>
+  <svg id="loading" class="loader" viewBox="0 0 44 44">
+    <circle cx="22" cy="22" r="20" />
+    <circle cx="22" cy="22" r="20" />
+  </svg>
   <script src="flutter_bootstrap.js" async></script>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var el = document.getElementById('loading');
+      if (el) el.remove();
+    });
+  </script>
 </body>
 </html>
