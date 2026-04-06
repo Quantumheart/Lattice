@@ -52,8 +52,7 @@ class PreferencesService extends ChangeNotifier {
 
   // ── Default homeserver ────────────────────────────────────────
 
-  String? get defaultHomeserver =>
-      _prefs?.getString(_defaultHomeserverKey);
+  String? get defaultHomeserver => _prefs?.getString(_defaultHomeserverKey);
 
   Future<void> setDefaultHomeserver(String? server) async {
     if (server == null) {
@@ -93,11 +92,7 @@ class PreferencesService extends ChangeNotifier {
     );
   }
 
-  String get themeModeLabel => switch (themeMode) {
-        ThemeMode.system => 'System default',
-        ThemeMode.light => 'Light',
-        ThemeMode.dark => 'Dark',
-      };
+  String get themeModeLabel => 'Your vibe';
 
   Future<void> setThemeMode(ThemeMode mode) async {
     await _prefs?.setString(_themeModeKey, mode.name);
@@ -186,8 +181,7 @@ class PreferencesService extends ChangeNotifier {
   // ── Space ordering ─────────────────────────────────────────
   static const _spaceOrderKey = 'space_order';
 
-  List<String> get spaceOrder =>
-      _prefs?.getStringList(_spaceOrderKey) ?? [];
+  List<String> get spaceOrder => _prefs?.getStringList(_spaceOrderKey) ?? [];
 
   Future<void> setSpaceOrder(List<String> order) async {
     await _prefs?.setStringList(_spaceOrderKey, order);
@@ -265,13 +259,13 @@ class PreferencesService extends ChangeNotifier {
 
   static const _showLinkPreviewsKey = 'show_link_previews';
 
-  bool get showLinkPreviews =>
-      _prefs?.getBool(_showLinkPreviewsKey) ?? true;
+  bool get showLinkPreviews => _prefs?.getBool(_showLinkPreviewsKey) ?? true;
 
   Future<void> setShowLinkPreviews(bool value) async {
     await _prefs?.setBool(_showLinkPreviewsKey, value);
     debugPrint(
-        '[Lattice] Link previews ${value ? "enabled" : "disabled"}',);
+      '[Lattice] Link previews ${value ? "enabled" : "disabled"}',
+    );
     notifyListeners();
   }
 
@@ -279,13 +273,13 @@ class PreferencesService extends ChangeNotifier {
 
   static const _typingIndicatorsKey = 'typing_indicators';
 
-  bool get typingIndicators =>
-      _prefs?.getBool(_typingIndicatorsKey) ?? true;
+  bool get typingIndicators => _prefs?.getBool(_typingIndicatorsKey) ?? true;
 
   Future<void> setTypingIndicators(bool value) async {
     await _prefs?.setBool(_typingIndicatorsKey, value);
     debugPrint(
-        '[Lattice] Typing indicators ${value ? "enabled" : "disabled"}',);
+      '[Lattice] Typing indicators ${value ? "enabled" : "disabled"}',
+    );
     notifyListeners();
   }
 
@@ -298,7 +292,8 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setReadReceipts(bool value) async {
     await _prefs?.setBool(_readReceiptsKey, value);
     debugPrint(
-        '[Lattice] Read receipts ${value ? "enabled" : "disabled"}',);
+      '[Lattice] Read receipts ${value ? "enabled" : "disabled"}',
+    );
     notifyListeners();
   }
 
@@ -326,7 +321,8 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setNotificationSoundEnabled(bool value) async {
     await _prefs?.setBool(_notificationSoundEnabledKey, value);
     debugPrint(
-        '[Lattice] Notification sound ${value ? "enabled" : "disabled"}',);
+      '[Lattice] Notification sound ${value ? "enabled" : "disabled"}',
+    );
     notifyListeners();
   }
 
@@ -336,7 +332,8 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setNotificationVibrationEnabled(bool value) async {
     await _prefs?.setBool(_notificationVibrationEnabledKey, value);
     debugPrint(
-        '[Lattice] Notification vibration ${value ? "enabled" : "disabled"}',);
+      '[Lattice] Notification vibration ${value ? "enabled" : "disabled"}',
+    );
     notifyListeners();
   }
 
@@ -346,7 +343,8 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setForegroundNotificationsEnabled(bool value) async {
     await _prefs?.setBool(_foregroundNotificationsEnabledKey, value);
     debugPrint(
-        '[Lattice] Foreground notifications ${value ? "enabled" : "disabled"}',);
+      '[Lattice] Foreground notifications ${value ? "enabled" : "disabled"}',
+    );
     notifyListeners();
   }
 
@@ -359,7 +357,8 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setPushEnabled(bool value) async {
     await _prefs?.setBool(_pushEnabledKey, value);
-    debugPrint('[Lattice] Push notifications ${value ? "enabled" : "disabled"}');
+    debugPrint(
+        '[Lattice] Push notifications ${value ? "enabled" : "disabled"}');
     notifyListeners();
   }
 
@@ -384,7 +383,8 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setWebPushEnabled(bool value) async {
     await _prefs?.setBool(_webPushEnabledKey, value);
     debugPrint(
-        '[Lattice] Web push notifications ${value ? "enabled" : "disabled"}',);
+      '[Lattice] Web push notifications ${value ? "enabled" : "disabled"}',
+    );
     notifyListeners();
   }
 }
