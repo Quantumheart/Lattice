@@ -167,7 +167,15 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
         appBar: isBlocking
             ? null
             : AppBar(
-                leading: BackButton(onPressed: () => context.go('/')),
+                leading: BackButton(
+                  onPressed: () {
+                    if (_localStep != null) {
+                      context.go('/');
+                    } else {
+                      setState(() => _localStep = _ScreenStep.skipConfirm);
+                    }
+                  },
+                ),
               ),
         body: SafeArea(
           child: Center(
@@ -265,8 +273,28 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
               ),
             ],
           ),
-        _ScreenStep.management || _ScreenStep.disableConfirm =>
-          const SizedBox.shrink(),
+        _ScreenStep.management => const SizedBox.shrink(),
+        _ScreenStep.disableConfirm => Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: () =>
+                    setState(() => _localStep = _ScreenStep.management),
+                child: const Text('Go back'),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  await _matrixService.disableChatBackup();
+                  _matrixService.skipSetup();
+                  if (mounted) context.go('/');
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                ),
+                child: const Text('Disable backup'),
+              ),
+            ],
+          ),
       };
     }
 
@@ -646,27 +674,6 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
             'Your recovery key and server-side backup will be deleted. '
             'You will lose access to your encrypted message history on '
             'other devices.',
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              TextButton(
-                onPressed: () =>
-                    setState(() => _localStep = _ScreenStep.management),
-                child: const Text('Go back'),
-              ),
-              FilledButton(
-                onPressed: () async {
-                  await _matrixService.disableChatBackup();
-                  if (mounted) context.go('/');
-                },
-                style: FilledButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.error,
-                ),
-                child: const Text('Disable backup'),
-              ),
-            ],
           ),
         ],
       ),
