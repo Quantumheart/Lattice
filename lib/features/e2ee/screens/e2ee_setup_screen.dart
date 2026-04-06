@@ -6,25 +6,12 @@ import 'package:go_router/go_router.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/e2ee/widgets/bootstrap_controller.dart';
 import 'package:lattice/features/e2ee/widgets/key_verification_inline.dart';
-import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
-// ── Step enum ───────────────────────────────────────────────────
+// ── Screen-local steps (outside bootstrap lifecycle) ───────────
 
-enum _SetupStep {
-  explainer,
-  skipConfirm,
-  loading,
-  savingKey,
-  unlock,
-  createNewKey,
-  deviceVerification,
-  done,
-  management,
-  disableConfirm,
-  error,
-}
+enum _ScreenStep { explainer, skipConfirm, createNewKey, management, disableConfirm }
 
 class E2eeSetupScreen extends StatefulWidget {
   const E2eeSetupScreen({super.key});
@@ -39,8 +26,7 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
   final _recoveryKeyController = TextEditingController();
   StreamSubscription<UiaRequest<dynamic>>? _uiaSub;
   bool _uiaPromptShowing = false;
-  _SetupStep _step = _SetupStep.explainer;
-  KeyVerification? _activeVerification;
+  _ScreenStep? _localStep = _ScreenStep.explainer;
 
   @override
   void initState() {
@@ -49,7 +35,7 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
     _uiaSub = _matrixService.onUiaRequest.listen(_showUiaPasswordPrompt);
 
     if (_matrixService.chatBackupEnabled) {
-      _step = _SetupStep.management;
+      _localStep = _ScreenStep.management;
     }
   }
 
@@ -58,7 +44,6 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
     _cleanupController();
     unawaited(_uiaSub?.cancel());
     _recoveryKeyController.dispose();
-    _activeVerification?.onUpdate = null;
     super.dispose();
   }
 
@@ -71,7 +56,7 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
       wipeExisting: wipeExisting,
     );
     _controller!.addListener(_onControllerChanged);
-    setState(() => _step = _SetupStep.loading);
+    setState(() => _localStep = null);
     unawaited(_controller!.startBootstrap());
   }
 
@@ -87,123 +72,11 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
   }
 
   void _onControllerChanged() {
-    final controller = _controller;
-    if (controller == null) return;
-
-    final advance = controller.deferredAdvance;
-    if (advance != null) {
-      controller.deferredAdvance = null;
-      WidgetsBinding.instance.addPostFrameCallback((_) => advance());
-    }
-
-    final storedKey = controller.consumeStoredRecoveryKey();
+    final storedKey = _controller?.consumeStoredRecoveryKey();
     if (storedKey != null) {
       _recoveryKeyController.text = storedKey;
     }
-
-    final action = controller.pendingAction;
-    if (action != BootstrapAction.none) {
-      controller.clearPendingAction();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        switch (action) {
-          case BootstrapAction.startVerification:
-            unawaited(_startVerification());
-          case BootstrapAction.confirmLostKey:
-            setState(() => _step = _SetupStep.createNewKey);
-          case BootstrapAction.confirmCancel:
-            setState(() => _step = _SetupStep.skipConfirm);
-          case BootstrapAction.done:
-            unawaited(_finishSetup());
-          case BootstrapAction.none:
-            break;
-        }
-      });
-      return;
-    }
-
-    final state = controller.state;
-    final newStep = switch (state) {
-      BootstrapState.loading ||
-      BootstrapState.askWipeSsss ||
-      BootstrapState.askWipeCrossSigning ||
-      BootstrapState.askSetupCrossSigning ||
-      BootstrapState.askWipeOnlineKeyBackup ||
-      BootstrapState.askSetupOnlineKeyBackup ||
-      BootstrapState.askBadSsss ||
-      BootstrapState.askUseExistingSsss ||
-      BootstrapState.askUnlockSsss =>
-        _SetupStep.loading,
-      BootstrapState.askNewSsss => _SetupStep.savingKey,
-      BootstrapState.openExistingSsss => _SetupStep.unlock,
-      BootstrapState.done => _SetupStep.done,
-      BootstrapState.error => _SetupStep.error,
-    };
-
-    if (_step == _SetupStep.deviceVerification ||
-        _step == _SetupStep.createNewKey ||
-        _step == _SetupStep.skipConfirm) {
-      if (mounted) setState(() {});
-      return;
-    }
-
-    if (mounted) setState(() => _step = newStep);
-  }
-
-  // ── Verification ──────────────────────────────────────────────
-
-  Future<void> _startVerification() async {
-    final client = _matrixService.client;
-    final encryption = client.encryption;
-    if (encryption == null) return;
-
-    setState(() => _step = _SetupStep.deviceVerification);
-
-    await client.updateUserDeviceKeys();
-
-    final verification = KeyVerification(
-      encryption: encryption,
-      userId: client.userID!,
-      deviceId: '*',
-    );
-    await verification.start();
-    encryption.keyVerificationManager.addRequest(verification);
-
-    if (!mounted) return;
-    setState(() => _activeVerification = verification);
-  }
-
-  Future<void> _onVerificationDone(bool success) async {
-    if (!success) {
-      _activeVerification = null;
-      setState(() => _step = _SetupStep.unlock);
-      _controller?.setVerifying(false);
-      return;
-    }
-
-    _controller?.setVerifying(true);
-
-    final encryption = _matrixService.client.encryption;
-    if (encryption != null) {
-      for (var i = 0; i < 10; i++) {
-        if (!mounted) return;
-        final cached = await encryption.keyManager.isCached() &&
-            await encryption.crossSigning.isCached();
-        if (cached) break;
-        await Future<void>.delayed(const Duration(seconds: 1));
-      }
-    }
-
-    if (!mounted) return;
-    _activeVerification = null;
-    _controller?.setVerifying(false);
-    await _controller?.onDone();
-  }
-
-  void _onVerificationCancel() {
-    _activeVerification = null;
-    _controller?.setVerifying(false);
-    setState(() => _step = _SetupStep.unlock);
+    if (mounted) setState(() {});
   }
 
   // ── UIA prompt ────────────────────────────────────────────────
@@ -264,14 +137,19 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
 
   // ── Build ─────────────────────────────────────────────────────
 
-  int get _currentDot => switch (_step) {
-        _SetupStep.explainer || _SetupStep.skipConfirm => 0,
-        _SetupStep.done => 2,
-        _ => 1,
-      };
+  int get _currentDot {
+    if (_localStep != null) {
+      return _localStep == _ScreenStep.explainer ||
+              _localStep == _ScreenStep.skipConfirm
+          ? 0
+          : 1;
+    }
+    return _controller?.phase == SetupPhase.done ? 2 : 1;
+  }
 
   bool get _showDots =>
-      _step != _SetupStep.management && _step != _SetupStep.disableConfirm;
+      _localStep != _ScreenStep.management &&
+      _localStep != _ScreenStep.disableConfirm;
 
   @override
   Widget build(BuildContext context) {
@@ -282,7 +160,7 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
       canPop: !isBlocking,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop && isBlocking) {
-          setState(() => _step = _SetupStep.skipConfirm);
+          setState(() => _localStep = _ScreenStep.skipConfirm);
         }
       },
       child: Scaffold(
@@ -320,106 +198,119 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
   }
 
   Widget _buildContent() {
-    return switch (_step) {
-      _SetupStep.explainer => _buildExplainer(),
-      _SetupStep.skipConfirm => _buildSkipConfirm(),
-      _SetupStep.loading => _buildLoading(),
-      _SetupStep.savingKey => _buildSavingKey(),
-      _SetupStep.unlock => _buildUnlock(),
-      _SetupStep.createNewKey => _buildCreateNewKey(),
-      _SetupStep.deviceVerification => _buildDeviceVerification(),
-      _SetupStep.done => _buildDone(),
-      _SetupStep.management => _buildManagement(),
-      _SetupStep.disableConfirm => _buildDisableConfirm(),
-      _SetupStep.error => _buildError(),
+    if (_localStep != null) {
+      return switch (_localStep!) {
+        _ScreenStep.explainer => _buildExplainer(),
+        _ScreenStep.skipConfirm => _buildSkipConfirm(),
+        _ScreenStep.createNewKey => _buildCreateNewKey(),
+        _ScreenStep.management => _buildManagement(),
+        _ScreenStep.disableConfirm => _buildDisableConfirm(),
+      };
+    }
+    return switch (_controller!.phase) {
+      SetupPhase.loading => _buildLoading(),
+      SetupPhase.savingKey => _buildSavingKey(),
+      SetupPhase.unlock => _buildUnlock(),
+      SetupPhase.verification => _buildDeviceVerification(),
+      SetupPhase.done => _buildDone(),
+      SetupPhase.error => _buildError(),
     };
   }
 
   Widget _buildActions() {
+    if (_localStep != null) {
+      return switch (_localStep!) {
+        _ScreenStep.explainer => Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: () =>
+                    setState(() => _localStep = _ScreenStep.skipConfirm),
+                child: const Text('Skip for now'),
+              ),
+              FilledButton(
+                onPressed: _startBootstrap,
+                child: const Text('Next'),
+              ),
+            ],
+          ),
+        _ScreenStep.skipConfirm => Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: () =>
+                    setState(() => _localStep = _ScreenStep.explainer),
+                child: const Text('Go back'),
+              ),
+              FilledButton(
+                onPressed: _skip,
+                child: const Text('Skip anyway'),
+              ),
+            ],
+          ),
+        _ScreenStep.createNewKey => Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              TextButton(
+                onPressed: () => setState(() => _localStep = null),
+                child: const Text('Go back'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  _recoveryKeyController.clear();
+                  _controller?.restartWithWipe();
+                  setState(() => _localStep = null);
+                },
+                child: const Text('Create new backup'),
+              ),
+            ],
+          ),
+        _ScreenStep.management || _ScreenStep.disableConfirm =>
+          const SizedBox.shrink(),
+      };
+    }
+
     final controller = _controller;
-    return switch (_step) {
-      _SetupStep.explainer => Row(
+    if (controller == null) return const SizedBox.shrink();
+
+    return switch (controller.phase) {
+      SetupPhase.loading || SetupPhase.verification => const SizedBox.shrink(),
+      SetupPhase.savingKey => Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             TextButton(
-              onPressed: () => setState(() => _step = _SetupStep.skipConfirm),
-              child: const Text('Skip for now'),
-            ),
-            FilledButton(
-              onPressed: _startBootstrap,
-              child: const Text('Next'),
-            ),
-          ],
-        ),
-      _SetupStep.skipConfirm => Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            TextButton(
-              onPressed: () => setState(() => _step = _SetupStep.explainer),
-              child: const Text('Go back'),
-            ),
-            FilledButton(
-              onPressed: _skip,
-              child: const Text('Skip anyway'),
-            ),
-          ],
-        ),
-      _SetupStep.loading => const SizedBox.shrink(),
-      _SetupStep.savingKey => Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            TextButton(
-              onPressed: controller?.requestCancel,
+              onPressed: () =>
+                  setState(() => _localStep = _ScreenStep.skipConfirm),
               child: const Text('Back'),
             ),
             FilledButton(
-              onPressed: controller != null &&
-                      !controller.generatingKey &&
-                      controller.canConfirmNewKey
+              onPressed: !controller.generatingKey && controller.canConfirmNewKey
                   ? controller.confirmNewSsss
                   : null,
               child: const Text('Next'),
             ),
           ],
         ),
-      _SetupStep.unlock => Row(
+      SetupPhase.unlock => Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             TextButton(
-              onPressed: controller?.requestCancel,
+              onPressed: () =>
+                  setState(() => _localStep = _ScreenStep.skipConfirm),
               child: const Text('Back'),
             ),
             FilledButton(
               onPressed: () => controller
-                  ?.unlockExistingSsss(_recoveryKeyController.text.trim()),
+                  .unlockExistingSsss(_recoveryKeyController.text.trim()),
               child: const Text('Unlock'),
             ),
           ],
         ),
-      _SetupStep.createNewKey => Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            TextButton(
-              onPressed: () => setState(() => _step = _SetupStep.unlock),
-              child: const Text('Go back'),
-            ),
-            FilledButton(
-              onPressed: () {
-                _recoveryKeyController.clear();
-                _controller?.restartWithWipe();
-              },
-              child: const Text('Create new backup'),
-            ),
-          ],
-        ),
-      _SetupStep.deviceVerification => const SizedBox.shrink(),
-      _SetupStep.done => FilledButton(
+      SetupPhase.done => FilledButton(
           onPressed: _finishSetup,
           child: const Text('Done'),
         ),
-      _SetupStep.management || _SetupStep.disableConfirm =>
-        const SizedBox.shrink(),
-      _SetupStep.error => Row(
+      SetupPhase.error => Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             TextButton(
@@ -427,7 +318,7 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
               child: const Text('Close'),
             ),
             FilledButton(
-              onPressed: () => _controller?.retry(),
+              onPressed: controller.retry,
               child: const Text('Retry'),
             ),
           ],
@@ -489,19 +380,13 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
   }
 
   Widget _buildLoading() {
-    final controller = _controller;
-    final message = switch (controller?.state) {
-      BootstrapState.askSetupCrossSigning => 'Setting up cross-signing...',
-      BootstrapState.askSetupOnlineKeyBackup => 'Setting up key backup...',
-      _ => 'Preparing...',
-    };
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const CircularProgressIndicator(),
           const SizedBox(height: 16),
-          Text(message),
+          Text(_controller?.loadingMessage ?? 'Preparing...'),
         ],
       ),
     );
@@ -575,19 +460,6 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
 
   Widget _buildUnlock() {
     final controller = _controller;
-    if (controller != null && controller.verifying) {
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Verifying with another device...'),
-          ],
-        ),
-      );
-    }
-
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -622,14 +494,15 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
           const SizedBox(height: 4),
           Center(
             child: OutlinedButton.icon(
-              onPressed: controller?.requestVerification,
+              onPressed: () => controller?.startVerification(),
               icon: const Icon(Icons.devices, size: 18),
               label: const Text('Verify with another device'),
             ),
           ),
           const SizedBox(height: 8),
           TextButton(
-            onPressed: controller?.requestLostKeyConfirmation,
+            onPressed: () =>
+                setState(() => _localStep = _ScreenStep.createNewKey),
             child: const Text('Create new key'),
           ),
         ],
@@ -657,7 +530,8 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
   }
 
   Widget _buildDeviceVerification() {
-    if (_activeVerification == null) {
+    final verification = _controller?.verification;
+    if (verification == null) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -667,7 +541,7 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
             const Text('Starting verification...'),
             const SizedBox(height: 16),
             TextButton(
-              onPressed: _onVerificationCancel,
+              onPressed: () => _controller?.onVerificationCancel(),
               child: const Text('Cancel'),
             ),
           ],
@@ -689,9 +563,9 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
           ),
           const SizedBox(height: 24),
           KeyVerificationInline(
-            verification: _activeVerification!,
-            onDone: _onVerificationDone,
-            onCancel: _onVerificationCancel,
+            verification: verification,
+            onDone: (success) => _controller?.onVerificationDone(success),
+            onCancel: () => _controller?.onVerificationCancel(),
           ),
         ],
       ),
@@ -746,7 +620,8 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
           ),
           const SizedBox(height: 8),
           TextButton(
-            onPressed: () => setState(() => _step = _SetupStep.disableConfirm),
+            onPressed: () =>
+                setState(() => _localStep = _ScreenStep.disableConfirm),
             child: Text(
               'Disable backup',
               style: TextStyle(color: cs.error),
@@ -778,7 +653,7 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
             children: [
               TextButton(
                 onPressed: () =>
-                    setState(() => _step = _SetupStep.management),
+                    setState(() => _localStep = _ScreenStep.management),
                 child: const Text('Go back'),
               ),
               FilledButton(

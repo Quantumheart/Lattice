@@ -9,19 +9,8 @@ import 'package:matrix/encryption/utils/base64_unpadded.dart';
 import 'package:matrix/matrix.dart';
 import 'package:vodozemac/vodozemac.dart' as vod;
 
-/// Signals for UI-only actions that the dialog must handle.
-enum BootstrapAction {
-  none,
-  startVerification,
-  confirmLostKey,
-  confirmCancel,
-  done,
-}
+enum SetupPhase { loading, savingKey, unlock, verification, done, error }
 
-/// Extracted business logic for the bootstrap flow.
-///
-/// All state and state-machine logic lives here; the dialog is a thin shell
-/// that listens to [notifyListeners] and reads the public getters.
 class BootstrapController extends ChangeNotifier {
   BootstrapController({
     required this.matrixService,
@@ -34,6 +23,7 @@ class BootstrapController extends ChangeNotifier {
 
   Bootstrap? _bootstrap;
   BootstrapState _state = BootstrapState.loading;
+  SetupPhase _phase = SetupPhase.loading;
   String? _error;
   bool _wipeExisting;
 
@@ -42,61 +32,29 @@ class BootstrapController extends ChangeNotifier {
   bool _awaitingKeyAck = false;
   bool _saveToDevice = false;
   bool _keyCopied = false;
-  bool _verifying = false;
   String? _recoveryKeyError;
   OpenSSSS? _unlockedSsssKey;
   bool _isDisposed = false;
   bool _onDoneRunning = false;
+  KeyVerification? _verification;
 
   // ── Public getters ────────────────────────────────────────────
 
-  Bootstrap? get bootstrap => _bootstrap;
-  BootstrapState get state => _state;
+  SetupPhase get phase => _phase;
   String? get error => _error;
   String? get newRecoveryKey => _newRecoveryKey;
   bool get generatingKey => _generatingKey;
   bool get saveToDevice => _saveToDevice;
   bool get keyCopied => _keyCopied;
   bool get canConfirmNewKey => _keyCopied || _saveToDevice;
-  bool get verifying => _verifying;
   String? get recoveryKeyError => _recoveryKeyError;
+  KeyVerification? get verification => _verification;
 
-  /// When non-null the dialog should wrap this in addPostFrameCallback.
-  VoidCallback? deferredAdvance;
-
-  /// Signals UI-only work (show nested dialog, pop, etc.).
-  BootstrapAction pendingAction = BootstrapAction.none;
-
-  /// Clears the pending action after the dialog has handled it.
-  void clearPendingAction() {
-    pendingAction = BootstrapAction.none;
-  }
-
-  // ── Title helper ──────────────────────────────────────────────
-
-  String get title {
-    switch (_state) {
-      case BootstrapState.loading:
-      case BootstrapState.askWipeSsss:
-      case BootstrapState.askWipeCrossSigning:
-      case BootstrapState.askSetupCrossSigning:
-      case BootstrapState.askWipeOnlineKeyBackup:
-      case BootstrapState.askSetupOnlineKeyBackup:
-      case BootstrapState.askBadSsss:
-        return 'Setting up backup';
-      case BootstrapState.askNewSsss:
-        return 'Save your recovery key';
-      case BootstrapState.openExistingSsss:
-        return 'Enter recovery key';
-      case BootstrapState.askUseExistingSsss:
-      case BootstrapState.askUnlockSsss:
-        return 'Setting up backup';
-      case BootstrapState.done:
-        return 'Backup complete';
-      case BootstrapState.error:
-        return 'Backup error';
-    }
-  }
+  String get loadingMessage => switch (_state) {
+        BootstrapState.askSetupCrossSigning => 'Setting up cross-signing...',
+        BootstrapState.askSetupOnlineKeyBackup => 'Setting up key backup...',
+        _ => 'Preparing...',
+      };
 
   // ── Bootstrap lifecycle ───────────────────────────────────────
 
@@ -105,6 +63,7 @@ class BootstrapController extends ChangeNotifier {
     final encryption = client.encryption;
     if (encryption == null) {
       _state = BootstrapState.error;
+      _phase = SetupPhase.error;
       _error = 'Encryption is not available';
       _notify();
       return;
@@ -130,6 +89,7 @@ class BootstrapController extends ChangeNotifier {
       debugPrint('[Bootstrap] Timed out waiting for first sync');
       if (_isDisposed) return;
       _state = BootstrapState.error;
+      _phase = SetupPhase.error;
       _error = 'Timed out waiting for sync. Check your connection and retry.';
       _notify();
       return;
@@ -137,6 +97,7 @@ class BootstrapController extends ChangeNotifier {
       debugPrint('[Bootstrap] Sync preparation failed: $e\n$s');
       if (_isDisposed) return;
       _state = BootstrapState.error;
+      _phase = SetupPhase.error;
       _error = 'Failed to sync before bootstrap: $e';
       _notify();
       return;
@@ -153,34 +114,30 @@ class BootstrapController extends ChangeNotifier {
     if (_isDisposed) return;
 
     _bootstrap = bootstrap;
-    final state = bootstrap.state;
+    _state = bootstrap.state;
 
-    // Auto-advance states that don't need user interaction.
-    switch (state) {
+    switch (_state) {
       case BootstrapState.askWipeSsss:
         debugPrint('[Bootstrap] Auto-advancing: wipeSsss($_wipeExisting)');
-        deferredAdvance = () => bootstrap.wipeSsss(_wipeExisting);
-        _notify();
+        _advance(() => bootstrap.wipeSsss(_wipeExisting));
         return;
       case BootstrapState.askWipeCrossSigning:
         debugPrint('[Bootstrap] Auto-advancing: wipeCrossSigning($_wipeExisting)');
-        deferredAdvance = () => bootstrap.wipeCrossSigning(_wipeExisting);
-        _notify();
+        _advance(() => bootstrap.wipeCrossSigning(_wipeExisting));
         return;
       case BootstrapState.askSetupCrossSigning:
         debugPrint('[Bootstrap] Auto-advancing: askSetupCrossSigning');
-        deferredAdvance = () => bootstrap.askSetupCrossSigning(
-              setupMasterKey: true,
-              setupSelfSigningKey: true,
-              setupUserSigningKey: true,
-            );
+        _advance(
+          () => bootstrap.askSetupCrossSigning(
+            setupMasterKey: true,
+            setupSelfSigningKey: true,
+            setupUserSigningKey: true,
+          ),
+        );
         _notify();
         return;
       case BootstrapState.askWipeOnlineKeyBackup:
-        deferredAdvance = () async {
-          // Check if a backup version actually exists on the server.
-          // If it was deleted (e.g. via disableChatBackup), pass true
-          // to trigger askSetupOnlineKeyBackup and create a new one.
+        _advance(() async {
           var wipe = _wipeExisting;
           if (!wipe) {
             try {
@@ -196,48 +153,52 @@ class BootstrapController extends ChangeNotifier {
           }
           debugPrint('[Bootstrap] Auto-advancing: wipeOnlineKeyBackup($wipe)');
           bootstrap.wipeOnlineKeyBackup(wipe);
-        };
-        _notify();
+        });
         return;
       case BootstrapState.askSetupOnlineKeyBackup:
         debugPrint('[Bootstrap] Auto-advancing: askSetupOnlineKeyBackup');
-        deferredAdvance = () => bootstrap.askSetupOnlineKeyBackup(true);
+        _advance(() => bootstrap.askSetupOnlineKeyBackup(true));
         _notify();
         return;
       case BootstrapState.askBadSsss:
         debugPrint('[Bootstrap] Auto-advancing: ignoreBadSecrets');
-        deferredAdvance = () => bootstrap.ignoreBadSecrets(true);
-        _notify();
+        _advance(() => bootstrap.ignoreBadSecrets(true));
         return;
       case BootstrapState.askUseExistingSsss:
         debugPrint('[Bootstrap] Auto-advancing: useExistingSsss(${!_wipeExisting})');
-        deferredAdvance = () => bootstrap.useExistingSsss(!_wipeExisting);
-        _notify();
+        _advance(() => bootstrap.useExistingSsss(!_wipeExisting));
         return;
       case BootstrapState.askUnlockSsss:
         debugPrint('[Bootstrap] Auto-advancing: unlockedSsss');
-        deferredAdvance = () => bootstrap.unlockedSsss();
-        _notify();
+        _advance(() => bootstrap.unlockedSsss());
+        return;
+      case BootstrapState.done:
+        unawaited(_onDone());
         return;
       default:
         break;
     }
 
-    // If we're awaiting user acknowledgement of the recovery key,
-    // don't let the bootstrap auto-advance the UI state.
-    if (_awaitingKeyAck && state != BootstrapState.error) {
+    if (_awaitingKeyAck && _state != BootstrapState.error) {
       return;
     }
 
-    _state = state;
-    if (state == BootstrapState.askNewSsss) {
+    _phase = _phaseFromState(_state);
+    if (_state == BootstrapState.askNewSsss) {
       unawaited(_generateNewSsssKey());
     }
-    if (state == BootstrapState.openExistingSsss) {
+    if (_state == BootstrapState.openExistingSsss) {
       unawaited(_loadStoredRecoveryKey());
     }
     _notify();
   }
+
+  static SetupPhase _phaseFromState(BootstrapState state) => switch (state) {
+        BootstrapState.askNewSsss => SetupPhase.savingKey,
+        BootstrapState.openExistingSsss => SetupPhase.unlock,
+        BootstrapState.error => SetupPhase.error,
+        _ => SetupPhase.loading,
+      };
 
   // ── Key generation ────────────────────────────────────────────
 
@@ -256,7 +217,7 @@ class BootstrapController extends ChangeNotifier {
     } catch (e) {
       if (_isDisposed) return;
       _generatingKey = false;
-      _state = BootstrapState.error;
+      _phase = SetupPhase.error;
       _error = 'Failed to generate recovery key: $e';
       _notify();
     }
@@ -270,8 +231,6 @@ class BootstrapController extends ChangeNotifier {
     }
   }
 
-  /// Set by _loadStoredRecoveryKey; the dialog should apply this to the
-  /// TextEditingController.
   String? _storedRecoveryKey;
   String? consumeStoredRecoveryKey() {
     final key = _storedRecoveryKey;
@@ -290,8 +249,6 @@ class BootstrapController extends ChangeNotifier {
     _keyCopied = true;
     _notify();
   }
-
-  // useExistingSsss and skipOldSsssUnlock removed — now auto-advanced.
 
   void confirmNewSsss() {
     _awaitingKeyAck = false;
@@ -327,38 +284,16 @@ class BootstrapController extends ChangeNotifier {
 
     try {
       await bootstrap!.openExistingSsss();
-      // Self-sign immediately after unlocking, matching FluffyChat behavior.
       final encryption = matrixService.client.encryption;
       if (encryption != null && encryption.crossSigning.enabled) {
         debugPrint('[Bootstrap] Self-signing after SSSS unlock');
         await encryption.crossSigning.selfSign(recoveryKey: key);
       }
     } catch (e) {
-      _state = BootstrapState.error;
+      _phase = SetupPhase.error;
       _error = 'Failed to open backup: $e';
       _notify();
     }
-  }
-
-
-  void requestVerification() {
-    pendingAction = BootstrapAction.startVerification;
-    _notify();
-  }
-
-  void requestCancel() {
-    pendingAction = BootstrapAction.confirmCancel;
-    _notify();
-  }
-
-  void requestLostKeyConfirmation() {
-    pendingAction = BootstrapAction.confirmLostKey;
-    _notify();
-  }
-
-  void setVerifying(bool value) {
-    _verifying = value;
-    _notify();
   }
 
   void retry() {
@@ -374,33 +309,86 @@ class BootstrapController extends ChangeNotifier {
 
   void _resetState() {
     _state = BootstrapState.loading;
+    _phase = SetupPhase.loading;
     _error = null;
     _newRecoveryKey = null;
     _generatingKey = false;
     _awaitingKeyAck = false;
     _keyCopied = false;
-    _verifying = false;
     _recoveryKeyError = null;
     _unlockedSsssKey = null;
     _onDoneRunning = false;
     _notify();
   }
 
-  Future<void> onDone() async {
+  // ── Verification ─────────────────────────────────────────────
+
+  Future<void> startVerification() async {
+    final client = matrixService.client;
+    final encryption = client.encryption;
+    if (encryption == null) return;
+
+    _phase = SetupPhase.verification;
+    _notify();
+
+    await client.updateUserDeviceKeys();
+
+    _verification = KeyVerification(
+      encryption: encryption,
+      userId: client.userID!,
+      deviceId: '*',
+    );
+    await _verification!.start();
+    encryption.keyVerificationManager.addRequest(_verification!);
+    _notify();
+  }
+
+  Future<void> onVerificationDone(bool success) async {
+    if (!success) {
+      _verification = null;
+      _phase = SetupPhase.unlock;
+      _notify();
+      return;
+    }
+
+    _phase = SetupPhase.loading;
+    _notify();
+
+    final encryption = matrixService.client.encryption;
+    if (encryption != null) {
+      for (var i = 0; i < 10; i++) {
+        if (_isDisposed) return;
+        final cached = await encryption.keyManager.isCached() &&
+            await encryption.crossSigning.isCached();
+        if (cached) break;
+        await Future<void>.delayed(const Duration(seconds: 1));
+      }
+    }
+
+    _verification = null;
+    await _onDone();
+  }
+
+  void onVerificationCancel() {
+    _verification = null;
+    _phase = SetupPhase.unlock;
+    _notify();
+  }
+
+  // ── Post-bootstrap finalization ──────────────────────────────
+
+  Future<void> _onDone() async {
     if (_onDoneRunning) return;
     _onDoneRunning = true;
+
     if (_saveToDevice && _newRecoveryKey != null) {
       await matrixService.storeRecoveryKey(_newRecoveryKey!);
     }
 
-    // The bootstrap stored secrets in SSSS on the server but the local
-    // cache may not reflect them yet. Explicitly cache and self-sign so
-    // that checkChatBackupStatus sees the correct state.
-    // Prefer the key we unlocked in unlockExistingSsss (which may differ
-    // from the bootstrap's current newSsssKey after state transitions).
     final client = matrixService.client;
     final encryption = client.encryption;
     final ssssKey = _unlockedSsssKey ?? _bootstrap?.newSsssKey;
+
     if (encryption != null && ssssKey != null && ssssKey.isUnlocked) {
       try {
         await ssssKey.maybeCacheAll();
@@ -411,11 +399,6 @@ class BootstrapController extends ChangeNotifier {
         debugPrint('[Bootstrap] Post-bootstrap caching/signing failed: $e');
       }
       await client.updateUserDeviceKeys();
-
-      // The SDK does not sign the key backup auth_data with the master
-      // cross-signing key. Other clients (Element, etc.) require this
-      // signature to trust the backup. Sign it now while we have access
-      // to the SSSS secrets.
       await _signKeyBackupWithCrossSigning(client, encryption, ssssKey);
     } else if (encryption != null) {
       try {
@@ -425,22 +408,11 @@ class BootstrapController extends ChangeNotifier {
           await encryption.crossSigning.selfSign();
         }
         await client.updateUserDeviceKeys();
-
-        final storedKey = await matrixService.getStoredRecoveryKey();
-        if (storedKey != null) {
-          debugPrint('[Bootstrap] Restoring and ensuring backup exists');
-          final ssss =
-              await _restoreAndEnsureBackup(client, encryption, storedKey);
-          if (ssss != null && ssss.isUnlocked) {
-            await _signKeyBackupWithCrossSigning(client, encryption, ssss);
-          }
-        }
       } catch (e) {
-        debugPrint('[Bootstrap] Post-verification recovery failed: $e');
+        debugPrint('[Bootstrap] Post-verification signing failed: $e');
       }
     }
 
-    // Restore room keys from the online key backup.
     try {
       await encryption?.keyManager.loadAllKeys();
       debugPrint('[Bootstrap] Room keys restored from online backup');
@@ -448,96 +420,32 @@ class BootstrapController extends ChangeNotifier {
       debugPrint('[Bootstrap] Failed to load keys from backup: $e');
     }
 
-    // Request session keys for any rooms still showing undecryptable events.
     matrixService.requestMissingRoomKeys();
-
     await matrixService.checkChatBackupStatus();
     matrixService.clearCachedPassword();
-    pendingAction = BootstrapAction.done;
+
+    _phase = SetupPhase.done;
     _notify();
-  }
-
-  // ── Verification fallback ─────────────────────────────────────
-
-  Future<OpenSSSS?> _restoreAndEnsureBackup(
-    Client client,
-    Encryption encryption,
-    String recoveryKey,
-  ) async {
-    final completer = Completer<OpenSSSS?>();
-    OpenSSSS? unlockedKey;
-    encryption.bootstrap(
-      onUpdate: (bootstrap) async {
-        try {
-          switch (bootstrap.state) {
-            case BootstrapState.loading:
-              break;
-            case BootstrapState.askWipeSsss:
-              bootstrap.wipeSsss(false);
-            case BootstrapState.askUseExistingSsss:
-              bootstrap.useExistingSsss(true);
-            case BootstrapState.askUnlockSsss:
-              bootstrap.unlockedSsss();
-            case BootstrapState.askBadSsss:
-              bootstrap.ignoreBadSecrets(false);
-            case BootstrapState.openExistingSsss:
-              final key = bootstrap.newSsssKey!;
-              await key.unlock(keyOrPassphrase: recoveryKey);
-              unlockedKey = key;
-              await bootstrap.openExistingSsss();
-            case BootstrapState.askWipeCrossSigning:
-              await bootstrap.wipeCrossSigning(false);
-            case BootstrapState.askWipeOnlineKeyBackup:
-              var wipe = false;
-              try {
-                await encryption.keyManager.getRoomKeysBackupInfo(false);
-              } on MatrixException catch (e) {
-                if (e.errcode == 'M_NOT_FOUND') wipe = true;
-              }
-              bootstrap.wipeOnlineKeyBackup(wipe);
-            case BootstrapState.askSetupOnlineKeyBackup:
-              await bootstrap.askSetupOnlineKeyBackup(true);
-            case BootstrapState.askSetupCrossSigning:
-              await bootstrap.askSetupCrossSigning();
-            case BootstrapState.askNewSsss:
-              throw Exception('Unexpected state: askNewSsss');
-            case BootstrapState.error:
-              throw Exception('Bootstrap error');
-            case BootstrapState.done:
-              completer.complete(unlockedKey);
-          }
-        } catch (e, s) {
-          if (!completer.isCompleted) completer.completeError(e, s);
-        }
-      },
-    );
-    return completer.future;
   }
 
   // ── Key backup signing ───────────────────────────────────────
 
-  /// Signs the key backup's auth_data with both the device key and the
-  /// master cross-signing key so that other clients trust the backup.
   Future<void> _signKeyBackupWithCrossSigning(
     Client client,
     Encryption encryption,
     OpenSSSS ssssKey,
   ) async {
     try {
-      // Bust the cache — the bootstrap may have deleted the old backup and
-      // created a new one, leaving the KeyManager cache stale.
       final backupInfo =
           await encryption.keyManager.getRoomKeysBackupInfo(false);
       final authData = Map<String, Object?>.from(backupInfo.authData);
 
-      // Strip signatures/unsigned for canonical JSON signing.
       final signable = Map<String, Object?>.from(authData);
       signable.remove('signatures');
       signable.remove('unsigned');
       final canonical =
           String.fromCharCodes(canonicalJson.encode(signable));
 
-      // Collect existing signatures (if any).
       final signatures = <String, Map<String, String>>{};
       final existing = authData['signatures'];
       if (existing is Map) {
@@ -552,11 +460,9 @@ class BootstrapController extends ChangeNotifier {
       final userId = client.userID!;
       final userSigs = signatures[userId] ??= {};
 
-      // Sign with device key.
       final deviceSignature = encryption.olmManager.signString(canonical);
       userSigs['ed25519:${client.deviceID}'] = deviceSignature;
 
-      // Sign with master cross-signing key.
       final masterKeySecret =
           await ssssKey.getStored(EventTypes.CrossSigningMasterKey);
       final masterKeyBytes = base64decodeUnpadded(masterKeySecret);
@@ -576,12 +482,14 @@ class BootstrapController extends ChangeNotifier {
       debugPrint('[Bootstrap] Key backup signed with master cross-signing key');
     } catch (e) {
       debugPrint('[Bootstrap] Failed to sign key backup: $e');
-      // Non-fatal — backup still works, just won't show as trusted
-      // in other clients until they verify this device.
     }
   }
 
   // ── Internals ─────────────────────────────────────────────────
+
+  void _advance(dynamic Function() fn) {
+    unawaited(Future.microtask(fn));
+  }
 
   void _notify() {
     if (!_isDisposed) {
@@ -595,6 +503,7 @@ class BootstrapController extends ChangeNotifier {
     _newRecoveryKey = null;
     _storedRecoveryKey = null;
     _unlockedSsssKey = null;
+    _verification?.onUpdate = null;
     super.dispose();
   }
 }

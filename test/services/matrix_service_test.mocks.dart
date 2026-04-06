@@ -955,6 +955,16 @@ class _FakeSecretStorageKeyContent_86 extends _i1.SmartFake
         );
 }
 
+class _FakeOpenSSSS_87 extends _i1.SmartFake implements _i8.OpenSSSS {
+  _FakeOpenSSSS_87(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
 /// A class which mocks [Client].
 ///
 /// See the documentation for Mockito's code generation for more information.
@@ -11174,4 +11184,386 @@ class MockOpenSSSS extends _i1.Mock implements _i8.OpenSSSS {
         returnValue: _i5.Future<void>.value(),
         returnValueForMissingStub: _i5.Future<void>.value(),
       ) as _i5.Future<void>);
+}
+
+/// A class which mocks [SSSS].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockSSSS extends _i1.Mock implements _i8.SSSS {
+  @override
+  _i8.Encryption get encryption => (super.noSuchMethod(
+        Invocation.getter(#encryption),
+        returnValue: _FakeEncryption_84(
+          this,
+          Invocation.getter(#encryption),
+        ),
+        returnValueForMissingStub: _FakeEncryption_84(
+          this,
+          Invocation.getter(#encryption),
+        ),
+      ) as _i8.Encryption);
+
+  @override
+  _i2.Client get client => (super.noSuchMethod(
+        Invocation.getter(#client),
+        returnValue: _FakeClient_66(
+          this,
+          Invocation.getter(#client),
+        ),
+        returnValueForMissingStub: _FakeClient_66(
+          this,
+          Invocation.getter(#client),
+        ),
+      ) as _i2.Client);
+
+  @override
+  get pendingShareRequests => throw UnsupportedError(
+      r'"pendingShareRequests" cannot be used without a mockito fallback generator.');
+
+  @override
+  _i3.CachedStreamController<String> get onSecretStored => (super.noSuchMethod(
+        Invocation.getter(#onSecretStored),
+        returnValue: _FakeCachedStreamController_6<String>(
+          this,
+          Invocation.getter(#onSecretStored),
+        ),
+        returnValueForMissingStub: _FakeCachedStreamController_6<String>(
+          this,
+          Invocation.getter(#onSecretStored),
+        ),
+      ) as _i3.CachedStreamController<String>);
+
+  @override
+  _i5.Future<void> clearCache() => (super.noSuchMethod(
+        Invocation.method(
+          #clearCache,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  void setValidator(
+    String? type,
+    _i5.FutureOr<bool> Function(String)? validator,
+  ) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #setValidator,
+          [
+            type,
+            validator,
+          ],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void setCacheCallback(
+    String? type,
+    _i5.FutureOr<void> Function(String)? callback,
+  ) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #setCacheCallback,
+          [
+            type,
+            callback,
+          ],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  _i5.Future<void> setDefaultKeyId(String? keyId) => (super.noSuchMethod(
+        Invocation.method(
+          #setDefaultKeyId,
+          [keyId],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i2.SecretStorageKeyContent? getKey(String? keyId) => (super.noSuchMethod(
+        Invocation.method(
+          #getKey,
+          [keyId],
+        ),
+        returnValueForMissingStub: null,
+      ) as _i2.SecretStorageKeyContent?);
+
+  @override
+  bool isKeyValid(String? keyId) => (super.noSuchMethod(
+        Invocation.method(
+          #isKeyValid,
+          [keyId],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  _i5.Future<_i8.OpenSSSS> createKey([
+    String? passphrase,
+    String? name,
+  ]) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #createKey,
+          [
+            passphrase,
+            name,
+          ],
+        ),
+        returnValue: _i5.Future<_i8.OpenSSSS>.value(_FakeOpenSSSS_87(
+          this,
+          Invocation.method(
+            #createKey,
+            [
+              passphrase,
+              name,
+            ],
+          ),
+        )),
+        returnValueForMissingStub:
+            _i5.Future<_i8.OpenSSSS>.value(_FakeOpenSSSS_87(
+          this,
+          Invocation.method(
+            #createKey,
+            [
+              passphrase,
+              name,
+            ],
+          ),
+        )),
+      ) as _i5.Future<_i8.OpenSSSS>);
+
+  @override
+  _i5.Future<bool> checkKey(
+    _i14.Uint8List? key,
+    _i2.SecretStorageKeyContent? info,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #checkKey,
+          [
+            key,
+            info,
+          ],
+        ),
+        returnValue: _i5.Future<bool>.value(false),
+        returnValueForMissingStub: _i5.Future<bool>.value(false),
+      ) as _i5.Future<bool>);
+
+  @override
+  bool isSecret(String? type) => (super.noSuchMethod(
+        Invocation.method(
+          #isSecret,
+          [type],
+        ),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  _i5.Future<String?> getCached(String? type) => (super.noSuchMethod(
+        Invocation.method(
+          #getCached,
+          [type],
+        ),
+        returnValue: _i5.Future<String?>.value(),
+        returnValueForMissingStub: _i5.Future<String?>.value(),
+      ) as _i5.Future<String?>);
+
+  @override
+  _i5.Future<String> getStored(
+    String? type,
+    String? keyId,
+    _i14.Uint8List? key,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getStored,
+          [
+            type,
+            keyId,
+            key,
+          ],
+        ),
+        returnValue: _i5.Future<String>.value(_i13.dummyValue<String>(
+          this,
+          Invocation.method(
+            #getStored,
+            [
+              type,
+              keyId,
+              key,
+            ],
+          ),
+        )),
+        returnValueForMissingStub:
+            _i5.Future<String>.value(_i13.dummyValue<String>(
+          this,
+          Invocation.method(
+            #getStored,
+            [
+              type,
+              keyId,
+              key,
+            ],
+          ),
+        )),
+      ) as _i5.Future<String>);
+
+  @override
+  _i5.Future<void> store(
+    String? type,
+    String? secret,
+    String? keyId,
+    _i14.Uint8List? key, {
+    bool? add = false,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #store,
+          [
+            type,
+            secret,
+            keyId,
+            key,
+          ],
+          {#add: add},
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> validateAndStripOtherKeys(
+    String? type,
+    String? secret,
+    String? keyId,
+    _i14.Uint8List? key,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #validateAndStripOtherKeys,
+          [
+            type,
+            secret,
+            keyId,
+            key,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> maybeCacheAll(
+    String? keyId,
+    _i14.Uint8List? key,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #maybeCacheAll,
+          [
+            keyId,
+            key,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> maybeRequestAll([List<_i2.DeviceKeys>? devices]) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #maybeRequestAll,
+          [devices],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> request(
+    String? type, [
+    List<_i2.DeviceKeys>? devices,
+  ]) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #request,
+          [
+            type,
+            devices,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> periodicallyRequestMissingCache() => (super.noSuchMethod(
+        Invocation.method(
+          #periodicallyRequestMissingCache,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> handleToDeviceEvent(_i2.ToDeviceEvent? event) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #handleToDeviceEvent,
+          [event],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  Set<String>? keyIdsFromType(String? type) => (super.noSuchMethod(
+        Invocation.method(
+          #keyIdsFromType,
+          [type],
+        ),
+        returnValueForMissingStub: null,
+      ) as Set<String>?);
+
+  @override
+  String? keyIdFromType(String? type) => (super.noSuchMethod(
+        Invocation.method(
+          #keyIdFromType,
+          [type],
+        ),
+        returnValueForMissingStub: null,
+      ) as String?);
+
+  @override
+  _i8.OpenSSSS open([String? identifier]) => (super.noSuchMethod(
+        Invocation.method(
+          #open,
+          [identifier],
+        ),
+        returnValue: _FakeOpenSSSS_87(
+          this,
+          Invocation.method(
+            #open,
+            [identifier],
+          ),
+        ),
+        returnValueForMissingStub: _FakeOpenSSSS_87(
+          this,
+          Invocation.method(
+            #open,
+            [identifier],
+          ),
+        ),
+      ) as _i8.OpenSSSS);
 }

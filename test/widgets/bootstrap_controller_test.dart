@@ -49,12 +49,12 @@ void main() {
 
       await controller.startBootstrap();
 
-      expect(controller.state, BootstrapState.error);
+      expect(controller.phase, SetupPhase.error);
       expect(controller.error, 'Encryption is not available');
       controller.dispose();
     });
 
-    test('deferredAdvance set for askWipeSsss', () async {
+    test('auto-advances askWipeSsss via microtask', () async {
       late void Function(Bootstrap) onUpdateCb;
       when(mockEncryption.bootstrap(onUpdate: anyNamed('onUpdate')))
           .thenAnswer((invocation) {
@@ -70,14 +70,13 @@ void main() {
       when(mockBootstrap.state).thenReturn(BootstrapState.askWipeSsss);
 
       onUpdateCb(mockBootstrap);
+      await Future<void>.delayed(Duration.zero);
 
-      expect(controller.deferredAdvance, isNotNull);
-      controller.deferredAdvance!();
       verify(mockBootstrap.wipeSsss(false)).called(1);
       controller.dispose();
     });
 
-    test('deferredAdvance set for askSetupCrossSigning', () async {
+    test('auto-advances askSetupCrossSigning via microtask', () async {
       late void Function(Bootstrap) onUpdateCb;
       when(mockEncryption.bootstrap(onUpdate: anyNamed('onUpdate')))
           .thenAnswer((invocation) {
@@ -94,9 +93,8 @@ void main() {
           .thenReturn(BootstrapState.askSetupCrossSigning);
 
       onUpdateCb(mockBootstrap);
+      await Future<void>.delayed(Duration.zero);
 
-      expect(controller.deferredAdvance, isNotNull);
-      controller.deferredAdvance!();
       verify(mockBootstrap.askSetupCrossSigning(
         setupMasterKey: true,
         setupSelfSigningKey: true,
@@ -105,7 +103,7 @@ void main() {
       controller.dispose();
     });
 
-    test('deferredAdvance set for askSetupOnlineKeyBackup', () async {
+    test('auto-advances askSetupOnlineKeyBackup via microtask', () async {
       late void Function(Bootstrap) onUpdateCb;
       when(mockEncryption.bootstrap(onUpdate: anyNamed('onUpdate')))
           .thenAnswer((invocation) {
@@ -122,14 +120,13 @@ void main() {
           .thenReturn(BootstrapState.askSetupOnlineKeyBackup);
 
       onUpdateCb(mockBootstrap);
+      await Future<void>.delayed(Duration.zero);
 
-      expect(controller.deferredAdvance, isNotNull);
-      controller.deferredAdvance!();
       verify(mockBootstrap.askSetupOnlineKeyBackup(true)).called(1);
       controller.dispose();
     });
 
-    test('deferredAdvance set for askBadSsss', () async {
+    test('auto-advances askBadSsss via microtask', () async {
       late void Function(Bootstrap) onUpdateCb;
       when(mockEncryption.bootstrap(onUpdate: anyNamed('onUpdate')))
           .thenAnswer((invocation) {
@@ -145,9 +142,8 @@ void main() {
       when(mockBootstrap.state).thenReturn(BootstrapState.askBadSsss);
 
       onUpdateCb(mockBootstrap);
+      await Future<void>.delayed(Duration.zero);
 
-      expect(controller.deferredAdvance, isNotNull);
-      controller.deferredAdvance!();
       verify(mockBootstrap.ignoreBadSecrets(true)).called(1);
       controller.dispose();
     });
@@ -173,10 +169,9 @@ void main() {
       when(mockSsssKey.recoveryKey).thenReturn('EsTc ABCD 1234 5678');
 
       onUpdateCb(mockBootstrap);
-      // Allow the async _generateNewSsssKey to complete
       await Future<void>.delayed(Duration.zero);
 
-      expect(controller.state, BootstrapState.askNewSsss);
+      expect(controller.phase, SetupPhase.savingKey);
       expect(controller.newRecoveryKey, 'EsTc ABCD 1234 5678');
       expect(controller.generatingKey, isFalse);
       controller.dispose();
@@ -190,6 +185,8 @@ void main() {
             as void Function(Bootstrap);
         return MockBootstrap();
       });
+      when(mockMatrixService.checkChatBackupStatus())
+          .thenAnswer((_) async {});
 
       final controller = createController();
       await controller.startBootstrap();
@@ -204,11 +201,11 @@ void main() {
       onUpdateCb(mockBootstrap);
       await Future<void>.delayed(Duration.zero);
 
-      // Now simulate bootstrap advancing to done while gate is closed
       when(mockBootstrap.state).thenReturn(BootstrapState.done);
       controller.confirmNewSsss();
+      await Future<void>.delayed(Duration.zero);
 
-      expect(controller.state, BootstrapState.done);
+      expect(controller.phase, SetupPhase.done);
       controller.dispose();
     });
 
@@ -306,7 +303,7 @@ void main() {
       controller.dispose();
     });
 
-    test('onDone sets pendingAction to done', () async {
+    test('bootstrap done triggers _onDone and sets phase to done', () async {
       late void Function(Bootstrap) onUpdateCb;
       when(mockEncryption.bootstrap(onUpdate: anyNamed('onUpdate')))
           .thenAnswer((invocation) {
@@ -323,10 +320,9 @@ void main() {
       final mockBootstrap = MockBootstrap();
       when(mockBootstrap.state).thenReturn(BootstrapState.done);
       onUpdateCb(mockBootstrap);
+      await Future<void>.delayed(Duration.zero);
 
-      await controller.onDone();
-
-      expect(controller.pendingAction, BootstrapAction.done);
+      expect(controller.phase, SetupPhase.done);
       controller.dispose();
     });
 
@@ -342,7 +338,6 @@ void main() {
       final controller = createController();
       await controller.startBootstrap();
 
-      // Move to some non-loading state first
       final mockBootstrap = MockBootstrap();
       when(mockBootstrap.state).thenReturn(BootstrapState.openExistingSsss);
       when(mockMatrixService.getStoredRecoveryKey())
@@ -350,37 +345,22 @@ void main() {
       onUpdateCb(mockBootstrap);
       await Future<void>.delayed(Duration.zero);
 
-      expect(controller.state, BootstrapState.openExistingSsss);
+      expect(controller.phase, SetupPhase.unlock);
 
       controller.restartWithWipe();
-      // After restartWithWipe, state should be reset to loading
-      // (before startBootstrap completes)
-      expect(controller.state, BootstrapState.loading);
+      expect(controller.phase, SetupPhase.loading);
       expect(controller.error, isNull);
       expect(controller.newRecoveryKey, isNull);
       expect(controller.generatingKey, isFalse);
       expect(controller.recoveryKeyError, isNull);
 
-      // Wait for startBootstrap to complete
       await Future<void>.delayed(Duration.zero);
       controller.dispose();
     });
 
-    test('title returns correct string per state', () async {
+    test('loadingMessage returns correct string per state', () async {
       final controller = createController();
-
-      // Default state is loading
-      expect(controller.title, 'Setting up backup');
-      controller.dispose();
-    });
-
-    test('title for error state', () async {
-      when(mockClient.encryption).thenReturn(null);
-      final controller = createController();
-
-      await controller.startBootstrap();
-
-      expect(controller.title, 'Backup error');
+      expect(controller.loadingMessage, 'Preparing...');
       controller.dispose();
     });
   });

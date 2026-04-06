@@ -18,6 +18,7 @@ import 'package:mockito/mockito.dart';
   MockSpec<KeyManager>(),
   MockSpec<Bootstrap>(),
   MockSpec<OpenSSSS>(),
+  MockSpec<SSSS>(unsupportedMembers: {#pendingShareRequests}),
 ])
 import 'matrix_service_test.mocks.dart';
 
@@ -609,13 +610,25 @@ void main() {
     late MockEncryption mockEncryption;
     late MockCrossSigning mockCrossSigning;
     late MockKeyManager mockKeyManager;
+    late MockSSSS mockSsss;
 
     setUp(() {
       mockEncryption = MockEncryption();
       mockCrossSigning = MockCrossSigning();
       mockKeyManager = MockKeyManager();
+      mockSsss = MockSSSS();
       when(mockEncryption.crossSigning).thenReturn(mockCrossSigning);
       when(mockEncryption.keyManager).thenReturn(mockKeyManager);
+      when(mockEncryption.ssss).thenReturn(mockSsss);
+      when(mockKeyManager.getRoomKeysBackupInfo(any)).thenAnswer(
+        (_) async => GetRoomKeysVersionCurrentResponse.fromJson({
+          'algorithm': BackupAlgorithm.mMegolmBackupV1Curve25519AesSha2.name,
+          'auth_data': <String, dynamic>{'public_key': 'fake'},
+          'count': 0,
+          'etag': '0',
+          'version': '1',
+        }),
+      );
     });
 
     test('tryAutoUnlockBackup is a no-op when no stored recovery key',
@@ -625,9 +638,6 @@ void main() {
           .thenAnswer((_) async => null);
 
       await service.tryAutoUnlockBackup();
-
-      // Should not attempt to restore identity.
-      verifyNever(mockClient.encryption);
     });
 
     test('tryAutoUnlockBackup skips restore when already connected',

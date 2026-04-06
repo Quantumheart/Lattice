@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:matrix/encryption.dart';
+import 'package:matrix/encryption/utils/base64_unpadded.dart';
 import 'package:matrix/matrix.dart';
+import 'package:vodozemac/vodozemac.dart' as vod;
 
 class ChatBackupService {
   ChatBackupService({
@@ -44,6 +46,8 @@ class ChatBackupService {
   // ── Auto-unlock Backup ──────────────────────────────────────
 
   Future<void> tryAutoUnlockBackup() async {
+    await _ensureBackupVersionExists();
+
     final storedKey = await getStoredRecoveryKey();
     if (storedKey == null) return;
 
@@ -104,6 +108,40 @@ class ChatBackupService {
         }
       }
     }
+  }
+
+  // ── Backup Version ───────────────────────────────────────────
+
+  Future<void> _ensureBackupVersionExists() async {
+    final encryption = _client.encryption;
+    if (encryption == null) return;
+
+    try {
+      await encryption.keyManager.getRoomKeysBackupInfo(false);
+      return;
+    } on MatrixException catch (e) {
+      if (e.errcode != 'M_NOT_FOUND') return;
+    } catch (_) {
+      return;
+    }
+
+    final cachedKey =
+        await encryption.ssss.getCached(EventTypes.MegolmBackup);
+    if (cachedKey == null) return;
+
+    debugPrint('[Lattice] Creating backup version from cached megolm key');
+    final privateKey = base64decodeUnpadded(cachedKey);
+    final decryption = vod.PkDecryption.fromSecretKey(
+      vod.Curve25519PublicKey.fromBytes(privateKey),
+    );
+
+    await _client.postRoomKeysVersion(
+      BackupAlgorithm.mMegolmBackupV1Curve25519AesSha2,
+      <String, dynamic>{'public_key': decryption.publicKey},
+    );
+    debugPrint('[Lattice] Backup version created on server');
+
+    await _client.database.markInboundGroupSessionsAsNeedingUpload();
   }
 
   // ── Recovery Key Storage ──────────────────────────────────────
