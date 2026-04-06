@@ -15,9 +15,9 @@ import 'package:lattice/core/utils/vodozemac_init.dart';
 import 'package:lattice/features/auth/services/sso_web_init.dart';
 import 'package:lattice/features/calling/services/ringtone_service.dart';
 import 'package:lattice/features/calling/widgets/incoming_call_overlay.dart';
-import 'package:lattice/features/e2ee/widgets/verification_request_listener.dart';
 import 'package:lattice/features/chat/services/media_playback_service.dart';
 import 'package:lattice/features/chat/services/opengraph_service.dart';
+import 'package:lattice/features/e2ee/widgets/verification_request_listener.dart';
 import 'package:lattice/features/notifications/services/inbox_controller.dart';
 import 'package:lattice/features/notifications/widgets/notification_lifecycle_observer.dart';
 import 'package:media_kit/media_kit.dart';
@@ -101,8 +101,8 @@ class _LatticeAppState extends State<LatticeApp> {
 
               return ChangeNotifierProvider<MatrixService>.value(
                 value: matrix,
-                child: ChangeNotifierProxyProvider<MatrixService,
-                    InboxController>(
+                child:
+                    ChangeNotifierProxyProvider<MatrixService, InboxController>(
                   create: (ctx) => InboxController(
                     client: ctx.read<MatrixService>().client,
                   ),
@@ -142,17 +142,17 @@ class _LatticeAppState extends State<LatticeApp> {
                       builder: (context) {
                         final callService = context.read<CallService>();
                         final isCustom = prefs.themePreset == 'custom';
-                        final preset = isCustom
-                            ? null
-                            : getPreset(prefs.themePreset);
-                        final customScheme = isCustom
-                            ? prefs.customTheme
-                            : null;
+                        final preset =
+                            isCustom ? null : getPreset(prefs.themePreset);
+                        final customScheme =
+                            isCustom ? prefs.customTheme : null;
 
                         final theme = customScheme != null
                             ? LatticeTheme.light(
                                 dynamic: customScheme.toColorScheme(
-                                    Brightness.light,),)
+                                  Brightness.light,
+                                ),
+                              )
                             : LatticeTheme.light(
                                 dynamic: lightDynamic,
                                 preset: preset,
@@ -160,7 +160,9 @@ class _LatticeAppState extends State<LatticeApp> {
                         final darkTheme = customScheme != null
                             ? LatticeTheme.dark(
                                 dynamic: customScheme.toColorScheme(
-                                    Brightness.dark,),)
+                                  Brightness.dark,
+                                ),
+                              )
                             : LatticeTheme.dark(
                                 dynamic: darkDynamic,
                                 preset: preset,
