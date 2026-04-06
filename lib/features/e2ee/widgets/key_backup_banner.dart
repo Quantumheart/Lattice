@@ -31,12 +31,14 @@ class _KeyBackupBannerContent extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
-    return Semantics(
-      label: 'Key backup not set up. Tap to configure.',
-      button: true,
-      child: InkWell(
-        onTap: () => context.go('/e2ee-setup'),
-        child: Container(
+    return Material(
+      color: Colors.transparent,
+      child: Semantics(
+        label: 'Key backup not set up. Tap to configure.',
+        button: true,
+        child: InkWell(
+          onTap: () => context.go('/e2ee-setup'),
+          child: Container(
           constraints: const BoxConstraints(minHeight: 48),
           padding: const EdgeInsets.only(left: 12, right: 4),
           decoration: BoxDecoration(
@@ -80,6 +82,7 @@ class _KeyBackupBannerContent extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }
