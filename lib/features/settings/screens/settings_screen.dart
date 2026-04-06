@@ -7,8 +7,6 @@ import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/features/e2ee/widgets/backup_info_dialog.dart';
-import 'package:lattice/features/e2ee/widgets/bootstrap_dialog.dart';
 import 'package:lattice/shared/widgets/section_header.dart';
 import 'package:lattice/shared/widgets/user_avatar.dart';
 import 'package:matrix/matrix.dart';
@@ -399,13 +397,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               : 'Not set up',
                   onTap: matrix.chatBackupLoading
                       ? () {}
-                      : () => matrix.chatBackupEnabled
-                          ? BackupInfoDialog.show(
-                              context,
-                              onDisableBackup: () =>
-                                  _confirmDisableBackup(context),
-                            )
-                          : BootstrapDialog.show(context),
+                      : () => context.go('/e2ee-setup'),
                 ),
                 const Divider(height: 1, indent: 56),
                 _SettingsTile(
@@ -466,15 +458,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  void _confirmDisableBackup(BuildContext context) {
-    final matrix = context.read<MatrixService>();
-    unawaited(showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => _DisableBackupDialog(matrix: matrix),
-    ),);
-  }
-
   Future<void> _addAccount(BuildContext context, ClientManager manager) async {
     final service = await manager.createLoginService();
     await manager.addService(service);
@@ -526,7 +509,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             TextButton(
               onPressed: () {
                 Navigator.pop(ctx);
-                unawaited(BootstrapDialog.show(context));
+                context.go('/e2ee-setup');
               },
               child: const Text('Set up backup first'),
             ),
@@ -551,67 +534,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ),);
   }
 
-}
-
-class _DisableBackupDialog extends StatefulWidget {
-  const _DisableBackupDialog({required this.matrix});
-  final MatrixService matrix;
-
-  @override
-  State<_DisableBackupDialog> createState() => _DisableBackupDialogState();
-}
-
-class _DisableBackupDialogState extends State<_DisableBackupDialog> {
-  bool _disabling = false;
-
-  Future<void> _disable() async {
-    setState(() => _disabling = true);
-    await widget.matrix.disableChatBackup();
-    if (!mounted) return;
-    Navigator.pop(context);
-    if (widget.matrix.chatBackupError != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(widget.matrix.chatBackupError!)),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return AlertDialog(
-      title: const Text('Disable chat backup?'),
-      content: _disabling
-          ? const Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Disabling backup…'),
-              ],
-            )
-          : const Text(
-              'You will lose access to your encrypted message history '
-              'on new devices unless you set up backup again.',
-            ),
-      actions: _disabling
-          ? []
-          : [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                style: FilledButton.styleFrom(
-                  backgroundColor: cs.error,
-                  foregroundColor: cs.onError,
-                ),
-                onPressed: _disable,
-                child: const Text('Disable'),
-              ),
-            ],
-    );
-  }
 }
 
 class _SettingsTile extends StatelessWidget {

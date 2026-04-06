@@ -122,6 +122,13 @@ class MatrixService extends ChangeNotifier {
   Future<void> disableChatBackup() => _chatBackup.disableChatBackup();
   Future<void> tryAutoUnlockBackup() => _chatBackup.tryAutoUnlockBackup();
 
+  bool _hasSkippedSetup = false;
+  bool get hasSkippedSetup => _hasSkippedSetup;
+  void skipSetup() {
+    _hasSkippedSetup = true;
+    notifyListeners();
+  }
+
   // ── SelectionService delegates ──────────────────────────────────
 
   Set<String> get selectedSpaceIds => _selection.selectedSpaceIds;
@@ -350,6 +357,7 @@ class MatrixService extends ChangeNotifier {
     _uia.cancelUiaSub();
     _selection.resetSelection();
     _chatBackup.resetChatBackupState();
+    _hasSkippedSetup = false;
     notifyListeners();
   }
 
@@ -380,6 +388,7 @@ class MatrixService extends ChangeNotifier {
       _uia.clearCachedPassword();
       _selection.resetSelection();
       _chatBackup.resetChatBackupState();
+    _hasSkippedSetup = false;
       await _auth.clearSessionKeys();
       await SessionBackup.delete(clientName: clientName, storage: _storage);
       await _chatBackup.deleteStoredRecoveryKey();
@@ -405,6 +414,7 @@ class MatrixService extends ChangeNotifier {
         _uia.clearCachedPassword();
         _selection.resetSelection();
         _chatBackup.resetChatBackupState();
+    _hasSkippedSetup = false;
         await _auth.clearSessionKeys();
         await SessionBackup.delete(clientName: clientName, storage: _storage);
         await _chatBackup.deleteStoredRecoveryKey();

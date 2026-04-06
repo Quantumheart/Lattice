@@ -5,29 +5,23 @@ import 'package:lattice/features/e2ee/widgets/key_verification_content.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 
-class KeyVerificationDialog extends StatefulWidget {
-  final KeyVerification verification;
-
-  const KeyVerificationDialog({
-    required this.verification, super.key,
+class KeyVerificationInline extends StatefulWidget {
+  const KeyVerificationInline({
+    required this.verification,
+    required this.onDone,
+    required this.onCancel,
+    super.key,
   });
 
-  static Future<bool?> show(
-    BuildContext context, {
-    required KeyVerification verification,
-  }) {
-    return showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => KeyVerificationDialog(verification: verification),
-    );
-  }
+  final KeyVerification verification;
+  final ValueChanged<bool> onDone;
+  final VoidCallback onCancel;
 
   @override
-  State<KeyVerificationDialog> createState() => _KeyVerificationDialogState();
+  State<KeyVerificationInline> createState() => _KeyVerificationInlineState();
 }
 
-class _KeyVerificationDialogState extends State<KeyVerificationDialog> {
+class _KeyVerificationInlineState extends State<KeyVerificationInline> {
   KeyVerificationState _state = KeyVerificationState.waitingAccept;
 
   @override
@@ -65,34 +59,39 @@ class _KeyVerificationDialogState extends State<KeyVerificationDialog> {
     super.dispose();
   }
 
-  void _cancel() {
+  void _handleCancel() {
     unawaited(widget.verification.cancel());
-    Navigator.pop(context, false);
+    widget.onCancel();
   }
 
-  void _done() {
-    Navigator.pop(context, true);
+  void _handleDone() {
+    widget.onDone(_state == KeyVerificationState.done);
   }
 
   @override
   Widget build(BuildContext context) {
-    final content = KeyVerificationContent(
-      state: _state,
-      verification: widget.verification,
-    );
-
-    return AlertDialog(
-      title: Text(content.title),
-      content: SizedBox(
-        width: 400,
-        child: content,
-      ),
-      actions: buildVerificationActions(
-        state: _state,
-        verification: widget.verification,
-        onCancel: _cancel,
-        onDone: _done,
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        KeyVerificationContent(
+          state: _state,
+          verification: widget.verification,
+        ),
+        const SizedBox(height: 24),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: buildVerificationActions(
+            state: _state,
+            verification: widget.verification,
+            onCancel: _handleCancel,
+            onDone: _handleDone,
+          ).map((w) => Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: w,
+          ),).toList(),
+        ),
+      ],
     );
   }
 }

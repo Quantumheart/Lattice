@@ -866,6 +866,13 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
       ) as bool);
 
   @override
+  bool get hasSkippedSetup => (super.noSuchMethod(
+        Invocation.getter(#hasSkippedSetup),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
   Set<String> get selectedSpaceIds => (super.noSuchMethod(
         Invocation.getter(#selectedSpaceIds),
         returnValue: <String>{},
@@ -1046,6 +1053,15 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
         returnValue: _i6.Future<void>.value(),
         returnValueForMissingStub: _i6.Future<void>.value(),
       ) as _i6.Future<void>);
+
+  @override
+  void skipSetup() => super.noSuchMethod(
+        Invocation.method(
+          #skipSetup,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
 
   @override
   void selectSpace(String? spaceId) => super.noSuchMethod(

@@ -10,6 +10,7 @@ import 'package:lattice/features/auth/screens/login_screen.dart';
 import 'package:lattice/features/auth/screens/registration_screen.dart';
 import 'package:lattice/features/calling/screens/call_pane.dart';
 import 'package:lattice/features/chat/screens/chat_screen.dart';
+import 'package:lattice/features/e2ee/screens/e2ee_setup_screen.dart';
 import 'package:lattice/features/home/screens/home_shell.dart';
 import 'package:lattice/features/home/widgets/inbox_screen.dart';
 import 'package:lattice/features/rooms/widgets/room_details_panel.dart';
@@ -30,11 +31,22 @@ GoRouter buildRouter(MatrixService matrixService) {
     initialLocation: '/',
     redirect: (context, state) {
       final loggedIn = matrixService.isLoggedIn;
-      final onAuthRoute = state.matchedLocation.startsWith('/login') ||
-          state.matchedLocation.startsWith('/register');
+      final loc = state.matchedLocation;
+      final onAuthRoute =
+          loc.startsWith('/login') || loc.startsWith('/register');
+      final onSetupRoute = loc == '/e2ee-setup';
 
       if (!loggedIn && !onAuthRoute) return '/login';
       if (loggedIn && onAuthRoute) return '/';
+
+      if (loggedIn &&
+          !onSetupRoute &&
+          !onAuthRoute &&
+          matrixService.chatBackupNeeded == true &&
+          !matrixService.hasSkippedSetup) {
+        return '/e2ee-setup';
+      }
+
       return null;
     },
     routes: [
@@ -69,6 +81,13 @@ GoRouter buildRouter(MatrixService matrixService) {
               AppConfig.instance.defaultHomeserver;
           return RegistrationScreen(initialHomeserver: homeserver);
         },
+      ),
+
+      // ── E2EE setup (full-page, outside shell) ────────────────
+      GoRoute(
+        path: '/e2ee-setup',
+        name: Routes.e2eeSetup,
+        builder: (context, state) => const E2eeSetupScreen(),
       ),
 
       // ── Main app shell ───────────────────────────────────────
