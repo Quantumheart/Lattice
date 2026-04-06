@@ -432,7 +432,11 @@ class MatrixService extends ChangeNotifier {
 
   Future<void> _runPostLoginSync() async {
     try {
-      await _auth.persistCredentials();
+      try {
+        await _auth.persistCredentials();
+      } catch (e) {
+        debugPrint('[Lattice] Credential persistence failed (non-fatal): $e');
+      }
       if (!_isLoggedIn) return;
       await _sync.startSync(timeout: const Duration(minutes: 5));
       if (!_isLoggedIn) return;
