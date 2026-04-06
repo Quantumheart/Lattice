@@ -186,6 +186,7 @@ class _LatticeAppState extends State<LatticeApp> {
                             routerConfig: router,
                             builder: (context, child) =>
                                 VerificationRequestListener(
+                              router: router,
                               child: IncomingCallOverlay(
                                 router: router,
                                 child: child ?? const SizedBox.shrink(),

@@ -2,14 +2,20 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/features/e2ee/widgets/key_verification_dialog.dart';
 import 'package:matrix/encryption.dart';
 import 'package:provider/provider.dart';
 
 class VerificationRequestListener extends StatefulWidget {
-  const VerificationRequestListener({required this.child, super.key});
+  const VerificationRequestListener({
+    required this.router,
+    required this.child,
+    super.key,
+  });
 
+  final GoRouter router;
   final Widget child;
 
   @override
@@ -60,8 +66,12 @@ class _VerificationRequestListenerState
     debugPrint('[Lattice] Incoming verification request from '
         '${verification.userId}');
 
+    final navContext =
+        widget.router.routerDelegate.navigatorKey.currentContext;
+    if (navContext == null) return;
+
     _dialogOpen = true;
-    await KeyVerificationDialog.show(context, verification: verification);
+    await KeyVerificationDialog.show(navContext, verification: verification);
     _dialogOpen = false;
     _showNextPending();
   }
