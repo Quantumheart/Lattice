@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -18,7 +19,22 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.google.com/recaptcha/ https://www.gstatic.com/recaptcha/ https://www.gstatic.com/flutter-canvaskit/ 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; frame-src 'self' https://www.google.com/recaptcha/ https://recaptcha.google.com/recaptcha/ blob:; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; connect-src 'self' https:; font-src 'self' data:; worker-src 'self' blob:; object-src 'none'; base-uri 'self';">
+  <meta http-equiv="Content-Security-Policy" content="
+     default-src 'self'; 
+     script-src 'self' https://www.google.com/recaptcha/ 
+                       https://www.gstatic.com/recaptcha/
+                       https://www.gstatic.com/flutter-canvaskit/ 
+                       'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'; 
+     frame-src 'self' https://www.google.com/recaptcha/ 
+                https://recaptcha.google.com/recaptcha/ blob:; 
+     img-src 'self' data: https: blob:; 
+     style-src 'self' 'unsafe-inline'; 
+     connect-src 'self' https:; 
+     font-src 'self' data:; 
+     worker-src 'self' blob: 'wasm-unsafe-eval'; 
+     object-src 'none'; 
+     base-uri 'self';">
+  
   <meta http-equiv="X-Content-Type-Options" content="nosniff">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="description" content="A new Flutter project.">
@@ -30,7 +46,7 @@
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" href="favicon.png" />
 
   <title>lattice</title>
   <link rel="manifest" href="manifest.json">
@@ -46,9 +62,17 @@
     }
 
     @media (prefers-color-scheme: dark) {
-      body { background-color: #1C1B1F; }
-      .loader circle { stroke: rgba(255,255,255,.12); }
-      .loader circle:last-child { stroke: #90CAF9; }
+      body {
+        background-color: #1C1B1F;
+      }
+
+      .loader circle {
+        stroke: rgba(255, 255, 255, .12);
+      }
+
+      .loader circle:last-child {
+        stroke: #90CAF9;
+      }
     }
 
     .loader {
@@ -59,7 +83,7 @@
 
     .loader circle {
       fill: none;
-      stroke: rgba(0,0,0,.12);
+      stroke: rgba(0, 0, 0, .12);
       stroke-width: 3.5;
     }
 
@@ -71,14 +95,31 @@
       animation: sweep 1.4s ease-in-out infinite;
     }
 
-    @keyframes rotate { to { transform: rotate(360deg); } }
+    @keyframes rotate {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
     @keyframes sweep {
-      0%   { stroke-dasharray: 1, 200; stroke-dashoffset: 0; }
-      50%  { stroke-dasharray: 80, 200; stroke-dashoffset: -35; }
-      100% { stroke-dasharray: 1, 200; stroke-dashoffset: -125; }
+      0% {
+        stroke-dasharray: 1, 200;
+        stroke-dashoffset: 0;
+      }
+
+      50% {
+        stroke-dasharray: 80, 200;
+        stroke-dashoffset: -35;
+      }
+
+      100% {
+        stroke-dasharray: 1, 200;
+        stroke-dashoffset: -125;
+      }
     }
   </style>
 </head>
+
 <body>
   <svg id="loading" class="loader" viewBox="0 0 44 44">
     <circle cx="22" cy="22" r="20" />
@@ -92,4 +133,5 @@
     });
   </script>
 </body>
+
 </html>
