@@ -92,7 +92,7 @@ class PreferencesService extends ChangeNotifier {
     );
   }
 
-  String get themeModeLabel => 'Your vibe';
+  String get themeModeLabel => 'Change your appearance settings';
 
   Future<void> setThemeMode(ThemeMode mode) async {
     await _prefs?.setString(_themeModeKey, mode.name);
