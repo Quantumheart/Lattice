@@ -417,6 +417,27 @@ class BootstrapController extends ChangeNotifier {
       // signature to trust the backup. Sign it now while we have access
       // to the SSSS secrets.
       await _signKeyBackupWithCrossSigning(client, encryption, ssssKey);
+    } else if (encryption != null) {
+      try {
+        if (encryption.crossSigning.enabled &&
+            await encryption.crossSigning.isCached()) {
+          debugPrint('[Bootstrap] Self-signing with cached cross-signing keys');
+          await encryption.crossSigning.selfSign();
+        }
+        await client.updateUserDeviceKeys();
+
+        final storedKey = await matrixService.getStoredRecoveryKey();
+        if (storedKey != null) {
+          debugPrint('[Bootstrap] Restoring and ensuring backup exists');
+          final ssss =
+              await _restoreAndEnsureBackup(client, encryption, storedKey);
+          if (ssss != null && ssss.isUnlocked) {
+            await _signKeyBackupWithCrossSigning(client, encryption, ssss);
+          }
+        }
+      } catch (e) {
+        debugPrint('[Bootstrap] Post-verification recovery failed: $e');
+      }
     }
 
     // Restore room keys from the online key backup.
@@ -434,6 +455,63 @@ class BootstrapController extends ChangeNotifier {
     matrixService.clearCachedPassword();
     pendingAction = BootstrapAction.done;
     _notify();
+  }
+
+  // ── Verification fallback ─────────────────────────────────────
+
+  Future<OpenSSSS?> _restoreAndEnsureBackup(
+    Client client,
+    Encryption encryption,
+    String recoveryKey,
+  ) async {
+    final completer = Completer<OpenSSSS?>();
+    OpenSSSS? unlockedKey;
+    encryption.bootstrap(
+      onUpdate: (bootstrap) async {
+        try {
+          switch (bootstrap.state) {
+            case BootstrapState.loading:
+              break;
+            case BootstrapState.askWipeSsss:
+              bootstrap.wipeSsss(false);
+            case BootstrapState.askUseExistingSsss:
+              bootstrap.useExistingSsss(true);
+            case BootstrapState.askUnlockSsss:
+              bootstrap.unlockedSsss();
+            case BootstrapState.askBadSsss:
+              bootstrap.ignoreBadSecrets(false);
+            case BootstrapState.openExistingSsss:
+              final key = bootstrap.newSsssKey!;
+              await key.unlock(keyOrPassphrase: recoveryKey);
+              unlockedKey = key;
+              await bootstrap.openExistingSsss();
+            case BootstrapState.askWipeCrossSigning:
+              await bootstrap.wipeCrossSigning(false);
+            case BootstrapState.askWipeOnlineKeyBackup:
+              var wipe = false;
+              try {
+                await encryption.keyManager.getRoomKeysBackupInfo(false);
+              } on MatrixException catch (e) {
+                if (e.errcode == 'M_NOT_FOUND') wipe = true;
+              }
+              bootstrap.wipeOnlineKeyBackup(wipe);
+            case BootstrapState.askSetupOnlineKeyBackup:
+              await bootstrap.askSetupOnlineKeyBackup(true);
+            case BootstrapState.askSetupCrossSigning:
+              await bootstrap.askSetupCrossSigning();
+            case BootstrapState.askNewSsss:
+              throw Exception('Unexpected state: askNewSsss');
+            case BootstrapState.error:
+              throw Exception('Bootstrap error');
+            case BootstrapState.done:
+              completer.complete(unlockedKey);
+          }
+        } catch (e, s) {
+          if (!completer.isCompleted) completer.completeError(e, s);
+        }
+      },
+    );
+    return completer.future;
   }
 
   // ── Key backup signing ───────────────────────────────────────

@@ -185,7 +185,7 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
 
     final encryption = _matrixService.client.encryption;
     if (encryption != null) {
-      for (var i = 0; i < 5; i++) {
+      for (var i = 0; i < 10; i++) {
         if (!mounted) return;
         final cached = await encryption.keyManager.isCached() &&
             await encryption.crossSigning.isCached();
