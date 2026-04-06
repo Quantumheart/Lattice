@@ -8,7 +8,7 @@
 	<true/>
 	<key>com.apple.security.keychain-access-groups</key>
 	<array>
-		<string>$(AppIdentifierPrefix)com.example.lattice</string>
+		<string>$(AppIdentifierPrefix)io.github.quantumheart.lattice</string>
 	</array>
 	<key>com.apple.security.network.server</key>
 	<true/>
