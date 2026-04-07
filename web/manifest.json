@@ -1,11 +1,13 @@
 {
-    "name": "lattice",
-    "short_name": "lattice",
+    "name": "Lattice",
+    "short_name": "Lattice",
+    "id": "/",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#1976D2",
     "theme_color": "#1976D2",
-    "description": "A Flutter Matrix chat client.",
+    "description": "A modern Matrix chat client built with Flutter. End-to-end encrypted messaging, voice/video calls, and multi-account support.",
+    "categories": ["social", "communication"],
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
