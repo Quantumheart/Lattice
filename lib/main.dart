@@ -13,6 +13,7 @@ import 'package:lattice/core/theme/lattice_theme.dart';
 import 'package:lattice/core/theme/theme_presets.dart';
 import 'package:lattice/core/utils/vodozemac_init.dart';
 import 'package:lattice/features/auth/services/sso_web_init.dart';
+import 'package:lattice/features/calling/services/push_to_talk_service.dart';
 import 'package:lattice/features/calling/services/ringtone_service.dart';
 import 'package:lattice/features/calling/widgets/incoming_call_overlay.dart';
 import 'package:lattice/features/chat/services/media_playback_service.dart';
@@ -119,7 +120,7 @@ class _LatticeAppState extends State<LatticeApp> {
                       final cs = CallService(
                         client: ctx.read<MatrixService>().client,
                         ringtoneService: RingtoneService(),
-                      );
+                      )..preferencesService = prefs;
                       if (ctx.read<MatrixService>().isLoggedIn) cs.init();
                       return cs;
                     },
@@ -128,17 +129,24 @@ class _LatticeAppState extends State<LatticeApp> {
                         final cs = CallService(
                           client: matrix.client,
                           ringtoneService: RingtoneService(),
-                        );
+                        )..preferencesService = prefs;
                         if (matrix.isLoggedIn) cs.init();
                         return cs;
                       }
-                      previous.updateClient(matrix.client);
+                      previous
+                        ..updateClient(matrix.client)
+                        ..preferencesService = prefs;
                       if (matrix.isLoggedIn) {
                         previous.init();
                       }
                       return previous;
                     },
-                    child: Builder(
+                    child: ChangeNotifierProvider(
+                      create: (ctx) => PushToTalkService(
+                        callService: ctx.read<CallService>(),
+                        prefs: prefs,
+                      ),
+                      child: Builder(
                       builder: (context) {
                         final callService = context.read<CallService>();
                         final isCustom = prefs.themePreset == 'custom';
@@ -195,6 +203,7 @@ class _LatticeAppState extends State<LatticeApp> {
                           ),
                         );
                       },
+                    ),
                     ),
                   ),
                 ),
