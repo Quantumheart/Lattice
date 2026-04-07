@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
+import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/core/utils/platform_info.dart';
 import 'package:lattice/features/calling/models/call_participant.dart' as ui;
 import 'package:lattice/features/calling/models/call_state.dart';
@@ -40,6 +41,9 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
 
   Client _client;
   Client get client => _client;
+
+  PreferencesService? _prefs;
+  set preferencesService(PreferencesService? prefs) => _prefs = prefs;
 
   bool _disposed = false;
   bool _initialized = false;
@@ -329,8 +333,29 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
       livekitServiceUrl: livekitServiceUrl,
       livekitAlias: livekitAlias,
       currentState: () => _callState,
+      autoMuteOnJoin: _prefs?.autoMuteOnJoin ?? false,
+      noiseSuppression: _prefs?.noiseSuppression ?? true,
+      echoCancellation: _prefs?.echoCancellation ?? true,
+      autoGainControl: _prefs?.autoGainControl ?? true,
+      voiceIsolation: _prefs?.voiceIsolation ?? true,
+      typingNoiseDetection: _prefs?.typingNoiseDetection ?? true,
+      audioEncoding: _audioEncodingFromQuality(_prefs?.audioQuality),
+      inputDeviceId: _prefs?.inputDeviceId,
+      outputDeviceId: _prefs?.outputDeviceId,
+      inputVolume: _prefs?.inputVolume ?? 1.0,
+      outputVolume: _prefs?.outputVolume ?? 1.0,
     );
   }
+
+  static livekit.AudioEncoding? _audioEncodingFromQuality(
+    AudioQuality? quality,
+  ) =>
+      switch (quality) {
+        AudioQuality.speech => livekit.AudioEncoding.presetSpeech,
+        AudioQuality.music => livekit.AudioEncoding.presetMusic,
+        AudioQuality.high => livekit.AudioEncoding.presetMusicHighQuality,
+        null => null,
+      };
 
   Future<void> joinCall(String roomId) async {
     if (!_canJoin(roomId)) return;

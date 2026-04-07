@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_background/flutter_background.dart';
+import 'package:flutter_webrtc/flutter_webrtc.dart' as rtc;
 import 'package:http/http.dart' as http;
 import 'package:lattice/core/utils/platform_info.dart';
 import 'package:lattice/features/calling/models/call_participant.dart' as ui;
@@ -13,7 +14,7 @@ import 'package:matrix/matrix.dart';
 
 // ── Types ──────────────────────────────────────────────────
 
-typedef LiveKitRoomFactory = livekit.Room Function();
+typedef LiveKitRoomFactory = livekit.Room Function({livekit.RoomOptions? roomOptions});
 typedef HttpPostFunction = Future<http.Response> Function(
   http.Client httpClient,
   Uri url, {
@@ -41,8 +42,11 @@ class LiveKitService {
     HttpPostFunction? httpPost,
   })  : _client = client,
         _onChanged = onChanged,
-        _roomFactory = roomFactory ?? livekit.Room.new,
+        _roomFactory = roomFactory ?? _defaultRoomFactory,
         httpPostForTest = httpPost ?? _sendNoAutoRedirect;
+
+  static livekit.Room _defaultRoomFactory({livekit.RoomOptions? roomOptions}) =>
+      livekit.Room(roomOptions: roomOptions ?? const livekit.RoomOptions());
 
   static const _maxRedirects = 6;
   static const _wellKnownTtl = Duration(hours: 1);
@@ -355,6 +359,17 @@ class LiveKitService {
     required String livekitServiceUrl,
     required String livekitAlias,
     required LatticeCallState Function() currentState,
+    bool autoMuteOnJoin = false,
+    bool noiseSuppression = true,
+    bool echoCancellation = true,
+    bool autoGainControl = true,
+    bool voiceIsolation = true,
+    bool typingNoiseDetection = true,
+    livekit.AudioEncoding? audioEncoding,
+    String? inputDeviceId,
+    String? outputDeviceId,
+    double inputVolume = 1.0,
+    double outputVolume = 1.0,
   }) async {
     final credentials = await _fetchLiveKitToken(
       livekitServiceUrl: livekitServiceUrl,
@@ -363,7 +378,21 @@ class LiveKitService {
 
     if (currentState() != LatticeCallState.joining) return;
 
-    _livekitRoom = _roomFactory();
+    _livekitRoom = _roomFactory(
+      roomOptions: livekit.RoomOptions(
+        defaultAudioCaptureOptions: livekit.AudioCaptureOptions(
+          deviceId: inputDeviceId,
+          noiseSuppression: noiseSuppression,
+          echoCancellation: echoCancellation,
+          autoGainControl: autoGainControl,
+          voiceIsolation: voiceIsolation,
+          typingNoiseDetection: typingNoiseDetection,
+        ),
+        defaultAudioPublishOptions: livekit.AudioPublishOptions(
+          encoding: audioEncoding,
+        ),
+      ),
+    );
 
     await _livekitRoom!.connect(credentials.url, credentials.token);
 
@@ -375,11 +404,40 @@ class LiveKitService {
     _livekitListener = _livekitRoom!.createListener();
     _subscribeLiveKitEvents();
 
-    await _livekitRoom!.localParticipant?.setMicrophoneEnabled(true);
-    _isMicEnabled = true;
+    if (!autoMuteOnJoin) {
+      await _livekitRoom!.localParticipant?.setMicrophoneEnabled(true);
+      _isMicEnabled = true;
+    } else {
+      _isMicEnabled = false;
+    }
     _isCameraEnabled = false;
     _isScreenShareEnabled = false;
     _syncParticipants();
+
+    if (inputVolume != 1.0) {
+      try {
+        final audioTrack = _livekitRoom!.localParticipant?.audioTrackPublications
+            .firstOrNull?.track;
+        if (audioTrack != null) {
+          await rtc.Helper.setVolume(inputVolume, audioTrack.mediaStreamTrack);
+        }
+      } catch (e) {
+        debugPrint('[Lattice] Failed to set input volume: $e');
+      }
+    }
+
+    if (outputDeviceId != null) {
+      try {
+        final outputs = await livekit.Hardware.instance.audioOutputs();
+        final device = outputs.firstWhere(
+          (d) => d.deviceId == outputDeviceId,
+          orElse: () => outputs.first,
+        );
+        await livekit.Hardware.instance.selectAudioOutput(device);
+      } catch (e) {
+        debugPrint('[Lattice] Failed to set output device: $e');
+      }
+    }
   }
 
   void _subscribeLiveKitEvents() {
