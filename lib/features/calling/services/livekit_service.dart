@@ -365,6 +365,7 @@ class LiveKitService {
     bool autoGainControl = true,
     bool voiceIsolation = true,
     bool typingNoiseDetection = true,
+    bool highPassFilter = false,
     livekit.AudioEncoding? audioEncoding,
     String? inputDeviceId,
     String? outputDeviceId,
@@ -387,6 +388,7 @@ class LiveKitService {
           autoGainControl: autoGainControl,
           voiceIsolation: voiceIsolation,
           typingNoiseDetection: typingNoiseDetection,
+          highPassFilter: highPassFilter,
         ),
         defaultAudioPublishOptions: livekit.AudioPublishOptions(
           encoding: audioEncoding,

@@ -108,6 +108,13 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> toggleScreenShare({String? sourceId}) =>
       _liveKit.toggleScreenShare(sourceId: sourceId);
 
+  bool get isSpeakerOn => livekit.Hardware.instance.speakerOn ?? true;
+  Future<void> toggleSpeaker() async {
+    final current = isSpeakerOn;
+    await livekit.Hardware.instance.setSpeakerphoneOn(!current);
+    notifyListeners();
+  }
+
   model.IncomingCallInfo? get incomingCall => _ringing.incomingCall;
   Stream<model.IncomingCallInfo> get incomingCallStream =>
       _ringing.incomingCallStream;
@@ -339,6 +346,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
       autoGainControl: _prefs?.autoGainControl ?? true,
       voiceIsolation: _prefs?.voiceIsolation ?? true,
       typingNoiseDetection: _prefs?.typingNoiseDetection ?? true,
+      highPassFilter: _prefs?.highPassFilter ?? false,
       audioEncoding: _audioEncodingFromQuality(_prefs?.audioQuality),
       inputDeviceId: _prefs?.inputDeviceId,
       outputDeviceId: _prefs?.outputDeviceId,

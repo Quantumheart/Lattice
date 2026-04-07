@@ -225,6 +225,14 @@ class _VoiceVideoSettingsScreenState extends State<VoiceVideoSettingsScreen> {
                   onChanged: (v) =>
                       unawaited(prefs.setTypingNoiseDetection(v)),
                 ),
+                const Divider(height: 1, indent: 56),
+                SwitchListTile(
+                  secondary: const Icon(Icons.graphic_eq_rounded),
+                  title: const Text('High pass filter'),
+                  subtitle: const Text('Remove low-frequency rumble'),
+                  value: prefs.highPassFilter,
+                  onChanged: (v) => unawaited(prefs.setHighPassFilter(v)),
+                ),
               ],
             ),
           ),
@@ -298,6 +306,15 @@ class _VoiceVideoSettingsScreenState extends State<VoiceVideoSettingsScreen> {
                       keyId: prefs.pushToTalkKeyId,
                       onKeyChanged: (id) =>
                           unawaited(prefs.setPushToTalkKeyId(id)),
+                    ),
+                    const Divider(height: 1, indent: 56),
+                    SwitchListTile(
+                      secondary: const Icon(Icons.volume_up_rounded),
+                      title: const Text('Activation sound'),
+                      subtitle: const Text('Play sound on key press/release'),
+                      value: prefs.pttSoundEnabled,
+                      onChanged: (v) =>
+                          unawaited(prefs.setPttSoundEnabled(v)),
                     ),
                   ],
                 ],

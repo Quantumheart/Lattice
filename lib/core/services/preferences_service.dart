@@ -542,4 +542,23 @@ class PreferencesService extends ChangeNotifier {
     debugPrint('[Lattice] Audio quality set to ${quality.label}');
     notifyListeners();
   }
+
+  static const _highPassFilterKey = 'high_pass_filter';
+  static const _pttSoundEnabledKey = 'ptt_sound_enabled';
+
+  bool get highPassFilter => _prefs?.getBool(_highPassFilterKey) ?? false;
+
+  Future<void> setHighPassFilter(bool value) async {
+    await _prefs?.setBool(_highPassFilterKey, value);
+    debugPrint('[Lattice] High pass filter ${value ? "enabled" : "disabled"}');
+    notifyListeners();
+  }
+
+  bool get pttSoundEnabled => _prefs?.getBool(_pttSoundEnabledKey) ?? true;
+
+  Future<void> setPttSoundEnabled(bool value) async {
+    await _prefs?.setBool(_pttSoundEnabledKey, value);
+    debugPrint('[Lattice] PTT sound ${value ? "enabled" : "disabled"}');
+    notifyListeners();
+  }
 }
