@@ -383,5 +383,23 @@ void main() {
       await prefs.setAudioQuality(AudioQuality.speech);
       expect(prefs.audioQuality, AudioQuality.speech);
     });
+
+    test('highPassFilter defaults to false', () {
+      expect(prefs.highPassFilter, isFalse);
+    });
+
+    test('round-trips highPassFilter', () async {
+      await prefs.setHighPassFilter(true);
+      expect(prefs.highPassFilter, isTrue);
+    });
+
+    test('pttSoundEnabled defaults to true', () {
+      expect(prefs.pttSoundEnabled, isTrue);
+    });
+
+    test('round-trips pttSoundEnabled', () async {
+      await prefs.setPttSoundEnabled(false);
+      expect(prefs.pttSoundEnabled, isFalse);
+    });
   });
 }

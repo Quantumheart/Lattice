@@ -132,7 +132,7 @@ class _CallTestHarness {
 
   void _setupLiveKitFakes() {
     fakeLiveKitRoom = FakeLiveKitRoom();
-    callService.roomFactoryForTest = () => fakeLiveKitRoom;
+    callService.roomFactoryForTest = ({roomOptions}) => fakeLiveKitRoom;
     callService.cachedLivekitServiceUrlForTest = 'https://lk-jwt.example.com';
     callService.httpPostForTest = (client, url, {headers, body}) async {
       return http.Response(
