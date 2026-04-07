@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lattice/core/routing/nav_helper.dart';
 import 'package:lattice/core/routing/route_names.dart';
+import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
@@ -381,6 +382,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           const SizedBox(height: 16),
 
+          // ── Calling ──
+          const SectionHeader(label: 'CALLING'),
+          _CallingSection(),
+
+          const SizedBox(height: 16),
+
           // ── Security ──
           const SectionHeader(label: 'SECURITY'),
           Card(
@@ -557,6 +564,34 @@ class _SettingsTile extends StatelessWidget {
       trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
       mouseCursor: SystemMouseCursors.click,
       onTap: onTap,
+    );
+  }
+}
+
+class _CallingSection extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final callService = context.watch<CallService>();
+    final available = callService.isCallingAvailable;
+    final cs = Theme.of(context).colorScheme;
+
+    return Card(
+      child: ListTile(
+        leading: Icon(
+          available ? Icons.call_rounded : Icons.call_rounded,
+          color: cs.onSurfaceVariant,
+        ),
+        title: const Text('Voice & video calls'),
+        subtitle: Text(
+          available
+              ? 'Supported by your homeserver'
+              : 'Your homeserver does not support calling (LiveKit not configured)',
+        ),
+        trailing: Icon(
+          available ? Icons.check_circle_rounded : Icons.info_outline_rounded,
+          color: available ? Colors.green : cs.onSurfaceVariant,
+        ),
+      ),
     );
   }
 }

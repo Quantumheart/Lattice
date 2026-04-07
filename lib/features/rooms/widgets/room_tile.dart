@@ -436,7 +436,7 @@ class _TrailingTimeBadge extends StatelessWidget {
                 ),
               ),
             )
-          else
+          else if (callService.isCallingAvailable)
             SizedBox(
               height: 24,
               child: IconButton(

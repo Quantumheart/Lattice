@@ -509,6 +509,7 @@ class LiveKitService {
           if (serviceUrl != null) {
             _cachedLivekitServiceUrl = serviceUrl;
             _wellKnownFetchedAt = DateTime.now();
+            _onChanged();
             debugPrint('[Lattice] LiveKit service URL: $serviceUrl');
             return;
           }

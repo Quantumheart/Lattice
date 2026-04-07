@@ -94,6 +94,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
   bool get isScreenShareEnabled => _liveKit.isScreenShareEnabled;
   List<livekit.Participant> get activeSpeakers => _liveKit.activeSpeakers;
   String? get cachedLivekitServiceUrl => _liveKit.cachedLivekitServiceUrl;
+  bool get isCallingAvailable => _liveKit.cachedLivekitServiceUrl != null;
 
   List<ui.CallParticipant> get allParticipants =>
       _liveKit.allParticipants(activeCallRoomId: _activeCallRoomId);

@@ -93,7 +93,8 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
           ),
-        _CallButton(room: room),
+        if (context.select<CallService, bool>((s) => s.isCallingAvailable))
+          _CallButton(room: room),
         IconButton(
           mouseCursor: SystemMouseCursors.click,
           icon: const Icon(Icons.search_rounded),
