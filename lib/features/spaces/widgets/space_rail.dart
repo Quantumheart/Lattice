@@ -68,7 +68,10 @@ class _SpaceRailState extends State<SpaceRail> {
             tooltip: 'Home',
             isSelected: matrix.selectedSpaceIds.isEmpty,
             color: cs.primary,
-            onTap: matrix.clearSpaceSelection,
+            onTap: () {
+              matrix.clearSpaceSelection();
+              context.goNamed(Routes.home);
+            },
           ),
 
           Padding(
@@ -137,6 +140,7 @@ class _SpaceRailState extends State<SpaceRail> {
                           } else {
                             matrix.selectSpace(space.id);
                           }
+                          context.goNamed(Routes.home);
                         },
                         onLongPress: () {
                           final box =
