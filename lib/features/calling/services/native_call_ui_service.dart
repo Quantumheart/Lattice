@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter_callkit_incoming/entities/android_params.dart';
 import 'package:flutter_callkit_incoming/entities/call_event.dart';
@@ -28,6 +29,20 @@ class NativeCallTimedOut extends NativeCallAction {}
 // ── Native Call UI Service ─────────────────────────────────
 
 class NativeCallUiService {
+  static final _random = Random();
+
+  static String _generateUuid() {
+    final bytes = List<int>.generate(16, (_) => _random.nextInt(256));
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    String hex(int byte) => byte.toRadixString(16).padLeft(2, '0');
+    return '${bytes.sublist(0, 4).map(hex).join()}-'
+        '${bytes.sublist(4, 6).map(hex).join()}-'
+        '${bytes.sublist(6, 8).map(hex).join()}-'
+        '${bytes.sublist(8, 10).map(hex).join()}-'
+        '${bytes.sublist(10, 16).map(hex).join()}';
+  }
+
   String? _nativeCallId;
   StreamSubscription<CallEvent?>? _nativeEventSub;
   bool _endingFromFlutter = false;
@@ -80,7 +95,7 @@ class NativeCallUiService {
     required bool isVideo,
   }) {
     if (!_isMobile) return;
-    _nativeCallId = callId ?? roomId;
+    _nativeCallId = _generateUuid();
     final params = CallKitParams(
       id: _nativeCallId,
       nameCaller: callerName,
@@ -96,7 +111,7 @@ class NativeCallUiService {
 
   void showNativeOutgoingCall(String roomId, String callerName, bool isVideo) {
     if (!_isMobile) return;
-    _nativeCallId = roomId;
+    _nativeCallId = _generateUuid();
     final params = CallKitParams(
       id: _nativeCallId,
       nameCaller: callerName,
