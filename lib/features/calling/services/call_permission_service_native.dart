@@ -4,7 +4,7 @@ import 'package:permission_handler/permission_handler.dart';
 // coverage:ignore-start
 abstract class CallPermissionService {
   static bool get _needsPermissionRequest =>
-      isNativeAndroid || isNativeIOS;
+      isNativeAndroid || isNativeIOS || isNativeMacOS;
 
   static Future<bool> request() async {
     if (!_needsPermissionRequest) return true;

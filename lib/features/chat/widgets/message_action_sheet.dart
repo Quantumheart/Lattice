@@ -198,7 +198,6 @@ class _MessageActionSheetState extends State<_MessageActionSheet> {
           top: bubbleTop,
           left: widget.bubbleRect.left,
           width: widget.bubbleRect.width,
-          height: widget.bubbleRect.height,
           child: FadeTransition(
             opacity: _curved,
             child: ScaleTransition(
