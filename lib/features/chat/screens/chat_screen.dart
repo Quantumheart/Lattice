@@ -32,11 +32,13 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 class ChatScreen extends StatefulWidget {
   const ChatScreen({
     required this.roomId, super.key,
+    this.initialEventId,
     this.onBack,
     this.onShowDetails,
   });
 
   final String roomId;
+  final String? initialEventId;
 
   /// On narrow layouts, called to pop back to room list.
   final VoidCallback? onBack;
@@ -104,7 +106,8 @@ class _ChatScreenState extends State<ChatScreen>
   @override
   void didUpdateWidget(ChatScreen old) {
     super.didUpdateWidget(old);
-    if (old.roomId != widget.roomId) {
+    if (old.roomId != widget.roomId ||
+        old.initialEventId != widget.initialEventId) {
       _timeline?.cancelSubscriptions();
       _readMarkerTimer?.cancel();
       _compose.reset(_msgCtrl);
@@ -155,6 +158,7 @@ class _ChatScreenState extends State<ChatScreen>
     _voiceCtrl = VoiceRecordingController();
 
     _timeline = await room.getTimeline(
+      eventContextId: widget.initialEventId,
       onUpdate: () {
         if (mounted) {
           _cachedVisibleEvents = null;
@@ -167,6 +171,7 @@ class _ChatScreenState extends State<ChatScreen>
     if (mounted) setState(() {});
     _markAsRead(room);
     _requestMissingKeys(room);
+    if (widget.initialEventId != null) _jumpToEvent(widget.initialEventId!);
   }
 
   void _requestMissingKeys(Room room) {
@@ -311,26 +316,64 @@ class _ChatScreenState extends State<ChatScreen>
 
   void _scrollToEvent(Event event, {bool closeSearch = true}) {
     if (closeSearch) _closeSearch();
-    _navigateToEvent(event);
+    unawaited(_navigateToEvent(event));
   }
 
-  void _navigateToEvent(Event event) {
+  Future<void> _navigateToEvent(Event event) async {
     final index = _visibleEvents.indexWhere((e) => e.eventId == event.eventId);
     if (index == -1) {
-      debugPrint('[Lattice] Event not in loaded timeline: ${event.eventId}');
+      debugPrint(
+        '[Lattice] Event not in loaded timeline, reloading: ${event.eventId}',
+      );
+      await _reloadTimelineAt(event.eventId);
+      return;
+    }
+    _scrollToIndex(index, event.eventId);
+  }
+
+  Future<void> _reloadTimelineAt(String eventId) async {
+    _timeline?.cancelSubscriptions();
+    _cachedVisibleEvents = null;
+    setState(() => _timeline = null);
+
+    final room = context.read<MatrixService>().client.getRoomById(widget.roomId);
+    if (room == null) return;
+
+    final gen = ++_initGeneration;
+    _timeline = await room.getTimeline(
+      eventContextId: eventId,
+      onUpdate: () {
+        if (mounted) {
+          _cachedVisibleEvents = null;
+          setState(() {});
+        }
+        _markAsRead(room);
+      },
+    );
+    if (gen != _initGeneration || !mounted) return;
+    setState(() {});
+    _jumpToEvent(eventId);
+  }
+
+  void _jumpToEvent(String eventId) {
+    final index = _visibleEvents.indexWhere((e) => e.eventId == eventId);
+    if (index == -1) {
+      debugPrint('[Lattice] Event not found after context load: $eventId');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Message not in loaded history'),
+            content: Text('Could not load the target message'),
             duration: Duration(seconds: 2),
           ),
         );
       }
       return;
     }
+    _scrollToIndex(index, eventId);
+  }
 
-    _search.setHighlight(event.eventId);
-
+  void _scrollToIndex(int index, String eventId) {
+    _search.setHighlight(eventId);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_itemScrollCtrl.isAttached) {
         unawaited(

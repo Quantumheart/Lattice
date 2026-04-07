@@ -150,9 +150,13 @@ GoRouter buildRouter(MatrixService matrixService) {
                 name: Routes.room,
                 builder: (context, state) {
                   final roomId = state.pathParameters['roomId']!;
+                  final eventId = state.extra as String?;
                   return ChatScreen(
                     roomId: roomId,
-                    key: ValueKey(roomId),
+                    initialEventId: eventId,
+                    key: ValueKey(
+                      eventId != null ? '$roomId-$eventId' : roomId,
+                    ),
                   );
                 },
                 routes: [

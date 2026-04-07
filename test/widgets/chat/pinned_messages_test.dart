@@ -135,7 +135,7 @@ void main() {
         body: 'Test message',
       );
       when(mockTimeline.events).thenReturn([event]);
-      when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
+      when(mockRoom.getTimeline(eventContextId: anyNamed('eventContextId'), onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
 
       await tester.pumpWidget(_buildChatWidget(
@@ -167,7 +167,7 @@ void main() {
         body: 'Test message',
       );
       when(mockTimeline.events).thenReturn([event]);
-      when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
+      when(mockRoom.getTimeline(eventContextId: anyNamed('eventContextId'), onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
 
       await tester.pumpWidget(_buildChatWidget(
@@ -218,7 +218,7 @@ void main() {
         body: 'Test message',
       );
       when(mockTimeline.events).thenReturn([event]);
-      when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
+      when(mockRoom.getTimeline(eventContextId: anyNamed('eventContextId'), onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
 
       await tester.pumpWidget(_buildChatWidget(
@@ -266,7 +266,7 @@ void main() {
         body: 'Test message',
       );
       when(mockTimeline.events).thenReturn([event]);
-      when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
+      when(mockRoom.getTimeline(eventContextId: anyNamed('eventContextId'), onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
 
       await tester.pumpWidget(_buildChatWidget(
@@ -319,7 +319,7 @@ void main() {
         body: 'Test message',
       );
       when(mockTimeline.events).thenReturn([event]);
-      when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
+      when(mockRoom.getTimeline(eventContextId: anyNamed('eventContextId'), onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
 
       await tester.pumpWidget(_buildChatWidget(
@@ -372,7 +372,7 @@ void main() {
         body: 'Pin this message',
       );
       when(mockTimeline.events).thenReturn([event]);
-      when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
+      when(mockRoom.getTimeline(eventContextId: anyNamed('eventContextId'), onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
 
       await tester.pumpWidget(_buildChatWidget(
@@ -411,7 +411,7 @@ void main() {
         body: 'Cannot pin this',
       );
       when(mockTimeline.events).thenReturn([event]);
-      when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
+      when(mockRoom.getTimeline(eventContextId: anyNamed('eventContextId'), onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
 
       await tester.pumpWidget(_buildChatWidget(
@@ -452,7 +452,7 @@ void main() {
         body: 'Pin me',
       );
       when(mockTimeline.events).thenReturn([event]);
-      when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
+      when(mockRoom.getTimeline(eventContextId: anyNamed('eventContextId'), onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
 
       await tester.pumpWidget(_buildChatWidget(
@@ -494,7 +494,7 @@ void main() {
         body: 'Unpin me',
       );
       when(mockTimeline.events).thenReturn([event]);
-      when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
+      when(mockRoom.getTimeline(eventContextId: anyNamed('eventContextId'), onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
 
       await tester.pumpWidget(_buildChatWidget(
@@ -539,7 +539,7 @@ void main() {
         body: 'I am pinned',
       );
       when(mockTimeline.events).thenReturn([event]);
-      when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
+      when(mockRoom.getTimeline(eventContextId: anyNamed('eventContextId'), onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
 
       await tester.pumpWidget(_buildChatWidget(

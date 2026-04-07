@@ -1,3 +1,5 @@
+import 'dart:ui' show PointerDeviceKind;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/call_service.dart';
@@ -152,7 +154,6 @@ void main() {
 
     testWidgets('reply preview banner appears after triggering reply',
         (tester) async {
-      // Set mobile screen size so SwipeableMessage is used.
       tester.view.physicalSize = const Size(400, 800);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(() {
@@ -166,25 +167,27 @@ void main() {
         body: 'Hello world',
       );
       when(mockTimeline.events).thenReturn([event]);
-      when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
+      when(mockRoom.getTimeline(eventContextId: anyNamed('eventContextId'), onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      // No reply banner initially.
       expect(find.byIcon(Icons.close_rounded), findsNothing);
 
-      // Simulate swipe-to-reply on mobile by dragging right.
+      // Hover over message to show action bar, then tap reply.
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
       final messageFinder = find.text('Hello world');
       expect(messageFinder, findsOneWidget);
-
-      await tester.drag(messageFinder, const Offset(80, 0));
+      await gesture.moveTo(tester.getCenter(messageFinder));
       await tester.pumpAndSettle();
 
-      // Reply preview banner should now be visible with the sender name.
+      await tester.tap(find.byIcon(Icons.reply_rounded));
+      await tester.pumpAndSettle();
+
       expect(find.text('alice'), findsWidgets);
-      // Close button should be visible.
       expect(find.byIcon(Icons.close_rounded), findsOneWidget);
     });
 
@@ -202,21 +205,25 @@ void main() {
         body: 'Hello world',
       );
       when(mockTimeline.events).thenReturn([event]);
-      when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
+      when(mockRoom.getTimeline(eventContextId: anyNamed('eventContextId'), onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
 
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      // Trigger reply via swipe.
-      await tester.drag(find.text('Hello world'), const Offset(80, 0));
+      // Trigger reply via hover action bar.
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await gesture.moveTo(tester.getCenter(find.text('Hello world')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.reply_rounded));
       await tester.pumpAndSettle();
 
       // Cancel the reply.
       await tester.tap(find.byIcon(Icons.close_rounded));
       await tester.pumpAndSettle();
 
-      // Banner should be gone.
       expect(find.byIcon(Icons.close_rounded), findsNothing);
     });
 
@@ -234,7 +241,7 @@ void main() {
         body: 'Hello world',
       );
       when(mockTimeline.events).thenReturn([event]);
-      when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
+      when(mockRoom.getTimeline(eventContextId: anyNamed('eventContextId'), onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
       when(mockRoom.sendTextEvent(any,
               inReplyTo: anyNamed('inReplyTo'),
@@ -244,8 +251,13 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      // Trigger reply.
-      await tester.drag(find.text('Hello world'), const Offset(80, 0));
+      // Trigger reply via hover action bar.
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      await gesture.addPointer(location: Offset.zero);
+      addTearDown(gesture.removePointer);
+      await gesture.moveTo(tester.getCenter(find.text('Hello world')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.reply_rounded));
       await tester.pumpAndSettle();
 
       // Type a message and send.

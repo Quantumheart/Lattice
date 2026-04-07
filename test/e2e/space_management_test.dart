@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
@@ -120,6 +122,16 @@ void main() {
   // ── Test app builder ──────────────────────────────────────────────
 
   Widget buildSpaceTestApp() {
+    final router = GoRouter(
+      initialLocation: '/',
+      routes: [
+        GoRoute(
+          path: '/',
+          name: Routes.home,
+          builder: (context, state) => const Scaffold(body: SpaceRail()),
+        ),
+      ],
+    );
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<MatrixService>.value(value: matrixService),
@@ -128,7 +140,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => PreferencesService()),
         ChangeNotifierProvider<InboxController>.value(value: inboxController),
       ],
-      child: const MaterialApp(home: Scaffold(body: SpaceRail())),
+      child: MaterialApp.router(routerConfig: router),
     );
   }
 

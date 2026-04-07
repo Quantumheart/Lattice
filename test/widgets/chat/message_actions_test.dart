@@ -462,7 +462,7 @@ void main() {
         body: 'My message to edit',
       );
       when(mockTimeline.events).thenReturn([event]);
-      when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
+      when(mockRoom.getTimeline(eventContextId: anyNamed('eventContextId'), onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
 
       await tester.pumpWidget(_buildChatWidget(
@@ -509,7 +509,7 @@ void main() {
         body: 'My message',
       );
       when(mockTimeline.events).thenReturn([event]);
-      when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
+      when(mockRoom.getTimeline(eventContextId: anyNamed('eventContextId'), onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
 
       await tester.pumpWidget(_buildChatWidget(
@@ -555,7 +555,7 @@ void main() {
         body: 'Original text',
       );
       when(mockTimeline.events).thenReturn([event]);
-      when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
+      when(mockRoom.getTimeline(eventContextId: anyNamed('eventContextId'), onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
       when(mockRoom.sendTextEvent(
         any,
@@ -610,7 +610,7 @@ void main() {
         body: 'Delete me',
       );
       when(mockTimeline.events).thenReturn([event]);
-      when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
+      when(mockRoom.getTimeline(eventContextId: anyNamed('eventContextId'), onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
 
       await tester.pumpWidget(_buildChatWidget(
@@ -655,7 +655,7 @@ void main() {
         body: 'Delete me',
       );
       when(mockTimeline.events).thenReturn([event]);
-      when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
+      when(mockRoom.getTimeline(eventContextId: anyNamed('eventContextId'), onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
       when(mockRoom.redactEvent(r'$evt1'))
           .thenAnswer((_) async => r'$redact1');
@@ -699,7 +699,7 @@ void main() {
         body: 'Do not delete',
       );
       when(mockTimeline.events).thenReturn([event]);
-      when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
+      when(mockRoom.getTimeline(eventContextId: anyNamed('eventContextId'), onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
 
       await tester.pumpWidget(_buildChatWidget(
@@ -783,7 +783,7 @@ void main() {
         relationshipType: RelationshipTypes.edit,
       );
       when(mockTimeline.events).thenReturn([editEvent, original]);
-      when(mockRoom.getTimeline(onUpdate: anyNamed('onUpdate')))
+      when(mockRoom.getTimeline(eventContextId: anyNamed('eventContextId'), onUpdate: anyNamed('onUpdate')))
           .thenAnswer((_) async => mockTimeline);
 
       await tester.pumpWidget(_buildChatWidget(

@@ -86,6 +86,7 @@ class MessageSearchResultTile extends StatelessWidget {
           onTap: () => context.goNamed(
             Routes.room,
             pathParameters: {'roomId': result.roomId},
+            extra: result.eventId,
           ),
           child: Padding(
             padding:
