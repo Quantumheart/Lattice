@@ -4,13 +4,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/features/calling/services/ringtone_service.dart';
 
 class PushToTalkService extends ChangeNotifier {
   PushToTalkService({
     required CallService callService,
     required PreferencesService prefs,
+    RingtoneService? ringtoneService,
   })  : _callService = callService,
-        _prefs = prefs {
+        _prefs = prefs,
+        _ringtone = ringtoneService {
     _callService.addListener(_onCallStateChanged);
     _prefs.addListener(_onPrefsChanged);
     _syncState();
@@ -18,6 +21,7 @@ class PushToTalkService extends ChangeNotifier {
 
   final CallService _callService;
   final PreferencesService _prefs;
+  final RingtoneService? _ringtone;
   bool _registered = false;
   bool _keyHeld = false;
 
@@ -57,6 +61,7 @@ class PushToTalkService extends ChangeNotifier {
 
     if (event is KeyDownEvent && !_keyHeld) {
       _keyHeld = true;
+      if (_prefs.pttSoundEnabled) unawaited(_ringtone?.playPTTOn());
       if (!_callService.isMicEnabled) {
         unawaited(_callService.toggleMicrophone());
       }
@@ -66,6 +71,7 @@ class PushToTalkService extends ChangeNotifier {
 
     if (event is KeyUpEvent && _keyHeld) {
       _keyHeld = false;
+      if (_prefs.pttSoundEnabled) unawaited(_ringtone?.playPTTOff());
       if (_callService.isMicEnabled) {
         unawaited(_callService.toggleMicrophone());
       }

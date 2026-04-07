@@ -33,12 +33,30 @@ class RingtoneService {
     } catch (_) {}
   }
 
+  // ── PTT sounds ──────────────────────────────────────────────
+
+  Player? _pttPlayer;
+
+  Player _ensurePttPlayer() => _pttPlayer ??= Player();
+
+  Future<void> playPTTOn() async {
+    await _ensurePttPlayer().open(Media('asset:///assets/audio/ptt_on.mp3'));
+  }
+
+  Future<void> playPTTOff() async {
+    await _ensurePttPlayer().open(Media('asset:///assets/audio/ptt_off.mp3'));
+  }
+
   Future<void> dispose() async {
     await stop();
     try {
       await _player?.dispose();
     } catch (_) {}
     _player = null;
+    try {
+      await _pttPlayer?.dispose();
+    } catch (_) {}
+    _pttPlayer = null;
   }
 }
 // coverage:ignore-end
