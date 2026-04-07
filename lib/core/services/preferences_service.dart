@@ -358,7 +358,7 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setPushEnabled(bool value) async {
     await _prefs?.setBool(_pushEnabledKey, value);
     debugPrint(
-        '[Lattice] Push notifications ${value ? "enabled" : "disabled"}');
+        '[Lattice] Push notifications ${value ? "enabled" : "disabled"}',);
     notifyListeners();
   }
 
