@@ -55,6 +55,7 @@ class LatticeApp extends StatefulWidget {
 class _LatticeAppState extends State<LatticeApp> {
   GoRouter? _router;
   MatrixService? _routerMatrixService;
+  final ringtoneService = RingtoneService();
 
   /// Rebuild the router when the active [MatrixService] changes (account
   /// switch) so that `refreshListenable` points at the right instance.
@@ -119,7 +120,7 @@ class _LatticeAppState extends State<LatticeApp> {
                     create: (ctx) {
                       final cs = CallService(
                         client: ctx.read<MatrixService>().client,
-                        ringtoneService: RingtoneService(),
+                        ringtoneService: ringtoneService,
                       )..preferencesService = prefs;
                       if (ctx.read<MatrixService>().isLoggedIn) cs.init();
                       return cs;
@@ -128,7 +129,7 @@ class _LatticeAppState extends State<LatticeApp> {
                       if (previous == null) {
                         final cs = CallService(
                           client: matrix.client,
-                          ringtoneService: RingtoneService(),
+                          ringtoneService: ringtoneService,
                         )..preferencesService = prefs;
                         if (matrix.isLoggedIn) cs.init();
                         return cs;
@@ -145,6 +146,7 @@ class _LatticeAppState extends State<LatticeApp> {
                       create: (ctx) => PushToTalkService(
                         callService: ctx.read<CallService>(),
                         prefs: prefs,
+                        ringtoneService: ringtoneService,
                       ),
                       child: Builder(
                       builder: (context) {
