@@ -129,12 +129,16 @@ class _ParticipantTileState extends State<ParticipantTile> {
 
     final livekitTrack = widget.participant.videoTrack;
     if (livekitTrack != null) {
+      Widget video = livekit.VideoTrackRenderer(
+        livekitTrack,
+        fit: livekit.VideoViewFit.cover,
+      );
+      if (widget.participant.isLocal) {
+        video = Transform.flip(flipX: true, child: video);
+      }
       return ColoredBox(
         color: cs.surfaceContainerHighest,
-        child: livekit.VideoTrackRenderer(
-          livekitTrack,
-          fit: livekit.VideoViewFit.cover,
-        ),
+        child: video,
       );
     }
 
