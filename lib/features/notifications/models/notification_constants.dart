@@ -50,7 +50,7 @@ abstract class InboxText {
   static const title = 'Inbox';
   static const filterAll = 'All';
   static const filterMentions = 'Mentions';
-  static const filterInvitations = 'Invitations';
+  static const filterInvitations = 'Invites';
   static const noNotifications = 'No notifications';
   static const failedToLoad = 'Failed to load notifications';
   static const retry = 'Retry';
@@ -65,5 +65,5 @@ abstract class InboxText {
   static const mediaFile = '📎 File';
   static const loadMore = 'Load more';
 
-  static String invitationsWithCount(int count) => 'Invitations ($count)';
+  static String invitationsWithCount(int count) => 'Invites ($count)';
 }

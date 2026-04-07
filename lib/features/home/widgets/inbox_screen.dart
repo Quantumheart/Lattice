@@ -56,32 +56,30 @@ class _InboxScreenState extends State<InboxScreen> {
       ),
       body: Column(
         children: [
-          // ── Filter chips ──
+          // ── Filter segmented button ──
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              children: [
-                FilterChip(
-                  label: const Text(InboxText.filterAll),
-                  selected: controller.filter == InboxFilter.all,
-                  onSelected: (_) => controller.setFilter(InboxFilter.all),
+            child: SegmentedButton<InboxFilter>(
+              showSelectedIcon: false,
+              selected: {controller.filter},
+              onSelectionChanged: (selected) =>
+                  controller.setFilter(selected.first),
+              segments: [
+                const ButtonSegment(
+                  value: InboxFilter.all,
+                  label: Text(InboxText.filterAll),
                 ),
-                const SizedBox(width: 8),
-                FilterChip(
-                  label: const Text(InboxText.filterMentions),
-                  selected: controller.filter == InboxFilter.mentions,
-                  onSelected: (_) => controller.setFilter(InboxFilter.mentions),
+                const ButtonSegment(
+                  value: InboxFilter.mentions,
+                  label: Text(InboxText.filterMentions),
                 ),
-                const SizedBox(width: 8),
-                FilterChip(
+                ButtonSegment(
+                  value: InboxFilter.invitations,
                   label: Text(
                     inviteCount > 0
                         ? InboxText.invitationsWithCount(inviteCount)
                         : InboxText.filterInvitations,
                   ),
-                  selected: controller.filter == InboxFilter.invitations,
-                  onSelected: (_) =>
-                      controller.setFilter(InboxFilter.invitations),
                 ),
               ],
             ),
