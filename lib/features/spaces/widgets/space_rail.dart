@@ -70,7 +70,10 @@ class _SpaceRailState extends State<SpaceRail> {
             color: cs.primary,
             onTap: () {
               matrix.clearSpaceSelection();
-              context.goNamed(Routes.home);
+              final current = GoRouterState.of(context).topRoute?.name;
+              if (current != Routes.home) {
+                context.goNamed(Routes.home);
+              }
             },
           ),
 
@@ -140,7 +143,11 @@ class _SpaceRailState extends State<SpaceRail> {
                           } else {
                             matrix.selectSpace(space.id);
                           }
-                          context.goNamed(Routes.home);
+                          final current =
+                              GoRouterState.of(context).topRoute?.name;
+                          if (current != Routes.home) {
+                            context.goNamed(Routes.home);
+                          }
                         },
                         onLongPress: () {
                           final box =

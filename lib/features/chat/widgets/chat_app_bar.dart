@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/nav_helper.dart';
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/call_service.dart';
@@ -36,7 +35,7 @@ class ChatAppBar extends StatelessWidget implements PreferredSizeWidget {
     final isNarrow =
         MediaQuery.sizeOf(context).width < HomeShell.wideBreakpoint;
     final effectiveOnBack =
-        onBack ?? (isNarrow ? () => context.goNamed(Routes.home) : null);
+        onBack ?? (isNarrow ? () => context.popOrGo(Routes.home) : null);
 
     return AppBar(
       leading: effectiveOnBack != null

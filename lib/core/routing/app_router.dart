@@ -173,18 +173,7 @@ GoRouter buildRouter(MatrixService matrixService) {
                     name: Routes.call,
                     builder: (context, state) {
                       final roomId = state.pathParameters['roomId']!;
-                      final isWide = MediaQuery.sizeOf(context).width >=
-                          HomeShell.wideBreakpoint;
-                      if (isWide) return const CallPane();
-                      final room = context
-                          .read<MatrixService>()
-                          .client
-                          .getRoomById(roomId);
-                      return CallScreen(
-                        roomId: roomId,
-                        displayName:
-                            room?.getLocalizedDisplayname() ?? 'Call',
-                      );
+                      return _AdaptiveCallScreen(roomId: roomId);
                     },
                   ),
                 ],
@@ -262,4 +251,23 @@ class _AddAccountGuardState extends State<_AddAccountGuard> {
 
   @override
   Widget build(BuildContext context) => widget.child;
+}
+
+class _AdaptiveCallScreen extends StatelessWidget {
+  const _AdaptiveCallScreen({required this.roomId});
+
+  final String roomId;
+
+  @override
+  Widget build(BuildContext context) {
+    final isWide =
+        MediaQuery.sizeOf(context).width >= HomeShell.wideBreakpoint;
+    if (isWide) return const CallPane();
+    final room =
+        context.read<MatrixService>().client.getRoomById(roomId);
+    return CallScreen(
+      roomId: roomId,
+      displayName: room?.getLocalizedDisplayname() ?? 'Call',
+    );
+  }
 }
