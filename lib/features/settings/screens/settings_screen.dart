@@ -384,7 +384,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
           // ── Calling ──
           const SectionHeader(label: 'CALLING'),
-          _CallingSection(),
+          Card(
+            child: Column(
+              children: [
+                _SettingsTile(
+                  icon: Icons.call_rounded,
+                  title: 'Voice & video',
+                  subtitle: context.select<CallService, bool>(
+                            (s) => s.isCallingAvailable,
+                          )
+                      ? 'Supported by your homeserver'
+                      : 'Not supported by your homeserver',
+                  onTap: () => context.goNamed(Routes.settingsVoiceVideo),
+                ),
+              ],
+            ),
+          ),
 
           const SizedBox(height: 16),
 
@@ -564,34 +579,6 @@ class _SettingsTile extends StatelessWidget {
       trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
       mouseCursor: SystemMouseCursors.click,
       onTap: onTap,
-    );
-  }
-}
-
-class _CallingSection extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    final callService = context.watch<CallService>();
-    final available = callService.isCallingAvailable;
-    final cs = Theme.of(context).colorScheme;
-
-    return Card(
-      child: ListTile(
-        leading: Icon(
-          available ? Icons.call_rounded : Icons.call_rounded,
-          color: cs.onSurfaceVariant,
-        ),
-        title: const Text('Voice & video calls'),
-        subtitle: Text(
-          available
-              ? 'Supported by your homeserver'
-              : 'Your homeserver does not support calling (LiveKit not configured)',
-        ),
-        trailing: Icon(
-          available ? Icons.check_circle_rounded : Icons.info_outline_rounded,
-          color: available ? Colors.green : cs.onSurfaceVariant,
-        ),
-      ),
     );
   }
 }

@@ -122,6 +122,7 @@ class _WideLayoutState extends State<WideLayout> {
         name == Routes.settingsAppearance ||
         name == Routes.settingsNotifications ||
         name == Routes.settingsDevices ||
+        name == Routes.settingsVoiceVideo ||
         name == Routes.spaces ||
         name == Routes.spaceDetails ||
         name == Routes.inbox) {

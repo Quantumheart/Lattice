@@ -21,6 +21,7 @@ import 'package:lattice/features/settings/screens/appearance_screen.dart';
 import 'package:lattice/features/settings/screens/devices_screen.dart';
 import 'package:lattice/features/settings/screens/notification_settings_screen.dart';
 import 'package:lattice/features/settings/screens/settings_screen.dart';
+import 'package:lattice/features/settings/screens/voice_video_settings_screen.dart';
 import 'package:lattice/features/spaces/widgets/space_details_panel.dart';
 import 'package:provider/provider.dart';
 
@@ -225,6 +226,12 @@ GoRouter buildRouter(MatrixService matrixService) {
                     path: 'devices',
                     name: Routes.settingsDevices,
                     builder: (context, state) => const DevicesScreen(),
+                  ),
+                  GoRoute(
+                    path: 'voice-video',
+                    name: Routes.settingsVoiceVideo,
+                    builder: (context, state) =>
+                        const VoiceVideoSettingsScreen(),
                   ),
                 ],
               ),

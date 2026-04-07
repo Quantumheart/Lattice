@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lattice/core/theme/custom_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -29,6 +30,18 @@ enum NotificationLevel {
         NotificationLevel.all => 'All messages',
         NotificationLevel.mentionsOnly => 'Mentions & keywords only',
         NotificationLevel.off => 'Off',
+      };
+}
+
+enum AudioQuality {
+  speech,
+  music,
+  high;
+
+  String get label => switch (this) {
+        AudioQuality.speech => 'Speech (24 kbps)',
+        AudioQuality.music => 'Standard (48 kbps)',
+        AudioQuality.high => 'High quality (96 kbps)',
       };
 }
 
@@ -385,6 +398,148 @@ class PreferencesService extends ChangeNotifier {
     debugPrint(
       '[Lattice] Web push notifications ${value ? "enabled" : "disabled"}',
     );
+    notifyListeners();
+  }
+
+  // ── Voice & video ─────────────────────────────────────────────
+
+  static const _autoMuteOnJoinKey = 'auto_mute_on_join';
+  static const _noiseSuppressionKey = 'noise_suppression';
+  static const _echoCancellationKey = 'echo_cancellation';
+  static const _pushToTalkEnabledKey = 'push_to_talk_enabled';
+  static const _pushToTalkKeyIdKey = 'push_to_talk_key_id';
+  static const _inputDeviceIdKey = 'input_device_id';
+  static const _outputDeviceIdKey = 'output_device_id';
+  static const _inputVolumeKey = 'input_volume';
+  static const _outputVolumeKey = 'output_volume';
+
+  bool get autoMuteOnJoin => _prefs?.getBool(_autoMuteOnJoinKey) ?? false;
+
+  Future<void> setAutoMuteOnJoin(bool value) async {
+    await _prefs?.setBool(_autoMuteOnJoinKey, value);
+    debugPrint('[Lattice] Auto-mute on join ${value ? "enabled" : "disabled"}');
+    notifyListeners();
+  }
+
+  bool get noiseSuppression => _prefs?.getBool(_noiseSuppressionKey) ?? true;
+
+  Future<void> setNoiseSuppression(bool value) async {
+    await _prefs?.setBool(_noiseSuppressionKey, value);
+    debugPrint('[Lattice] Noise suppression ${value ? "enabled" : "disabled"}');
+    notifyListeners();
+  }
+
+  bool get echoCancellation => _prefs?.getBool(_echoCancellationKey) ?? true;
+
+  Future<void> setEchoCancellation(bool value) async {
+    await _prefs?.setBool(_echoCancellationKey, value);
+    debugPrint('[Lattice] Echo cancellation ${value ? "enabled" : "disabled"}');
+    notifyListeners();
+  }
+
+  bool get pushToTalkEnabled =>
+      _prefs?.getBool(_pushToTalkEnabledKey) ?? false;
+
+  Future<void> setPushToTalkEnabled(bool value) async {
+    await _prefs?.setBool(_pushToTalkEnabledKey, value);
+    debugPrint('[Lattice] Push-to-talk ${value ? "enabled" : "disabled"}');
+    notifyListeners();
+  }
+
+  int get pushToTalkKeyId =>
+      _prefs?.getInt(_pushToTalkKeyIdKey) ??
+      LogicalKeyboardKey.controlLeft.keyId;
+
+  Future<void> setPushToTalkKeyId(int keyId) async {
+    await _prefs?.setInt(_pushToTalkKeyIdKey, keyId);
+    debugPrint('[Lattice] Push-to-talk key set to $keyId');
+    notifyListeners();
+  }
+
+  String? get inputDeviceId => _prefs?.getString(_inputDeviceIdKey);
+
+  Future<void> setInputDeviceId(String? deviceId) async {
+    if (deviceId == null) {
+      await _prefs?.remove(_inputDeviceIdKey);
+    } else {
+      await _prefs?.setString(_inputDeviceIdKey, deviceId);
+    }
+    debugPrint('[Lattice] Input device set to $deviceId');
+    notifyListeners();
+  }
+
+  String? get outputDeviceId => _prefs?.getString(_outputDeviceIdKey);
+
+  Future<void> setOutputDeviceId(String? deviceId) async {
+    if (deviceId == null) {
+      await _prefs?.remove(_outputDeviceIdKey);
+    } else {
+      await _prefs?.setString(_outputDeviceIdKey, deviceId);
+    }
+    debugPrint('[Lattice] Output device set to $deviceId');
+    notifyListeners();
+  }
+
+  double get inputVolume => _prefs?.getDouble(_inputVolumeKey) ?? 1.0;
+
+  Future<void> setInputVolume(double value) async {
+    await _prefs?.setDouble(_inputVolumeKey, value.clamp(0.0, 1.0));
+    debugPrint('[Lattice] Input volume set to $value');
+    notifyListeners();
+  }
+
+  double get outputVolume => _prefs?.getDouble(_outputVolumeKey) ?? 1.0;
+
+  Future<void> setOutputVolume(double value) async {
+    await _prefs?.setDouble(_outputVolumeKey, value.clamp(0.0, 1.0));
+    debugPrint('[Lattice] Output volume set to $value');
+    notifyListeners();
+  }
+
+  static const _autoGainControlKey = 'auto_gain_control';
+  static const _voiceIsolationKey = 'voice_isolation';
+  static const _typingNoiseDetectionKey = 'typing_noise_detection';
+  static const _audioQualityKey = 'audio_quality';
+
+  bool get autoGainControl => _prefs?.getBool(_autoGainControlKey) ?? true;
+
+  Future<void> setAutoGainControl(bool value) async {
+    await _prefs?.setBool(_autoGainControlKey, value);
+    debugPrint('[Lattice] Auto gain control ${value ? "enabled" : "disabled"}');
+    notifyListeners();
+  }
+
+  bool get voiceIsolation => _prefs?.getBool(_voiceIsolationKey) ?? true;
+
+  Future<void> setVoiceIsolation(bool value) async {
+    await _prefs?.setBool(_voiceIsolationKey, value);
+    debugPrint('[Lattice] Voice isolation ${value ? "enabled" : "disabled"}');
+    notifyListeners();
+  }
+
+  bool get typingNoiseDetection =>
+      _prefs?.getBool(_typingNoiseDetectionKey) ?? true;
+
+  Future<void> setTypingNoiseDetection(bool value) async {
+    await _prefs?.setBool(_typingNoiseDetectionKey, value);
+    debugPrint(
+      '[Lattice] Typing noise detection ${value ? "enabled" : "disabled"}',
+    );
+    notifyListeners();
+  }
+
+  AudioQuality get audioQuality {
+    final stored = _prefs?.getString(_audioQualityKey);
+    if (stored == null) return AudioQuality.music;
+    return AudioQuality.values.firstWhere(
+      (q) => q.name == stored,
+      orElse: () => AudioQuality.music,
+    );
+  }
+
+  Future<void> setAudioQuality(AudioQuality quality) async {
+    await _prefs?.setString(_audioQualityKey, quality.name);
+    debugPrint('[Lattice] Audio quality set to ${quality.label}');
     notifyListeners();
   }
 }

@@ -26,6 +26,7 @@ class NarrowLayout extends StatelessWidget {
         name == Routes.settingsAppearance ||
         name == Routes.settingsNotifications ||
         name == Routes.settingsDevices ||
+        name == Routes.settingsVoiceVideo ||
         name == Routes.spaceDetails;
 
     if (hideRail) {
