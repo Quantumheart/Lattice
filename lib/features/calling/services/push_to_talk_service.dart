@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
@@ -16,7 +17,7 @@ class PushToTalkService extends ChangeNotifier {
         _ringtone = ringtoneService {
     _callService.addListener(_onCallStateChanged);
     _prefs.addListener(_onPrefsChanged);
-    _syncState();
+    SchedulerBinding.instance.addPostFrameCallback((_) => _syncState());
   }
 
   final CallService _callService;
@@ -34,9 +35,7 @@ class PushToTalkService extends ChangeNotifier {
     if (shouldListen && !_registered) {
       HardwareKeyboard.instance.addHandler(_onKeyEvent);
       _registered = true;
-      if (_callService.isMicEnabled) {
-        unawaited(_callService.toggleMicrophone());
-      }
+      _ensureMicMuted();
     } else if (!shouldListen && _registered) {
       _unregister();
     }
@@ -48,6 +47,12 @@ class PushToTalkService extends ChangeNotifier {
     if (_keyHeld) {
       _keyHeld = false;
       notifyListeners();
+    }
+  }
+
+  void _ensureMicMuted() {
+    if (_callService.isMicEnabled && !_keyHeld) {
+      unawaited(_callService.toggleMicrophone());
     }
   }
 

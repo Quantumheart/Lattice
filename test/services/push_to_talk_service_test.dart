@@ -14,6 +14,8 @@ import 'push_to_talk_service_test.mocks.dart';
   MockSpec<Client>(),
 ])
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late MockClient mockClient;
   late CallService callService;
   late PreferencesService prefs;
