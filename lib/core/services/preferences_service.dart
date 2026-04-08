@@ -406,8 +406,14 @@ class PreferencesService extends ChangeNotifier {
   static const _autoMuteOnJoinKey = 'auto_mute_on_join';
   static const _noiseSuppressionKey = 'noise_suppression';
   static const _echoCancellationKey = 'echo_cancellation';
+  static const _autoGainControlKey = 'auto_gain_control';
+  static const _voiceIsolationKey = 'voice_isolation';
+  static const _typingNoiseDetectionKey = 'typing_noise_detection';
+  static const _highPassFilterKey = 'high_pass_filter';
+  static const _audioQualityKey = 'audio_quality';
   static const _pushToTalkEnabledKey = 'push_to_talk_enabled';
   static const _pushToTalkKeyIdKey = 'push_to_talk_key_id';
+  static const _pttSoundEnabledKey = 'ptt_sound_enabled';
   static const _inputDeviceIdKey = 'input_device_id';
   static const _outputDeviceIdKey = 'output_device_id';
   static const _inputVolumeKey = 'input_volume';
@@ -496,11 +502,6 @@ class PreferencesService extends ChangeNotifier {
     notifyListeners();
   }
 
-  static const _autoGainControlKey = 'auto_gain_control';
-  static const _voiceIsolationKey = 'voice_isolation';
-  static const _typingNoiseDetectionKey = 'typing_noise_detection';
-  static const _audioQualityKey = 'audio_quality';
-
   bool get autoGainControl => _prefs?.getBool(_autoGainControlKey) ?? true;
 
   Future<void> setAutoGainControl(bool value) async {
@@ -542,9 +543,6 @@ class PreferencesService extends ChangeNotifier {
     debugPrint('[Lattice] Audio quality set to ${quality.label}');
     notifyListeners();
   }
-
-  static const _highPassFilterKey = 'high_pass_filter';
-  static const _pttSoundEnabledKey = 'ptt_sound_enabled';
 
   bool get highPassFilter => _prefs?.getBool(_highPassFilterKey) ?? false;
 

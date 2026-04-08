@@ -71,6 +71,7 @@ class _LatticeAppState extends State<LatticeApp> {
   @override
   void dispose() {
     _router?.dispose();
+    unawaited(ringtoneService.dispose());
     super.dispose();
   }
 

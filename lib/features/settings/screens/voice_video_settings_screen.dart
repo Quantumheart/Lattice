@@ -277,7 +277,10 @@ class _VoiceVideoSettingsScreenState extends State<VoiceVideoSettingsScreen> {
                 _VolumeRow(
                   label: 'Output volume',
                   value: prefs.outputVolume,
-                  onChanged: (v) => unawaited(prefs.setOutputVolume(v)),
+                  onChanged: (v) {
+                    unawaited(prefs.setOutputVolume(v));
+                    unawaited(callService.setOutputVolume(v));
+                  },
                 ),
               ],
             ),

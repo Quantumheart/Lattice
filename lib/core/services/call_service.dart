@@ -107,6 +107,8 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> toggleCamera() => _liveKit.toggleCamera();
   Future<void> toggleScreenShare({String? sourceId}) =>
       _liveKit.toggleScreenShare(sourceId: sourceId);
+  Future<void> setOutputVolume(double volume) =>
+      _liveKit.setOutputVolume(volume);
 
   bool get isSpeakerOn => livekit.Hardware.instance.speakerOn ?? true;
   Future<void> toggleSpeaker() async {

@@ -80,6 +80,8 @@ class LiveKitService {
   bool _isScreenShareEnabled = false;
   bool get isScreenShareEnabled => _isScreenShareEnabled;
 
+  double _outputVolume = 1;
+
   List<livekit.Participant> _activeSpeakers = [];
   List<livekit.Participant> get activeSpeakers =>
       List.unmodifiable(_activeSpeakers);
@@ -379,6 +381,8 @@ class LiveKitService {
 
     if (currentState() != LatticeCallState.joining) return;
 
+    _outputVolume = outputVolume;
+
     _livekitRoom = _roomFactory(
       roomOptions: livekit.RoomOptions(
         defaultAudioCaptureOptions: livekit.AudioCaptureOptions(
@@ -440,6 +444,35 @@ class LiveKitService {
         debugPrint('[Lattice] Failed to set output device: $e');
       }
     }
+
+    if (_outputVolume != 1.0) {
+      await _applyOutputVolume();
+    }
+  }
+
+  Future<void> _applyOutputVolume() async {
+    final room = _livekitRoom;
+    if (room == null) return;
+    for (final p in room.remoteParticipants.values) {
+      for (final pub in p.audioTrackPublications) {
+        final track = pub.track;
+        if (track != null) {
+          try {
+            await rtc.Helper.setVolume(
+              _outputVolume,
+              track.mediaStreamTrack,
+            );
+          } catch (e) {
+            debugPrint('[Lattice] Failed to set output volume: $e');
+          }
+        }
+      }
+    }
+  }
+
+  Future<void> setOutputVolume(double volume) async {
+    _outputVolume = volume;
+    await _applyOutputVolume();
   }
 
   void _subscribeLiveKitEvents() {
@@ -483,7 +516,17 @@ class LiveKitService {
       _invalidateParticipants();
       _onChanged();
     });
-    listener.on<livekit.TrackSubscribedEvent>((_) {
+    listener.on<livekit.TrackSubscribedEvent>((event) {
+      if (_outputVolume != 1.0 && event.track is livekit.AudioTrack) {
+        unawaited(
+          rtc.Helper.setVolume(_outputVolume, event.track.mediaStreamTrack)
+              .catchError((Object e) {
+            debugPrint(
+              '[Lattice] Failed to set output volume on new track: $e',
+            );
+          }),
+        );
+      }
       _invalidateParticipants();
       _onChanged();
     });
@@ -518,6 +561,7 @@ class LiveKitService {
     _isMicEnabled = false;
     _isCameraEnabled = false;
     _isScreenShareEnabled = false;
+    _outputVolume = 1;
 
     try {
       await listener?.dispose();
