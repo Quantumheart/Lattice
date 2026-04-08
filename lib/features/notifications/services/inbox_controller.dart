@@ -2,7 +2,28 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:matrix/matrix.dart' as matrix_sdk;
-import 'package:matrix/matrix.dart' show Client, MatrixException, Membership;
+import 'package:matrix/matrix.dart'
+    show Client, Event, EventTypes, MatrixException, Membership;
+
+// ── Word-boundary helper ─────────────────────────────────────
+
+bool _containsWord(String text, String word) {
+  var start = 0;
+  while (true) {
+    final index = text.indexOf(word, start);
+    if (index == -1) return false;
+    final before = index > 0 ? text.codeUnitAt(index - 1) : 0;
+    final afterIdx = index + word.length;
+    final after = afterIdx < text.length ? text.codeUnitAt(afterIdx) : 0;
+    final boundedLeft = !_isLetter(before);
+    final boundedRight = !_isLetter(after);
+    if (boundedLeft && boundedRight) return true;
+    start = index + 1;
+  }
+}
+
+bool _isLetter(int c) =>
+    (c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A);
 
 // ── Filter enum ──────────────────────────────────────────────
 enum InboxFilter { all, mentions, invitations }
@@ -46,11 +67,16 @@ class InboxController extends ChangeNotifier {
   int _fetchGeneration = 0;
   int _cachedUnreadCount = 0;
 
+  final Map<String, Map<String, Object?>> _decryptedContent = {};
+
   // ── Public getters ─────────────────────────────────────────
 
   int get unreadCount => _cachedUnreadCount;
 
   bool get hasMore => _nextToken != null;
+
+  Map<String, Object?>? decryptedContentFor(String eventId) =>
+      _decryptedContent[eventId];
 
   // ── Unread count cache helper ──────────────────────────────
 
@@ -71,13 +97,10 @@ class InboxController extends ChangeNotifier {
     if (!_disposed) notifyListeners();
 
     try {
-      final response = await _client.getNotifications(
-        limit: 30,
-        only: _filter == InboxFilter.mentions ? 'highlight' : null,
-      );
+      final response = await _client.getNotifications(limit: 30);
       if (_disposed || gen != _fetchGeneration) return;
       _nextToken = response.nextToken;
-      _grouped = _groupByRoom(response.notifications);
+      _grouped = await _groupByRoom(response.notifications);
       _updateUnreadCount();
     } catch (e) {
       if (_disposed || gen != _fetchGeneration) return;
@@ -108,7 +131,6 @@ class InboxController extends ChangeNotifier {
       final response = await _client.getNotifications(
         limit: 30,
         from: _nextToken,
-        only: _filter == InboxFilter.mentions ? 'highlight' : null,
       );
       if (_disposed || gen != _fetchGeneration) return;
       _nextToken = response.nextToken;
@@ -119,7 +141,7 @@ class InboxController extends ChangeNotifier {
         all.addAll(group.notifications);
       }
       all.addAll(response.notifications);
-      _grouped = _groupByRoom(all);
+      _grouped = await _groupByRoom(all);
       _updateUnreadCount();
     } catch (e) {
       if (_disposed || gen != _fetchGeneration) return;
@@ -176,10 +198,7 @@ class InboxController extends ChangeNotifier {
   Future<void> _pollOnce() async {
     if (_isLoading || _markingAsRead || _tokenExpired) return;
     try {
-      final response = await _client.getNotifications(
-        limit: 30,
-        only: _filter == InboxFilter.mentions ? 'highlight' : null,
-      );
+      final response = await _client.getNotifications(limit: 30);
       if (_disposed) return;
 
       final freshIds = <String>{};
@@ -195,7 +214,7 @@ class InboxController extends ChangeNotifier {
           }
         }
       }
-      _grouped = _groupByRoom(all);
+      _grouped = await _groupByRoom(all);
       _updateUnreadCount();
       _error = null;
       _nextToken ??= response.nextToken;
@@ -263,6 +282,7 @@ class InboxController extends ChangeNotifier {
     if (identical(_client, newClient)) return;
     _client = newClient;
     _grouped = [];
+    _decryptedContent.clear();
     _nextToken = null;
     _isLoading = false;
     _error = null;
@@ -277,10 +297,62 @@ class InboxController extends ChangeNotifier {
   static bool _isTokenExpired(Object e) =>
       e is MatrixException && e.errcode == 'M_UNKNOWN_TOKEN';
 
+  // ── Mention detection ──────────────────────────────────────
+
+  bool _isMention(matrix_sdk.Notification n) {
+    final userId = _client.userID;
+    if (userId == null) return false;
+
+    final content =
+        _decryptedContent[n.event.eventId] ?? n.event.content;
+
+    final mentions = content['m.mentions'];
+    if (mentions is Map) {
+      final userIds = mentions['user_ids'];
+      if (userIds is List && userIds.contains(userId)) return true;
+    }
+
+    final body = content['body'];
+    if (body is String) {
+      final lower = body.toLowerCase();
+      if (lower.contains(userId.toLowerCase())) return true;
+      final displayName = _client
+          .getRoomById(n.roomId)
+          ?.unsafeGetUserFromMemoryOrFallback(userId)
+          .calcDisplayname();
+      if (displayName != null &&
+          displayName.length >= 2 &&
+          _containsWord(lower, displayName.toLowerCase())) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   // ── Helpers ────────────────────────────────────────────────
 
-  List<NotificationGroup> _groupByRoom(
-      List<matrix_sdk.Notification> notifications,) {
+  Future<Map<String, Object?>?> _tryDecrypt(matrix_sdk.Notification n) async {
+    if (n.event.type != EventTypes.Encrypted) return null;
+    final cached = _decryptedContent[n.event.eventId];
+    if (cached != null) return cached;
+    final room = _client.getRoomById(n.roomId);
+    if (room == null) return null;
+    try {
+      final event = Event.fromMatrixEvent(n.event, room);
+      final decrypted = await room.client.encryption
+          ?.decryptRoomEvent(event)
+          .timeout(const Duration(seconds: 3));
+      if (decrypted != null) {
+        _decryptedContent[n.event.eventId] = decrypted.content;
+        return decrypted.content;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  Future<List<NotificationGroup>> _groupByRoom(
+      List<matrix_sdk.Notification> notifications,) async {
     final map = <String, List<matrix_sdk.Notification>>{};
     final order = <String>[];
 
@@ -288,6 +360,8 @@ class InboxController extends ChangeNotifier {
       if (n.read) continue;
       final room = _client.getRoomById(n.roomId);
       if (room == null || room.membership != Membership.join) continue;
+      await _tryDecrypt(n);
+      if (_filter == InboxFilter.mentions && !_isMention(n)) continue;
       map.putIfAbsent(n.roomId, () {
         order.add(n.roomId);
         return [];

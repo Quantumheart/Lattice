@@ -264,7 +264,7 @@ class _NotificationTile extends StatelessWidget {
         room?.unsafeGetUserFromMemoryOrFallback(senderId).calcDisplayname() ??
             senderId;
 
-    final body = _extractBody(event);
+    final body = _extractBody(context, event);
     final ts = DateTime.fromMillisecondsSinceEpoch(notification.ts);
 
     return Padding(
@@ -334,11 +334,12 @@ class _NotificationTile extends StatelessWidget {
     );
   }
 
-  String _extractBody(matrix_sdk.MatrixEvent event) {
-    final content = event.content;
+  String _extractBody(BuildContext context, matrix_sdk.MatrixEvent event) {
+    final controller = context.read<InboxController>();
+    final content =
+        controller.decryptedContentFor(event.eventId) ?? event.content;
     final msgtype = content['msgtype'];
 
-    // Check media types first — their body is just a filename.
     if (msgtype == matrix_sdk.MessageTypes.Image) return InboxText.mediaImage;
     if (msgtype == matrix_sdk.MessageTypes.Video) return InboxText.mediaVideo;
     if (msgtype == matrix_sdk.MessageTypes.Audio) return InboxText.mediaAudio;
@@ -347,7 +348,6 @@ class _NotificationTile extends StatelessWidget {
     final body = content['body'];
     if (body is String) return stripReplyFallback(body);
 
-    // Fallback for state events, etc.
     return '';
   }
 }

@@ -773,6 +773,16 @@ class _FakeUser_69 extends _i1.SmartFake implements _i2.User {
         );
 }
 
+class _FakeRoom_70 extends _i1.SmartFake implements _i2.Room {
+  _FakeRoom_70(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
 /// A class which mocks [Client].
 ///
 /// See the documentation for Mockito's code generation for more information.
@@ -9311,4 +9321,340 @@ class MockRoom extends _i1.Mock implements _i2.Room {
             String? nextBatch,
             DateTime? searchedUntil
           })>);
+}
+
+/// A class which mocks [User].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockUser extends _i1.Mock implements _i2.User {
+  @override
+  _i2.Room get room => (super.noSuchMethod(
+        Invocation.getter(#room),
+        returnValue: _FakeRoom_70(
+          this,
+          Invocation.getter(#room),
+        ),
+        returnValueForMissingStub: _FakeRoom_70(
+          this,
+          Invocation.getter(#room),
+        ),
+      ) as _i2.Room);
+
+  @override
+  String get id => (super.noSuchMethod(
+        Invocation.getter(#id),
+        returnValue: _i8.dummyValue<String>(
+          this,
+          Invocation.getter(#id),
+        ),
+        returnValueForMissingStub: _i8.dummyValue<String>(
+          this,
+          Invocation.getter(#id),
+        ),
+      ) as String);
+
+  @override
+  int get powerLevel => (super.noSuchMethod(
+        Invocation.getter(#powerLevel),
+        returnValue: 0,
+        returnValueForMissingStub: 0,
+      ) as int);
+
+  @override
+  _i2.Membership get membership => (super.noSuchMethod(
+        Invocation.getter(#membership),
+        returnValue: _i2.Membership.ban,
+        returnValueForMissingStub: _i2.Membership.ban,
+      ) as _i2.Membership);
+
+  @override
+  _i5.Future<_i2.CachedPresence> get currentPresence => (super.noSuchMethod(
+        Invocation.getter(#currentPresence),
+        returnValue:
+            _i5.Future<_i2.CachedPresence>.value(_FakeCachedPresence_21(
+          this,
+          Invocation.getter(#currentPresence),
+        )),
+        returnValueForMissingStub:
+            _i5.Future<_i2.CachedPresence>.value(_FakeCachedPresence_21(
+          this,
+          Invocation.getter(#currentPresence),
+        )),
+      ) as _i5.Future<_i2.CachedPresence>);
+
+  @override
+  bool get canBan => (super.noSuchMethod(
+        Invocation.getter(#canBan),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  bool get canKick => (super.noSuchMethod(
+        Invocation.getter(#canKick),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  bool get canChangePowerLevel => (super.noSuchMethod(
+        Invocation.getter(#canChangePowerLevel),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  bool get canChangeUserPowerLevel => (super.noSuchMethod(
+        Invocation.getter(#canChangeUserPowerLevel),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  String get mention => (super.noSuchMethod(
+        Invocation.getter(#mention),
+        returnValue: _i8.dummyValue<String>(
+          this,
+          Invocation.getter(#mention),
+        ),
+        returnValueForMissingStub: _i8.dummyValue<String>(
+          this,
+          Invocation.getter(#mention),
+        ),
+      ) as String);
+
+  @override
+  Set<String> get mentionFragments => (super.noSuchMethod(
+        Invocation.getter(#mentionFragments),
+        returnValue: <String>{},
+        returnValueForMissingStub: <String>{},
+      ) as Set<String>);
+
+  @override
+  set stateKey(String? value) => super.noSuchMethod(
+        Invocation.setter(
+          #stateKey,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  String get senderId => (super.noSuchMethod(
+        Invocation.getter(#senderId),
+        returnValue: _i8.dummyValue<String>(
+          this,
+          Invocation.getter(#senderId),
+        ),
+        returnValueForMissingStub: _i8.dummyValue<String>(
+          this,
+          Invocation.getter(#senderId),
+        ),
+      ) as String);
+
+  @override
+  set senderId(String? value) => super.noSuchMethod(
+        Invocation.setter(
+          #senderId,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  String get type => (super.noSuchMethod(
+        Invocation.getter(#type),
+        returnValue: _i8.dummyValue<String>(
+          this,
+          Invocation.getter(#type),
+        ),
+        returnValueForMissingStub: _i8.dummyValue<String>(
+          this,
+          Invocation.getter(#type),
+        ),
+      ) as String);
+
+  @override
+  Map<String, Object?> get content => (super.noSuchMethod(
+        Invocation.getter(#content),
+        returnValue: <String, Object?>{},
+        returnValueForMissingStub: <String, Object?>{},
+      ) as Map<String, Object?>);
+
+  @override
+  set type(String? value) => super.noSuchMethod(
+        Invocation.setter(
+          #type,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  set content(Map<String, Object?>? value) => super.noSuchMethod(
+        Invocation.setter(
+          #content,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  String calcDisplayname({
+    bool? formatLocalpart,
+    bool? mxidLocalPartFallback,
+    _i2.MatrixLocalizations? i18n = const _i2.MatrixDefaultLocalizations(),
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #calcDisplayname,
+          [],
+          {
+            #formatLocalpart: formatLocalpart,
+            #mxidLocalPartFallback: mxidLocalPartFallback,
+            #i18n: i18n,
+          },
+        ),
+        returnValue: _i8.dummyValue<String>(
+          this,
+          Invocation.method(
+            #calcDisplayname,
+            [],
+            {
+              #formatLocalpart: formatLocalpart,
+              #mxidLocalPartFallback: mxidLocalPartFallback,
+              #i18n: i18n,
+            },
+          ),
+        ),
+        returnValueForMissingStub: _i8.dummyValue<String>(
+          this,
+          Invocation.method(
+            #calcDisplayname,
+            [],
+            {
+              #formatLocalpart: formatLocalpart,
+              #mxidLocalPartFallback: mxidLocalPartFallback,
+              #i18n: i18n,
+            },
+          ),
+        ),
+      ) as String);
+
+  @override
+  _i5.Future<void> kick() => (super.noSuchMethod(
+        Invocation.method(
+          #kick,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> ban() => (super.noSuchMethod(
+        Invocation.method(
+          #ban,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> unban() => (super.noSuchMethod(
+        Invocation.method(
+          #unban,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> setPower(int? power) => (super.noSuchMethod(
+        Invocation.method(
+          #setPower,
+          [power],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<String> startDirectChat({
+    bool? enableEncryption,
+    List<_i2.StateEvent>? initialState,
+    bool? waitForSync = true,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #startDirectChat,
+          [],
+          {
+            #enableEncryption: enableEncryption,
+            #initialState: initialState,
+            #waitForSync: waitForSync,
+          },
+        ),
+        returnValue: _i5.Future<String>.value(_i8.dummyValue<String>(
+          this,
+          Invocation.method(
+            #startDirectChat,
+            [],
+            {
+              #enableEncryption: enableEncryption,
+              #initialState: initialState,
+              #waitForSync: waitForSync,
+            },
+          ),
+        )),
+        returnValueForMissingStub:
+            _i5.Future<String>.value(_i8.dummyValue<String>(
+          this,
+          Invocation.method(
+            #startDirectChat,
+            [],
+            {
+              #enableEncryption: enableEncryption,
+              #initialState: initialState,
+              #waitForSync: waitForSync,
+            },
+          ),
+        )),
+      ) as _i5.Future<String>);
+
+  @override
+  _i5.Future<_i2.CachedPresence> fetchCurrentPresence() => (super.noSuchMethod(
+        Invocation.method(
+          #fetchCurrentPresence,
+          [],
+        ),
+        returnValue:
+            _i5.Future<_i2.CachedPresence>.value(_FakeCachedPresence_21(
+          this,
+          Invocation.method(
+            #fetchCurrentPresence,
+            [],
+          ),
+        )),
+        returnValueForMissingStub:
+            _i5.Future<_i2.CachedPresence>.value(_FakeCachedPresence_21(
+          this,
+          Invocation.method(
+            #fetchCurrentPresence,
+            [],
+          ),
+        )),
+      ) as _i5.Future<_i2.CachedPresence>);
+
+  @override
+  Map<String, Object?> toJson() => (super.noSuchMethod(
+        Invocation.method(
+          #toJson,
+          [],
+        ),
+        returnValue: <String, Object?>{},
+        returnValueForMissingStub: <String, Object?>{},
+      ) as Map<String, Object?>);
 }

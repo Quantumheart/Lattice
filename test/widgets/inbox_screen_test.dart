@@ -189,12 +189,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      // Stub for mentions filter
-      when(mockClient.getNotifications(
-        limit: anyNamed('limit'),
-        only: 'highlight',
-        from: anyNamed('from'),
-      ),).thenAnswer((_) => Future.microtask(() => _makeResponse([])));
+      stubFetchAsync(_makeResponse([]));
 
       await tester.tap(find.text('Mentions'));
       await tester.pumpAndSettle();
