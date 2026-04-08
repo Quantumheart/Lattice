@@ -22,6 +22,7 @@ void main() {
     when(mockUser.calcDisplayname()).thenReturn('Alice');
     when(mockEvent.senderFromMemoryOrFallback).thenReturn(mockUser);
     when(mockEvent.roomId).thenReturn('!room:example.com');
+    when(mockEvent.originServerTs).thenReturn(DateTime(2026, 1, 15, 14, 30));
     when(mockEvent.room).thenReturn(mockRoom);
     when(mockRoom.client).thenReturn(mockClient);
     when(mockClient.getRoomById(any)).thenReturn(mockRoom);
