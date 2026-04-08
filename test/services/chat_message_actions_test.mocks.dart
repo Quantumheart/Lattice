@@ -4,27 +4,28 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i6;
-import 'dart:typed_data' as _i15;
+import 'dart:typed_data' as _i16;
 import 'dart:ui' as _i19;
 
-import 'package:flutter/foundation.dart' as _i10;
-import 'package:flutter/scheduler.dart' as _i12;
+import 'package:flutter/foundation.dart' as _i11;
+import 'package:flutter/scheduler.dart' as _i13;
 import 'package:flutter/src/material/banner.dart' as _i21;
-import 'package:flutter/src/material/scaffold.dart' as _i9;
+import 'package:flutter/src/material/scaffold.dart' as _i10;
 import 'package:flutter/src/material/snack_bar.dart' as _i20;
-import 'package:flutter/widgets.dart' as _i11;
+import 'package:flutter/widgets.dart' as _i12;
 import 'package:http/http.dart' as _i5;
-import 'package:lattice/core/models/server_auth_capabilities.dart' as _i8;
-import 'package:lattice/core/models/space_node.dart' as _i18;
-import 'package:lattice/core/services/matrix_service.dart' as _i17;
-import 'package:matrix/encryption.dart' as _i16;
+import 'package:lattice/core/models/server_auth_capabilities.dart' as _i9;
+import 'package:lattice/core/services/matrix_service.dart' as _i18;
+import 'package:lattice/core/services/sub_services/selection_service.dart'
+    as _i8;
+import 'package:matrix/encryption.dart' as _i17;
 import 'package:matrix/matrix.dart' as _i2;
 import 'package:matrix/matrix_api_lite/generated/fixed_model.dart' as _i7;
 import 'package:matrix/src/models/timeline_chunk.dart' as _i4;
 import 'package:matrix/src/utils/cached_stream_controller.dart' as _i3;
-import 'package:matrix/src/utils/space_child.dart' as _i14;
+import 'package:matrix/src/utils/space_child.dart' as _i15;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i13;
+import 'package:mockito/src/dummies.dart' as _i14;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -823,9 +824,9 @@ class _FakeCreateContentResponse_73 extends _i1.SmartFake
         );
 }
 
-class _FakeServerAuthCapabilities_74 extends _i1.SmartFake
-    implements _i8.ServerAuthCapabilities {
-  _FakeServerAuthCapabilities_74(
+class _FakeSelectionService_74 extends _i1.SmartFake
+    implements _i8.SelectionService {
+  _FakeSelectionService_74(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -834,24 +835,9 @@ class _FakeServerAuthCapabilities_74 extends _i1.SmartFake
         );
 }
 
-class _FakeScaffoldMessenger_75 extends _i1.SmartFake
-    implements _i9.ScaffoldMessenger {
-  _FakeScaffoldMessenger_75(
-    Object parent,
-    Invocation parentInvocation,
-  ) : super(
-          parent,
-          parentInvocation,
-        );
-
-  @override
-  String toString(
-          {_i10.DiagnosticLevel? minLevel = _i10.DiagnosticLevel.info}) =>
-      super.toString();
-}
-
-class _FakeBuildContext_76 extends _i1.SmartFake implements _i11.BuildContext {
-  _FakeBuildContext_76(
+class _FakeServerAuthCapabilities_75 extends _i1.SmartFake
+    implements _i9.ServerAuthCapabilities {
+  _FakeServerAuthCapabilities_75(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -860,19 +846,9 @@ class _FakeBuildContext_76 extends _i1.SmartFake implements _i11.BuildContext {
         );
 }
 
-class _FakeScaffoldFeatureController_77<T extends _i11.Widget, U>
-    extends _i1.SmartFake implements _i9.ScaffoldFeatureController<T, U> {
-  _FakeScaffoldFeatureController_77(
-    Object parent,
-    Invocation parentInvocation,
-  ) : super(
-          parent,
-          parentInvocation,
-        );
-}
-
-class _FakeWidget_78 extends _i1.SmartFake implements _i11.Widget {
-  _FakeWidget_78(
+class _FakeScaffoldMessenger_76 extends _i1.SmartFake
+    implements _i10.ScaffoldMessenger {
+  _FakeScaffoldMessenger_76(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -882,13 +858,49 @@ class _FakeWidget_78 extends _i1.SmartFake implements _i11.Widget {
 
   @override
   String toString(
-          {_i10.DiagnosticLevel? minLevel = _i10.DiagnosticLevel.info}) =>
+          {_i11.DiagnosticLevel? minLevel = _i11.DiagnosticLevel.info}) =>
       super.toString();
 }
 
-class _FakeDiagnosticsNode_79 extends _i1.SmartFake
-    implements _i10.DiagnosticsNode {
-  _FakeDiagnosticsNode_79(
+class _FakeBuildContext_77 extends _i1.SmartFake implements _i12.BuildContext {
+  _FakeBuildContext_77(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeScaffoldFeatureController_78<T extends _i12.Widget, U>
+    extends _i1.SmartFake implements _i10.ScaffoldFeatureController<T, U> {
+  _FakeScaffoldFeatureController_78(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+class _FakeWidget_79 extends _i1.SmartFake implements _i12.Widget {
+  _FakeWidget_79(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+
+  @override
+  String toString(
+          {_i11.DiagnosticLevel? minLevel = _i11.DiagnosticLevel.info}) =>
+      super.toString();
+}
+
+class _FakeDiagnosticsNode_80 extends _i1.SmartFake
+    implements _i11.DiagnosticsNode {
+  _FakeDiagnosticsNode_80(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -898,14 +910,14 @@ class _FakeDiagnosticsNode_79 extends _i1.SmartFake
 
   @override
   String toString({
-    _i10.TextTreeConfiguration? parentConfiguration,
-    _i10.DiagnosticLevel? minLevel = _i10.DiagnosticLevel.info,
+    _i11.TextTreeConfiguration? parentConfiguration,
+    _i11.DiagnosticLevel? minLevel = _i11.DiagnosticLevel.info,
   }) =>
       super.toString();
 }
 
-class _FakeTicker_80 extends _i1.SmartFake implements _i12.Ticker {
-  _FakeTicker_80(
+class _FakeTicker_81 extends _i1.SmartFake implements _i13.Ticker {
+  _FakeTicker_81(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -924,11 +936,11 @@ class MockRoom extends _i1.Mock implements _i2.Room {
   @override
   String get id => (super.noSuchMethod(
         Invocation.getter(#id),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.getter(#id),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.getter(#id),
         ),
@@ -1015,11 +1027,11 @@ class MockRoom extends _i1.Mock implements _i2.Room {
   @override
   String get fullyRead => (super.noSuchMethod(
         Invocation.getter(#fullyRead),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.getter(#fullyRead),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.getter(#fullyRead),
         ),
@@ -1055,11 +1067,11 @@ class MockRoom extends _i1.Mock implements _i2.Room {
   @override
   String get name => (super.noSuchMethod(
         Invocation.getter(#name),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.getter(#name),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.getter(#name),
         ),
@@ -1075,11 +1087,11 @@ class MockRoom extends _i1.Mock implements _i2.Room {
   @override
   String get topic => (super.noSuchMethod(
         Invocation.getter(#topic),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.getter(#topic),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.getter(#topic),
         ),
@@ -1088,11 +1100,11 @@ class MockRoom extends _i1.Mock implements _i2.Room {
   @override
   String get canonicalAlias => (super.noSuchMethod(
         Invocation.getter(#canonicalAlias),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.getter(#canonicalAlias),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.getter(#canonicalAlias),
         ),
@@ -1135,11 +1147,11 @@ class MockRoom extends _i1.Mock implements _i2.Room {
   @override
   String get displayname => (super.noSuchMethod(
         Invocation.getter(#displayname),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.getter(#displayname),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.getter(#displayname),
         ),
@@ -1398,18 +1410,18 @@ class MockRoom extends _i1.Mock implements _i2.Room {
       ) as bool);
 
   @override
-  List<_i14.SpaceParent> get spaceParents => (super.noSuchMethod(
+  List<_i15.SpaceParent> get spaceParents => (super.noSuchMethod(
         Invocation.getter(#spaceParents),
-        returnValue: <_i14.SpaceParent>[],
-        returnValueForMissingStub: <_i14.SpaceParent>[],
-      ) as List<_i14.SpaceParent>);
+        returnValue: <_i15.SpaceParent>[],
+        returnValueForMissingStub: <_i15.SpaceParent>[],
+      ) as List<_i15.SpaceParent>);
 
   @override
-  List<_i14.SpaceChild> get spaceChildren => (super.noSuchMethod(
+  List<_i15.SpaceChild> get spaceChildren => (super.noSuchMethod(
         Invocation.getter(#spaceChildren),
-        returnValue: <_i14.SpaceChild>[],
-        returnValueForMissingStub: <_i14.SpaceChild>[],
-      ) as List<_i14.SpaceChild>);
+        returnValue: <_i15.SpaceChild>[],
+        returnValueForMissingStub: <_i15.SpaceChild>[],
+      ) as List<_i15.SpaceChild>);
 
   @override
   set membership(_i2.Membership? value) => super.noSuchMethod(
@@ -1576,14 +1588,14 @@ class MockRoom extends _i1.Mock implements _i2.Room {
           #getLocalizedDisplayname,
           [i18n],
         ),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.method(
             #getLocalizedDisplayname,
             [i18n],
           ),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.method(
             #getLocalizedDisplayname,
@@ -1631,7 +1643,7 @@ class MockRoom extends _i1.Mock implements _i2.Room {
           #setName,
           [newName],
         ),
-        returnValue: _i6.Future<String>.value(_i13.dummyValue<String>(
+        returnValue: _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #setName,
@@ -1639,7 +1651,7 @@ class MockRoom extends _i1.Mock implements _i2.Room {
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<String>.value(_i13.dummyValue<String>(
+            _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #setName,
@@ -1654,7 +1666,7 @@ class MockRoom extends _i1.Mock implements _i2.Room {
           #setDescription,
           [newName],
         ),
-        returnValue: _i6.Future<String>.value(_i13.dummyValue<String>(
+        returnValue: _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #setDescription,
@@ -1662,7 +1674,7 @@ class MockRoom extends _i1.Mock implements _i2.Room {
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<String>.value(_i13.dummyValue<String>(
+            _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #setDescription,
@@ -1746,7 +1758,7 @@ class MockRoom extends _i1.Mock implements _i2.Room {
           #setPinnedEvents,
           [pinnedEventIds],
         ),
-        returnValue: _i6.Future<String>.value(_i13.dummyValue<String>(
+        returnValue: _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #setPinnedEvents,
@@ -1754,7 +1766,7 @@ class MockRoom extends _i1.Mock implements _i2.Room {
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<String>.value(_i13.dummyValue<String>(
+            _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #setPinnedEvents,
@@ -1996,7 +2008,7 @@ class MockRoom extends _i1.Mock implements _i2.Room {
             power,
           ],
         ),
-        returnValue: _i6.Future<String>.value(_i13.dummyValue<String>(
+        returnValue: _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #setPower,
@@ -2007,7 +2019,7 @@ class MockRoom extends _i1.Mock implements _i2.Room {
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<String>.value(_i13.dummyValue<String>(
+            _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #setPower,
@@ -2312,7 +2324,7 @@ class MockRoom extends _i1.Mock implements _i2.Room {
           #setAvatar,
           [file],
         ),
-        returnValue: _i6.Future<String>.value(_i13.dummyValue<String>(
+        returnValue: _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #setAvatar,
@@ -2320,7 +2332,7 @@ class MockRoom extends _i1.Mock implements _i2.Room {
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<String>.value(_i13.dummyValue<String>(
+            _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #setAvatar,
@@ -2698,11 +2710,11 @@ class MockEvent extends _i1.Mock implements _i2.Event {
   @override
   String get messageType => (super.noSuchMethod(
         Invocation.getter(#messageType),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.getter(#messageType),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.getter(#messageType),
         ),
@@ -2711,11 +2723,11 @@ class MockEvent extends _i1.Mock implements _i2.Event {
   @override
   String get text => (super.noSuchMethod(
         Invocation.getter(#text),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.getter(#text),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.getter(#text),
         ),
@@ -2724,11 +2736,11 @@ class MockEvent extends _i1.Mock implements _i2.Event {
   @override
   String get formattedText => (super.noSuchMethod(
         Invocation.getter(#formattedText),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.getter(#formattedText),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.getter(#formattedText),
         ),
@@ -2737,11 +2749,11 @@ class MockEvent extends _i1.Mock implements _i2.Event {
   @override
   String get body => (super.noSuchMethod(
         Invocation.getter(#body),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.getter(#body),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.getter(#body),
         ),
@@ -2750,11 +2762,11 @@ class MockEvent extends _i1.Mock implements _i2.Event {
   @override
   String get plaintextBody => (super.noSuchMethod(
         Invocation.getter(#plaintextBody),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.getter(#plaintextBody),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.getter(#plaintextBody),
         ),
@@ -2819,11 +2831,11 @@ class MockEvent extends _i1.Mock implements _i2.Event {
   @override
   String get attachmentMimetype => (super.noSuchMethod(
         Invocation.getter(#attachmentMimetype),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.getter(#attachmentMimetype),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.getter(#attachmentMimetype),
         ),
@@ -2832,11 +2844,11 @@ class MockEvent extends _i1.Mock implements _i2.Event {
   @override
   String get thumbnailMimetype => (super.noSuchMethod(
         Invocation.getter(#thumbnailMimetype),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.getter(#thumbnailMimetype),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.getter(#thumbnailMimetype),
         ),
@@ -2889,11 +2901,11 @@ class MockEvent extends _i1.Mock implements _i2.Event {
   @override
   String get eventId => (super.noSuchMethod(
         Invocation.getter(#eventId),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.getter(#eventId),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.getter(#eventId),
         ),
@@ -2978,11 +2990,11 @@ class MockEvent extends _i1.Mock implements _i2.Event {
   @override
   String get senderId => (super.noSuchMethod(
         Invocation.getter(#senderId),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.getter(#senderId),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.getter(#senderId),
         ),
@@ -3000,11 +3012,11 @@ class MockEvent extends _i1.Mock implements _i2.Event {
   @override
   String get type => (super.noSuchMethod(
         Invocation.getter(#type),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.getter(#type),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.getter(#type),
         ),
@@ -3215,7 +3227,7 @@ class MockEvent extends _i1.Mock implements _i2.Event {
   @override
   _i6.Future<_i2.MatrixFile> downloadAndDecryptAttachment({
     bool? getThumbnail = false,
-    _i6.Future<_i15.Uint8List> Function(Uri)? downloadCallback,
+    _i6.Future<_i16.Uint8List> Function(Uri)? downloadCallback,
     bool? fromLocalStoreOnly = false,
     void Function(int)? onDownloadProgress,
   }) =>
@@ -3280,7 +3292,7 @@ class MockEvent extends _i1.Mock implements _i2.Event {
             #removeMarkdown: removeMarkdown,
           },
         ),
-        returnValue: _i6.Future<String>.value(_i13.dummyValue<String>(
+        returnValue: _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #calcLocalizedBody,
@@ -3295,7 +3307,7 @@ class MockEvent extends _i1.Mock implements _i2.Event {
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<String>.value(_i13.dummyValue<String>(
+            _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #calcLocalizedBody,
@@ -3332,7 +3344,7 @@ class MockEvent extends _i1.Mock implements _i2.Event {
             #removeMarkdown: removeMarkdown,
           },
         ),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.method(
             #getLocalizedBody,
@@ -3346,7 +3358,7 @@ class MockEvent extends _i1.Mock implements _i2.Event {
             },
           ),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.method(
             #getLocalizedBody,
@@ -3383,7 +3395,7 @@ class MockEvent extends _i1.Mock implements _i2.Event {
             #removeMarkdown: removeMarkdown,
           },
         ),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.method(
             #calcLocalizedBodyFallback,
@@ -3397,7 +3409,7 @@ class MockEvent extends _i1.Mock implements _i2.Event {
             },
           ),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.method(
             #calcLocalizedBodyFallback,
@@ -3431,7 +3443,7 @@ class MockEvent extends _i1.Mock implements _i2.Event {
             #removeMarkdown: removeMarkdown,
           },
         ),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.method(
             #calcUnlocalizedBody,
@@ -3444,7 +3456,7 @@ class MockEvent extends _i1.Mock implements _i2.Event {
             },
           ),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.method(
             #calcUnlocalizedBody,
@@ -3921,12 +3933,12 @@ class MockClient extends _i1.Mock implements _i2.Client {
       ) as _i2.DatabaseApi);
 
   @override
-  Set<_i16.KeyVerificationMethod> get verificationMethods =>
+  Set<_i17.KeyVerificationMethod> get verificationMethods =>
       (super.noSuchMethod(
         Invocation.getter(#verificationMethods),
-        returnValue: <_i16.KeyVerificationMethod>{},
-        returnValueForMissingStub: <_i16.KeyVerificationMethod>{},
-      ) as Set<_i16.KeyVerificationMethod>);
+        returnValue: <_i17.KeyVerificationMethod>{},
+        returnValueForMissingStub: <_i17.KeyVerificationMethod>{},
+      ) as Set<_i17.KeyVerificationMethod>);
 
   @override
   Set<String> get importantStateEvents => (super.noSuchMethod(
@@ -4046,11 +4058,11 @@ class MockClient extends _i1.Mock implements _i2.Client {
   @override
   String get clientName => (super.noSuchMethod(
         Invocation.getter(#clientName),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.getter(#clientName),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.getter(#clientName),
         ),
@@ -4087,11 +4099,11 @@ class MockClient extends _i1.Mock implements _i2.Client {
   @override
   String get dehydratedDeviceDisplayName => (super.noSuchMethod(
         Invocation.getter(#dehydratedDeviceDisplayName),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.getter(#dehydratedDeviceDisplayName),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.getter(#dehydratedDeviceDisplayName),
         ),
@@ -4121,11 +4133,11 @@ class MockClient extends _i1.Mock implements _i2.Client {
   @override
   String get identityKey => (super.noSuchMethod(
         Invocation.getter(#identityKey),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.getter(#identityKey),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.getter(#identityKey),
         ),
@@ -4134,11 +4146,11 @@ class MockClient extends _i1.Mock implements _i2.Client {
   @override
   String get fingerprintKey => (super.noSuchMethod(
         Invocation.getter(#fingerprintKey),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.getter(#fingerprintKey),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.getter(#fingerprintKey),
         ),
@@ -4425,34 +4437,34 @@ class MockClient extends _i1.Mock implements _i2.Client {
       ) as _i3.CachedStreamController<_i2.BasicEvent>);
 
   @override
-  _i3.CachedStreamController<_i16.RoomKeyRequest> get onRoomKeyRequest =>
+  _i3.CachedStreamController<_i17.RoomKeyRequest> get onRoomKeyRequest =>
       (super.noSuchMethod(
         Invocation.getter(#onRoomKeyRequest),
-        returnValue: _FakeCachedStreamController_1<_i16.RoomKeyRequest>(
+        returnValue: _FakeCachedStreamController_1<_i17.RoomKeyRequest>(
           this,
           Invocation.getter(#onRoomKeyRequest),
         ),
         returnValueForMissingStub:
-            _FakeCachedStreamController_1<_i16.RoomKeyRequest>(
+            _FakeCachedStreamController_1<_i17.RoomKeyRequest>(
           this,
           Invocation.getter(#onRoomKeyRequest),
         ),
-      ) as _i3.CachedStreamController<_i16.RoomKeyRequest>);
+      ) as _i3.CachedStreamController<_i17.RoomKeyRequest>);
 
   @override
-  _i3.CachedStreamController<_i16.KeyVerification>
+  _i3.CachedStreamController<_i17.KeyVerification>
       get onKeyVerificationRequest => (super.noSuchMethod(
             Invocation.getter(#onKeyVerificationRequest),
-            returnValue: _FakeCachedStreamController_1<_i16.KeyVerification>(
+            returnValue: _FakeCachedStreamController_1<_i17.KeyVerification>(
               this,
               Invocation.getter(#onKeyVerificationRequest),
             ),
             returnValueForMissingStub:
-                _FakeCachedStreamController_1<_i16.KeyVerification>(
+                _FakeCachedStreamController_1<_i17.KeyVerification>(
               this,
               Invocation.getter(#onKeyVerificationRequest),
             ),
-          ) as _i3.CachedStreamController<_i16.KeyVerification>);
+          ) as _i3.CachedStreamController<_i17.KeyVerification>);
 
   @override
   _i3.CachedStreamController<_i2.UiaRequest<dynamic>> get onUiaRequest =>
@@ -4608,7 +4620,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
       );
 
   @override
-  set verificationMethods(Set<_i16.KeyVerificationMethod>? value) =>
+  set verificationMethods(Set<_i17.KeyVerificationMethod>? value) =>
       super.noSuchMethod(
         Invocation.setter(
           #verificationMethods,
@@ -4897,14 +4909,14 @@ class MockClient extends _i1.Mock implements _i2.Client {
           #generateUniqueTransactionId,
           [],
         ),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.method(
             #generateUniqueTransactionId,
             [],
           ),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.method(
             #generateUniqueTransactionId,
@@ -5292,8 +5304,8 @@ class MockClient extends _i1.Mock implements _i2.Client {
           #uiaRequestBackground,
           [request],
         ),
-        returnValue: _i13.ifNotNull(
-              _i13.dummyValueOrNull<T>(
+        returnValue: _i14.ifNotNull(
+              _i14.dummyValueOrNull<T>(
                 this,
                 Invocation.method(
                   #uiaRequestBackground,
@@ -5309,8 +5321,8 @@ class MockClient extends _i1.Mock implements _i2.Client {
                 [request],
               ),
             ),
-        returnValueForMissingStub: _i13.ifNotNull(
-              _i13.dummyValueOrNull<T>(
+        returnValueForMissingStub: _i14.ifNotNull(
+              _i14.dummyValueOrNull<T>(
                 this,
                 Invocation.method(
                   #uiaRequestBackground,
@@ -5351,7 +5363,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             #skipExistingChat: skipExistingChat,
           },
         ),
-        returnValue: _i6.Future<String>.value(_i13.dummyValue<String>(
+        returnValue: _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #startDirectChat,
@@ -5367,7 +5379,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<String>.value(_i13.dummyValue<String>(
+            _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #startDirectChat,
@@ -5416,7 +5428,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             #powerLevelContentOverride: powerLevelContentOverride,
           },
         ),
-        returnValue: _i6.Future<String>.value(_i13.dummyValue<String>(
+        returnValue: _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #createGroupChat,
@@ -5437,7 +5449,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<String>.value(_i13.dummyValue<String>(
+            _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #createGroupChat,
@@ -5540,7 +5552,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             #waitForSync: waitForSync,
           },
         ),
-        returnValue: _i6.Future<String>.value(_i13.dummyValue<String>(
+        returnValue: _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #createSpace,
@@ -5558,7 +5570,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<String>.value(_i13.dummyValue<String>(
+            _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #createSpace,
@@ -6080,7 +6092,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
 
   @override
   _i6.Future<Uri> uploadContent(
-    _i15.Uint8List? file, {
+    _i16.Uint8List? file, {
     String? filename,
     String? contentType,
   }) =>
@@ -6432,7 +6444,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             #thirdPartySigned: thirdPartySigned,
           },
         ),
-        returnValue: _i6.Future<String>.value(_i13.dummyValue<String>(
+        returnValue: _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #joinRoom,
@@ -6446,7 +6458,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<String>.value(_i13.dummyValue<String>(
+            _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #joinRoom,
@@ -6597,7 +6609,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
   @override
   Never unexpectedResponse(
     _i5.BaseResponse? response,
-    _i15.Uint8List? body,
+    _i16.Uint8List? body,
   ) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -7975,7 +7987,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             #visibility: visibility,
           },
         ),
-        returnValue: _i6.Future<String>.value(_i13.dummyValue<String>(
+        returnValue: _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #createRoom,
@@ -7997,7 +8009,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<String>.value(_i13.dummyValue<String>(
+            _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #createRoom,
@@ -8491,7 +8503,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             #reason: reason,
           },
         ),
-        returnValue: _i6.Future<String>.value(_i13.dummyValue<String>(
+        returnValue: _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #knockRoom,
@@ -8503,7 +8515,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<String>.value(_i13.dummyValue<String>(
+            _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #knockRoom,
@@ -9511,7 +9523,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             authData,
           ],
         ),
-        returnValue: _i6.Future<String>.value(_i13.dummyValue<String>(
+        returnValue: _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #postRoomKeysVersion,
@@ -9522,7 +9534,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<String>.value(_i13.dummyValue<String>(
+            _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #postRoomKeysVersion,
@@ -9770,7 +9782,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             #thirdPartySigned: thirdPartySigned,
           },
         ),
-        returnValue: _i6.Future<String>.value(_i13.dummyValue<String>(
+        returnValue: _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #joinRoomById,
@@ -9782,7 +9794,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<String>.value(_i13.dummyValue<String>(
+            _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #joinRoomById,
@@ -10042,7 +10054,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             body,
           ],
         ),
-        returnValue: _i6.Future<String>.value(_i13.dummyValue<String>(
+        returnValue: _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #sendMessage,
@@ -10055,7 +10067,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<String>.value(_i13.dummyValue<String>(
+            _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #sendMessage,
@@ -10122,7 +10134,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             body,
           ],
         ),
-        returnValue: _i6.Future<String>.value(_i13.dummyValue<String>(
+        returnValue: _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #setRoomStateWithKey,
@@ -10135,7 +10147,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<String>.value(_i13.dummyValue<String>(
+            _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #setRoomStateWithKey,
@@ -10183,7 +10195,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ],
           {#additionalCreators: additionalCreators},
         ),
-        returnValue: _i6.Future<String>.value(_i13.dummyValue<String>(
+        returnValue: _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #upgradeRoom,
@@ -10195,7 +10207,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<String>.value(_i13.dummyValue<String>(
+            _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #upgradeRoom,
@@ -10443,7 +10455,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
             body,
           ],
         ),
-        returnValue: _i6.Future<String>.value(_i13.dummyValue<String>(
+        returnValue: _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #defineFilter,
@@ -10454,7 +10466,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
           ),
         )),
         returnValueForMissingStub:
-            _i6.Future<String>.value(_i13.dummyValue<String>(
+            _i6.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #defineFilter,
@@ -10716,7 +10728,7 @@ class MockClient extends _i1.Mock implements _i2.Client {
   _i6.Future<Map<String, Object?>> uploadContentToMXC(
     String? serverName,
     String? mediaId,
-    _i15.Uint8List? body, {
+    _i16.Uint8List? body, {
     String? filename,
     String? contentType,
   }) =>
@@ -10743,15 +10755,15 @@ class MockClient extends _i1.Mock implements _i2.Client {
 /// A class which mocks [MatrixService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockMatrixService extends _i1.Mock implements _i17.MatrixService {
+class MockMatrixService extends _i1.Mock implements _i18.MatrixService {
   @override
   String get clientName => (super.noSuchMethod(
         Invocation.getter(#clientName),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.getter(#clientName),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.getter(#clientName),
         ),
@@ -10785,6 +10797,19 @@ class MockMatrixService extends _i1.Mock implements _i17.MatrixService {
       ) as bool);
 
   @override
+  _i8.SelectionService get selection => (super.noSuchMethod(
+        Invocation.getter(#selection),
+        returnValue: _FakeSelectionService_74(
+          this,
+          Invocation.getter(#selection),
+        ),
+        returnValueForMissingStub: _FakeSelectionService_74(
+          this,
+          Invocation.getter(#selection),
+        ),
+      ) as _i8.SelectionService);
+
+  @override
   _i6.Stream<_i2.UiaRequest<dynamic>> get onUiaRequest => (super.noSuchMethod(
         Invocation.getter(#onUiaRequest),
         returnValue: _i6.Stream<_i2.UiaRequest<dynamic>>.empty(),
@@ -10813,62 +10838,6 @@ class MockMatrixService extends _i1.Mock implements _i17.MatrixService {
       ) as bool);
 
   @override
-  Set<String> get selectedSpaceIds => (super.noSuchMethod(
-        Invocation.getter(#selectedSpaceIds),
-        returnValue: <String>{},
-        returnValueForMissingStub: <String>{},
-      ) as Set<String>);
-
-  @override
-  List<_i18.SpaceNode> get spaceTree => (super.noSuchMethod(
-        Invocation.getter(#spaceTree),
-        returnValue: <_i18.SpaceNode>[],
-        returnValueForMissingStub: <_i18.SpaceNode>[],
-      ) as List<_i18.SpaceNode>);
-
-  @override
-  List<_i2.Room> get spaces => (super.noSuchMethod(
-        Invocation.getter(#spaces),
-        returnValue: <_i2.Room>[],
-        returnValueForMissingStub: <_i2.Room>[],
-      ) as List<_i2.Room>);
-
-  @override
-  List<_i2.Room> get topLevelSpaces => (super.noSuchMethod(
-        Invocation.getter(#topLevelSpaces),
-        returnValue: <_i2.Room>[],
-        returnValueForMissingStub: <_i2.Room>[],
-      ) as List<_i2.Room>);
-
-  @override
-  List<_i2.Room> get rooms => (super.noSuchMethod(
-        Invocation.getter(#rooms),
-        returnValue: <_i2.Room>[],
-        returnValueForMissingStub: <_i2.Room>[],
-      ) as List<_i2.Room>);
-
-  @override
-  List<_i2.Room> get invitedRooms => (super.noSuchMethod(
-        Invocation.getter(#invitedRooms),
-        returnValue: <_i2.Room>[],
-        returnValueForMissingStub: <_i2.Room>[],
-      ) as List<_i2.Room>);
-
-  @override
-  List<_i2.Room> get invitedSpaces => (super.noSuchMethod(
-        Invocation.getter(#invitedSpaces),
-        returnValue: <_i2.Room>[],
-        returnValueForMissingStub: <_i2.Room>[],
-      ) as List<_i2.Room>);
-
-  @override
-  List<_i2.Room> get orphanRooms => (super.noSuchMethod(
-        Invocation.getter(#orphanRooms),
-        returnValue: <_i2.Room>[],
-        returnValueForMissingStub: <_i2.Room>[],
-      ) as List<_i2.Room>);
-
-  @override
   bool get syncing => (super.noSuchMethod(
         Invocation.getter(#syncing),
         returnValue: false,
@@ -10879,6 +10848,15 @@ class MockMatrixService extends _i1.Mock implements _i17.MatrixService {
   set isLoggedInForTest(bool? value) => super.noSuchMethod(
         Invocation.setter(
           #isLoggedInForTest,
+          value,
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  set selection(_i8.SelectionService? value) => super.noSuchMethod(
+        Invocation.setter(
+          #selection,
           value,
         ),
         returnValueForMissingStub: null,
@@ -11004,123 +10982,30 @@ class MockMatrixService extends _i1.Mock implements _i17.MatrixService {
       );
 
   @override
-  void selectSpace(String? spaceId) => super.noSuchMethod(
-        Invocation.method(
-          #selectSpace,
-          [spaceId],
-        ),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  void toggleSpaceSelection(String? spaceId) => super.noSuchMethod(
-        Invocation.method(
-          #toggleSpaceSelection,
-          [spaceId],
-        ),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  void clearSpaceSelection() => super.noSuchMethod(
-        Invocation.method(
-          #clearSpaceSelection,
-          [],
-        ),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  void selectRoom(String? roomId) => super.noSuchMethod(
-        Invocation.method(
-          #selectRoom,
-          [roomId],
-        ),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  void updateSpaceOrder(List<String>? order) => super.noSuchMethod(
-        Invocation.method(
-          #updateSpaceOrder,
-          [order],
-        ),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  String? inviterDisplayName(_i2.Room? room) => (super.noSuchMethod(
-        Invocation.method(
-          #inviterDisplayName,
-          [room],
-        ),
-        returnValueForMissingStub: null,
-      ) as String?);
-
-  @override
-  List<_i2.Room> roomsForSpace(String? spaceId) => (super.noSuchMethod(
-        Invocation.method(
-          #roomsForSpace,
-          [spaceId],
-        ),
-        returnValue: <_i2.Room>[],
-        returnValueForMissingStub: <_i2.Room>[],
-      ) as List<_i2.Room>);
-
-  @override
-  Set<String> spaceMemberships(String? roomId) => (super.noSuchMethod(
-        Invocation.method(
-          #spaceMemberships,
-          [roomId],
-        ),
-        returnValue: <String>{},
-        returnValueForMissingStub: <String>{},
-      ) as Set<String>);
-
-  @override
-  int unreadCountForSpace(String? spaceId) => (super.noSuchMethod(
-        Invocation.method(
-          #unreadCountForSpace,
-          [spaceId],
-        ),
-        returnValue: 0,
-        returnValueForMissingStub: 0,
-      ) as int);
-
-  @override
-  void invalidateSpaceTree() => super.noSuchMethod(
-        Invocation.method(
-          #invalidateSpaceTree,
-          [],
-        ),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  _i6.Future<_i8.ServerAuthCapabilities> getServerAuthCapabilities(
+  _i6.Future<_i9.ServerAuthCapabilities> getServerAuthCapabilities(
           String? homeserver) =>
       (super.noSuchMethod(
         Invocation.method(
           #getServerAuthCapabilities,
           [homeserver],
         ),
-        returnValue: _i6.Future<_i8.ServerAuthCapabilities>.value(
-            _FakeServerAuthCapabilities_74(
+        returnValue: _i6.Future<_i9.ServerAuthCapabilities>.value(
+            _FakeServerAuthCapabilities_75(
           this,
           Invocation.method(
             #getServerAuthCapabilities,
             [homeserver],
           ),
         )),
-        returnValueForMissingStub: _i6.Future<_i8.ServerAuthCapabilities>.value(
-            _FakeServerAuthCapabilities_74(
+        returnValueForMissingStub: _i6.Future<_i9.ServerAuthCapabilities>.value(
+            _FakeServerAuthCapabilities_75(
           this,
           Invocation.method(
             #getServerAuthCapabilities,
             [homeserver],
           ),
         )),
-      ) as _i6.Future<_i8.ServerAuthCapabilities>);
+      ) as _i6.Future<_i9.ServerAuthCapabilities>);
 
   @override
   _i6.Future<void> init({bool? restoreSession = true}) => (super.noSuchMethod(
@@ -11248,32 +11133,32 @@ class MockMatrixService extends _i1.Mock implements _i17.MatrixService {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockScaffoldMessengerState extends _i1.Mock
-    implements _i9.ScaffoldMessengerState {
+    implements _i10.ScaffoldMessengerState {
   @override
-  _i9.ScaffoldMessenger get widget => (super.noSuchMethod(
+  _i10.ScaffoldMessenger get widget => (super.noSuchMethod(
         Invocation.getter(#widget),
-        returnValue: _FakeScaffoldMessenger_75(
+        returnValue: _FakeScaffoldMessenger_76(
           this,
           Invocation.getter(#widget),
         ),
-        returnValueForMissingStub: _FakeScaffoldMessenger_75(
+        returnValueForMissingStub: _FakeScaffoldMessenger_76(
           this,
           Invocation.getter(#widget),
         ),
-      ) as _i9.ScaffoldMessenger);
+      ) as _i10.ScaffoldMessenger);
 
   @override
-  _i11.BuildContext get context => (super.noSuchMethod(
+  _i12.BuildContext get context => (super.noSuchMethod(
         Invocation.getter(#context),
-        returnValue: _FakeBuildContext_76(
+        returnValue: _FakeBuildContext_77(
           this,
           Invocation.getter(#context),
         ),
-        returnValueForMissingStub: _FakeBuildContext_76(
+        returnValueForMissingStub: _FakeBuildContext_77(
           this,
           Invocation.getter(#context),
         ),
-      ) as _i11.BuildContext);
+      ) as _i12.BuildContext);
 
   @override
   bool get mounted => (super.noSuchMethod(
@@ -11292,10 +11177,10 @@ class MockScaffoldMessengerState extends _i1.Mock
       );
 
   @override
-  _i9.ScaffoldFeatureController<_i20.SnackBar, _i20.SnackBarClosedReason>
+  _i10.ScaffoldFeatureController<_i20.SnackBar, _i20.SnackBarClosedReason>
       showSnackBar(
     _i20.SnackBar? snackBar, {
-    _i11.AnimationStyle? snackBarAnimationStyle,
+    _i12.AnimationStyle? snackBarAnimationStyle,
   }) =>
           (super.noSuchMethod(
             Invocation.method(
@@ -11303,7 +11188,7 @@ class MockScaffoldMessengerState extends _i1.Mock
               [snackBar],
               {#snackBarAnimationStyle: snackBarAnimationStyle},
             ),
-            returnValue: _FakeScaffoldFeatureController_77<_i20.SnackBar,
+            returnValue: _FakeScaffoldFeatureController_78<_i20.SnackBar,
                 _i20.SnackBarClosedReason>(
               this,
               Invocation.method(
@@ -11312,7 +11197,7 @@ class MockScaffoldMessengerState extends _i1.Mock
                 {#snackBarAnimationStyle: snackBarAnimationStyle},
               ),
             ),
-            returnValueForMissingStub: _FakeScaffoldFeatureController_77<
+            returnValueForMissingStub: _FakeScaffoldFeatureController_78<
                 _i20.SnackBar, _i20.SnackBarClosedReason>(
               this,
               Invocation.method(
@@ -11321,7 +11206,7 @@ class MockScaffoldMessengerState extends _i1.Mock
                 {#snackBarAnimationStyle: snackBarAnimationStyle},
               ),
             ),
-          ) as _i9.ScaffoldFeatureController<_i20.SnackBar,
+          ) as _i10.ScaffoldFeatureController<_i20.SnackBar,
               _i20.SnackBarClosedReason>);
 
   @override
@@ -11360,7 +11245,7 @@ class MockScaffoldMessengerState extends _i1.Mock
       );
 
   @override
-  _i9.ScaffoldFeatureController<_i21.MaterialBanner,
+  _i10.ScaffoldFeatureController<_i21.MaterialBanner,
       _i21.MaterialBannerClosedReason> showMaterialBanner(
           _i21.MaterialBanner? materialBanner) =>
       (super.noSuchMethod(
@@ -11368,7 +11253,7 @@ class MockScaffoldMessengerState extends _i1.Mock
           #showMaterialBanner,
           [materialBanner],
         ),
-        returnValue: _FakeScaffoldFeatureController_77<_i21.MaterialBanner,
+        returnValue: _FakeScaffoldFeatureController_78<_i21.MaterialBanner,
             _i21.MaterialBannerClosedReason>(
           this,
           Invocation.method(
@@ -11376,7 +11261,7 @@ class MockScaffoldMessengerState extends _i1.Mock
             [materialBanner],
           ),
         ),
-        returnValueForMissingStub: _FakeScaffoldFeatureController_77<
+        returnValueForMissingStub: _FakeScaffoldFeatureController_78<
             _i21.MaterialBanner, _i21.MaterialBannerClosedReason>(
           this,
           Invocation.method(
@@ -11384,7 +11269,7 @@ class MockScaffoldMessengerState extends _i1.Mock
             [materialBanner],
           ),
         ),
-      ) as _i9.ScaffoldFeatureController<_i21.MaterialBanner,
+      ) as _i10.ScaffoldFeatureController<_i21.MaterialBanner,
           _i21.MaterialBannerClosedReason>);
 
   @override
@@ -11423,26 +11308,26 @@ class MockScaffoldMessengerState extends _i1.Mock
       );
 
   @override
-  _i11.Widget build(_i11.BuildContext? context) => (super.noSuchMethod(
+  _i12.Widget build(_i12.BuildContext? context) => (super.noSuchMethod(
         Invocation.method(
           #build,
           [context],
         ),
-        returnValue: _FakeWidget_78(
+        returnValue: _FakeWidget_79(
           this,
           Invocation.method(
             #build,
             [context],
           ),
         ),
-        returnValueForMissingStub: _FakeWidget_78(
+        returnValueForMissingStub: _FakeWidget_79(
           this,
           Invocation.method(
             #build,
             [context],
           ),
         ),
-      ) as _i11.Widget);
+      ) as _i12.Widget);
 
   @override
   void dispose() => super.noSuchMethod(
@@ -11463,7 +11348,7 @@ class MockScaffoldMessengerState extends _i1.Mock
       );
 
   @override
-  void didUpdateWidget(_i9.ScaffoldMessenger? oldWidget) => super.noSuchMethod(
+  void didUpdateWidget(_i10.ScaffoldMessenger? oldWidget) => super.noSuchMethod(
         Invocation.method(
           #didUpdateWidget,
           [oldWidget],
@@ -11508,7 +11393,7 @@ class MockScaffoldMessengerState extends _i1.Mock
       );
 
   @override
-  void debugFillProperties(_i10.DiagnosticPropertiesBuilder? properties) =>
+  void debugFillProperties(_i11.DiagnosticPropertiesBuilder? properties) =>
       super.noSuchMethod(
         Invocation.method(
           #debugFillProperties,
@@ -11519,7 +11404,7 @@ class MockScaffoldMessengerState extends _i1.Mock
 
   @override
   String toString(
-          {_i10.DiagnosticLevel? minLevel = _i10.DiagnosticLevel.info}) =>
+          {_i11.DiagnosticLevel? minLevel = _i11.DiagnosticLevel.info}) =>
       super.toString();
 
   @override
@@ -11528,14 +11413,14 @@ class MockScaffoldMessengerState extends _i1.Mock
           #toStringShort,
           [],
         ),
-        returnValue: _i13.dummyValue<String>(
+        returnValue: _i14.dummyValue<String>(
           this,
           Invocation.method(
             #toStringShort,
             [],
           ),
         ),
-        returnValueForMissingStub: _i13.dummyValue<String>(
+        returnValueForMissingStub: _i14.dummyValue<String>(
           this,
           Invocation.method(
             #toStringShort,
@@ -11545,9 +11430,9 @@ class MockScaffoldMessengerState extends _i1.Mock
       ) as String);
 
   @override
-  _i10.DiagnosticsNode toDiagnosticsNode({
+  _i11.DiagnosticsNode toDiagnosticsNode({
     String? name,
-    _i10.DiagnosticsTreeStyle? style,
+    _i11.DiagnosticsTreeStyle? style,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -11558,7 +11443,7 @@ class MockScaffoldMessengerState extends _i1.Mock
             #style: style,
           },
         ),
-        returnValue: _FakeDiagnosticsNode_79(
+        returnValue: _FakeDiagnosticsNode_80(
           this,
           Invocation.method(
             #toDiagnosticsNode,
@@ -11569,7 +11454,7 @@ class MockScaffoldMessengerState extends _i1.Mock
             },
           ),
         ),
-        returnValueForMissingStub: _FakeDiagnosticsNode_79(
+        returnValueForMissingStub: _FakeDiagnosticsNode_80(
           this,
           Invocation.method(
             #toDiagnosticsNode,
@@ -11580,27 +11465,27 @@ class MockScaffoldMessengerState extends _i1.Mock
             },
           ),
         ),
-      ) as _i10.DiagnosticsNode);
+      ) as _i11.DiagnosticsNode);
 
   @override
-  _i12.Ticker createTicker(_i12.TickerCallback? onTick) => (super.noSuchMethod(
+  _i13.Ticker createTicker(_i13.TickerCallback? onTick) => (super.noSuchMethod(
         Invocation.method(
           #createTicker,
           [onTick],
         ),
-        returnValue: _FakeTicker_80(
+        returnValue: _FakeTicker_81(
           this,
           Invocation.method(
             #createTicker,
             [onTick],
           ),
         ),
-        returnValueForMissingStub: _FakeTicker_80(
+        returnValueForMissingStub: _FakeTicker_81(
           this,
           Invocation.method(
             #createTicker,
             [onTick],
           ),
         ),
-      ) as _i12.Ticker);
+      ) as _i13.Ticker);
 }

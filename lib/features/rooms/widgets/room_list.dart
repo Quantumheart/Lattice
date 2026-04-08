@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/rooms/services/room_list_search_controller.dart';
 import 'package:lattice/features/rooms/widgets/invite_tile.dart';
 import 'package:lattice/features/rooms/widgets/message_search_tiles.dart';
@@ -117,8 +118,8 @@ class _RoomListState extends State<RoomList>
     }
   }
 
-  String _appBarTitle(MatrixService matrix) {
-    final ids = matrix.selectedSpaceIds;
+  String _appBarTitle(SelectionService selection, MatrixService matrix) {
+    final ids = selection.selectedSpaceIds;
     if (ids.isEmpty) return 'Chats';
     if (ids.length == 1) {
       return matrix.client
@@ -131,19 +132,20 @@ class _RoomListState extends State<RoomList>
 
   @override
   Widget build(BuildContext context) {
-    final matrix = context.watch<MatrixService>();
+    final selection = context.watch<SelectionService>();
+    final matrix = context.read<MatrixService>();
     final prefs = context.watch<PreferencesService>();
     final cs = Theme.of(context).colorScheme;
 
-    final items = buildSectionItems(matrix, prefs, _query);
+    final items = buildSectionItems(selection, prefs, _query);
 
     // Pre-compute context menu eligibility data once for all tiles.
-    final selectedSpaceCanManage = matrix.selectedSpaceIds.any((id) {
+    final selectedSpaceCanManage = selection.selectedSpaceIds.any((id) {
       final space = matrix.client.getRoomById(id);
       return space != null && space.canChangeStateEvent('m.space.child');
     });
     final manageableSpaceIds = <String>{
-      for (final s in matrix.spaces)
+      for (final s in selection.spaces)
         if (s.canChangeStateEvent('m.space.child')) s.id,
     };
 
@@ -190,7 +192,7 @@ class _RoomListState extends State<RoomList>
                       onChanged: (v) {
                         setState(() => _query = v);
                         _messageSearch.onQueryChanged(v,
-                            scopeRoomIds: spaceRoomIds(matrix),);
+                            scopeRoomIds: spaceRoomIds(selection),);
                       },
                       decoration: InputDecoration(
                         hintText: 'Search\u2026',
@@ -210,7 +212,7 @@ class _RoomListState extends State<RoomList>
                     ),
                   )
                 : Text(
-                    _appBarTitle(matrix),
+                    _appBarTitle(selection, matrix),
                     key: const ValueKey('title'),
                   ),
           ),
@@ -263,16 +265,17 @@ class _RoomListState extends State<RoomList>
                             HeaderItem() => RoomSectionHeader(
                                 item: item,
                                 prefs: prefs,
-                                matrix: matrix,
+                                selection: selection,
+                                matrixService: matrix,
                               ),
                             RoomItem() => Padding(
                                 padding: EdgeInsets.only(
                                     left: item.depth * 16.0,),
                                 child: Builder(builder: (_) {
-                                  final memberships = matrix.spaceMemberships(item.room.id);
+                                  final memberships = selection.spaceMemberships(item.room.id);
                                   return RoomTile(
                                     room: item.room,
-                                    isSelected: matrix.selectedRoomId == item.room.id,
+                                    isSelected: selection.selectedRoomId == item.room.id,
                                     memberships: memberships,
                                     hasContextMenu: selectedSpaceCanManage ||
                                         manageableSpaceIds.isNotEmpty,

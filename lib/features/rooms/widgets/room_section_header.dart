@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/rooms/widgets/new_room_dialog.dart';
 import 'package:lattice/features/rooms/widgets/room_list_models.dart';
 import 'package:lattice/features/spaces/widgets/create_subspace_dialog.dart';
@@ -15,12 +16,13 @@ enum _HeaderAddAction { createRoom, createSubspace }
 // ── Section header ──────────────────────────────────────────
 class RoomSectionHeader extends StatelessWidget {
   const RoomSectionHeader({
-    required this.item, required this.prefs, required this.matrix, super.key,
+    required this.item, required this.prefs, required this.selection, required this.matrixService, super.key,
   });
 
   final HeaderItem item;
   final PreferencesService prefs;
-  final MatrixService matrix;
+  final SelectionService selection;
+  final MatrixService matrixService;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +31,7 @@ class RoomSectionHeader extends StatelessWidget {
     final isCollapsed =
         prefs.collapsedSpaceSections.contains(item.sectionKey);
 
-    final spaceRoom = matrix.client.getRoomById(item.sectionKey);
+    final spaceRoom = matrixService.client.getRoomById(item.sectionKey);
     final canManageChildren = item.isSpace &&
         (spaceRoom?.canChangeStateEvent('m.space.child') ?? false);
 
@@ -113,7 +115,7 @@ class RoomSectionHeader extends StatelessWidget {
         if (data is SpaceDragData) {
           // Reject dropping a space onto itself or its own descendant.
           if (wouldCreateCycle(
-              matrix.spaceTree, item.sectionKey, data.spaceId,)) {
+              selection.spaceTree, item.sectionKey, data.spaceId,)) {
             return false;
           }
         }
@@ -213,15 +215,15 @@ class RoomSectionHeader extends StatelessWidget {
         case _HeaderAddAction.createRoom:
           unawaited(NewRoomDialog.show(
             context,
-            matrixService: matrix,
+            matrixService: matrixService,
             parentSpaceIds: {item.sectionKey},
           ),);
         case _HeaderAddAction.createSubspace:
-          final spaceRoom = matrix.client.getRoomById(item.sectionKey);
+          final spaceRoom = matrixService.client.getRoomById(item.sectionKey);
           if (spaceRoom != null) {
             unawaited(CreateSubspaceDialog.show(
               context,
-              matrixService: matrix,
+              matrixService: matrixService,
               parentSpace: spaceRoom,
             ),);
           }
@@ -230,7 +232,7 @@ class RoomSectionHeader extends StatelessWidget {
   }
 
   Future<void> _handleDrop(BuildContext context, ReparentDragData data) async {
-    final targetRoom = matrix.client.getRoomById(item.sectionKey);
+    final targetRoom = matrixService.client.getRoomById(item.sectionKey);
     if (targetRoom == null) return;
 
     try {
@@ -239,7 +241,7 @@ class RoomSectionHeader extends StatelessWidget {
           // Find old parent by scanning spaces for one whose children contain
           // the dragged space.
           String? oldParentId;
-          for (final space in matrix.spaces) {
+          for (final space in selection.spaces) {
             if (space.spaceChildren.any((c) => c.roomId == spaceId)) {
               oldParentId = space.id;
               break;
@@ -248,7 +250,7 @@ class RoomSectionHeader extends StatelessWidget {
 
           await targetRoom.setSpaceChild(spaceId);
           if (oldParentId != null && oldParentId != item.sectionKey) {
-            final oldParent = matrix.client.getRoomById(oldParentId);
+            final oldParent = matrixService.client.getRoomById(oldParentId);
             await oldParent?.removeSpaceChild(spaceId);
           }
 
@@ -257,12 +259,12 @@ class RoomSectionHeader extends StatelessWidget {
           if (currentParentSpaceId != null &&
               currentParentSpaceId != item.sectionKey) {
             final oldParent =
-                matrix.client.getRoomById(currentParentSpaceId);
+                matrixService.client.getRoomById(currentParentSpaceId);
             await oldParent?.removeSpaceChild(roomId);
           }
       }
 
-      matrix.invalidateSpaceTree();
+      selection.invalidateSpaceTree();
     } catch (e) {
       debugPrint('[Lattice] Reparent failed: $e');
       if (context.mounted) {

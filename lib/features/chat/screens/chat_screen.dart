@@ -7,6 +7,7 @@ import 'package:lattice/core/models/upload_state.dart';
 import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/core/utils/platform_info.dart';
 import 'package:lattice/features/calling/models/call_constants.dart';
 import 'package:lattice/features/chat/services/chat_message_actions.dart';
@@ -498,7 +499,7 @@ class _ChatScreenState extends State<ChatScreen>
           onPasteImage: (_isDesktop || kIsWeb) ? _handlePasteImage : null,
           uploadNotifier: _compose.uploadNotifier,
           room: room,
-          joinedRooms: matrix.rooms,
+          joinedRooms: context.read<SelectionService>().rooms,
           typingController: _typingCtrl,
           focusNode: _composeFocusNode,
           voiceController: _voiceCtrl,

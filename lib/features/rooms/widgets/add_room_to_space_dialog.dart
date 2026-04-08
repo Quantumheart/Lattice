@@ -38,8 +38,8 @@ class _AddRoomToSpaceDialogState extends State<AddRoomToSpaceDialog> {
   bool _loading = false;
 
   List<Room> get _eligibleSpaces {
-    final memberships = widget.matrixService.spaceMemberships(widget.room.id);
-    return widget.matrixService.spaces
+    final memberships = widget.matrixService.selection.spaceMemberships(widget.room.id);
+    return widget.matrixService.selection.spaces
         .where((s) =>
             s.canChangeStateEvent('m.space.child') &&
             !memberships.contains(s.id),)
@@ -69,7 +69,7 @@ class _AddRoomToSpaceDialogState extends State<AddRoomToSpaceDialog> {
       }
     }
 
-    widget.matrixService.invalidateSpaceTree();
+    widget.matrixService.selection.invalidateSpaceTree();
 
     if (!mounted) return;
 

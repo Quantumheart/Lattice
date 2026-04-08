@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -34,6 +35,7 @@ class _TestServiceFactory extends MatrixServiceFactory {
     when(mockClient.rooms).thenReturn([]);
     when(mockClient.userID).thenReturn('@$clientName:example.com');
     when(mockClient.dispose()).thenAnswer((_) async {});
+    when(mockClient.onSync).thenReturn(CachedStreamController<SyncUpdate>());
     final s = MatrixService(
       client: mockClient,
       storage: storage ?? const FlutterSecureStorage(),
@@ -164,6 +166,7 @@ void main() {
 
       final newMockClient = MockClient();
       when(newMockClient.rooms).thenReturn([]);
+      when(newMockClient.onSync).thenReturn(CachedStreamController<SyncUpdate>());
       final newService = MatrixService(
         client: newMockClient,
         storage: mockStorage,
@@ -277,6 +280,7 @@ class _MixedLoginFactory extends MatrixServiceFactory {
     final mockClient = MockClient();
     when(mockClient.rooms).thenReturn([]);
     when(mockClient.userID).thenReturn('@$clientName:example.com');
+    when(mockClient.onSync).thenReturn(CachedStreamController<SyncUpdate>());
     final s = MatrixService(
       client: mockClient,
       storage: storage ?? _storage,
@@ -309,6 +313,7 @@ class _CountingFactory extends MatrixServiceFactory {
     final mockClient = MockClient();
     when(mockClient.rooms).thenReturn([]);
     when(mockClient.dispose()).thenAnswer((_) async {});
+    when(mockClient.onSync).thenReturn(CachedStreamController<SyncUpdate>());
     final s = MatrixService(
       client: mockClient,
       storage: storage ?? _storage,

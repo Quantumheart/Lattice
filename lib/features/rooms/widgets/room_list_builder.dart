@@ -1,6 +1,6 @@
 import 'package:lattice/core/models/space_node.dart';
-import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/rooms/widgets/room_list_models.dart';
 import 'package:matrix/matrix.dart';
 
@@ -24,7 +24,7 @@ List<Room> applySearch(List<Room> rooms, String query) {
   return rooms.where((r) => roomMatchesQuery(r, q)).toList();
 }
 
-Set<String>? spaceRoomIds(MatrixService matrix) {
+Set<String>? spaceRoomIds(SelectionService matrix) {
   final selectedIds = matrix.selectedSpaceIds;
   if (selectedIds.isEmpty) return null;
 
@@ -42,7 +42,7 @@ Set<String>? spaceRoomIds(MatrixService matrix) {
 }
 
 List<ListItem> buildSectionItems(
-  MatrixService matrix,
+  SelectionService matrix,
   PreferencesService prefs,
   String query,
 ) {
@@ -131,7 +131,7 @@ void _addSpaceSection(
   List<ListItem> items,
   SpaceNode node,
   int depth,
-  MatrixService matrix,
+  SelectionService matrix,
   Set<String> collapsed,
   Set<String> pinnedIds,
   String query,

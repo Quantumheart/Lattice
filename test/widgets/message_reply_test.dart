@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/core/utils/reply_fallback.dart';
 import 'package:lattice/features/chat/screens/chat_screen.dart';
 import 'package:matrix/matrix.dart';
@@ -83,6 +84,7 @@ void main() {
     late MockRoom mockRoom;
     late MockTimeline mockTimeline;
     late PreferencesService prefsService;
+    late SelectionService selectionService;
 
     MockEvent makeEvent({
       required String eventId,
@@ -121,10 +123,14 @@ void main() {
       mockTimeline = MockTimeline();
       prefsService = PreferencesService();
 
+      when(mockClient.onSync).thenReturn(CachedStreamController());
+      when(mockClient.rooms).thenReturn([]);
+      selectionService = SelectionService(client: mockClient);
+
       when(mockMatrix.client).thenReturn(mockClient);
+      when(mockMatrix.selection).thenReturn(selectionService);
       when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
       when(mockClient.userID).thenReturn('@me:example.com');
-      when(mockClient.onSync).thenReturn(CachedStreamController());
       when(mockRoom.getLocalizedDisplayname()).thenReturn('Test Room');
       when(mockRoom.id).thenReturn('!room:example.com');
       when(mockRoom.receiptState).thenReturn(LatestReceiptState.empty());
@@ -139,6 +145,7 @@ void main() {
       return MultiProvider(
         providers: [
           ChangeNotifierProvider<MatrixService>.value(value: mockMatrix),
+          ChangeNotifierProvider<SelectionService>.value(value: selectionService),
           ChangeNotifierProvider(create: (ctx) => CallService(client: ctx.read<MatrixService>().client)),
           ChangeNotifierProvider<PreferencesService>.value(
               value: prefsService,),

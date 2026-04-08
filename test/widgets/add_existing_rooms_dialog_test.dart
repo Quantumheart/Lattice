@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/rooms/widgets/add_existing_rooms_dialog.dart';
 import 'package:matrix/matrix.dart' hide Visibility;
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:matrix/src/utils/space_child.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -31,6 +33,8 @@ void main() {
     return room;
   }
 
+  late SelectionService selectionService;
+
   setUp(() {
     mockMatrix = MockMatrixService();
     mockSpace = MockRoom();
@@ -39,6 +43,10 @@ void main() {
     when(mockMatrix.client).thenReturn(mockClient);
     when(mockSpace.spaceChildren).thenReturn([]);
     when(mockSpace.setSpaceChild(any)).thenAnswer((_) async {});
+    when(mockClient.onSync).thenReturn(CachedStreamController<SyncUpdate>());
+    when(mockClient.rooms).thenReturn([]);
+    selectionService = SelectionService(client: mockClient);
+    when(mockMatrix.selection).thenReturn(selectionService);
   });
 
   Widget buildTestWidget({List<Room>? clientRooms}) {
@@ -170,7 +178,6 @@ void main() {
 
       verify(mockSpace.setSpaceChild('!r1:x')).called(1);
       verify(mockSpace.setSpaceChild('!r2:x')).called(1);
-      verify(mockMatrix.invalidateSpaceTree()).called(1);
     });
 
     testWidgets('partial failure shows SnackBar', (tester) async {

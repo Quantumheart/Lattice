@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/rooms/widgets/room_list_models.dart';
 import 'package:lattice/features/rooms/widgets/room_section_header.dart';
 import 'package:lattice/features/spaces/widgets/space_reparent_controller.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
@@ -24,6 +26,7 @@ void main() {
   late MockPreferencesService mockPrefs;
   late MockRoom mockSpaceRoom;
   late SpaceReparentController reparentController;
+  late SelectionService selectionService;
 
   setUp(() {
     mockClient = MockClient();
@@ -38,7 +41,10 @@ void main() {
     when(mockSpaceRoom.canChangeStateEvent(any)).thenReturn(true);
     when(mockClient.getRoomById('!space:example.com'))
         .thenReturn(mockSpaceRoom);
-    when(mockMatrix.spaceTree).thenReturn([]);
+    when(mockClient.onSync).thenReturn(CachedStreamController<SyncUpdate>());
+    when(mockClient.rooms).thenReturn([]);
+    selectionService = SelectionService(client: mockClient);
+    when(mockMatrix.selection).thenReturn(selectionService);
   });
 
   Widget buildTestWidget({
@@ -59,7 +65,8 @@ void main() {
           body: RoomSectionHeader(
             item: headerItem,
             prefs: mockPrefs,
-            matrix: mockMatrix,
+            selection: selectionService,
+            matrixService: mockMatrix,
           ),
         ),
       ),

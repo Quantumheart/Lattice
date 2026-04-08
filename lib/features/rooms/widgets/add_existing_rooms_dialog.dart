@@ -82,7 +82,7 @@ class _AddExistingRoomsDialogState extends State<AddExistingRoomsDialog> {
       }
     }
 
-    widget.matrixService.invalidateSpaceTree();
+    widget.matrixService.selection.invalidateSpaceTree();
 
     if (!mounted) return;
 

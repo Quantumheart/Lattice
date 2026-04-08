@@ -7,6 +7,7 @@ import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/rooms/widgets/room_list.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
@@ -27,6 +28,7 @@ void main() {
   late MockRoom mockInvitedRoom;
   late MockClient mockClient;
   late PreferencesService prefs;
+  late SelectionService selectionService;
 
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -49,14 +51,23 @@ void main() {
     when(mockInvitedRoom.client).thenReturn(mockClient);
     when(mockInvitedRoom.avatar).thenReturn(null);
     when(mockInvitedRoom.directChatMatrixID).thenReturn(null);
+    when(mockInvitedRoom.getState(EventTypes.RoomMember, '@me:example.com'))
+        .thenReturn(Event(
+      type: EventTypes.RoomMember,
+      content: {'membership': 'invite'},
+      senderId: '@alice:example.com',
+      eventId: r'$inv',
+      room: mockInvitedRoom,
+      originServerTs: DateTime.now(),
+    ),);
+    when(mockInvitedRoom.unsafeGetUserFromMemoryOrFallback('@alice:example.com'))
+        .thenReturn(User('@alice:example.com',
+            room: mockInvitedRoom, displayName: 'Alice',),);
 
-    when(mockMatrix.invitedRooms).thenReturn([mockInvitedRoom]);
-    when(mockMatrix.inviterDisplayName(mockInvitedRoom)).thenReturn('Alice');
-    when(mockMatrix.spaceTree).thenReturn([]);
-    when(mockMatrix.orphanRooms).thenReturn([]);
-    when(mockMatrix.selectedSpaceIds).thenReturn({});
-    when(mockMatrix.selectedRoomId).thenReturn(null);
-    when(mockMatrix.spaces).thenReturn([]);
+    when(mockClient.rooms).thenReturn([mockInvitedRoom]);
+
+    selectionService = SelectionService(client: mockClient);
+    when(mockMatrix.selection).thenReturn(selectionService);
   });
 
   late GoRouter testRouter;
@@ -89,6 +100,7 @@ void main() {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<MatrixService>.value(value: mockMatrix),
+        ChangeNotifierProvider<SelectionService>.value(value: selectionService),
         ChangeNotifierProvider(create: (ctx) => CallService(client: ctx.read<MatrixService>().client)),
         ChangeNotifierProvider<PreferencesService>.value(value: prefs),
       ],
@@ -109,7 +121,8 @@ void main() {
 
     testWidgets('shows "Pending invite" when inviter is unknown',
         (tester) async {
-      when(mockMatrix.inviterDisplayName(mockInvitedRoom)).thenReturn(null);
+      when(mockInvitedRoom.getState(EventTypes.RoomMember, '@me:example.com'))
+          .thenReturn(null);
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 

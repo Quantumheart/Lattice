@@ -61,7 +61,7 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
   }
 
   void _initTargetSpaces() {
-    final selected = widget.parentSpaceIds ?? widget.matrixService.selectedSpaceIds;
+    final selected = widget.parentSpaceIds ?? widget.matrixService.selection.selectedSpaceIds;
     final eligible = <String>[];
     for (final id in selected) {
       final space = widget.matrixService.client.getRoomById(id);
@@ -223,7 +223,7 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
   }
 
   List<Widget> _buildSpaceSelection() {
-    final selected = widget.matrixService.selectedSpaceIds;
+    final selected = widget.matrixService.selection.selectedSpaceIds;
     final eligible = <Room>[];
     for (final id in selected) {
       final space = widget.matrixService.client.getRoomById(id);
@@ -331,7 +331,7 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
             spaceFailures++;
           }
         }
-        widget.matrixService.invalidateSpaceTree();
+        widget.matrixService.selection.invalidateSpaceTree();
         if (spaceFailures > 0 && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -344,7 +344,7 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
       }
 
       if (!mounted) return;
-      widget.matrixService.selectRoom(roomId);
+      widget.matrixService.selection.selectRoom(roomId);
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;

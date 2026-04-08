@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/spaces/widgets/space_action_dialog.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
@@ -17,19 +19,27 @@ import 'space_action_dialog_test.mocks.dart';
 void main() {
   late MockClient mockClient;
   late MockMatrixService mockMatrixService;
+  late SelectionService selectionService;
 
   setUp(() {
     mockClient = MockClient();
     mockMatrixService = MockMatrixService();
     when(mockMatrixService.client).thenReturn(mockClient);
+    when(mockClient.onSync).thenReturn(CachedStreamController<SyncUpdate>());
+    when(mockClient.rooms).thenReturn([]);
+    selectionService = SelectionService(client: mockClient);
+    when(mockMatrixService.selection).thenReturn(selectionService);
   });
 
   group('CreateSpaceDialog', () {
     Widget buildTestWidget() {
-      return MaterialApp(
-        home: ChangeNotifierProvider<MatrixService>.value(
-          value: mockMatrixService,
-          child: Builder(
+      return MultiProvider(
+        providers: [
+          ChangeNotifierProvider<MatrixService>.value(value: mockMatrixService),
+          ChangeNotifierProvider<SelectionService>.value(value: selectionService),
+        ],
+        child: MaterialApp(
+          home: Builder(
             builder: (context) => Scaffold(
               body: ElevatedButton(
                 onPressed: () => CreateSpaceDialog.show(
@@ -105,7 +115,7 @@ void main() {
         powerLevelContentOverride: anyNamed('powerLevelContentOverride'),
       ),).called(1);
 
-      verify(mockMatrixService.selectSpace('!newspace:example.com')).called(1);
+      expect(selectionService.selectedSpaceIds, contains('!newspace:example.com'));
     });
 
     testWidgets('shows error on failure', (tester) async {
@@ -157,10 +167,13 @@ void main() {
 
   group('JoinSpaceDialog', () {
     Widget buildTestWidget() {
-      return MaterialApp(
-        home: ChangeNotifierProvider<MatrixService>.value(
-          value: mockMatrixService,
-          child: Builder(
+      return MultiProvider(
+        providers: [
+          ChangeNotifierProvider<MatrixService>.value(value: mockMatrixService),
+          ChangeNotifierProvider<SelectionService>.value(value: selectionService),
+        ],
+        child: MaterialApp(
+          home: Builder(
             builder: (context) => Scaffold(
               body: ElevatedButton(
                 onPressed: () => JoinSpaceDialog.show(
@@ -217,7 +230,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(mockClient.joinRoom('#myspace:example.com')).called(1);
-      verify(mockMatrixService.selectSpace('!space:example.com')).called(1);
+      expect(selectionService.selectedSpaceIds, contains('!space:example.com'));
     });
 
     testWidgets('shows error on join failure', (tester) async {

@@ -56,6 +56,7 @@ void main() {
     mockStorage = MockFlutterSecureStorage();
     when(mockClient.rooms).thenReturn([]);
     when(mockClient.database).thenReturn(_FakeDatabase());
+    when(mockClient.onSync).thenReturn(CachedStreamController<SyncUpdate>());
     matrixService = MatrixService(
       client: mockClient,
       storage: mockStorage,

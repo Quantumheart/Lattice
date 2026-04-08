@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/rooms/widgets/new_room_dialog.dart';
 import 'package:lattice/features/rooms/widgets/room_details_panel.dart';
 import 'package:matrix/matrix.dart';
@@ -143,10 +144,14 @@ void main() {
   // ── Room Details builder ────────────────────────────────────────
 
   Widget buildDetailsApp() {
-    return MaterialApp(
-      home: ChangeNotifierProvider<MatrixService>.value(
-        value: matrixService,
-        child: const Scaffold(
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<MatrixService>.value(value: matrixService),
+        ChangeNotifierProvider<SelectionService>.value(
+            value: matrixService.selection,),
+      ],
+      child: const MaterialApp(
+        home: Scaffold(
           body: RoomDetailsPanel(roomId: _roomId),
         ),
       ),
@@ -178,7 +183,7 @@ void main() {
         initialState: anyNamed('initialState'),
       ),).called(1);
       verify(mockClient.waitForRoomInSync(_newRoomId, join: true)).called(1);
-      expect(matrixService.selectedRoomId, _newRoomId);
+      expect(matrixService.selection.selectedRoomId, _newRoomId);
     });
 
     testWidgets('create public room disables encryption', (tester) async {
@@ -327,7 +332,7 @@ void main() {
       when(mockSpace.setSpaceChild(any)).thenAnswer((_) async {});
       when(mockClient.getRoomById(_spaceId)).thenReturn(mockSpace);
 
-      matrixService.selectSpace(_spaceId);
+      matrixService.selection.selectSpace(_spaceId);
       stubCreateRoom(mockClient);
 
       await tester.pumpWidget(MaterialApp(
@@ -428,7 +433,7 @@ void main() {
   group('Room details — leave', () {
     testWidgets('leave room with confirmation', (tester) async {
       when(mockRoom.leave()).thenAnswer((_) async {});
-      matrixService.selectRoom(_roomId);
+      matrixService.selection.selectRoom(_roomId);
 
       await tester.pumpWidget(buildDetailsApp());
       await tester.pumpAndSettle();
@@ -443,11 +448,11 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(mockRoom.leave()).called(1);
-      expect(matrixService.selectedRoomId, isNull);
+      expect(matrixService.selection.selectedRoomId, isNull);
     });
 
     testWidgets('cancel leave does not call room.leave', (tester) async {
-      matrixService.selectRoom(_roomId);
+      matrixService.selection.selectRoom(_roomId);
 
       await tester.pumpWidget(buildDetailsApp());
       await tester.pumpAndSettle();
@@ -459,7 +464,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verifyNever(mockRoom.leave());
-      expect(matrixService.selectedRoomId, _roomId);
+      expect(matrixService.selection.selectedRoomId, _roomId);
     });
   });
 

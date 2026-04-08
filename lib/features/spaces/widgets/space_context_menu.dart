@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/rooms/widgets/add_existing_rooms_dialog.dart';
 import 'package:lattice/features/rooms/widgets/invite_user_dialog.dart';
 import 'package:lattice/features/rooms/widgets/new_room_dialog.dart';
@@ -339,6 +340,7 @@ Future<void> _handleLeave(BuildContext context, Room space) async {
   if (result == null || !result.confirmed || !context.mounted) return;
 
   try {
+    final selection = context.read<SelectionService>();
     final matrix = context.read<MatrixService>();
 
     // Collect child room IDs before leaving (recursive through subspaces).
@@ -348,7 +350,7 @@ Future<void> _handleLeave(BuildContext context, Room space) async {
     }
 
     await space.leave();
-    matrix.clearSpaceSelection();
+    selection.clearSpaceSelection();
 
     // Leave child rooms if requested.
     var failCount = 0;

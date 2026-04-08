@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/services/call_service.dart';
-import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/calling/widgets/voice_banner.dart';
 import 'package:lattice/features/e2ee/widgets/key_backup_banner.dart';
 import 'package:lattice/features/home/widgets/narrow_layout.dart';
@@ -44,10 +44,10 @@ class _HomeShellState extends State<HomeShell> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _syncScheduled = false;
       if (!mounted) return;
-      final matrix = context.read<MatrixService>();
+      final selection = context.read<SelectionService>();
       final roomId = _routeRoomId;
-      if (matrix.selectedRoomId != roomId) {
-        matrix.selectRoom(roomId);
+      if (selection.selectedRoomId != roomId) {
+        selection.selectRoom(roomId);
       }
     });
   }
@@ -86,8 +86,8 @@ class _HomeShellState extends State<HomeShell> {
     final width = MediaQuery.sizeOf(context).width;
     final isWide = width >= _wideBreakpoint;
 
-    final matrix = context.read<MatrixService>();
-    context.select<MatrixService, int>((m) => Object.hashAll(m.spaces.map((s) => s.id)));
+    final selection = context.read<SelectionService>();
+    context.select<SelectionService, int>((s) => Object.hashAll(s.spaces.map((sp) => sp.id)));
     context.select<CallService, (LatticeCallState, String?)>(
       (s) => (s.callState, s.activeCallRoomId),
     );
@@ -110,7 +110,7 @@ class _HomeShellState extends State<HomeShell> {
     return ChangeNotifierProvider<SpaceReparentController>(
       create: (_) => SpaceReparentController(),
       child: CallbackShortcuts(
-        bindings: _buildKeyBindings(matrix),
+        bindings: _buildKeyBindings(selection),
         child: Focus(
           autofocus: true,
           child: Column(
@@ -125,12 +125,12 @@ class _HomeShellState extends State<HomeShell> {
     );
   }
 
-  Map<ShortcutActivator, VoidCallback> _buildKeyBindings(MatrixService matrix) {
-    final spaces = matrix.topLevelSpaces;
+  Map<ShortcutActivator, VoidCallback> _buildKeyBindings(SelectionService selection) {
+    final spaces = selection.topLevelSpaces;
     final bindings = <ShortcutActivator, VoidCallback>{};
 
     bindings[const SingleActivator(LogicalKeyboardKey.digit0,
-        control: true,)] = () => matrix.clearSpaceSelection();
+        control: true,)] = () => selection.clearSpaceSelection();
 
     final digitKeys = [
       LogicalKeyboardKey.digit1,
@@ -146,9 +146,9 @@ class _HomeShellState extends State<HomeShell> {
     for (var i = 0; i < digitKeys.length && i < spaces.length; i++) {
       final spaceId = spaces[i].id;
       bindings[SingleActivator(digitKeys[i], control: true)] =
-          () => matrix.selectSpace(spaceId);
+          () => selection.selectSpace(spaceId);
       bindings[SingleActivator(digitKeys[i], control: true, shift: true)] =
-          () => matrix.toggleSpaceSelection(spaceId);
+          () => selection.toggleSpaceSelection(spaceId);
     }
 
     return bindings;

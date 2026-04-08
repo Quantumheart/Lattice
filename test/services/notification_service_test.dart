@@ -2,6 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/notifications/services/notification_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
@@ -24,6 +25,7 @@ void main() {
   late MockFlutterLocalNotificationsPlugin mockPlugin;
   late PreferencesService prefs;
   late NotificationService service;
+  late SelectionService selectionService;
 
   const roomId = '!room:example.com';
   const ownUserId = '@me:example.com';
@@ -42,7 +44,6 @@ void main() {
     final cachedController = CachedStreamController<SyncUpdate>();
 
     when(mockMatrix.client).thenReturn(mockClient);
-    when(mockMatrix.selectedRoomId).thenReturn(null);
     when(mockClient.userID).thenReturn(ownUserId);
     when(mockClient.getRoomById(roomId)).thenReturn(mockRoom);
     when(mockClient.onSync).thenReturn(cachedController);
@@ -55,6 +56,9 @@ void main() {
         .thenReturn(User(otherUserId, room: mockRoom, displayName: 'Alice'));
     when(mockRoom.unsafeGetUserFromMemoryOrFallback(ownUserId))
         .thenReturn(User(ownUserId, room: mockRoom, displayName: 'Me'));
+    when(mockClient.rooms).thenReturn([]);
+    selectionService = SelectionService(client: mockClient);
+    when(mockMatrix.selection).thenReturn(selectionService);
 
     service = NotificationService(
       matrixService: mockMatrix,
@@ -65,6 +69,7 @@ void main() {
 
   tearDown(() {
     service.dispose();
+    selectionService.dispose();
   });
 
   SyncUpdate makeSyncUpdate({
@@ -176,13 +181,13 @@ void main() {
     });
 
     test('currently selected room suppresses notification', () async {
-      when(mockMatrix.selectedRoomId).thenReturn(roomId);
+      selectionService.selectRoom(roomId);
       await emitMessage();
       verifyNever(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: anyNamed('payload')));
     });
 
     test('foreground toggle overrides selected room suppression', () async {
-      when(mockMatrix.selectedRoomId).thenReturn(roomId);
+      selectionService.selectRoom(roomId);
       await prefs.setForegroundNotificationsEnabled(true);
       await emitMessage();
       verify(mockPlugin.show(id: anyNamed('id'), title: anyNamed('title'), body: anyNamed('body'), notificationDetails: anyNamed('notificationDetails'), payload: roomId)).called(1);

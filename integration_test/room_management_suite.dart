@@ -87,11 +87,11 @@ void roomManagementTests() {
       await tester.pumpAndSettle();
 
       expect(find.text('My New Room'), findsWidgets);
-      expect(matrixService.selectedRoomId, _newRoomId);
+      expect(matrixService.selection.selectedRoomId, _newRoomId);
     });
 
     testWidgets('navigate to room details and back', (tester) async {
-      matrixService.selectRoom(_roomId);
+      matrixService.selection.selectRoom(_roomId);
 
       await tester.pumpWidget(buildRoomTestApp(
         matrixService: matrixService,
@@ -117,7 +117,7 @@ void roomManagementTests() {
 
     testWidgets('leave room from details navigates to home', (tester) async {
       when(mockRoom.leave()).thenAnswer((_) async {});
-      matrixService.selectRoom(_roomId);
+      matrixService.selection.selectRoom(_roomId);
 
       await tester.pumpWidget(buildRoomTestApp(
         matrixService: matrixService,
@@ -139,7 +139,7 @@ void roomManagementTests() {
       await tester.pumpAndSettle();
 
       verify(mockRoom.leave()).called(1);
-      expect(matrixService.selectedRoomId, isNull);
+      expect(matrixService.selection.selectedRoomId, isNull);
       expect(find.text('Home'), findsOneWidget);
     });
 
@@ -172,7 +172,7 @@ void roomManagementTests() {
       await tester.pumpAndSettle();
 
       expect(find.text('Flow Room'), findsWidgets);
-      expect(matrixService.selectedRoomId, _newRoomId);
+      expect(matrixService.selection.selectedRoomId, _newRoomId);
 
       // Navigate to details
       await tester.tap(find.byIcon(Icons.info_outline));
@@ -205,7 +205,7 @@ void roomManagementTests() {
       await tester.pumpAndSettle();
 
       verify(newRoom.leave()).called(1);
-      expect(matrixService.selectedRoomId, isNull);
+      expect(matrixService.selection.selectedRoomId, isNull);
       expect(find.text('Home'), findsOneWidget);
     });
   });

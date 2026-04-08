@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/core/utils/order_utils.dart' as order_utils;
 import 'package:lattice/features/rooms/widgets/add_room_to_space_dialog.dart';
 import 'package:matrix/matrix.dart' hide Visibility;
@@ -16,11 +17,12 @@ Future<void> showRoomContextMenu(
   String? parentSpaceId,
   List<Room>? sectionRooms,
 }) async {
+  final selection = context.read<SelectionService>();
   final matrix = context.read<MatrixService>();
   final cs = Theme.of(context).colorScheme;
 
-  final selectedIds = matrix.selectedSpaceIds;
-  final memberships = matrix.spaceMemberships(room.id);
+  final selectedIds = selection.selectedSpaceIds;
+  final memberships = selection.spaceMemberships(room.id);
 
   Room? activeSpace;
   var canRemove = false;
@@ -33,7 +35,7 @@ Future<void> showRoomContextMenu(
     }
   }
 
-  final canAdd = matrix.spaces.any((s) =>
+  final canAdd = selection.spaces.any((s) =>
       s.canChangeStateEvent('m.space.child') &&
       !memberships.contains(s.id),);
 
@@ -152,7 +154,7 @@ Future<void> _handleReorder(
   int toIndex,
 ) async {
   try {
-    final matrix = context.read<MatrixService>();
+    final selection = context.read<SelectionService>();
     final roomId = orderedRooms[fromIndex].id;
 
     final orderMap = order_utils.buildOrderMap(space);
@@ -176,7 +178,7 @@ Future<void> _handleReorder(
     }
 
     await space.setSpaceChild(roomId, order: newOrder);
-    matrix.invalidateSpaceTree();
+    selection.invalidateSpaceTree();
   } catch (e) {
     debugPrint('[Lattice] Reorder failed: $e');
     if (context.mounted) {
@@ -217,9 +219,9 @@ Future<void> _handleRemoveFromSpace(
   if (confirmed != true || !context.mounted) return;
 
   try {
-    final matrix = context.read<MatrixService>();
+    final selection = context.read<SelectionService>();
     await space.removeSpaceChild(room.id);
-    matrix.invalidateSpaceTree();
+    selection.invalidateSpaceTree();
   } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

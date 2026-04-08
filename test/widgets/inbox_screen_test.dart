@@ -3,10 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/home/widgets/inbox_screen.dart';
 import 'package:lattice/features/notifications/services/inbox_controller.dart';
 import 'package:matrix/matrix.dart' as matrix_sdk;
-import 'package:matrix/matrix.dart' show Client, GetNotificationsResponse, MatrixEvent, Membership, Room, User;
+import 'package:matrix/matrix.dart' show Client, GetNotificationsResponse, MatrixEvent, Membership, Room, SyncUpdate, User;
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
@@ -55,12 +57,6 @@ GetNotificationsResponse _makeResponse(
 
 class _FakeMatrixService extends ChangeNotifier implements MatrixService {
   @override
-  List<Room> get invitedRooms => [];
-
-  @override
-  List<Room> get invitedSpaces => [];
-
-  @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
@@ -68,9 +64,13 @@ void main() {
   late MockClient mockClient;
   late InboxController controller;
   late _FakeMatrixService fakeMatrix;
+  late SelectionService selectionService;
 
   setUp(() {
     mockClient = MockClient();
+    when(mockClient.rooms).thenReturn([]);
+    when(mockClient.onSync)
+        .thenReturn(CachedStreamController<SyncUpdate>());
     final joinedRoom = MockRoom();
     when(joinedRoom.membership).thenReturn(Membership.join);
     when(joinedRoom.client).thenReturn(mockClient);
@@ -81,11 +81,13 @@ void main() {
     when(mockClient.getRoomById(any)).thenReturn(joinedRoom);
     controller = InboxController(client: mockClient);
     fakeMatrix = _FakeMatrixService();
+    selectionService = SelectionService(client: mockClient);
   });
 
   tearDown(() {
     controller.dispose();
     fakeMatrix.dispose();
+    selectionService.dispose();
   });
 
   Widget buildTestWidget() {
@@ -93,6 +95,7 @@ void main() {
       providers: [
         ChangeNotifierProvider<InboxController>.value(value: controller),
         ChangeNotifierProvider<MatrixService>.value(value: fakeMatrix),
+        ChangeNotifierProvider<SelectionService>.value(value: selectionService),
       ],
       child: const MaterialApp(
         home: InboxScreen(),
@@ -211,6 +214,7 @@ void main() {
           providers: [
             ChangeNotifierProvider<InboxController>.value(value: controller),
             ChangeNotifierProvider<MatrixService>.value(value: fakeMatrix),
+        ChangeNotifierProvider<SelectionService>.value(value: selectionService),
           ],
           child: const MaterialApp(home: Scaffold()),
         ),
