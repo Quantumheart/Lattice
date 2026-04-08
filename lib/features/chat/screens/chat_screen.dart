@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:giphy_get/giphy_get.dart';
 import 'package:lattice/core/models/pending_attachment.dart';
 import 'package:lattice/core/models/upload_state.dart';
+import 'package:lattice/core/services/app_config.dart';
 import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
@@ -22,6 +24,7 @@ import 'package:lattice/features/chat/widgets/chat_message_item.dart';
 import 'package:lattice/features/chat/widgets/compose_bar_section.dart';
 import 'package:lattice/features/chat/widgets/desktop_drop_wrapper.dart';
 import 'package:lattice/features/chat/widgets/file_send_handler.dart';
+import 'package:lattice/features/chat/widgets/gif_send_handler.dart';
 import 'package:lattice/features/chat/widgets/join_call_banner.dart';
 import 'package:lattice/features/chat/widgets/read_receipts.dart';
 import 'package:lattice/features/chat/widgets/search_results_body.dart';
@@ -496,6 +499,25 @@ class _ChatScreenState extends State<ChatScreen>
             final attachment = await pickFileAsAttachment();
             if (attachment != null && mounted) _addAttachment(attachment);
           },
+          onGif: AppConfig.instance.giphyEnabled
+              ? () async {
+                  final gif = await GiphyGet.getGif(
+                    context: context,
+                    apiKey: AppConfig.instance.giphyApiKey!,
+                  );
+                  if (gif == null || !mounted) return;
+                  final url = gif.images?.downsized?.url ??
+                      gif.images?.original?.url;
+                  if (url == null) return;
+                  await sendGifFromUrl(
+                    scaffold: ScaffoldMessenger.of(context),
+                    room: room,
+                    url: url,
+                    title: gif.title ?? 'giphy',
+                    uploadNotifier: _compose.uploadNotifier,
+                  );
+                }
+              : null,
           onPasteImage: (_isDesktop || kIsWeb) ? _handlePasteImage : null,
           uploadNotifier: _compose.uploadNotifier,
           room: room,
