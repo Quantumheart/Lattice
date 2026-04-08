@@ -104,26 +104,30 @@ class _LatticeAppState extends State<LatticeApp> {
               final matrix = manager.activeService;
               final router = _ensureRouter(matrix);
 
-              return ChangeNotifierProvider<MatrixService>.value(
-                value: matrix,
-                child: ChangeNotifierProvider<ChatBackupService>.value(
-                value: matrix.chatBackup,
-                child: ChangeNotifierProvider<SelectionService>.value(
-                value: matrix.selection,
-                child:
-                    ChangeNotifierProxyProvider<MatrixService, InboxController>(
-                  create: (ctx) => InboxController(
-                    client: ctx.read<MatrixService>().client,
+              return MultiProvider(
+                providers: [
+                  ChangeNotifierProvider<MatrixService>.value(
+                    value: matrix,
                   ),
-                  update: (_, matrix, previous) {
-                    if (previous == null) {
-                      return InboxController(client: matrix.client);
-                    }
-                    previous.updateClient(matrix.client);
-                    return previous;
-                  },
-                  child:
-                      ChangeNotifierProxyProvider<MatrixService, CallService>(
+                  ChangeNotifierProvider<SelectionService>.value(
+                    value: matrix.selection,
+                  ),
+                  ChangeNotifierProvider<ChatBackupService>.value(
+                    value: matrix.chatBackup,
+                  ),
+                  ChangeNotifierProxyProvider<MatrixService, InboxController>(
+                    create: (ctx) => InboxController(
+                      client: ctx.read<MatrixService>().client,
+                    ),
+                    update: (_, matrix, previous) {
+                      if (previous == null) {
+                        return InboxController(client: matrix.client);
+                      }
+                      previous.updateClient(matrix.client);
+                      return previous;
+                    },
+                  ),
+                  ChangeNotifierProxyProvider<MatrixService, CallService>(
                     create: (ctx) {
                       final cs = CallService(
                         client: ctx.read<MatrixService>().client,
@@ -149,75 +153,73 @@ class _LatticeAppState extends State<LatticeApp> {
                       }
                       return previous;
                     },
-                    child: ChangeNotifierProvider(
-                      create: (ctx) => PushToTalkService(
-                        callService: ctx.read<CallService>(),
-                        prefs: prefs,
-                        ringtoneService: ringtoneService,
-                      ),
-                      child: Builder(
-                      builder: (context) {
-                        final callService = context.read<CallService>();
-                        final isCustom = prefs.themePreset == 'custom';
-                        final preset =
-                            isCustom ? null : getPreset(prefs.themePreset);
-                        final customScheme =
-                            isCustom ? prefs.customTheme : null;
+                  ),
+                ],
+                child: ChangeNotifierProvider(
+                  create: (ctx) => PushToTalkService(
+                    callService: ctx.read<CallService>(),
+                    prefs: prefs,
+                    ringtoneService: ringtoneService,
+                  ),
+                  child: Builder(
+                    builder: (context) {
+                      final callService = context.read<CallService>();
+                      final isCustom = prefs.themePreset == 'custom';
+                      final preset =
+                          isCustom ? null : getPreset(prefs.themePreset);
+                      final customScheme =
+                          isCustom ? prefs.customTheme : null;
 
-                        final theme = customScheme != null
-                            ? LatticeTheme.light(
-                                dynamic: customScheme.toColorScheme(
-                                  Brightness.light,
-                                ),
-                              )
-                            : LatticeTheme.light(
-                                dynamic: lightDynamic,
-                                preset: preset,
-                              );
-                        final darkTheme = customScheme != null
-                            ? LatticeTheme.dark(
-                                dynamic: customScheme.toColorScheme(
-                                  Brightness.dark,
-                                ),
-                              )
-                            : LatticeTheme.dark(
-                                dynamic: darkDynamic,
-                                preset: preset,
-                              );
-
-                        final themeMode = isCustom
-                            ? prefs.customThemeMode
-                            : (preset?.forcedMode ?? prefs.themeMode);
-
-                        return NotificationLifecycleObserver(
-                          matrixService: matrix,
-                          preferencesService: prefs,
-                          callService: callService,
-                          router: router,
-                          child: MaterialApp.router(
-                            title: 'Lattice',
-                            debugShowCheckedModeBanner: false,
-                            theme: theme,
-                            darkTheme: darkTheme,
-                            themeMode: themeMode,
-                            routerConfig: router,
-                            builder: (context, child) =>
-                                VerificationRequestListener(
-                              router: router,
-                              child: IncomingCallOverlay(
-                                router: router,
-                                child: child ?? const SizedBox.shrink(),
+                      final theme = customScheme != null
+                          ? LatticeTheme.light(
+                              dynamic: customScheme.toColorScheme(
+                                Brightness.light,
                               ),
+                            )
+                          : LatticeTheme.light(
+                              dynamic: lightDynamic,
+                              preset: preset,
+                            );
+                      final darkTheme = customScheme != null
+                          ? LatticeTheme.dark(
+                              dynamic: customScheme.toColorScheme(
+                                Brightness.dark,
+                              ),
+                            )
+                          : LatticeTheme.dark(
+                              dynamic: darkDynamic,
+                              preset: preset,
+                            );
+
+                      final themeMode = isCustom
+                          ? prefs.customThemeMode
+                          : (preset?.forcedMode ?? prefs.themeMode);
+
+                      return NotificationLifecycleObserver(
+                        matrixService: matrix,
+                        preferencesService: prefs,
+                        callService: callService,
+                        router: router,
+                        child: MaterialApp.router(
+                          title: 'Lattice',
+                          debugShowCheckedModeBanner: false,
+                          theme: theme,
+                          darkTheme: darkTheme,
+                          themeMode: themeMode,
+                          routerConfig: router,
+                          builder: (context, child) =>
+                              VerificationRequestListener(
+                            router: router,
+                            child: IncomingCallOverlay(
+                              router: router,
+                              child: child ?? const SizedBox.shrink(),
                             ),
                           ),
-                        );
-                      },
-                    ),
-                    ),
+                        ),
+                      );
+                    },
                   ),
                 ),
-              ),
-              ),
               );
             },
           );
