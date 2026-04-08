@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lattice/core/utils/time_format.dart';
 import 'package:lattice/features/calling/models/call_constants.dart';
 import 'package:matrix/matrix.dart';
 
@@ -48,6 +49,14 @@ class CallEventTile extends StatelessWidget {
                       style: tt.bodySmall?.copyWith(
                         color: cs.onSurfaceVariant,
                       ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    formatMessageTime(event.originServerTs),
+                    style: tt.bodySmall?.copyWith(
+                      fontSize: 11,
+                      color: cs.onSurfaceVariant.withValues(alpha: 0.5),
                     ),
                   ),
                 ],
