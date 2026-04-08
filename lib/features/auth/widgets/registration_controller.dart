@@ -135,7 +135,7 @@ class RegistrationController extends ChangeNotifier {
 
     try {
       final caps =
-          await matrixService.getServerAuthCapabilities(_homeserver);
+          await matrixService.auth.getServerAuthCapabilities(_homeserver, isLoggedIn: matrixService.isLoggedIn);
       if (_isDisposed || generation != _checkGeneration) return;
 
       if (!caps.supportsRegistration) {

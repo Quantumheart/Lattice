@@ -70,7 +70,7 @@ void main() {
   });
 
   tearDown(() {
-    matrixService.clearCachedPassword();
+    matrixService.uia.clearCachedPassword();
     AppConfig.reset();
   });
 
@@ -265,7 +265,7 @@ void main() {
   Future<void> completePostLoginSync(WidgetTester tester) async {
     syncController.add(SyncUpdate(nextBatch: 'batch_1', rooms: RoomsUpdate()));
     await tester.pumpAndSettle();
-    await matrixService.postLoginSyncFuture;
+    await matrixService.auth.postLoginSyncFuture;
     matrixService.dispose();
   }
 

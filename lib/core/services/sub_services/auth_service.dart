@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:lattice/core/models/server_auth_capabilities.dart';
 import 'package:lattice/core/services/matrix_service.dart' show latticeKey;
@@ -8,7 +8,7 @@ import 'package:matrix/matrix.dart';
 // ignore: implementation_imports, no public API for ClientInitException
 import 'package:matrix/src/utils/client_init_exception.dart';
 
-class AuthService {
+class AuthService extends ChangeNotifier {
   AuthService({
     required Client client,
     required FlutterSecureStorage storage,
@@ -22,8 +22,19 @@ class AuthService {
   final String _clientName;
 
   // ── Auth state ────────────────────────────────────────────────
-  String? loginError;
-  String? postLoginSyncError;
+  String? _loginError;
+  String? get loginError => _loginError;
+  set loginError(String? value) {
+    _loginError = value;
+    notifyListeners();
+  }
+
+  String? _postLoginSyncError;
+  String? get postLoginSyncError => _postLoginSyncError;
+  set postLoginSyncError(String? value) {
+    _postLoginSyncError = value;
+    notifyListeners();
+  }
 
   Completer<void>? _postLoginSyncCompleter;
 

@@ -30,7 +30,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
   void initState() {
     super.initState();
     final matrix = context.read<MatrixService>();
-    _uiaSub = matrix.onUiaRequest.listen(_showUiaPasswordPrompt);
+    _uiaSub = matrix.uia.onUiaRequest.listen(_showUiaPasswordPrompt);
     unawaited(_loadDevices());
   }
 
@@ -100,7 +100,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
       },
     );
     if (password != null && password.isNotEmpty && mounted) {
-      context.read<MatrixService>().completeUiaWithPassword(request, password);
+      context.read<MatrixService>().uia.completeUiaWithPassword(request, password);
     } else {
       request.cancel();
     }

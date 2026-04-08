@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/models/server_auth_capabilities.dart';
 import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/auth_service.dart';
 import 'package:lattice/features/auth/widgets/login_controller.dart';
 import 'package:matrix/matrix.dart' hide LoginState;
 import 'package:mockito/annotations.dart';
@@ -13,6 +14,7 @@ import 'package:mockito/mockito.dart';
   MockSpec<MatrixService>(),
   MockSpec<ClientManager>(),
   MockSpec<Client>(),
+  MockSpec<AuthService>(),
 ])
 import 'login_controller_test.mocks.dart';
 
@@ -20,12 +22,15 @@ void main() {
   late MockMatrixService mockMatrixService;
   late MockClientManager mockClientManager;
   late MockClient mockClient;
+  late MockAuthService mockAuthService;
 
   setUp(() {
     mockMatrixService = MockMatrixService();
     mockClientManager = MockClientManager();
     mockClient = MockClient();
+    mockAuthService = MockAuthService();
     when(mockMatrixService.client).thenReturn(mockClient);
+    when(mockMatrixService.auth).thenReturn(mockAuthService);
     when(mockClientManager.services).thenReturn([]);
   });
 
@@ -97,7 +102,7 @@ void main() {
           username: anyNamed('username'),
           password: anyNamed('password'),
         ),).thenAnswer((_) async => false);
-        when(mockMatrixService.loginError).thenReturn('Invalid password');
+        when(mockAuthService.loginError).thenReturn('Invalid password');
 
         final controller = createController();
 

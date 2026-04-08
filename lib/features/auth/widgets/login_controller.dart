@@ -81,7 +81,7 @@ class LoginController extends ChangeNotifier {
       _notify();
       return true;
     } else {
-      _error = matrixService.loginError;
+      _error = matrixService.auth.loginError;
       _state = LoginState.formReady;
       _notify();
       return false;
@@ -147,7 +147,7 @@ class LoginController extends ChangeNotifier {
         }
         _state = LoginState.done;
       } else {
-        _error = matrixService.loginError;
+        _error = matrixService.auth.loginError;
         _state = LoginState.formReady;
       }
       _notify();

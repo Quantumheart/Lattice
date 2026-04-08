@@ -54,7 +54,7 @@ void main() {
         }),
       );
 
-      final caps = await service.getServerAuthCapabilities('example.com');
+      final caps = await service.auth.getServerAuthCapabilities('example.com', isLoggedIn: service.isLoggedIn);
 
       expect(caps.supportsPassword, isTrue);
       expect(caps.supportsSso, isFalse);
@@ -73,7 +73,7 @@ void main() {
         }),
       );
 
-      final caps = await service.getServerAuthCapabilities('example.com');
+      final caps = await service.auth.getServerAuthCapabilities('example.com', isLoggedIn: service.isLoggedIn);
 
       expect(caps.supportsSso, isTrue);
     });
@@ -99,7 +99,7 @@ void main() {
         }),
       );
 
-      final caps = await service.getServerAuthCapabilities('example.com');
+      final caps = await service.auth.getServerAuthCapabilities('example.com', isLoggedIn: service.isLoggedIn);
 
       expect(caps.ssoIdentityProviders, hasLength(2));
       expect(caps.ssoIdentityProviders[0].id, 'google');
@@ -127,7 +127,7 @@ void main() {
         }),
       );
 
-      final caps = await service.getServerAuthCapabilities('example.com');
+      final caps = await service.auth.getServerAuthCapabilities('example.com', isLoggedIn: service.isLoggedIn);
 
       expect(caps.supportsRegistration, isTrue);
       expect(caps.registrationStages, contains('m.login.dummy'));
@@ -148,7 +148,7 @@ void main() {
         }),
       );
 
-      final caps = await service.getServerAuthCapabilities('example.com');
+      final caps = await service.auth.getServerAuthCapabilities('example.com', isLoggedIn: service.isLoggedIn);
 
       expect(caps.supportsRegistration, isFalse);
     });
@@ -158,18 +158,18 @@ void main() {
           .thenThrow(Exception('Connection refused'));
 
       expect(
-        () => service.getServerAuthCapabilities('bad.server'),
+        () => service.auth.getServerAuthCapabilities('bad.server', isLoggedIn: service.isLoggedIn),
         throwsA(isA<Exception>()),
       );
     });
 
     test('throws ArgumentError for empty homeserver', () async {
       expect(
-        () => service.getServerAuthCapabilities(''),
+        () => service.auth.getServerAuthCapabilities('', isLoggedIn: service.isLoggedIn),
         throwsA(isA<ArgumentError>()),
       );
       expect(
-        () => service.getServerAuthCapabilities('   '),
+        () => service.auth.getServerAuthCapabilities('   ', isLoggedIn: service.isLoggedIn),
         throwsA(isA<ArgumentError>()),
       );
     });
@@ -185,7 +185,7 @@ void main() {
         }),
       );
 
-      await service.getServerAuthCapabilities('example.com');
+      await service.auth.getServerAuthCapabilities('example.com', isLoggedIn: service.isLoggedIn);
 
       verify(mockClient.checkHomeserver(
         Uri.parse('https://example.com'),
@@ -221,7 +221,7 @@ void main() {
         }),
       );
 
-      final caps = await service.getServerAuthCapabilities('example.com');
+      final caps = await service.auth.getServerAuthCapabilities('example.com', isLoggedIn: service.isLoggedIn);
 
       expect(caps.supportsPassword, isTrue);
       expect(caps.supportsSso, isTrue);
@@ -235,7 +235,7 @@ void main() {
     test('returns empty capabilities when called while logged in', () async {
       service.isLoggedInForTest = true;
 
-      final caps = await service.getServerAuthCapabilities('example.com');
+      final caps = await service.auth.getServerAuthCapabilities('example.com', isLoggedIn: service.isLoggedIn);
 
       expect(caps.supportsPassword, isFalse);
       expect(caps.supportsSso, isFalse);
@@ -254,7 +254,7 @@ void main() {
         }),
       );
 
-      final caps = await service.getServerAuthCapabilities('example.com');
+      final caps = await service.auth.getServerAuthCapabilities('example.com', isLoggedIn: service.isLoggedIn);
 
       expect(caps.supportsPassword, isFalse);
       expect(caps.supportsSso, isFalse);
@@ -307,7 +307,7 @@ void main() {
       expect(result, isTrue);
       expect(service.isLoggedIn, isTrue);
 
-      await service.postLoginSyncFuture;
+      await service.auth.postLoginSyncFuture;
 
       // Verify login was called with mLoginToken
       verify(mockClient.login(
@@ -350,7 +350,7 @@ void main() {
 
       expect(result, isFalse);
       expect(service.isLoggedIn, isFalse);
-      expect(service.loginError, contains('Invalid login token'));
+      expect(service.auth.loginError, contains('Invalid login token'));
     });
 
     test('clears previous loginError before attempting', () async {
@@ -365,7 +365,7 @@ void main() {
         homeserver: 'example.com',
         loginToken: 'bad',
       );
-      expect(service.loginError, isNotNull);
+      expect(service.auth.loginError, isNotNull);
 
       // Now succeed
       when(mockClient.login(
@@ -393,7 +393,7 @@ void main() {
       );
 
       expect(result, isTrue);
-      expect(service.loginError, isNull);
+      expect(service.auth.loginError, isNull);
     });
   });
 
@@ -453,7 +453,7 @@ void main() {
       ),);
 
       // Wait for background sync + session backup to complete.
-      await service.postLoginSyncFuture;
+      await service.auth.postLoginSyncFuture;
 
       verify(mockStorage.write(
         key: 'lattice_session_backup_test',

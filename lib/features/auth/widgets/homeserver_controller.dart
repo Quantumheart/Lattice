@@ -50,7 +50,7 @@ class HomeserverController extends ChangeNotifier {
 
     try {
       final caps =
-          await matrixService.getServerAuthCapabilities(homeserver);
+          await matrixService.auth.getServerAuthCapabilities(homeserver, isLoggedIn: matrixService.isLoggedIn);
       if (_isDisposed || generation != _checkGeneration) return null;
 
       _capabilities = caps;
