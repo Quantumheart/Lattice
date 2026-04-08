@@ -499,7 +499,7 @@ class _ChatScreenState extends State<ChatScreen>
             final attachment = await pickFileAsAttachment();
             if (attachment != null && mounted) _addAttachment(attachment);
           },
-          onGif: AppConfig.instance.giphyEnabled
+          onGif: AppConfig.isInitialized && AppConfig.instance.giphyEnabled
               ? () async {
                   final gif = await GiphyGet.getGif(
                     context: context,
