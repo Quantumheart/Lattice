@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/sub_services/chat_backup_service.dart';
+import 'package:lattice/core/services/sub_services/uia_service.dart';
 import 'package:lattice/features/settings/screens/devices_screen.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mockito/annotations.dart';
@@ -21,17 +22,17 @@ void main() {
   late MockClient mockClient;
   late MockMatrixService mockMatrix;
   late MockChatBackupService mockChatBackup;
+  late UiaService uiaService;
 
   setUp(() {
     mockClient = MockClient();
     mockMatrix = MockMatrixService();
     mockChatBackup = MockChatBackupService();
+    uiaService = UiaService(client: mockClient);
     when(mockMatrix.client).thenReturn(mockClient);
     when(mockClient.deviceID).thenReturn('THISDEVICE');
     when(mockClient.userID).thenReturn('@alice:example.com');
-    when(mockMatrix.onUiaRequest).thenAnswer(
-      (_) => const Stream<UiaRequest<dynamic>>.empty(),
-    );
+    when(mockMatrix.uia).thenReturn(uiaService);
     when(mockMatrix.chatBackup).thenReturn(mockChatBackup);
     when(mockChatBackup.chatBackupNeeded).thenReturn(false);
     when(mockClient.userDeviceKeys).thenReturn({});

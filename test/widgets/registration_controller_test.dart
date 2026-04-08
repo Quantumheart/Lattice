@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/models/server_auth_capabilities.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/auth_service.dart';
 import 'package:lattice/features/auth/widgets/registration_controller.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mockito/annotations.dart';
@@ -12,17 +13,22 @@ import 'package:mockito/mockito.dart';
 @GenerateNiceMocks([
   MockSpec<Client>(),
   MockSpec<MatrixService>(),
+  MockSpec<AuthService>(),
 ])
 import 'registration_controller_test.mocks.dart';
 
 void main() {
   late MockClient mockClient;
   late MockMatrixService mockMatrixService;
+  late MockAuthService mockAuthService;
 
   setUp(() {
     mockClient = MockClient();
     mockMatrixService = MockMatrixService();
+    mockAuthService = MockAuthService();
     when(mockMatrixService.client).thenReturn(mockClient);
+    when(mockMatrixService.auth).thenReturn(mockAuthService);
+    when(mockMatrixService.isLoggedIn).thenReturn(false);
   });
 
   RegistrationController createController({String homeserver = 'example.com'}) {
@@ -42,7 +48,7 @@ void main() {
 
       test('transitions to formReady when registration is supported',
           () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                   registrationStages: ['m.login.dummy'],
@@ -58,7 +64,7 @@ void main() {
 
       test('transitions to registrationDisabled when server does not support it',
           () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   
                 ),);
@@ -72,7 +78,7 @@ void main() {
       });
 
       test('transitions to error on network failure', () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenThrow(Exception('Connection refused'));
 
         final controller = createController();
@@ -84,7 +90,7 @@ void main() {
       });
 
       test('notifies listeners on state change', () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                 ),);
@@ -102,11 +108,11 @@ void main() {
 
     group('updateHomeserver', () {
       test('re-checks server capabilities with new homeserver', () async {
-        when(mockMatrixService.getServerAuthCapabilities('example.com'))
+        when(mockAuthService.getServerAuthCapabilities('example.com', isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                 ),);
-        when(mockMatrixService.getServerAuthCapabilities('other.com'))
+        when(mockAuthService.getServerAuthCapabilities('other.com', isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   
                 ),);
@@ -122,7 +128,7 @@ void main() {
       });
 
       test('clears errors when homeserver changes', () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                 ),);
@@ -144,7 +150,7 @@ void main() {
 
     group('submitForm', () {
       setUp(() {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                   registrationStages: ['m.login.dummy'],
@@ -526,7 +532,7 @@ void main() {
 
     group('cancelRegistration', () {
       setUp(() {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                   registrationStages: ['m.login.dummy'],
@@ -568,7 +574,7 @@ void main() {
     group('requiresToken', () {
       test('returns true when registration stages include registration_token',
           () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                   registrationStages: ['m.login.registration_token'],
@@ -583,7 +589,7 @@ void main() {
 
       test('returns false when registration stages do not include token',
           () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                   registrationStages: ['m.login.dummy'],
@@ -597,7 +603,7 @@ void main() {
       });
 
       test('rejects empty token when requiresToken is true', () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                   registrationStages: ['m.login.registration_token'],
@@ -615,7 +621,7 @@ void main() {
 
       test('auto-completes registration_token UIA stage with provided token',
           () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                   registrationStages: ['m.login.registration_token'],
@@ -681,7 +687,7 @@ void main() {
 
     group('UIA params', () {
       setUp(() {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                   registrationStages: ['m.login.dummy'],
@@ -824,7 +830,7 @@ void main() {
 
     group('submitTerms', () {
       setUp(() {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                   registrationStages: ['m.login.dummy'],
@@ -908,7 +914,7 @@ void main() {
 
     group('cancelRegistration clears UIA state', () {
       setUp(() {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                   registrationStages: ['m.login.dummy'],
@@ -954,7 +960,7 @@ void main() {
 
     group('submitForm state guard', () {
       test('ignores submit when not in formReady state', () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenThrow(Exception('Connection refused'));
 
         final controller = createController();
@@ -971,7 +977,7 @@ void main() {
 
     group('dispose', () {
       test('does not notify after dispose', () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsRegistration: true,
                 ),);

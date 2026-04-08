@@ -230,7 +230,7 @@ void main() {
       expect(service.isLoggedIn, isTrue);
 
       // Wait for background sync + session backup to complete.
-      await service.postLoginSyncFuture;
+      await service.auth.postLoginSyncFuture;
 
       // Verify namespaced storage keys.
       verify(mockStorage.write(
@@ -267,7 +267,7 @@ void main() {
 
       expect(result, isFalse);
       expect(service.isLoggedIn, isFalse);
-      expect(service.loginError, contains('Connection refused'));
+      expect(service.auth.loginError, contains('Connection refused'));
     });
   });
 
@@ -393,7 +393,7 @@ void main() {
       );
 
       // Wait for background sync + session backup to complete before adding listener.
-      await service.postLoginSyncFuture;
+      await service.auth.postLoginSyncFuture;
 
       var notifyCount = 0;
       service.addListener(() => notifyCount++);

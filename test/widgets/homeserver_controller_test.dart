@@ -4,20 +4,26 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/models/server_auth_capabilities.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/auth_service.dart';
 import 'package:lattice/features/auth/widgets/homeserver_controller.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
 @GenerateNiceMocks([
   MockSpec<MatrixService>(),
+  MockSpec<AuthService>(),
 ])
 import 'homeserver_controller_test.mocks.dart';
 
 void main() {
   late MockMatrixService mockMatrixService;
+  late MockAuthService mockAuthService;
 
   setUp(() {
     mockMatrixService = MockMatrixService();
+    mockAuthService = MockAuthService();
+    when(mockMatrixService.auth).thenReturn(mockAuthService);
+    when(mockMatrixService.isLoggedIn).thenReturn(false);
   });
 
   HomeserverController createController() {
@@ -37,7 +43,7 @@ void main() {
 
     group('checkServer', () {
       test('transitions to ready when password login is supported', () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsPassword: true,
                 ),);
@@ -52,7 +58,7 @@ void main() {
       });
 
       test('transitions to ready when SSO is supported', () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsSso: true,
                   ssoIdentityProviders: [
@@ -71,7 +77,7 @@ void main() {
 
       test('transitions to ready when both password and SSO are supported',
           () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsPassword: true,
                   supportsSso: true,
@@ -88,7 +94,7 @@ void main() {
 
       test('transitions to error when neither password nor SSO is supported',
           () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) async => const ServerAuthCapabilities());
 
         final controller = createController();
@@ -100,7 +106,7 @@ void main() {
       });
 
       test('transitions to error on SocketException', () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenThrow(const SocketException('Connection refused'));
 
         final controller = createController();
@@ -112,7 +118,7 @@ void main() {
       });
 
       test('transitions to error on TimeoutException', () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenThrow(TimeoutException('Timed out'));
 
         final controller = createController();
@@ -124,7 +130,7 @@ void main() {
       });
 
       test('transitions to error on FormatException', () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenThrow(const FormatException('Bad response'));
 
         final controller = createController();
@@ -139,7 +145,7 @@ void main() {
         final firstCompleter = Completer<ServerAuthCapabilities>();
         var callCount = 0;
 
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) {
           callCount++;
           if (callCount == 1) return firstCompleter.future;
@@ -175,7 +181,7 @@ void main() {
 
     group('dispose', () {
       test('does not notify after dispose', () async {
-        when(mockMatrixService.getServerAuthCapabilities(any))
+        when(mockAuthService.getServerAuthCapabilities(any, isLoggedIn: anyNamed('isLoggedIn')))
             .thenAnswer((_) async => const ServerAuthCapabilities(
                   supportsPassword: true,
                 ),);

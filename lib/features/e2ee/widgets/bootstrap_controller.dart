@@ -239,7 +239,7 @@ class BootstrapController extends ChangeNotifier {
 
     matrixService.chatBackup.requestMissingRoomKeys();
     await matrixService.chatBackup.checkChatBackupStatus();
-    matrixService.clearCachedPassword();
+    matrixService.uia.clearCachedPassword();
 
     _phase = SetupPhase.done;
     _notify();

@@ -33,7 +33,7 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
   void initState() {
     super.initState();
     _matrixService = context.read<MatrixService>();
-    _uiaSub = _matrixService.onUiaRequest.listen(_showUiaPasswordPrompt);
+    _uiaSub = _matrixService.uia.onUiaRequest.listen(_showUiaPasswordPrompt);
 
     if (_matrixService.chatBackup.chatBackupEnabled) {
       _localStep = _ScreenStep.management;
@@ -116,7 +116,7 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
     passwordController.dispose();
     _uiaPromptShowing = false;
     if (password != null && password.isNotEmpty) {
-      _matrixService.completeUiaWithPassword(request, password);
+      _matrixService.uia.completeUiaWithPassword(request, password);
     } else {
       request.cancel();
     }

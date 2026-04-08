@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:lattice/core/models/server_auth_capabilities.dart';
 import 'package:lattice/core/services/session_backup.dart';
 import 'package:lattice/core/services/sub_services/auth_service.dart';
 import 'package:lattice/core/services/sub_services/chat_backup_service.dart';
@@ -37,7 +36,7 @@ class MatrixService extends ChangeNotifier {
                 publicKey: 'LatticeSecureStorage',
               ),
             ) {
-    _uia = UiaService(client: _client);
+    uia = UiaService(client: _client);
     chatBackup = ChatBackupService(
       client: _client,
       storage: _storage,
@@ -52,7 +51,7 @@ class MatrixService extends ChangeNotifier {
         }
       },
     );
-    _auth = AuthService(
+    auth = AuthService(
       client: _client,
       storage: _storage,
       clientName: clientName,
@@ -84,20 +83,13 @@ class MatrixService extends ChangeNotifier {
 
   // ── Sub-services ────────────────────────────────────────────────
 
-  late final UiaService _uia;
+  late final UiaService uia;
   late final ChatBackupService chatBackup;
   late final SelectionService selection;
   late final SyncService sync;
-  late final AuthService _auth;
+  late final AuthService auth;
 
   StreamSubscription<LoginState>? _loginStateSub;
-
-  // ── UiaService delegates ────────────────────────────────────────
-
-  Stream<UiaRequest<dynamic>> get onUiaRequest => _uia.onUiaRequest;
-  void completeUiaWithPassword(UiaRequest<dynamic> request, String password) =>
-      _uia.completeUiaWithPassword(request, password);
-  void clearCachedPassword() => _uia.clearCachedPassword();
 
   bool _hasSkippedSetup = false;
   bool get hasSkippedSetup => _hasSkippedSetup;
@@ -105,19 +97,6 @@ class MatrixService extends ChangeNotifier {
     _hasSkippedSetup = true;
     notifyListeners();
   }
-
-  // ── AuthService delegates ───────────────────────────────────────
-
-  String? get loginError => _auth.loginError;
-  String? get postLoginSyncError => _auth.postLoginSyncError;
-
-  @visibleForTesting
-  Future<void>? get postLoginSyncFuture => _auth.postLoginSyncFuture;
-
-  Future<ServerAuthCapabilities> getServerAuthCapabilities(
-    String homeserver,
-  ) =>
-      _auth.getServerAuthCapabilities(homeserver, isLoggedIn: _isLoggedIn);
 
   Future<String?> _readRefreshToken() async {
     final stored = await _client.database.getClient(clientName);
@@ -127,7 +106,7 @@ class MatrixService extends ChangeNotifier {
   // ── Public API ──────────────────────────────────────────────────
 
   Future<void> init({bool restoreSession = true}) async {
-    if (restoreSession) await _auth.migrateStorageKeys();
+    if (restoreSession) await auth.migrateStorageKeys();
     if (restoreSession) {
       await _restoreSession();
       notifyListeners();
@@ -157,7 +136,7 @@ class MatrixService extends ChangeNotifier {
     _disposed = true;
     _isLoggedIn = false;
     sync.cancelSyncSub();
-    _uia.dispose();
+    uia.dispose();
     selection.dispose();
     chatBackup.dispose();
     sync.dispose();
@@ -172,7 +151,7 @@ class MatrixService extends ChangeNotifier {
     required String username,
     required String password,
   }) async {
-    _auth.loginError = null;
+    auth.loginError = null;
     notifyListeners();
 
     try {
@@ -198,8 +177,8 @@ class MatrixService extends ChangeNotifier {
           'encryption=${_client.encryption != null ? "available" : "null"}, '
           'encryptionEnabled=${_client.encryptionEnabled}');
 
-      _uia.setCachedPassword(password);
-      _uia.listenForUia();
+      uia.setCachedPassword(password);
+      uia.listenForUia();
       _listenForLoginState();
       _isLoggedIn = true;
       notifyListeners();
@@ -210,7 +189,7 @@ class MatrixService extends ChangeNotifier {
     } catch (e, s) {
       debugPrint('[Lattice] Login failed: $e');
       debugPrint('[Lattice] Stack trace:\n$s');
-      _auth.loginError = e.toString();
+      auth.loginError = e.toString();
       notifyListeners();
       return false;
     }
@@ -222,7 +201,7 @@ class MatrixService extends ChangeNotifier {
     required String homeserver,
     required String loginToken,
   }) async {
-    _auth.loginError = null;
+    auth.loginError = null;
     notifyListeners();
 
     try {
@@ -243,7 +222,7 @@ class MatrixService extends ChangeNotifier {
           'deviceId=${_client.deviceID}, '
           'userId=${_client.userID}');
 
-      _uia.listenForUia();
+      uia.listenForUia();
       _listenForLoginState();
       _isLoggedIn = true;
       notifyListeners();
@@ -254,7 +233,7 @@ class MatrixService extends ChangeNotifier {
     } catch (e, s) {
       debugPrint('[Lattice] SSO login failed: $e');
       debugPrint('[Lattice] Stack trace:\n$s');
-      _auth.loginError = e.toString();
+      auth.loginError = e.toString();
       notifyListeners();
       return false;
     }
@@ -273,8 +252,8 @@ class MatrixService extends ChangeNotifier {
           'accessToken=${_client.accessToken}, userID=${_client.userID}');
     }
 
-    if (password != null) _uia.setCachedPassword(password);
-    _uia.listenForUia();
+    if (password != null) uia.setCachedPassword(password);
+    uia.listenForUia();
     _listenForLoginState();
     _isLoggedIn = true;
     notifyListeners();
@@ -288,7 +267,7 @@ class MatrixService extends ChangeNotifier {
     unawaited(_loginStateSub?.cancel());
     sync.cancelSyncSub();
     _isLoggedIn = false;
-    await _auth.awaitPostLoginSync();
+    await auth.awaitPostLoginSync();
 
     try {
       if (_client.homeserver != null && _client.accessToken != null) {
@@ -297,11 +276,11 @@ class MatrixService extends ChangeNotifier {
     } catch (e) {
       debugPrint('[Lattice] Logout error: $e');
     }
-    await _auth.clearSessionKeys();
+    await auth.clearSessionKeys();
     await SessionBackup.delete(clientName: clientName, storage: _storage);
     await chatBackup.deleteStoredRecoveryKey();
-    _uia.clearCachedPassword();
-    _uia.cancelUiaSub();
+    uia.clearCachedPassword();
+    uia.cancelUiaSub();
     selection.resetSelection();
     chatBackup.resetChatBackupState();
     _hasSkippedSetup = false;
@@ -332,13 +311,13 @@ class MatrixService extends ChangeNotifier {
       unawaited(_loginStateSub?.cancel());
       sync.cancelSyncSub();
       _isLoggedIn = false;
-      await _auth.awaitPostLoginSync();
-      _uia.cancelUiaSub();
-      _uia.clearCachedPassword();
+      await auth.awaitPostLoginSync();
+      uia.cancelUiaSub();
+      uia.clearCachedPassword();
       selection.resetSelection();
       chatBackup.resetChatBackupState();
       _hasSkippedSetup = false;
-      await _auth.clearSessionKeys();
+      await auth.clearSessionKeys();
       await SessionBackup.delete(clientName: clientName, storage: _storage);
       await chatBackup.deleteStoredRecoveryKey();
       try {
@@ -359,12 +338,12 @@ class MatrixService extends ChangeNotifier {
         _loginStateSub = null;
         sync.cancelSyncSub();
         _isLoggedIn = false;
-        _uia.cancelUiaSub();
-        _uia.clearCachedPassword();
+        uia.cancelUiaSub();
+        uia.clearCachedPassword();
         selection.resetSelection();
         chatBackup.resetChatBackupState();
         _hasSkippedSetup = false;
-        await _auth.clearSessionKeys();
+        await auth.clearSessionKeys();
         await SessionBackup.delete(clientName: clientName, storage: _storage);
         await chatBackup.deleteStoredRecoveryKey();
         notifyListeners();
@@ -375,13 +354,13 @@ class MatrixService extends ChangeNotifier {
   // ── Private: Post-login Background Sync ─────────────────────────
 
   void _postLoginSync() {
-    _auth.startPostLoginSync(_runPostLoginSync);
+    auth.startPostLoginSync(_runPostLoginSync);
   }
 
   Future<void> _runPostLoginSync() async {
     try {
       try {
-        await _auth.persistCredentials();
+        await auth.persistCredentials();
       } catch (e) {
         debugPrint('[Lattice] Credential persistence failed (non-fatal): $e');
       }
@@ -392,7 +371,7 @@ class MatrixService extends ChangeNotifier {
     } catch (e) {
       debugPrint('[Lattice] Post-login sync error: $e');
       if (_isLoggedIn) {
-        _auth.postLoginSyncError = friendlyAuthError(e);
+        auth.postLoginSyncError = friendlyAuthError(e);
         notifyListeners();
       }
     }
@@ -401,7 +380,7 @@ class MatrixService extends ChangeNotifier {
   // ── Private: Initialization ─────────────────────────────────────
 
   Future<void> _activateSession() async {
-    _uia.listenForUia();
+    uia.listenForUia();
     _listenForLoginState();
     _isLoggedIn = true;
     try {
@@ -415,7 +394,7 @@ class MatrixService extends ChangeNotifier {
   // ── Private: Session Keys ──────────────────────────────────────
 
   Future<void> _clearSessionAndBackup() async {
-    await _auth.clearSessionKeys();
+    await auth.clearSessionKeys();
     await SessionBackup.delete(clientName: clientName, storage: _storage);
   }
 
@@ -503,7 +482,7 @@ class MatrixService extends ChangeNotifier {
       }
 
       _isLoggedIn = false;
-      if (_auth.isPermanentAuthFailure(cause)) {
+      if (auth.isPermanentAuthFailure(cause)) {
         await _clearSessionAndBackup();
       }
     }

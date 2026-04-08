@@ -2,6 +2,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/sub_services/chat_backup_service.dart';
+import 'package:lattice/core/services/sub_services/uia_service.dart';
 import 'package:lattice/features/e2ee/widgets/bootstrap_controller.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
@@ -15,6 +16,7 @@ import 'package:mockito/mockito.dart';
   MockSpec<Encryption>(),
   MockSpec<Bootstrap>(),
   MockSpec<OpenSSSS>(),
+  MockSpec<UiaService>(),
 ])
 import 'bootstrap_controller_test.mocks.dart';
 
@@ -31,6 +33,7 @@ void main() {
     mockEncryption = MockEncryption();
     when(mockMatrixService.client).thenReturn(mockClient);
     when(mockMatrixService.chatBackup).thenReturn(mockChatBackup);
+    when(mockMatrixService.uia).thenReturn(MockUiaService());
     when(mockClient.encryption).thenReturn(mockEncryption);
 
     when(mockClient.roomsLoading).thenAnswer((_) async {});
