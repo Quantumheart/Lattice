@@ -318,17 +318,19 @@ class _QuickReactBar extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: _quickEmojis.map((emoji) {
-            return InkWell(
-              borderRadius: BorderRadius.circular(20),
-              onTap: () {
-                Navigator.of(context).pop();
-                onQuickReact(emoji);
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: Text(
-                  emoji,
-                  style: DefaultEmojiTextStyle.copyWith(fontSize: 22),
+            return Flexible(
+              child: InkWell(
+                borderRadius: BorderRadius.circular(20),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onQuickReact(emoji);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(8),
+                  child: Text(
+                    emoji,
+                    style: DefaultEmojiTextStyle.copyWith(fontSize: 22),
+                  ),
                 ),
               ),
             );
