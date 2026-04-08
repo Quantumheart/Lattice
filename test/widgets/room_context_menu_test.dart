@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/rooms/widgets/room_context_menu.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:matrix/src/utils/space_child.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -22,6 +24,7 @@ void main() {
   late MockMatrixService mockMatrixService;
   late MockRoom mockSpace;
   late MockRoom mockRoom;
+  late SelectionService selectionService;
 
   setUp(() {
     mockClient = MockClient();
@@ -29,31 +32,41 @@ void main() {
     mockSpace = MockRoom();
     mockRoom = MockRoom();
 
+    when(mockClient.onSync).thenReturn(CachedStreamController<SyncUpdate>());
+    when(mockClient.rooms).thenReturn([]);
     when(mockMatrixService.client).thenReturn(mockClient);
 
-    // Default space setup — selected and user has permission
     when(mockSpace.id).thenReturn('!space:example.com');
     when(mockSpace.getLocalizedDisplayname()).thenReturn('Test Space');
     when(mockSpace.canChangeStateEvent('m.space.child')).thenReturn(true);
     when(mockSpace.removeSpaceChild(any)).thenAnswer((_) async {});
+    when(mockSpace.isSpace).thenReturn(true);
+    when(mockSpace.membership).thenReturn(Membership.join);
+    when(mockSpace.spaceChildren).thenReturn([]);
 
     when(mockRoom.id).thenReturn('!room:example.com');
     when(mockRoom.getLocalizedDisplayname()).thenReturn('Test Room');
+    when(mockRoom.isSpace).thenReturn(false);
+    when(mockRoom.membership).thenReturn(Membership.join);
 
-    when(mockMatrixService.selectedSpaceIds)
-        .thenReturn({'!space:example.com'});
+    when(mockClient.rooms).thenReturn([mockSpace, mockRoom]);
     when(mockClient.getRoomById('!space:example.com')).thenReturn(mockSpace);
-    when(mockMatrixService.spaceMemberships('!room:example.com'))
-        .thenReturn(<String>{});
-    when(mockMatrixService.spaces).thenReturn([mockSpace]);
+    when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
+
+    selectionService = SelectionService(client: mockClient);
+    selectionService.selectSpace('!space:example.com');
+    when(mockMatrixService.selection).thenReturn(selectionService);
   });
 
   Widget buildTestWidget({
     String? parentSpaceId,
     List<Room>? sectionRooms,
   }) {
-    return ChangeNotifierProvider<MatrixService>.value(
-      value: mockMatrixService,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<MatrixService>.value(value: mockMatrixService),
+        ChangeNotifierProvider<SelectionService>.value(value: selectionService),
+      ],
       child: MaterialApp(
         home: Scaffold(
           body: Builder(
@@ -98,8 +111,15 @@ void main() {
 
     testWidgets('"Add to space" hidden when room is already in all spaces',
         (tester) async {
-      when(mockMatrixService.spaceMemberships('!room:example.com'))
-          .thenReturn({'!space:example.com'});
+      when(mockSpace.spaceChildren).thenReturn([
+        SpaceChild.fromState(StrippedStateEvent(
+          type: EventTypes.SpaceChild,
+          content: {'via': ['example.com']},
+          stateKey: '!room:example.com',
+          senderId: '@admin:example.com',
+        ),),
+      ]);
+      selectionService.invalidateSpaceTree();
 
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Open Menu'));
@@ -111,9 +131,16 @@ void main() {
 
     testWidgets('menu hidden when no space selected and no eligible spaces',
         (tester) async {
-      when(mockMatrixService.selectedSpaceIds).thenReturn(<String>{});
-      when(mockMatrixService.spaceMemberships('!room:example.com'))
-          .thenReturn({'!space:example.com'});
+      selectionService.selectSpace(null);
+      when(mockSpace.spaceChildren).thenReturn([
+        SpaceChild.fromState(StrippedStateEvent(
+          type: EventTypes.SpaceChild,
+          content: {'via': ['example.com']},
+          stateKey: '!room:example.com',
+          senderId: '@admin:example.com',
+        ),),
+      ]);
+      selectionService.invalidateSpaceTree();
 
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Open Menu'));
@@ -125,7 +152,6 @@ void main() {
 
     testWidgets('menu hidden when user lacks permission', (tester) async {
       when(mockSpace.canChangeStateEvent('m.space.child')).thenReturn(false);
-      when(mockMatrixService.spaces).thenReturn([mockSpace]);
 
       await tester.pumpWidget(buildTestWidget());
       await tester.tap(find.text('Open Menu'));
@@ -165,7 +191,6 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(mockSpace.removeSpaceChild('!room:example.com')).called(1);
-      verify(mockMatrixService.invalidateSpaceTree()).called(1);
     });
 
     testWidgets('cancelling does not call removeSpaceChild', (tester) async {
@@ -294,7 +319,6 @@ void main() {
       final newOrder = captured.first as String;
       // New order should be < 'a' (the order of the item we moved before).
       expect(newOrder.compareTo('a'), lessThan(0));
-      verify(mockMatrixService.invalidateSpaceTree()).called(1);
     });
 
     testWidgets('Move down calls setSpaceChild with correct order',
@@ -317,7 +341,6 @@ void main() {
       final newOrder = captured.first as String;
       // New order should be > 'z' (the order of the item we moved after).
       expect(newOrder.compareTo('z'), greaterThan(0));
-      verify(mockMatrixService.invalidateSpaceTree()).called(1);
     });
 
     testWidgets('no Move items when user lacks permission', (tester) async {

@@ -95,7 +95,7 @@ class _NotificationLifecycleObserverState
   }
 
   void _onMatrixChanged() {
-    final roomId = widget.matrixService.selectedRoomId;
+    final roomId = widget.matrixService.selection.selectedRoomId;
     if (roomId != null && roomId != _lastSelectedRoomId) {
       unawaited(_notificationService?.cancelForRoom(roomId));
     }
@@ -106,7 +106,7 @@ class _NotificationLifecycleObserverState
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _notificationService?.isAppResumed = state == AppLifecycleState.resumed;
     if (state == AppLifecycleState.resumed) {
-      final roomId = widget.matrixService.selectedRoomId;
+      final roomId = widget.matrixService.selection.selectedRoomId;
       if (roomId != null) {
         unawaited(_notificationService?.cancelForRoom(roomId));
       }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lattice/core/routing/nav_helper.dart';
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/e2ee/widgets/key_verification_dialog.dart';
 import 'package:lattice/features/rooms/widgets/admin_settings_section.dart';
 import 'package:lattice/features/rooms/widgets/room_members_section.dart';
@@ -139,11 +140,11 @@ class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
 
     if (confirmed != true || !mounted) return;
 
-    final matrix = context.read<MatrixService>();
+    final selectionService = context.read<SelectionService>();
     final navigator = Navigator.of(context);
     await _run('leave', () async {
       await room.leave();
-      matrix.selectRoom(null);
+      selectionService.selectRoom(null);
       if (mounted && widget.isFullPage) navigator.pop();
     });
   }

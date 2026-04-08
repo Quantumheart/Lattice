@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:matrix/src/utils/space_child.dart';
 import 'package:mockito/mockito.dart';
 
@@ -28,10 +29,10 @@ void main() {
     mockClient = MockClient();
     changeCount = 0;
     when(mockClient.rooms).thenReturn([]);
-    service = SelectionService(
-      client: mockClient,
-      onChanged: () => changeCount++,
-    );
+    when(mockClient.onSync)
+        .thenReturn(CachedStreamController<SyncUpdate>());
+    service = SelectionService(client: mockClient);
+    service.addListener(() => changeCount++);
   });
 
   group('selectSpace', () {

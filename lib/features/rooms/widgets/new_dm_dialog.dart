@@ -118,7 +118,7 @@ class _NewDirectMessageDialogState extends State<NewDirectMessageDialog> {
       }
 
       if (!mounted) return;
-      widget.matrixService.selectRoom(roomId);
+      widget.matrixService.selection.selectRoom(roomId);
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;

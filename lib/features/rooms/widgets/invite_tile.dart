@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/shared/widgets/room_avatar.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
@@ -91,10 +92,10 @@ class _InviteTileState extends State<InviteTile> {
 
   @override
   Widget build(BuildContext context) {
-    final matrix = context.watch<MatrixService>();
+    final selection = context.watch<SelectionService>();
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final inviter = matrix.inviterDisplayName(widget.room);
+    final inviter = selection.inviterDisplayName(widget.room);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),

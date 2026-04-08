@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/spaces/widgets/space_context_menu.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:matrix/src/utils/space_child.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -23,13 +25,18 @@ void main() {
   late MockClient mockClient;
   late MockMatrixService mockMatrixService;
   late MockRoom mockSpace;
+  late SelectionService selectionService;
 
   setUp(() {
     mockClient = MockClient();
     mockMatrixService = MockMatrixService();
     mockSpace = MockRoom();
 
+    when(mockClient.onSync).thenReturn(CachedStreamController<SyncUpdate>());
+    when(mockClient.rooms).thenReturn([]);
     when(mockMatrixService.client).thenReturn(mockClient);
+    selectionService = SelectionService(client: mockClient);
+    when(mockMatrixService.selection).thenReturn(selectionService);
 
     // Default space setup — admin with all permissions
     when(mockSpace.id).thenReturn('!space:example.com');
@@ -40,8 +47,11 @@ void main() {
   });
 
   Widget buildTestWidget() {
-    return ChangeNotifierProvider<MatrixService>.value(
-      value: mockMatrixService,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<MatrixService>.value(value: mockMatrixService),
+        ChangeNotifierProvider<SelectionService>.value(value: selectionService),
+      ],
       child: MaterialApp(
         home: Scaffold(
           body: Builder(
@@ -162,7 +172,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(mockSpace.leave()).called(1);
-      verify(mockMatrixService.clearSpaceSelection()).called(1);
+      expect(selectionService.selectedSpaceIds, isEmpty);
     });
 
     testWidgets('Cancelling leave does not call space.leave()',
@@ -218,7 +228,7 @@ void main() {
 
       verify(mockSpace.leave()).called(1);
       verify(mockChildRoom.leave()).called(1);
-      verify(mockMatrixService.clearSpaceSelection()).called(1);
+      expect(selectionService.selectedSpaceIds, isEmpty);
     });
 
     testWidgets('Leave without checkbox keeps child rooms',
@@ -263,8 +273,11 @@ void main() {
         routes: [
           GoRoute(
             path: '/',
-            builder: (context, state) => ChangeNotifierProvider<MatrixService>.value(
-              value: mockMatrixService,
+            builder: (context, state) => MultiProvider(
+              providers: [
+                ChangeNotifierProvider<MatrixService>.value(value: mockMatrixService),
+                ChangeNotifierProvider<SelectionService>.value(value: selectionService),
+              ],
               child: Scaffold(
                 body: Builder(
                   builder: (context) => ElevatedButton(

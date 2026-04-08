@@ -9,6 +9,7 @@ import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/core/utils/media_auth.dart';
 import 'package:lattice/features/notifications/services/inbox_controller.dart';
 import 'package:lattice/features/rooms/widgets/invite_dialog.dart';
@@ -35,22 +36,22 @@ class _SpaceRailState extends State<SpaceRail> {
     super.didChangeDependencies();
     if (!_orderSynced) {
       _orderSynced = true;
-      final matrix = context.read<MatrixService>();
+      final selection = context.read<SelectionService>();
       final prefs = context.read<PreferencesService>();
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) matrix.updateSpaceOrder(prefs.spaceOrder);
+        if (mounted) selection.updateSpaceOrder(prefs.spaceOrder);
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final matrix = context.watch<MatrixService>();
+    final selection = context.watch<SelectionService>();
     final cs = Theme.of(context).colorScheme;
-    final spaces = matrix.topLevelSpaces;
+    final spaces = selection.topLevelSpaces;
 
     final inboxUnread = context.select<InboxController, int>((c) => c.unreadCount);
-    final inviteCount = matrix.invitedRooms.length + matrix.invitedSpaces.length;
+    final inviteCount = selection.invitedRooms.length + selection.invitedSpaces.length;
     final totalInboxBadge = inboxUnread + inviteCount;
 
     return Container(
@@ -66,10 +67,10 @@ class _SpaceRailState extends State<SpaceRail> {
           _RailIcon(
             label: 'H',
             tooltip: 'Home',
-            isSelected: matrix.selectedSpaceIds.isEmpty,
+            isSelected: selection.selectedSpaceIds.isEmpty,
             color: cs.primary,
             onTap: () {
-              matrix.clearSpaceSelection();
+              selection.clearSpaceSelection();
               final current = GoRouterState.of(context).topRoute?.name;
               if (current != Routes.home) {
                 context.goNamed(Routes.home);
@@ -94,7 +95,7 @@ class _SpaceRailState extends State<SpaceRail> {
                 final id = ids.removeAt(oldIndex);
                 ids.insert(newIndex, id);
                 unawaited(context.read<PreferencesService>().setSpaceOrder(ids));
-                matrix.updateSpaceOrder(ids);
+                selection.updateSpaceOrder(ids);
               },
               proxyDecorator: (child, index, animation) {
                 return AnimatedBuilder(
@@ -110,7 +111,7 @@ class _SpaceRailState extends State<SpaceRail> {
               itemBuilder: (context, i) {
                 final space = spaces[i];
                 final childCount = space.spaceChildren.length;
-                final unread = matrix.unreadCountForSpace(space.id);
+                final unread = selection.unreadCountForSpace(space.id);
                 return ReorderableDragStartListener(
                   key: ValueKey(space.id),
                   index: i,
@@ -126,7 +127,7 @@ class _SpaceRailState extends State<SpaceRail> {
                         tooltip:
                             '$displayName \u00b7 $childCount rooms',
                         isSelected:
-                            matrix.selectedSpaceIds.contains(space.id),
+                            selection.selectedSpaceIds.contains(space.id),
                         room: space,
                         color: _spaceColor(i, cs),
                         unreadCount: unread,
@@ -139,9 +140,9 @@ class _SpaceRailState extends State<SpaceRail> {
                               keys.contains(LogicalKeyboardKey.metaLeft) ||
                               keys.contains(LogicalKeyboardKey.metaRight);
                           if (isModifier) {
-                            matrix.toggleSpaceSelection(space.id);
+                            selection.toggleSpaceSelection(space.id);
                           } else {
-                            matrix.selectSpace(space.id);
+                            selection.selectSpace(space.id);
                           }
                           final current =
                               GoRouterState.of(context).topRoute?.name;
@@ -217,7 +218,7 @@ class _SpaceRailState extends State<SpaceRail> {
 
           // Invited spaces (non-reorderable, scrollable)
           Builder(builder: (_) {
-            final invited = matrix.invitedSpaces;
+            final invited = selection.invitedSpaces;
             if (invited.isEmpty) return const SizedBox.shrink();
             return Flexible(
               child: Column(
@@ -254,7 +255,7 @@ class _SpaceRailState extends State<SpaceRail> {
                                     room: space,
                                   );
                                   if (result == true && mounted) {
-                                    matrix.selectSpace(space.id);
+                                    selection.selectSpace(space.id);
                                   }
                                 },
                               ),

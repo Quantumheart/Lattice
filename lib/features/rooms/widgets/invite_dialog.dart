@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/shared/widgets/room_avatar.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
@@ -30,8 +31,8 @@ class _InviteDialogState extends State<InviteDialog> {
   String? _error;
 
   String? get _inviterName {
-    final matrix = context.read<MatrixService>();
-    return matrix.inviterDisplayName(widget.room);
+    final selection = context.read<SelectionService>();
+    return selection.inviterDisplayName(widget.room);
   }
 
   Future<void> _accept() async {

@@ -6,6 +6,7 @@ import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/core/utils/notification_filter.dart';
 import 'package:lattice/core/utils/order_utils.dart' as order_utils;
 import 'package:lattice/core/utils/platform_info.dart';
@@ -741,6 +742,7 @@ class _ReorderDragTargetState extends State<_ReorderDragTarget> {
     required bool insertAbove,
   }) async {
     final matrix = context.read<MatrixService>();
+    final selection = context.read<SelectionService>();
     final space = matrix.client.getRoomById(widget.parentSpaceId);
     if (space == null) return;
 
@@ -767,7 +769,7 @@ class _ReorderDragTargetState extends State<_ReorderDragTarget> {
       }
 
       await space.setSpaceChild(data.roomId, order: newOrder);
-      matrix.invalidateSpaceTree();
+      selection.invalidateSpaceTree();
     } catch (e) {
       debugPrint('[Lattice] Drag reorder failed: $e');
       if (context.mounted) {

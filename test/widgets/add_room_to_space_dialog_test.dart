@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/rooms/widgets/add_room_to_space_dialog.dart';
 import 'package:matrix/matrix.dart' hide Visibility;
+import 'package:matrix/src/utils/cached_stream_controller.dart';
+import 'package:matrix/src/utils/space_child.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
@@ -18,6 +21,8 @@ void main() {
   late MockRoom mockRoom;
   late MockClient mockClient;
 
+  late SelectionService selectionService;
+
   MockRoom makeSpace(String id, String name, {bool canEdit = true}) {
     final space = MockRoom();
     when(space.id).thenReturn(id);
@@ -26,6 +31,9 @@ void main() {
     when(space.avatar).thenReturn(null);
     when(space.directChatMatrixID).thenReturn(null);
     when(space.client).thenReturn(mockClient);
+    when(space.isSpace).thenReturn(true);
+    when(space.membership).thenReturn(Membership.join);
+    when(space.spaceChildren).thenReturn([]);
     when(space.setSpaceChild(any, suggested: anyNamed('suggested')))
         .thenAnswer((_) async {});
     return space;
@@ -37,16 +45,36 @@ void main() {
     mockClient = MockClient();
 
     when(mockMatrix.client).thenReturn(mockClient);
+    when(mockClient.onSync).thenReturn(CachedStreamController<SyncUpdate>());
+    when(mockClient.rooms).thenReturn([]);
     when(mockRoom.id).thenReturn('!room:example.com');
+    when(mockRoom.isSpace).thenReturn(false);
+    when(mockRoom.membership).thenReturn(Membership.join);
+    when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
   });
 
   Widget buildTestWidget({
     List<Room>? spaces,
     Set<String> memberships = const {},
   }) {
-    when(mockMatrix.spaces).thenReturn(spaces ?? []);
-    when(mockMatrix.spaceMemberships('!room:example.com'))
-        .thenReturn(memberships);
+    final allSpaces = spaces ?? [];
+    when(mockClient.rooms).thenReturn(allSpaces);
+
+    for (final s in allSpaces) {
+      if (memberships.contains((s as MockRoom).id)) {
+        when(s.spaceChildren).thenReturn([
+          SpaceChild.fromState(StrippedStateEvent(
+            type: EventTypes.SpaceChild,
+            content: {'via': ['example.com']},
+            stateKey: '!room:example.com',
+            senderId: '@admin:example.com',
+          ),),
+        ]);
+      }
+    }
+
+    selectionService = SelectionService(client: mockClient);
+    when(mockMatrix.selection).thenReturn(selectionService);
 
     return MaterialApp(
       home: Scaffold(
@@ -181,7 +209,6 @@ void main() {
 
       verify(space1.setSpaceChild('!room:example.com', suggested: true))
           .called(1);
-      verify(mockMatrix.invalidateSpaceTree()).called(1);
     });
 
     testWidgets('partial failure shows SnackBar', (tester) async {

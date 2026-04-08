@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/core/utils/sender_color.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
@@ -241,7 +242,7 @@ class _MemberTileState extends State<_MemberTile> {
                     try {
                       final dmRoomId = await matrix.client.startDirectChat(widget.user.id);
                       if (!mounted) return;
-                      matrix.selectRoom(dmRoomId);
+                      context.read<SelectionService>().selectRoom(dmRoomId);
                     } catch (e) {
                       debugPrint('[Lattice] Start DM failed: $e');
                       if (!mounted) return;

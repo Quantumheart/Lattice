@@ -9,6 +9,7 @@ import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/core/theme/lattice_theme.dart';
 import 'package:lattice/core/theme/theme_presets.dart';
 import 'package:lattice/core/utils/vodozemac_init.dart';
@@ -104,6 +105,8 @@ class _LatticeAppState extends State<LatticeApp> {
 
               return ChangeNotifierProvider<MatrixService>.value(
                 value: matrix,
+                child: ChangeNotifierProvider<SelectionService>.value(
+                value: matrix.selection,
                 child:
                     ChangeNotifierProxyProvider<MatrixService, InboxController>(
                   create: (ctx) => InboxController(
@@ -210,6 +213,7 @@ class _LatticeAppState extends State<LatticeApp> {
                     ),
                   ),
                 ),
+              ),
               );
             },
           );

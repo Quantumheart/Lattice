@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart' hide Visibility;
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
@@ -136,7 +137,7 @@ class _CreateSpaceDialogState extends State<CreateSpaceDialog> {
           .timeout(const Duration(seconds: 30));
 
       if (!mounted) return;
-      widget.matrixService.selectSpace(roomId);
+      context.read<SelectionService>().selectSpace(roomId);
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
@@ -302,7 +303,7 @@ class _JoinSpaceDialogState extends State<JoinSpaceDialog> {
       if (!mounted) return;
       final room = client.getRoomById(roomId);
       if (room != null && room.isSpace) {
-        widget.matrixService.selectSpace(roomId);
+        context.read<SelectionService>().selectSpace(roomId);
       }
       Navigator.pop(context);
     } catch (e) {

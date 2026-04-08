@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/chat/screens/chat_screen.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
@@ -65,11 +66,13 @@ Widget _buildChatWidget({
   required MockClient mockClient,
   required MockMatrixService mockMatrix,
   required PreferencesService prefsService,
+  required SelectionService selectionService,
   double width = 800,
 }) {
   return MultiProvider(
     providers: [
       ChangeNotifierProvider<MatrixService>.value(value: mockMatrix),
+      ChangeNotifierProvider<SelectionService>.value(value: selectionService),
       ChangeNotifierProvider(create: (ctx) => CallService(client: ctx.read<MatrixService>().client)),
       ChangeNotifierProvider<PreferencesService>.value(value: prefsService),
     ],
@@ -90,6 +93,7 @@ void main() {
   late MockRoom mockRoom;
   late MockTimeline mockTimeline;
   late PreferencesService prefsService;
+  late SelectionService selectionService;
 
   setUp(() {
     mockClient = MockClient();
@@ -99,10 +103,14 @@ void main() {
     prefsService = PreferencesService();
     _mockRoom = mockRoom;
 
+    when(mockClient.onSync).thenReturn(CachedStreamController());
+    when(mockClient.rooms).thenReturn([]);
+    selectionService = SelectionService(client: mockClient);
+
     when(mockMatrix.client).thenReturn(mockClient);
+    when(mockMatrix.selection).thenReturn(selectionService);
     when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
     when(mockClient.userID).thenReturn('@me:example.com');
-    when(mockClient.onSync).thenReturn(CachedStreamController());
     when(mockRoom.getLocalizedDisplayname()).thenReturn('Test Room');
     when(mockRoom.id).thenReturn('!room:example.com');
     when(mockRoom.client).thenReturn(mockClient);
@@ -142,6 +150,7 @@ void main() {
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
+        selectionService: selectionService,
       ),);
       await tester.pumpAndSettle();
 
@@ -174,6 +183,7 @@ void main() {
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
+        selectionService: selectionService,
       ),);
       await tester.pumpAndSettle();
 
@@ -225,6 +235,7 @@ void main() {
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
+        selectionService: selectionService,
       ),);
       await tester.pumpAndSettle();
 
@@ -273,6 +284,7 @@ void main() {
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
+        selectionService: selectionService,
       ),);
       await tester.pumpAndSettle();
 
@@ -326,6 +338,7 @@ void main() {
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
+        selectionService: selectionService,
       ),);
       await tester.pumpAndSettle();
 
@@ -379,6 +392,7 @@ void main() {
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
+        selectionService: selectionService,
       ),);
       await tester.pumpAndSettle();
 
@@ -418,6 +432,7 @@ void main() {
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
+        selectionService: selectionService,
       ),);
       await tester.pumpAndSettle();
 
@@ -459,6 +474,7 @@ void main() {
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
+        selectionService: selectionService,
       ),);
       await tester.pumpAndSettle();
 
@@ -501,6 +517,7 @@ void main() {
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
+        selectionService: selectionService,
       ),);
       await tester.pumpAndSettle();
 
@@ -546,6 +563,7 @@ void main() {
         mockClient: mockClient,
         mockMatrix: mockMatrix,
         prefsService: prefsService,
+        selectionService: selectionService,
       ),);
       await tester.pumpAndSettle();
 

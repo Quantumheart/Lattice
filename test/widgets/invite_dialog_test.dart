@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/rooms/widgets/invite_dialog.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
@@ -20,6 +22,7 @@ void main() {
   late MockMatrixService mockMatrix;
   late MockRoom mockRoom;
   late MockClient mockClient;
+  late SelectionService selectionService;
 
   setUp(() {
     mockMatrix = MockMatrixService();
@@ -27,16 +30,33 @@ void main() {
     mockClient = MockClient();
     when(mockMatrix.client).thenReturn(mockClient);
     when(mockClient.userID).thenReturn('@me:example.com');
+    when(mockClient.onSync).thenReturn(CachedStreamController<SyncUpdate>());
+    when(mockClient.rooms).thenReturn([]);
     when(mockRoom.getLocalizedDisplayname()).thenReturn('Test Room');
     when(mockRoom.isSpace).thenReturn(false);
+    when(mockRoom.client).thenReturn(mockClient);
     when(mockRoom.getState(EventTypes.RoomMember, '@me:example.com'))
-        .thenReturn(null);
-    when(mockMatrix.inviterDisplayName(mockRoom)).thenReturn('Alice');
+        .thenReturn(Event(
+      type: EventTypes.RoomMember,
+      content: {'membership': 'invite'},
+      senderId: '@alice:example.com',
+      eventId: r'$inv',
+      room: mockRoom,
+      originServerTs: DateTime.now(),
+    ),);
+    when(mockRoom.unsafeGetUserFromMemoryOrFallback('@alice:example.com'))
+        .thenReturn(User('@alice:example.com',
+            room: mockRoom, displayName: 'Alice',),);
+    selectionService = SelectionService(client: mockClient);
+    when(mockMatrix.selection).thenReturn(selectionService);
   });
 
   Widget buildTestWidget() {
-    return ChangeNotifierProvider<MatrixService>.value(
-      value: mockMatrix,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<MatrixService>.value(value: mockMatrix),
+        ChangeNotifierProvider<SelectionService>.value(value: selectionService),
+      ],
       child: MaterialApp(
         home: Scaffold(
           body: Builder(

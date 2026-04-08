@@ -1,17 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:lattice/core/models/space_node.dart';
 import 'package:lattice/core/utils/order_utils.dart' as order_utils;
 import 'package:matrix/matrix.dart';
 
-class SelectionService {
-  SelectionService({
-    required Client client,
-    required VoidCallback onChanged,
-  })  : _client = client,
-        _onChanged = onChanged;
+class SelectionService extends ChangeNotifier {
+  SelectionService({required Client client}) : _client = client {
+    _syncSub = _client.onSync.stream.listen((_) {
+      invalidateSpaceTree();
+      notifyListeners();
+    });
+  }
 
   final Client _client;
-  final VoidCallback _onChanged;
+  StreamSubscription<SyncUpdate>? _syncSub;
 
   // ── Space multi-select ──────────────────────────────────────
   final Set<String> _selectedSpaceIds = {};
@@ -29,7 +32,7 @@ class SelectionService {
         ..add(spaceId);
     }
     _spaceTreeDirty = true;
-    _onChanged();
+    notifyListeners();
   }
 
   void toggleSpaceSelection(String spaceId) {
@@ -37,13 +40,13 @@ class SelectionService {
       _selectedSpaceIds.add(spaceId);
     }
     _spaceTreeDirty = true;
-    _onChanged();
+    notifyListeners();
   }
 
   void clearSpaceSelection() {
     _selectedSpaceIds.clear();
     _spaceTreeDirty = true;
-    _onChanged();
+    notifyListeners();
   }
 
   // ── Room selection ──────────────────────────────────────────
@@ -55,7 +58,7 @@ class SelectionService {
 
   void selectRoom(String? roomId) {
     _selectedRoomId = roomId;
-    _onChanged();
+    notifyListeners();
   }
 
   void resetSelection() {
@@ -70,7 +73,7 @@ class SelectionService {
     if (listEquals(_customSpaceOrder, order)) return;
     _customSpaceOrder = order;
     _spaceTreeDirty = true;
-    _onChanged();
+    notifyListeners();
   }
 
   List<T> _sortByCustomOrder<T>(
@@ -294,6 +297,13 @@ class SelectionService {
   Set<String> spaceMemberships(String roomId) {
     _ensureTreeFresh();
     return _cachedRoomToSpaces?[roomId] ?? const {};
+  }
+
+  @override
+  void dispose() {
+    unawaited(_syncSub?.cancel());
+    _syncSub = null;
+    super.dispose();
   }
 
   int unreadCountForSpace(String spaceId) {

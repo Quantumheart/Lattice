@@ -36,6 +36,8 @@ void main() {
     mockClient = MockClient();
     mockStorage = MockFlutterSecureStorage();
     when(mockClient.rooms).thenReturn([]);
+    when(mockClient.onSync)
+        .thenReturn(CachedStreamController<SyncUpdate>());
     when(mockClient.database).thenReturn(_FakeDatabase());
     service = MatrixService(
       client: mockClient,
@@ -47,52 +49,52 @@ void main() {
   group('selectSpace', () {
     test('updates selectedSpaceIds and notifies listeners', () {
       var notified = false;
-      service.addListener(() => notified = true);
+      service.selection.addListener(() => notified = true);
 
-      service.selectSpace('!space:example.com');
+      service.selection.selectSpace('!space:example.com');
 
-      expect(service.selectedSpaceIds, {'!space:example.com'});
+      expect(service.selection.selectedSpaceIds, {'!space:example.com'});
       expect(notified, isTrue);
     });
 
     test('can be cleared to null', () {
-      service.selectSpace('!space:example.com');
-      service.selectSpace(null);
+      service.selection.selectSpace('!space:example.com');
+      service.selection.selectSpace(null);
 
-      expect(service.selectedSpaceIds, isEmpty);
+      expect(service.selection.selectedSpaceIds, isEmpty);
     });
 
     test('clears when selecting the only selected space again', () {
-      service.selectSpace('!space:example.com');
-      service.selectSpace('!space:example.com');
+      service.selection.selectSpace('!space:example.com');
+      service.selection.selectSpace('!space:example.com');
 
-      expect(service.selectedSpaceIds, isEmpty);
+      expect(service.selection.selectedSpaceIds, isEmpty);
     });
 
     test('replaces previous selection', () {
-      service.selectSpace('!a:example.com');
-      service.selectSpace('!b:example.com');
+      service.selection.selectSpace('!a:example.com');
+      service.selection.selectSpace('!b:example.com');
 
-      expect(service.selectedSpaceIds, {'!b:example.com'});
+      expect(service.selection.selectedSpaceIds, {'!b:example.com'});
     });
   });
 
   group('selectRoom', () {
     test('updates selectedRoomId and notifies listeners', () {
       var notified = false;
-      service.addListener(() => notified = true);
+      service.selection.addListener(() => notified = true);
 
-      service.selectRoom('!room:example.com');
+      service.selection.selectRoom('!room:example.com');
 
-      expect(service.selectedRoomId, '!room:example.com');
+      expect(service.selection.selectedRoomId, '!room:example.com');
       expect(notified, isTrue);
     });
 
     test('can be cleared to null', () {
-      service.selectRoom('!room:example.com');
-      service.selectRoom(null);
+      service.selection.selectRoom('!room:example.com');
+      service.selection.selectRoom(null);
 
-      expect(service.selectedRoomId, isNull);
+      expect(service.selection.selectedRoomId, isNull);
     });
   });
 
@@ -114,7 +116,7 @@ void main() {
 
       when(mockClient.rooms).thenReturn([space1, room1, space2]);
 
-      final spaces = service.spaces;
+      final spaces = service.selection.spaces;
       expect(spaces, hasLength(2));
       expect(spaces[0].getLocalizedDisplayname(), 'A Space');
       expect(spaces[1].getLocalizedDisplayname(), 'B Space');
@@ -147,7 +149,7 @@ void main() {
 
       when(mockClient.rooms).thenReturn([space, olderRoom, newerRoom]);
 
-      final rooms = service.rooms;
+      final rooms = service.selection.rooms;
       expect(rooms, hasLength(2));
       // Newer first (descending)
       expect(rooms[0].id, '!new:example.com');
@@ -178,9 +180,9 @@ void main() {
       when(mockClient.rooms).thenReturn([space, childRoom, otherRoom]);
       when(mockClient.getRoomById('!space:example.com')).thenReturn(space);
 
-      service.selectSpace('!space:example.com');
+      service.selection.selectSpace('!space:example.com');
 
-      final rooms = service.rooms;
+      final rooms = service.selection.rooms;
       expect(rooms, hasLength(2));
     });
   });
@@ -305,14 +307,14 @@ void main() {
         username: 'user',
         password: 'pass',
       );
-      service.selectSpace('!space:example.com');
-      service.selectRoom('!room:example.com');
+      service.selection.selectSpace('!space:example.com');
+      service.selection.selectRoom('!room:example.com');
 
       await service.logout();
 
       expect(service.isLoggedIn, isFalse);
-      expect(service.selectedSpaceIds, isEmpty);
-      expect(service.selectedRoomId, isNull);
+      expect(service.selection.selectedSpaceIds, isEmpty);
+      expect(service.selection.selectedRoomId, isNull);
       // Verify namespaced key deletion.
       verify(mockStorage.delete(key: 'lattice_test_access_token')).called(1);
       verify(mockStorage.delete(key: 'lattice_test_refresh_token')).called(1);
@@ -377,8 +379,8 @@ void main() {
       await Future<void>.delayed(Duration.zero);
 
       expect(service.isLoggedIn, isFalse);
-      expect(service.selectedSpaceIds, isEmpty);
-      expect(service.selectedRoomId, isNull);
+      expect(service.selection.selectedSpaceIds, isEmpty);
+      expect(service.selection.selectedRoomId, isNull);
       expect(notified, isTrue);
     });
 
@@ -815,32 +817,32 @@ void main() {
 
   group('toggleSpaceSelection', () {
     test('adds space to selection', () {
-      service.toggleSpaceSelection('!a:example.com');
+      service.selection.toggleSpaceSelection('!a:example.com');
 
-      expect(service.selectedSpaceIds, {'!a:example.com'});
+      expect(service.selection.selectedSpaceIds, {'!a:example.com'});
     });
 
     test('removes space if already selected', () {
-      service.toggleSpaceSelection('!a:example.com');
-      service.toggleSpaceSelection('!a:example.com');
+      service.selection.toggleSpaceSelection('!a:example.com');
+      service.selection.toggleSpaceSelection('!a:example.com');
 
-      expect(service.selectedSpaceIds, isEmpty);
+      expect(service.selection.selectedSpaceIds, isEmpty);
     });
 
     test('supports multi-select', () {
-      service.toggleSpaceSelection('!a:example.com');
-      service.toggleSpaceSelection('!b:example.com');
+      service.selection.toggleSpaceSelection('!a:example.com');
+      service.selection.toggleSpaceSelection('!b:example.com');
 
-      expect(service.selectedSpaceIds, {'!a:example.com', '!b:example.com'});
+      expect(service.selection.selectedSpaceIds, {'!a:example.com', '!b:example.com'});
     });
   });
 
   group('clearSpaceSelection', () {
     test('empties the selected set', () {
-      service.selectSpace('!a:example.com');
-      service.clearSpaceSelection();
+      service.selection.selectSpace('!a:example.com');
+      service.selection.clearSpaceSelection();
 
-      expect(service.selectedSpaceIds, isEmpty);
+      expect(service.selection.selectedSpaceIds, isEmpty);
     });
   });
 
@@ -866,7 +868,7 @@ void main() {
 
       when(mockClient.rooms).thenReturn([invitedRoom1, joinedRoom, invitedRoom2, invitedSpace]);
 
-      final result = service.invitedRooms;
+      final result = service.selection.invitedRooms;
       expect(result, hasLength(2));
       expect(result[0].getLocalizedDisplayname(), 'A Room');
       expect(result[1].getLocalizedDisplayname(), 'B Room');
@@ -879,7 +881,7 @@ void main() {
 
       when(mockClient.rooms).thenReturn([joinedRoom]);
 
-      expect(service.invitedRooms, isEmpty);
+      expect(service.selection.invitedRooms, isEmpty);
     });
   });
 
@@ -905,7 +907,7 @@ void main() {
 
       when(mockClient.rooms).thenReturn([invitedSpace1, invitedRoom, joinedSpace, invitedSpace2]);
 
-      final result = service.invitedSpaces;
+      final result = service.selection.invitedSpaces;
       expect(result, hasLength(2));
       expect(result[0].getLocalizedDisplayname(), 'A Space');
       expect(result[1].getLocalizedDisplayname(), 'Z Space');
@@ -932,7 +934,7 @@ void main() {
       when(room.unsafeGetUserFromMemoryOrFallback('@alice:example.com'))
           .thenReturn(User('@alice:example.com', room: room, displayName: 'Alice'));
 
-      final result = service.inviterDisplayName(room);
+      final result = service.selection.inviterDisplayName(room);
       expect(result, 'Alice');
     });
 
@@ -940,7 +942,7 @@ void main() {
       final room = MockRoom();
       when(mockClient.userID).thenReturn(null);
 
-      expect(service.inviterDisplayName(room), isNull);
+      expect(service.selection.inviterDisplayName(room), isNull);
     });
 
     test('returns null when no invite state event', () {
@@ -949,7 +951,7 @@ void main() {
       when(room.getState(EventTypes.RoomMember, '@me:example.com'))
           .thenReturn(null);
 
-      expect(service.inviterDisplayName(room), isNull);
+      expect(service.selection.inviterDisplayName(room), isNull);
     });
   });
 
@@ -1037,7 +1039,7 @@ void main() {
     });
 
     test('builds correctly with nested subspaces', () {
-      final tree = service.spaceTree;
+      final tree = service.selection.spaceTree;
 
       expect(tree, hasLength(2)); // A Space and B Space (top-level)
       expect(tree[0].room.id, '!spaceA:example.com'); // A before B
@@ -1065,7 +1067,7 @@ void main() {
       ]);
       when(mockClient.getRoomById('!unjoined:example.com')).thenReturn(null);
 
-      final tree = service.spaceTree;
+      final tree = service.selection.spaceTree;
 
       // Should still build correctly, ignoring unjoined
       expect(tree, hasLength(2));
@@ -1073,22 +1075,22 @@ void main() {
     });
 
     test('orphanRooms excludes rooms in any space', () {
-      final orphans = service.orphanRooms;
+      final orphans = service.selection.orphanRooms;
 
       expect(orphans, hasLength(1));
       expect(orphans[0].id, '!orphan:example.com');
     });
 
     test('roomsForSpace returns correct children', () {
-      final roomsA = service.roomsForSpace('!spaceA:example.com');
+      final roomsA = service.selection.roomsForSpace('!spaceA:example.com');
       expect(roomsA, hasLength(1));
       expect(roomsA[0].id, '!room1:example.com');
 
-      final roomsSub = service.roomsForSpace('!subspace:example.com');
+      final roomsSub = service.selection.roomsForSpace('!subspace:example.com');
       expect(roomsSub, hasLength(1));
       expect(roomsSub[0].id, '!room2:example.com');
 
-      final roomsB = service.roomsForSpace('!spaceB:example.com');
+      final roomsB = service.selection.roomsForSpace('!spaceB:example.com');
       expect(roomsB, hasLength(1));
       expect(roomsB[0].id, '!room3:example.com');
     });
@@ -1107,9 +1109,9 @@ void main() {
       // Make all rooms children of spaceA for this test
       when(mockClient.rooms).thenReturn([spaceA, room1, room2, room3]);
       when(mockClient.getRoomById('!room3:example.com')).thenReturn(room3);
-      service.invalidateSpaceTree();
+      service.selection.invalidateSpaceTree();
 
-      final rooms = service.roomsForSpace('!spaceA:example.com');
+      final rooms = service.selection.roomsForSpace('!spaceA:example.com');
       expect(rooms, hasLength(3));
       // Ordered rooms first by order string: room3 ('a') then room1 ('z')
       expect(rooms[0].id, '!room3:example.com');
@@ -1119,60 +1121,60 @@ void main() {
     });
 
     test('spaceMemberships returns correct set', () {
-      final memberships1 = service.spaceMemberships('!room1:example.com');
+      final memberships1 = service.selection.spaceMemberships('!room1:example.com');
       expect(memberships1, {'!spaceA:example.com'});
 
-      final memberships2 = service.spaceMemberships('!room2:example.com');
+      final memberships2 = service.selection.spaceMemberships('!room2:example.com');
       expect(memberships2, {'!subspace:example.com'});
 
       // Orphan room has no memberships
-      final orphanMemberships = service.spaceMemberships('!orphan:example.com');
+      final orphanMemberships = service.selection.spaceMemberships('!orphan:example.com');
       expect(orphanMemberships, isEmpty);
     });
 
     test('unreadCountForSpace aggregates correctly', () {
       // Space A: room1 (3) + subspace room2 (5) = 8
-      expect(service.unreadCountForSpace('!spaceA:example.com'), 8);
+      expect(service.selection.unreadCountForSpace('!spaceA:example.com'), 8);
 
       // Subspace alone: room2 (5) = 5
-      expect(service.unreadCountForSpace('!subspace:example.com'), 5);
+      expect(service.selection.unreadCountForSpace('!subspace:example.com'), 5);
 
       // Space B: room3 (0) = 0
-      expect(service.unreadCountForSpace('!spaceB:example.com'), 0);
+      expect(service.selection.unreadCountForSpace('!spaceB:example.com'), 0);
 
       // Non-existent space = 0
-      expect(service.unreadCountForSpace('!nonexistent:example.com'), 0);
+      expect(service.selection.unreadCountForSpace('!nonexistent:example.com'), 0);
     });
 
     test('rooms getter returns all non-space rooms unfiltered', () {
-      service.selectSpace('!spaceA:example.com');
+      service.selection.selectSpace('!spaceA:example.com');
 
-      final allRooms = service.rooms;
+      final allRooms = service.selection.rooms;
       expect(allRooms, hasLength(4)); // room1, room2, room3, orphanRoom
     });
 
     test('updateSpaceOrder changes ordering of spaces getter', () {
       // Default: alphabetical → A Space, B Space
-      expect(service.spaces[0].id, '!spaceA:example.com');
-      expect(service.spaces[1].id, '!spaceB:example.com');
+      expect(service.selection.spaces[0].id, '!spaceA:example.com');
+      expect(service.selection.spaces[1].id, '!spaceB:example.com');
 
       // Custom: B before A
-      service.updateSpaceOrder([
+      service.selection.updateSpaceOrder([
         '!spaceB:example.com',
         '!spaceA:example.com',
       ]);
 
-      expect(service.spaces[0].id, '!spaceB:example.com');
-      expect(service.spaces[1].id, '!spaceA:example.com');
+      expect(service.selection.spaces[0].id, '!spaceB:example.com');
+      expect(service.selection.spaces[1].id, '!spaceA:example.com');
     });
 
     test('updateSpaceOrder changes ordering of top-level spaceTree', () {
-      service.updateSpaceOrder([
+      service.selection.updateSpaceOrder([
         '!spaceB:example.com',
         '!spaceA:example.com',
       ]);
 
-      final tree = service.spaceTree;
+      final tree = service.selection.spaceTree;
       expect(tree[0].room.id, '!spaceB:example.com');
       expect(tree[1].room.id, '!spaceA:example.com');
     });
@@ -1199,13 +1201,13 @@ void main() {
       ]);
 
       // Custom order only affects top-level; subspaces stay alphabetical
-      service.updateSpaceOrder([
+      service.selection.updateSpaceOrder([
         '!subspace:example.com', // stale — subspace is not top-level
         '!spaceB:example.com',
         '!spaceA:example.com',
       ]);
 
-      final tree = service.spaceTree;
+      final tree = service.selection.spaceTree;
       final aSubs = tree.firstWhere(
           (n) => n.room.id == '!spaceA:example.com',).subspaces;
       expect(aSubs[0].room.getLocalizedDisplayname(), 'A Sub');
@@ -1215,10 +1217,10 @@ void main() {
     test('new spaces not in custom order appear at the end alphabetically',
         () {
       // Order only mentions B — A should appear after B alphabetically
-      service.updateSpaceOrder(['!spaceB:example.com']);
+      service.selection.updateSpaceOrder(['!spaceB:example.com']);
 
-      expect(service.spaces[0].id, '!spaceB:example.com');
-      expect(service.spaces[1].id, '!spaceA:example.com');
+      expect(service.selection.spaces[0].id, '!spaceB:example.com');
+      expect(service.selection.spaces[1].id, '!spaceA:example.com');
 
       // Also in the subspace list — subspace is not top-level so it's
       // irrelevant, but if we add a new top-level space C:
@@ -1234,9 +1236,9 @@ void main() {
       ]);
 
       // Force tree rebuild
-      service.updateSpaceOrder(['!spaceB:example.com', '!spaceA:example.com']);
+      service.selection.updateSpaceOrder(['!spaceB:example.com', '!spaceA:example.com']);
 
-      final spaces = service.spaces;
+      final spaces = service.selection.spaces;
       // B first, A second (both in order), C last (not in order)
       expect(spaces[0].id, '!spaceB:example.com');
       expect(spaces[1].id, '!spaceA:example.com');
@@ -1244,21 +1246,21 @@ void main() {
     });
 
     test('stale IDs in custom order are silently ignored', () {
-      service.updateSpaceOrder([
+      service.selection.updateSpaceOrder([
         '!nonexistent:example.com', // stale — doesn't exist
         '!spaceB:example.com',
         '!spaceA:example.com',
       ]);
 
       // Should work fine, ignoring the stale ID
-      final spaces = service.spaces;
+      final spaces = service.selection.spaces;
       expect(spaces, hasLength(3)); // A, B, subspace
       expect(spaces[0].id, '!spaceB:example.com');
       expect(spaces[1].id, '!spaceA:example.com');
     });
 
     test('updateSpaceOrder with identical list is a no-op', () {
-      service.updateSpaceOrder([
+      service.selection.updateSpaceOrder([
         '!spaceB:example.com',
         '!spaceA:example.com',
       ]);
@@ -1267,7 +1269,7 @@ void main() {
       service.addListener(() => notifyCount++);
 
       // Same order again — should not notify
-      service.updateSpaceOrder([
+      service.selection.updateSpaceOrder([
         '!spaceB:example.com',
         '!spaceA:example.com',
       ]);

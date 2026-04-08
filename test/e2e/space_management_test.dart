@@ -6,6 +6,7 @@ import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/client_manager.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/notifications/services/inbox_controller.dart';
 import 'package:lattice/features/spaces/widgets/space_rail.dart';
 import 'package:matrix/matrix.dart' hide Visibility;
@@ -135,6 +136,8 @@ void main() {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<MatrixService>.value(value: matrixService),
+        ChangeNotifierProvider<SelectionService>.value(
+            value: matrixService.selection,),
         ChangeNotifierProvider(create: (ctx) => CallService(client: ctx.read<MatrixService>().client)),
         ChangeNotifierProvider<ClientManager>.value(value: clientManager),
         ChangeNotifierProvider(create: (_) => PreferencesService()),
@@ -173,7 +176,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('H'), findsOneWidget);
-      expect(matrixService.selectedSpaceIds, isEmpty);
+      expect(matrixService.selection.selectedSpaceIds, isEmpty);
     });
   });
 
@@ -194,7 +197,7 @@ void main() {
       await tester.tap(find.text('A'));
       await tester.pumpAndSettle();
 
-      expect(matrixService.selectedSpaceIds, contains(_spaceId1));
+      expect(matrixService.selection.selectedSpaceIds, contains(_spaceId1));
     });
 
     testWidgets('tap selected space deselects it', (tester) async {
@@ -210,11 +213,11 @@ void main() {
 
       await tester.tap(find.text('A'));
       await tester.pumpAndSettle();
-      expect(matrixService.selectedSpaceIds, contains(_spaceId1));
+      expect(matrixService.selection.selectedSpaceIds, contains(_spaceId1));
 
       await tester.tap(find.text('A'));
       await tester.pumpAndSettle();
-      expect(matrixService.selectedSpaceIds, isEmpty);
+      expect(matrixService.selection.selectedSpaceIds, isEmpty);
     });
 
     testWidgets('tapping Home clears space selection', (tester) async {
@@ -224,17 +227,17 @@ void main() {
         displayName: 'Alpha',
       );
       when(mockClient.rooms).thenReturn([space]);
-      matrixService.selectSpace(_spaceId1);
+      matrixService.selection.selectSpace(_spaceId1);
 
       await tester.pumpWidget(buildSpaceTestApp());
       await tester.pumpAndSettle();
 
-      expect(matrixService.selectedSpaceIds, isNotEmpty);
+      expect(matrixService.selection.selectedSpaceIds, isNotEmpty);
 
       await tester.tap(find.text('H'));
       await tester.pumpAndSettle();
 
-      expect(matrixService.selectedSpaceIds, isEmpty);
+      expect(matrixService.selection.selectedSpaceIds, isEmpty);
     });
   });
 

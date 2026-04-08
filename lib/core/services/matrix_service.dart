@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:lattice/core/models/server_auth_capabilities.dart';
-import 'package:lattice/core/models/space_node.dart';
 import 'package:lattice/core/services/session_backup.dart';
 import 'package:lattice/core/services/sub_services/auth_service.dart';
 import 'package:lattice/core/services/sub_services/chat_backup_service.dart';
@@ -44,14 +43,11 @@ class MatrixService extends ChangeNotifier {
       storage: _storage,
       onChanged: notifyListeners,
     );
-    _selection = SelectionService(client: _client, onChanged: notifyListeners);
+    selection = SelectionService(client: _client);
     _sync = SyncService(
       client: _client,
       onChanged: notifyListeners,
-      onSyncEvent: () {
-        _selection.invalidateSpaceTree();
-        notifyListeners();
-      },
+      onSyncEvent: notifyListeners,
       onPostSyncBackup: () async {
         await _chatBackup.checkChatBackupStatus();
         if (_chatBackup.chatBackupNeeded == true) {
@@ -93,7 +89,7 @@ class MatrixService extends ChangeNotifier {
 
   late final UiaService _uia;
   late final ChatBackupService _chatBackup;
-  late final SelectionService _selection;
+  late final SelectionService selection;
   late final SyncService _sync;
   late final AuthService _auth;
 
@@ -128,33 +124,6 @@ class MatrixService extends ChangeNotifier {
     _hasSkippedSetup = true;
     notifyListeners();
   }
-
-  // ── SelectionService delegates ──────────────────────────────────
-
-  Set<String> get selectedSpaceIds => _selection.selectedSpaceIds;
-  String? get selectedRoomId => _selection.selectedRoomId;
-  Room? get selectedRoom => _selection.selectedRoom;
-  void selectSpace(String? spaceId) => _selection.selectSpace(spaceId);
-  void toggleSpaceSelection(String spaceId) =>
-      _selection.toggleSpaceSelection(spaceId);
-  void clearSpaceSelection() => _selection.clearSpaceSelection();
-  void selectRoom(String? roomId) => _selection.selectRoom(roomId);
-  void updateSpaceOrder(List<String> order) =>
-      _selection.updateSpaceOrder(order);
-  List<SpaceNode> get spaceTree => _selection.spaceTree;
-  List<Room> get spaces => _selection.spaces;
-  List<Room> get topLevelSpaces => _selection.topLevelSpaces;
-  List<Room> get rooms => _selection.rooms;
-  List<Room> get invitedRooms => _selection.invitedRooms;
-  List<Room> get invitedSpaces => _selection.invitedSpaces;
-  String? inviterDisplayName(Room room) => _selection.inviterDisplayName(room);
-  List<Room> get orphanRooms => _selection.orphanRooms;
-  List<Room> roomsForSpace(String spaceId) => _selection.roomsForSpace(spaceId);
-  Set<String> spaceMemberships(String roomId) =>
-      _selection.spaceMemberships(roomId);
-  int unreadCountForSpace(String spaceId) =>
-      _selection.unreadCountForSpace(spaceId);
-  void invalidateSpaceTree() => _selection.invalidateSpaceTree();
 
   // ── SyncService delegates ───────────────────────────────────────
 
@@ -213,6 +182,7 @@ class MatrixService extends ChangeNotifier {
     _isLoggedIn = false;
     _sync.cancelSyncSub();
     _uia.dispose();
+    selection.dispose();
     unawaited(_loginStateSub?.cancel());
     super.dispose();
   }
@@ -354,7 +324,7 @@ class MatrixService extends ChangeNotifier {
     await _chatBackup.deleteStoredRecoveryKey();
     _uia.clearCachedPassword();
     _uia.cancelUiaSub();
-    _selection.resetSelection();
+    selection.resetSelection();
     _chatBackup.resetChatBackupState();
     _hasSkippedSetup = false;
     notifyListeners();
@@ -387,7 +357,7 @@ class MatrixService extends ChangeNotifier {
       await _auth.awaitPostLoginSync();
       _uia.cancelUiaSub();
       _uia.clearCachedPassword();
-      _selection.resetSelection();
+      selection.resetSelection();
       _chatBackup.resetChatBackupState();
       _hasSkippedSetup = false;
       await _auth.clearSessionKeys();
@@ -413,7 +383,7 @@ class MatrixService extends ChangeNotifier {
         _isLoggedIn = false;
         _uia.cancelUiaSub();
         _uia.clearCachedPassword();
-        _selection.resetSelection();
+        selection.resetSelection();
         _chatBackup.resetChatBackupState();
         _hasSkippedSetup = false;
         await _auth.clearSessionKeys();

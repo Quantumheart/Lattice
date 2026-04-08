@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/rooms/widgets/room_details_panel.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
@@ -20,6 +21,7 @@ void main() {
   late MockMatrixService mockMatrixService;
   late MockRoom mockRoom;
   late CachedStreamController<SyncUpdate> syncController;
+  late SelectionService selectionService;
 
   setUp(() {
     mockClient = MockClient();
@@ -51,12 +53,18 @@ void main() {
     when(mockRoom.canKick).thenReturn(false);
     when(mockRoom.canBan).thenReturn(false);
     when(mockRoom.requestParticipants(any)).thenAnswer((_) async => []);
+    when(mockClient.rooms).thenReturn([]);
+    selectionService = SelectionService(client: mockClient);
+    when(mockMatrixService.selection).thenReturn(selectionService);
   });
 
   Widget buildTestWidget({bool isFullPage = false}) {
     return MaterialApp(
-      home: ChangeNotifierProvider<MatrixService>.value(
-        value: mockMatrixService,
+      home: MultiProvider(
+        providers: [
+          ChangeNotifierProvider<MatrixService>.value(value: mockMatrixService),
+          ChangeNotifierProvider<SelectionService>.value(value: selectionService),
+        ],
         child: Scaffold(
           body: RoomDetailsPanel(
             roomId: '!room:example.com',
@@ -167,7 +175,7 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(mockRoom.leave()).called(1);
-      verify(mockMatrixService.selectRoom(null)).called(1);
+      expect(selectionService.selectedRoomId, isNull);
     });
 
     testWidgets('notification section shows radio options', (tester) async {
@@ -181,8 +189,11 @@ void main() {
 
     testWidgets('renders as Scaffold when isFullPage is true', (tester) async {
       await tester.pumpWidget(MaterialApp(
-        home: ChangeNotifierProvider<MatrixService>.value(
-          value: mockMatrixService,
+        home: MultiProvider(
+          providers: [
+            ChangeNotifierProvider<MatrixService>.value(value: mockMatrixService),
+            ChangeNotifierProvider<SelectionService>.value(value: selectionService),
+          ],
           child: const RoomDetailsPanel(
             roomId: '!room:example.com',
             isFullPage: true,

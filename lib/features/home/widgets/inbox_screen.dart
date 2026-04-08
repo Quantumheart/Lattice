@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/core/utils/reply_fallback.dart';
 import 'package:lattice/core/utils/time_format.dart';
 import 'package:lattice/features/notifications/models/notification_constants.dart';
@@ -44,9 +44,9 @@ class _InboxScreenState extends State<InboxScreen> {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<InboxController>();
-    final matrix = context.watch<MatrixService>();
+    final selection = context.watch<SelectionService>();
     final inviteCount =
-        matrix.invitedRooms.length + matrix.invitedSpaces.length;
+        selection.invitedRooms.length + selection.invitedSpaces.length;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
 
@@ -361,9 +361,9 @@ class _InvitationsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final matrix = context.watch<MatrixService>();
-    final invitedRooms = matrix.invitedRooms;
-    final invitedSpaces = matrix.invitedSpaces;
+    final selection = context.watch<SelectionService>();
+    final invitedRooms = selection.invitedRooms;
+    final invitedSpaces = selection.invitedSpaces;
 
     if (invitedRooms.isEmpty && invitedSpaces.isEmpty) {
       return Center(

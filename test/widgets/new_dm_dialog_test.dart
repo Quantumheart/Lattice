@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/rooms/widgets/new_dm_dialog.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
@@ -18,12 +20,16 @@ import 'new_dm_dialog_test.mocks.dart';
 void main() {
   late MockClient mockClient;
   late MockMatrixService mockMatrixService;
+  late SelectionService selectionService;
 
   setUp(() {
     mockClient = MockClient();
     mockMatrixService = MockMatrixService();
     when(mockMatrixService.client).thenReturn(mockClient);
     when(mockClient.rooms).thenReturn([]);
+    when(mockClient.onSync).thenReturn(CachedStreamController<SyncUpdate>());
+    selectionService = SelectionService(client: mockClient);
+    when(mockMatrixService.selection).thenReturn(selectionService);
   });
 
   Widget buildTestWidget() {
@@ -122,7 +128,7 @@ void main() {
         '@alice:example.com',
         enableEncryption: true,
       ),).called(1);
-      verify(mockMatrixService.selectRoom('!dm:example.com')).called(1);
+      expect(selectionService.selectedRoomId, '!dm:example.com');
     });
 
     testWidgets('shows known contacts when search is empty', (tester) async {

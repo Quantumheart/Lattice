@@ -84,7 +84,7 @@ class _CreateSubspaceDialogState extends State<CreateSubspaceDialog> {
 
       // Register as child of the parent space.
       await widget.parentSpace.setSpaceChild(roomId);
-      widget.matrixService.invalidateSpaceTree();
+      widget.matrixService.selection.invalidateSpaceTree();
 
       debugPrint('[Lattice] Subspace created: $roomId under ${widget.parentSpace.id}');
 

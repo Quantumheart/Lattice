@@ -3,8 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart' hide Visibility;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/rooms/widgets/new_room_dialog.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
@@ -18,11 +20,16 @@ void main() {
   late MockClient mockClient;
   late MockMatrixService mockMatrixService;
 
+  late SelectionService selectionService;
+
   setUp(() {
     mockClient = MockClient();
     mockMatrixService = MockMatrixService();
     when(mockMatrixService.client).thenReturn(mockClient);
-    when(mockMatrixService.selectedSpaceIds).thenReturn(<String>{});
+    when(mockClient.onSync).thenReturn(CachedStreamController<SyncUpdate>());
+    when(mockClient.rooms).thenReturn([]);
+    selectionService = SelectionService(client: mockClient);
+    when(mockMatrixService.selection).thenReturn(selectionService);
   });
 
   Widget buildTestWidget() {
@@ -91,7 +98,7 @@ void main() {
       ),).called(1);
       verify(mockClient.waitForRoomInSync('!newroom:example.com', join: true))
           .called(1);
-      verify(mockMatrixService.selectRoom('!newroom:example.com')).called(1);
+      expect(selectionService.selectedRoomId, '!newroom:example.com');
     });
 
     testWidgets('shows network error on failure', (tester) async {

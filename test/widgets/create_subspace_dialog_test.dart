@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/sub_services/selection_service.dart';
 import 'package:lattice/features/spaces/widgets/create_subspace_dialog.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 
@@ -18,11 +20,18 @@ void main() {
   late MockMatrixService mockMatrixService;
   late MockRoom mockParentSpace;
 
+  late SelectionService selectionService;
+
   setUp(() {
     mockClient = MockClient();
     mockMatrixService = MockMatrixService();
     mockParentSpace = MockRoom();
+    when(mockClient.rooms).thenReturn([]);
+    when(mockClient.onSync)
+        .thenReturn(CachedStreamController<SyncUpdate>());
+    selectionService = SelectionService(client: mockClient);
     when(mockMatrixService.client).thenReturn(mockClient);
+    when(mockMatrixService.selection).thenReturn(selectionService);
     when(mockParentSpace.getLocalizedDisplayname())
         .thenReturn('Parent Space');
     when(mockParentSpace.id).thenReturn('!parent:example.com');
@@ -101,7 +110,6 @@ void main() {
     ),).called(1);
 
     verify(mockParentSpace.setSpaceChild('!subspace:example.com')).called(1);
-    verify(mockMatrixService.invalidateSpaceTree()).called(1);
 
     // Dialog should close on success.
     expect(find.text('Create subspace'), findsNothing);
