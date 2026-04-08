@@ -24,6 +24,8 @@ class AppConfig {
 
   static AppConfig? _instance;
 
+  static bool get isInitialized => _instance != null;
+
   static AppConfig get instance {
     assert(_instance != null, 'AppConfig.load() must be called before use');
     return _instance!;
