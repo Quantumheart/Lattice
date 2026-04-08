@@ -5,6 +5,7 @@ FROM docker.io/library/debian:bookworm-slim AS build
 
 ARG FLUTTER_VERSION=3.41.6
 ARG VODOZEMAC_VERSION=0.5.0
+ARG GIPHY_API_KEY
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl git unzip xz-utils clang cmake ninja-build \
@@ -48,7 +49,8 @@ RUN cp /vodozemac-artifacts/vodozemac_bindings_dart* ./assets/vodozemac/ \
   && test -f assets/vodozemac/vodozemac_bindings_dart.js \
   && test -f assets/vodozemac/vodozemac_bindings_dart_bg.wasm
 RUN dart compile js ./web/native_executor.dart -o ./web/native_executor.js -m
-RUN flutter build web --release --base-href /
+RUN flutter build web --release --base-href / \
+      ${GIPHY_API_KEY:+--dart-define=GIPHY_API_KEY=$GIPHY_API_KEY}
 
 # ── Serve Stage ──────────────────────────────────────────────────────
 FROM docker.io/library/caddy:2-alpine

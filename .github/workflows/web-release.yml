@@ -61,5 +61,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           attestations: false
+          build-args: |
+            GIPHY_API_KEY=${{ secrets.GIPHY_API_KEY }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
