@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lattice/core/services/preferences_service.dart';
@@ -100,7 +99,7 @@ class _MessageBubbleState extends State<MessageBubble> {
     final maxWidth = screenWidth * 0.72;
     final density = context.watch<PreferencesService>().messageDensity;
     final metrics = DensityMetrics.of(density);
-    final isDesktop = kIsWeb || isNativeDesktop;
+    final isDesktop = !isTouchDevice;
 
     final isRedacted = widget.event.redacted;
 

@@ -8,3 +8,4 @@ bool get isNativeWindows => Platform.isWindows;
 bool get isNativeMobile => Platform.isAndroid || Platform.isIOS;
 bool get isNativeDesktop =>
     Platform.isLinux || Platform.isMacOS || Platform.isWindows;
+bool get isTouchDevice => Platform.isAndroid || Platform.isIOS;
