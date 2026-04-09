@@ -45,10 +45,7 @@ class MatrixService extends ChangeNotifier {
     sync = SyncService(
       client: _client,
       onPostSyncBackup: () async {
-        await chatBackup.checkChatBackupStatus();
-        if (chatBackup.chatBackupNeeded == true) {
-          await chatBackup.tryAutoUnlockBackup();
-        }
+        await chatBackup.tryAutoUnlockBackup();
       },
     );
     auth = AuthService(

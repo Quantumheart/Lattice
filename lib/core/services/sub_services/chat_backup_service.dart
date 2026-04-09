@@ -45,20 +45,20 @@ class ChatBackupService extends ChangeNotifier {
 
   Future<void> tryAutoUnlockBackup() async {
     final storedKey = await getStoredRecoveryKey();
-    if (storedKey == null) return;
+    if (storedKey != null) {
+      debugPrint('[Lattice] Attempting auto-unlock with stored key');
 
-    debugPrint('[Lattice] Attempting auto-unlock with stored key');
-
-    try {
-      final state = await _client.getCryptoIdentityState();
-      if (state.connected) {
-        debugPrint('[Lattice] Skip restore: already connected');
-      } else {
-        await _client.restoreCryptoIdentity(storedKey);
+      try {
+        final state = await _client.getCryptoIdentityState();
+        if (state.connected) {
+          debugPrint('[Lattice] Skip restore: already connected');
+        } else {
+          await _client.restoreCryptoIdentity(storedKey);
+        }
+        await _restoreRoomKeys();
+      } catch (e) {
+        debugPrint('[Lattice] Failed: $e');
       }
-      await _restoreRoomKeys();
-    } catch (e) {
-      debugPrint('[Lattice] Failed: $e');
     }
 
     await checkChatBackupStatus();

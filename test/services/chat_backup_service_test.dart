@@ -81,12 +81,18 @@ void main() {
   });
 
   group('tryAutoUnlockBackup', () {
-    test('is a no-op when no stored recovery key', () async {
+    test('checks backup status even when no stored recovery key', () async {
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockStorage.read(key: 'ssss_recovery_key_@user:example.com'))
           .thenAnswer((_) async => null);
+      when(mockCrossSigning.enabled).thenReturn(false);
+      when(mockKeyManager.enabled).thenReturn(false);
+      when(mockCrossSigning.isCached()).thenAnswer((_) async => false);
+      when(mockKeyManager.isCached()).thenAnswer((_) async => false);
 
       await service.tryAutoUnlockBackup();
+
+      expect(service.chatBackupNeeded, isTrue);
     });
 
     test('skips restore when already connected', () async {
