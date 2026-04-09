@@ -95,6 +95,10 @@ class BootstrapDriver {
     _bootstrap = bootstrap;
     _state = bootstrap.state;
 
+    if (_awaitingKeyAck && _state != BootstrapState.error) {
+      return;
+    }
+
     switch (_state) {
       case BootstrapState.askWipeSsss:
         debugPrint('[Bootstrap] Auto-advancing: wipeSsss($_wipeExisting)');
@@ -156,10 +160,6 @@ class BootstrapDriver {
         return;
       default:
         break;
-    }
-
-    if (_awaitingKeyAck && _state != BootstrapState.error) {
-      return;
     }
 
     final phase = _phaseFromState(_state);

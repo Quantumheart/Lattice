@@ -112,6 +112,38 @@ void main() {
       controller.dispose();
     });
 
+    test('phase stays savingKey when bootstrap advances during key gen',
+        () async {
+      late void Function(Bootstrap) onUpdateCb;
+      when(mockEncryption.bootstrap(onUpdate: anyNamed('onUpdate')))
+          .thenAnswer((invocation) {
+        onUpdateCb = invocation.namedArguments[const Symbol('onUpdate')]
+            as void Function(Bootstrap);
+        return MockBootstrap();
+      });
+
+      final controller = createController();
+      await controller.startBootstrap();
+
+      final mockBootstrap = MockBootstrap();
+      when(mockBootstrap.state).thenReturn(BootstrapState.askNewSsss);
+      when(mockBootstrap.newSsss()).thenAnswer((_) async {
+        when(mockBootstrap.state)
+            .thenReturn(BootstrapState.askSetupCrossSigning);
+        onUpdateCb(mockBootstrap);
+      });
+      final mockSsssKey = MockOpenSSSS();
+      when(mockBootstrap.newSsssKey).thenReturn(mockSsssKey);
+      when(mockSsssKey.recoveryKey).thenReturn('EsTc ABCD 1234 5678');
+
+      onUpdateCb(mockBootstrap);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(controller.phase, SetupPhase.savingKey);
+      expect(controller.newRecoveryKey, 'EsTc ABCD 1234 5678');
+      controller.dispose();
+    });
+
     test('restartWithWipe resets all state', () async {
       late void Function(Bootstrap) onUpdateCb;
       when(mockEncryption.bootstrap(onUpdate: anyNamed('onUpdate')))
