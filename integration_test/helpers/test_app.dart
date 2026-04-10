@@ -341,6 +341,5 @@ Future<void> completePostLoginSync(
 ) async {
   syncController.add(SyncUpdate(nextBatch: 'batch_1', rooms: RoomsUpdate()));
   await tester.pumpAndSettle();
-  await matrixService.auth.postLoginSyncFuture;
   matrixService.dispose();
 }

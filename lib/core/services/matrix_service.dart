@@ -53,6 +53,7 @@ class MatrixService extends ChangeNotifier {
       storage: _storage,
       clientName: clientName,
     );
+    auth.addListener(_onAuthChanged);
   }
 
   // ── Fields ──────────────────────────────────────────────────────
@@ -63,11 +64,10 @@ class MatrixService extends ChangeNotifier {
   final Client _client;
   Client get client => _client;
 
-  bool _isLoggedIn = false;
-  bool get isLoggedIn => _isLoggedIn;
+  bool get isLoggedIn => auth.isLoggedIn;
 
   @visibleForTesting
-  set isLoggedInForTest(bool value) => _isLoggedIn = value;
+  set isLoggedInForTest(bool value) => auth.isLoggedIn = value;
 
   bool _disposed = false;
   bool get disposed => _disposed;
@@ -95,9 +95,18 @@ class MatrixService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<String?> _readRefreshToken() async {
-    final stored = await _client.database.getClient(clientName);
-    return stored?.tryGet<String>('refresh_token');
+  @override
+  void dispose() {
+    _disposed = true;
+    auth.removeListener(_onAuthChanged);
+    auth.isLoggedIn = false;
+    sync.cancelSyncSub();
+    uia.dispose();
+    selection.dispose();
+    chatBackup.dispose();
+    sync.dispose();
+    unawaited(_loginStateSub?.cancel());
+    super.dispose();
   }
 
   // ── Public API ──────────────────────────────────────────────────
@@ -110,37 +119,6 @@ class MatrixService extends ChangeNotifier {
     }
   }
 
-  Future<void> saveSessionBackup() async {
-    final backup = SessionBackup(
-      accessToken: _client.accessToken!,
-      refreshToken: await _readRefreshToken(),
-      userId: _client.userID!,
-      homeserver: _client.homeserver.toString(),
-      deviceId: _client.deviceID!,
-      deviceName: 'Lattice Flutter',
-      olmAccount: _client.encryption?.pickledOlmAccount,
-    );
-    await SessionBackup.save(
-      backup,
-      clientName: clientName,
-      storage: _storage,
-    );
-    debugPrint('[Lattice] Session backup saved for $clientName');
-  }
-
-  @override
-  void dispose() {
-    _disposed = true;
-    _isLoggedIn = false;
-    sync.cancelSyncSub();
-    uia.dispose();
-    selection.dispose();
-    chatBackup.dispose();
-    sync.dispose();
-    unawaited(_loginStateSub?.cancel());
-    super.dispose();
-  }
-
   // ── Login ──────────────────────────────────────────────────────
 
   Future<bool> login({
@@ -148,48 +126,21 @@ class MatrixService extends ChangeNotifier {
     required String username,
     required String password,
   }) async {
-    auth.loginError = null;
-    notifyListeners();
-
-    try {
-      var hs = homeserver.trim();
-      if (hs.isEmpty) throw ArgumentError('Homeserver cannot be empty');
-      if (!hs.startsWith('http')) hs = 'https://$hs';
-
-      debugPrint('[Lattice] Checking homeserver: $hs');
-      await _client.checkHomeserver(Uri.parse(hs));
-      debugPrint('[Lattice] Homeserver OK');
-
-      debugPrint('[Lattice] Logging in as $username ...');
-      await _client.login(
-        LoginType.mLoginPassword,
-        identifier: AuthenticationUserIdentifier(user: username.trim()),
-        password: password,
-        initialDeviceDisplayName: 'Lattice Flutter',
-        refreshToken: true,
-      );
-      debugPrint('[Lattice] Login complete – '
-          'deviceId=${_client.deviceID}, '
-          'userId=${_client.userID}, '
-          'encryption=${_client.encryption != null ? "available" : "null"}, '
-          'encryptionEnabled=${_client.encryptionEnabled}');
-
+    final success = await auth.login(
+      homeserver: homeserver,
+      username: username,
+      password: password,
+    );
+    if (success) {
       uia.setCachedPassword(password);
-      uia.listenForUia();
-      _listenForLoginState();
-      _isLoggedIn = true;
-      notifyListeners();
-
-      _postLoginSync();
-
-      return true;
-    } catch (e, s) {
-      debugPrint('[Lattice] Login failed: $e');
-      debugPrint('[Lattice] Stack trace:\n$s');
-      auth.loginError = e.toString();
-      notifyListeners();
-      return false;
+      try {
+        await sync.startSync(timeout: const Duration(minutes: 5));
+        await auth.saveSessionBackup();
+      } catch (e) {
+        debugPrint('[Lattice] Post-login sync error: $e');
+      }
     }
+    return success;
   }
 
   // ── SSO Login ──────────────────────────────────────────────────
@@ -198,42 +149,19 @@ class MatrixService extends ChangeNotifier {
     required String homeserver,
     required String loginToken,
   }) async {
-    auth.loginError = null;
-    notifyListeners();
-
-    try {
-      var hs = homeserver.trim();
-      if (hs.isEmpty) throw ArgumentError('Homeserver cannot be empty');
-      if (!hs.startsWith('http')) hs = 'https://$hs';
-
-      await _client.checkHomeserver(Uri.parse(hs));
-
-      debugPrint('[Lattice] Completing SSO login ...');
-      await _client.login(
-        LoginType.mLoginToken,
-        token: loginToken,
-        initialDeviceDisplayName: 'Lattice Flutter',
-        refreshToken: true,
-      );
-      debugPrint('[Lattice] SSO login complete – '
-          'deviceId=${_client.deviceID}, '
-          'userId=${_client.userID}');
-
-      uia.listenForUia();
-      _listenForLoginState();
-      _isLoggedIn = true;
-      notifyListeners();
-
-      _postLoginSync();
-
-      return true;
-    } catch (e, s) {
-      debugPrint('[Lattice] SSO login failed: $e');
-      debugPrint('[Lattice] Stack trace:\n$s');
-      auth.loginError = e.toString();
-      notifyListeners();
-      return false;
+    final success = await auth.completeSsoLogin(
+      homeserver: homeserver,
+      loginToken: loginToken,
+    );
+    if (success) {
+      try {
+        await sync.startSync(timeout: const Duration(minutes: 5));
+        await auth.saveSessionBackup();
+      } catch (e) {
+        debugPrint('[Lattice] Post-login sync error: $e');
+      }
     }
+    return success;
   }
 
   // ── Registration ──────────────────────────────────────────────
@@ -242,47 +170,21 @@ class MatrixService extends ChangeNotifier {
     RegisterResponse response, {
     String? password,
   }) async {
-    debugPrint('[Lattice] Registration complete – userId=${response.userId}');
-
-    if (_client.accessToken == null || _client.userID == null) {
-      throw StateError('Client was not initialized after register(). '
-          'accessToken=${_client.accessToken}, userID=${_client.userID}');
-    }
-
     if (password != null) uia.setCachedPassword(password);
-    uia.listenForUia();
-    _listenForLoginState();
-    _isLoggedIn = true;
-    notifyListeners();
-
-    _postLoginSync();
+    await auth.completeRegistration(response, password: password);
+    try {
+      await sync.startSync(timeout: const Duration(minutes: 5));
+      await auth.saveSessionBackup();
+    } catch (e) {
+      debugPrint('[Lattice] Post-login sync error: $e');
+    }
   }
 
   // ── Logout ────────────────────────────────────────────────────
 
   Future<void> logout() async {
-    unawaited(_loginStateSub?.cancel());
-    sync.cancelSyncSub();
-    _isLoggedIn = false;
-    notifyListeners();
-    await auth.awaitPostLoginSync();
-
-    try {
-      if (_client.homeserver != null && _client.accessToken != null) {
-        await _client.logout();
-      }
-    } catch (e) {
-      debugPrint('[Lattice] Logout error: $e');
-    }
-    await auth.clearSessionKeys();
-    await SessionBackup.delete(clientName: clientName, storage: _storage);
+    await auth.logout();
     await chatBackup.deleteStoredRecoveryKey();
-    uia.clearCachedPassword();
-    uia.cancelUiaSub();
-    selection.resetSelection();
-    chatBackup.resetChatBackupState();
-    _hasSkippedSetup = false;
-    notifyListeners();
   }
 
   // ── Soft Logout ──────────────────────────────────────────────
@@ -291,38 +193,33 @@ class MatrixService extends ChangeNotifier {
     debugPrint('[Lattice] Soft logout detected, attempting token refresh...');
     try {
       await _client.refreshAccessToken();
-      final refreshToken = await _readRefreshToken();
-      await Future.wait([
-        _storage.write(
-          key: latticeKey(clientName, 'access_token'),
-          value: _client.accessToken,
-        ),
-        _storage.write(
-          key: latticeKey(clientName, 'refresh_token'),
-          value: refreshToken,
-        ),
-      ]);
-      await saveSessionBackup();
+      await auth.persistCredentials();
+      await auth.saveSessionBackup();
       debugPrint('[Lattice] Token refreshed successfully');
     } catch (e) {
       debugPrint('[Lattice] Token refresh failed: $e');
+      await auth.logout();
+      await chatBackup.deleteStoredRecoveryKey();
+    }
+  }
+
+  // ── Private: Auth Observer ──────────────────────────────────────
+
+  void _onAuthChanged() {
+    if (auth.isLoggedIn) {
+      uia.listenForUia();
+      _listenForLoginState();
+    } else {
       unawaited(_loginStateSub?.cancel());
+      _loginStateSub = null;
       sync.cancelSyncSub();
-      _isLoggedIn = false;
-      await auth.awaitPostLoginSync();
-      uia.cancelUiaSub();
       uia.clearCachedPassword();
+      uia.cancelUiaSub();
       selection.resetSelection();
       chatBackup.resetChatBackupState();
       _hasSkippedSetup = false;
-      await auth.clearSessionKeys();
-      await SessionBackup.delete(clientName: clientName, storage: _storage);
-      await chatBackup.deleteStoredRecoveryKey();
-      try {
-        await _client.logout();
-      } catch (_) {}
-      notifyListeners();
     }
+    notifyListeners();
   }
 
   // ── Private: Login State Stream ─────────────────────────────────
@@ -330,57 +227,18 @@ class MatrixService extends ChangeNotifier {
   void _listenForLoginState() {
     unawaited(_loginStateSub?.cancel());
     _loginStateSub = _client.onLoginStateChanged.stream.listen((state) async {
-      if (state == LoginState.loggedOut && _isLoggedIn) {
+      if (state == LoginState.loggedOut && auth.isLoggedIn) {
         debugPrint('[Lattice] Server-side logout detected');
-        unawaited(_loginStateSub?.cancel());
-        _loginStateSub = null;
-        sync.cancelSyncSub();
-        _isLoggedIn = false;
-        uia.cancelUiaSub();
-        uia.clearCachedPassword();
-        selection.resetSelection();
-        chatBackup.resetChatBackupState();
-        _hasSkippedSetup = false;
-        await auth.clearSessionKeys();
-        await SessionBackup.delete(clientName: clientName, storage: _storage);
+        await auth.handleServerLogout();
         await chatBackup.deleteStoredRecoveryKey();
-        notifyListeners();
       }
     });
-  }
-
-  // ── Private: Post-login Background Sync ─────────────────────────
-
-  void _postLoginSync() {
-    auth.startPostLoginSync(_runPostLoginSync);
-  }
-
-  Future<void> _runPostLoginSync() async {
-    try {
-      try {
-        await auth.persistCredentials();
-      } catch (e) {
-        debugPrint('[Lattice] Credential persistence failed (non-fatal): $e');
-      }
-      if (!_isLoggedIn) return;
-      await sync.startSync(timeout: const Duration(minutes: 5));
-      if (!_isLoggedIn) return;
-      await saveSessionBackup();
-    } catch (e) {
-      debugPrint('[Lattice] Post-login sync error: $e');
-      if (_isLoggedIn) {
-        auth.postLoginSyncError = friendlyAuthError(e);
-        notifyListeners();
-      }
-    }
   }
 
   // ── Private: Initialization ─────────────────────────────────────
 
   Future<void> _activateSession() async {
-    uia.listenForUia();
-    _listenForLoginState();
-    _isLoggedIn = true;
+    auth.activateRestoredSession();
     try {
       await sync.startSync();
     } on TimeoutException {
@@ -467,7 +325,7 @@ class MatrixService extends ChangeNotifier {
           'encryption=${_client.encryption != null ? "available" : "null"}, '
           'encryptionEnabled=${_client.encryptionEnabled}');
       await _activateSession();
-      await saveSessionBackup();
+      await auth.saveSessionBackup();
     } catch (e, s) {
       debugPrint('[Lattice] Session restore failed: $e');
       debugPrint('[Lattice] Stack trace:\n$s');
@@ -479,7 +337,7 @@ class MatrixService extends ChangeNotifier {
         if (refreshed) return;
       }
 
-      _isLoggedIn = false;
+      auth.isLoggedIn = false;
       if (auth.isPermanentAuthFailure(cause)) {
         await _clearSessionAndBackup();
       }
@@ -492,20 +350,10 @@ class MatrixService extends ChangeNotifier {
       await _client.init();
       if (_client.isLogged()) {
         if (_client.accessToken != null) {
-          final refreshToken = await _readRefreshToken();
-          await Future.wait([
-            _storage.write(
-              key: latticeKey(clientName, 'access_token'),
-              value: _client.accessToken,
-            ),
-            _storage.write(
-              key: latticeKey(clientName, 'refresh_token'),
-              value: refreshToken,
-            ),
-          ]);
+          await auth.persistCredentials();
         }
         await _activateSession();
-        await saveSessionBackup();
+        await auth.saveSessionBackup();
         debugPrint('[Lattice] Session restored via database token refresh');
         return true;
       }

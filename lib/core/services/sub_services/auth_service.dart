@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:lattice/core/models/server_auth_capabilities.dart';
 import 'package:lattice/core/services/matrix_service.dart' show latticeKey;
+import 'package:lattice/core/services/session_backup.dart';
 import 'package:matrix/matrix.dart';
 // ignore: implementation_imports, no public API for ClientInitException
 import 'package:matrix/src/utils/client_init_exception.dart';
@@ -22,6 +23,8 @@ class AuthService extends ChangeNotifier {
   final String _clientName;
 
   // ── Auth state ────────────────────────────────────────────────
+  bool isLoggedIn = false;
+
   String? _loginError;
   String? get loginError => _loginError;
   set loginError(String? value) {
@@ -29,18 +32,181 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
   }
 
-  String? _postLoginSyncError;
-  String? get postLoginSyncError => _postLoginSyncError;
-  set postLoginSyncError(String? value) {
-    _postLoginSyncError = value;
+  Completer<void>? _capabilitiesLock;
+
+  // ── Login ─────────────────────────────────────────────────────
+
+  Future<bool> login({
+    required String homeserver,
+    required String username,
+    required String password,
+  }) async {
+    loginError = null;
+
+    try {
+      var hs = homeserver.trim();
+      if (hs.isEmpty) throw ArgumentError('Homeserver cannot be empty');
+      if (!hs.startsWith('http')) hs = 'https://$hs';
+
+      debugPrint('[Lattice] Checking homeserver: $hs');
+      await _client.checkHomeserver(Uri.parse(hs));
+      debugPrint('[Lattice] Homeserver OK');
+
+      debugPrint('[Lattice] Logging in as $username ...');
+      await _client.login(
+        LoginType.mLoginPassword,
+        identifier: AuthenticationUserIdentifier(user: username.trim()),
+        password: password,
+        initialDeviceDisplayName: 'Lattice Flutter',
+        refreshToken: true,
+      );
+      debugPrint('[Lattice] Login complete – '
+          'deviceId=${_client.deviceID}, '
+          'userId=${_client.userID}, '
+          'encryption=${_client.encryption != null ? "available" : "null"}, '
+          'encryptionEnabled=${_client.encryptionEnabled}');
+
+      isLoggedIn = true;
+      notifyListeners();
+
+      try {
+        await persistCredentials();
+      } catch (e) {
+        debugPrint('[Lattice] Credential persistence failed (non-fatal): $e');
+      }
+
+      return true;
+    } catch (e, s) {
+      debugPrint('[Lattice] Login failed: $e');
+      debugPrint('[Lattice] Stack trace:\n$s');
+      loginError = e.toString();
+      return false;
+    }
+  }
+
+  // ── SSO Login ─────────────────────────────────────────────────
+
+  Future<bool> completeSsoLogin({
+    required String homeserver,
+    required String loginToken,
+  }) async {
+    loginError = null;
+
+    try {
+      var hs = homeserver.trim();
+      if (hs.isEmpty) throw ArgumentError('Homeserver cannot be empty');
+      if (!hs.startsWith('http')) hs = 'https://$hs';
+
+      await _client.checkHomeserver(Uri.parse(hs));
+
+      debugPrint('[Lattice] Completing SSO login ...');
+      await _client.login(
+        LoginType.mLoginToken,
+        token: loginToken,
+        initialDeviceDisplayName: 'Lattice Flutter',
+        refreshToken: true,
+      );
+      debugPrint('[Lattice] SSO login complete – '
+          'deviceId=${_client.deviceID}, '
+          'userId=${_client.userID}');
+
+      isLoggedIn = true;
+      notifyListeners();
+
+      try {
+        await persistCredentials();
+      } catch (e) {
+        debugPrint('[Lattice] Credential persistence failed (non-fatal): $e');
+      }
+
+      return true;
+    } catch (e, s) {
+      debugPrint('[Lattice] SSO login failed: $e');
+      debugPrint('[Lattice] Stack trace:\n$s');
+      loginError = e.toString();
+      return false;
+    }
+  }
+
+  // ── Registration ──────────────────────────────────────────────
+
+  Future<void> completeRegistration(
+    RegisterResponse response, {
+    String? password,
+  }) async {
+    debugPrint('[Lattice] Registration complete – userId=${response.userId}');
+
+    if (_client.accessToken == null || _client.userID == null) {
+      throw StateError('Client was not initialized after register(). '
+          'accessToken=${_client.accessToken}, userID=${_client.userID}');
+    }
+
+    isLoggedIn = true;
+    notifyListeners();
+
+    try {
+      await persistCredentials();
+    } catch (e) {
+      debugPrint('[Lattice] Credential persistence failed (non-fatal): $e');
+    }
+  }
+
+  // ── Session Restore ───────────────────────────────────────────
+
+  void activateRestoredSession() {
+    isLoggedIn = true;
     notifyListeners();
   }
 
-  Completer<void>? _postLoginSyncCompleter;
+  // ── Logout ────────────────────────────────────────────────────
 
-  Future<void>? get postLoginSyncFuture => _postLoginSyncCompleter?.future;
+  Future<void> logout() async {
+    isLoggedIn = false;
+    notifyListeners();
 
-  Completer<void>? _capabilitiesLock;
+    try {
+      if (_client.homeserver != null && _client.accessToken != null) {
+        await _client.logout();
+      }
+    } catch (e) {
+      debugPrint('[Lattice] Logout error: $e');
+    }
+    await clearSessionKeys();
+    await SessionBackup.delete(clientName: _clientName, storage: _storage);
+  }
+
+  Future<void> handleServerLogout() async {
+    isLoggedIn = false;
+    notifyListeners();
+
+    await clearSessionKeys();
+    await SessionBackup.delete(clientName: _clientName, storage: _storage);
+  }
+
+  // ── Session Backup ────────────────────────────────────────────
+
+  Future<void> saveSessionBackup() async {
+    final backup = SessionBackup(
+      accessToken: _client.accessToken!,
+      refreshToken: await _readRefreshToken(),
+      userId: _client.userID!,
+      homeserver: _client.homeserver.toString(),
+      deviceId: _client.deviceID!,
+      deviceName: 'Lattice Flutter',
+      olmAccount: _client.encryption?.pickledOlmAccount,
+    );
+    await SessionBackup.save(
+      backup,
+      clientName: _clientName,
+      storage: _storage,
+    );
+    debugPrint('[Lattice] Session backup saved for $_clientName');
+  }
+
+  Future<String?> _readRefreshToken() async {
+    final stored = await _client.database.getClient(_clientName);
+    return stored?.tryGet<String>('refresh_token');
+  }
 
   // ── Server Capabilities ──────────────────────────────────────
 
@@ -206,22 +372,6 @@ class AuthService extends ChangeNotifier {
       _storage.write(
           key: latticeKey(_clientName, 'device_id'), value: _client.deviceID,),
     ]);
-  }
-
-  // ── Post-login Background Sync ──────────────────────────────
-
-  void startPostLoginSync(Future<void> Function() runSync) {
-    postLoginSyncError = null;
-    final completer = Completer<void>();
-    _postLoginSyncCompleter = completer;
-    unawaited(runSync().whenComplete(() {
-      completer.complete();
-      _postLoginSyncCompleter = null;
-    },),);
-  }
-
-  Future<void> awaitPostLoginSync() async {
-    await _postLoginSyncCompleter?.future;
   }
 
 }

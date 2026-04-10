@@ -307,8 +307,6 @@ void main() {
       expect(result, isTrue);
       expect(service.isLoggedIn, isTrue);
 
-      await service.auth.postLoginSyncFuture;
-
       // Verify login was called with mLoginToken
       verify(mockClient.login(
         LoginType.mLoginToken,
@@ -451,9 +449,6 @@ void main() {
         accessToken: 'reg_token',
         deviceId: 'REG_DEV',
       ),);
-
-      // Wait for background sync + session backup to complete.
-      await service.auth.postLoginSyncFuture;
 
       verify(mockStorage.write(
         key: 'lattice_session_backup_test',

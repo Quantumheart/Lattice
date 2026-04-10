@@ -229,9 +229,6 @@ void main() {
       expect(result, isTrue);
       expect(service.isLoggedIn, isTrue);
 
-      // Wait for background sync + session backup to complete.
-      await service.auth.postLoginSyncFuture;
-
       // Verify namespaced storage keys.
       verify(mockStorage.write(
               key: 'lattice_test_access_token', value: 'token123',),)
@@ -376,6 +373,7 @@ void main() {
 
       await logoutFuture;
     });
+
   });
 
   group('soft logout', () {
@@ -441,9 +439,6 @@ void main() {
         username: 'user',
         password: 'pass',
       );
-
-      // Wait for background sync + session backup to complete before adding listener.
-      await service.auth.postLoginSyncFuture;
 
       var notifyCount = 0;
       service.addListener(() => notifyCount++);

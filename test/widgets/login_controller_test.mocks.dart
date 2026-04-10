@@ -1010,6 +1010,15 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
       );
 
   @override
+  void dispose() => super.noSuchMethod(
+        Invocation.method(
+          #dispose,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
   _i11.Future<void> init({bool? restoreSession = true}) => (super.noSuchMethod(
         Invocation.method(
           #init,
@@ -1019,25 +1028,6 @@ class MockMatrixService extends _i1.Mock implements _i8.MatrixService {
         returnValue: _i11.Future<void>.value(),
         returnValueForMissingStub: _i11.Future<void>.value(),
       ) as _i11.Future<void>);
-
-  @override
-  _i11.Future<void> saveSessionBackup() => (super.noSuchMethod(
-        Invocation.method(
-          #saveSessionBackup,
-          [],
-        ),
-        returnValue: _i11.Future<void>.value(),
-        returnValueForMissingStub: _i11.Future<void>.value(),
-      ) as _i11.Future<void>);
-
-  @override
-  void dispose() => super.noSuchMethod(
-        Invocation.method(
-          #dispose,
-          [],
-        ),
-        returnValueForMissingStub: null,
-      );
 
   @override
   _i11.Future<bool> login({
@@ -8148,18 +8138,25 @@ class MockClient extends _i1.Mock implements _i2.Client {
 /// See the documentation for Mockito's code generation for more information.
 class MockAuthService extends _i1.Mock implements _i7.AuthService {
   @override
-  set loginError(String? value) => super.noSuchMethod(
+  bool get isLoggedIn => (super.noSuchMethod(
+        Invocation.getter(#isLoggedIn),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  set isLoggedIn(bool? value) => super.noSuchMethod(
         Invocation.setter(
-          #loginError,
+          #isLoggedIn,
           value,
         ),
         returnValueForMissingStub: null,
       );
 
   @override
-  set postLoginSyncError(String? value) => super.noSuchMethod(
+  set loginError(String? value) => super.noSuchMethod(
         Invocation.setter(
-          #postLoginSyncError,
+          #loginError,
           value,
         ),
         returnValueForMissingStub: null,
@@ -8171,6 +8168,98 @@ class MockAuthService extends _i1.Mock implements _i7.AuthService {
         returnValue: false,
         returnValueForMissingStub: false,
       ) as bool);
+
+  @override
+  _i11.Future<bool> login({
+    required String? homeserver,
+    required String? username,
+    required String? password,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #login,
+          [],
+          {
+            #homeserver: homeserver,
+            #username: username,
+            #password: password,
+          },
+        ),
+        returnValue: _i11.Future<bool>.value(false),
+        returnValueForMissingStub: _i11.Future<bool>.value(false),
+      ) as _i11.Future<bool>);
+
+  @override
+  _i11.Future<bool> completeSsoLogin({
+    required String? homeserver,
+    required String? loginToken,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #completeSsoLogin,
+          [],
+          {
+            #homeserver: homeserver,
+            #loginToken: loginToken,
+          },
+        ),
+        returnValue: _i11.Future<bool>.value(false),
+        returnValueForMissingStub: _i11.Future<bool>.value(false),
+      ) as _i11.Future<bool>);
+
+  @override
+  _i11.Future<void> completeRegistration(
+    _i2.RegisterResponse? response, {
+    String? password,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #completeRegistration,
+          [response],
+          {#password: password},
+        ),
+        returnValue: _i11.Future<void>.value(),
+        returnValueForMissingStub: _i11.Future<void>.value(),
+      ) as _i11.Future<void>);
+
+  @override
+  void activateRestoredSession() => super.noSuchMethod(
+        Invocation.method(
+          #activateRestoredSession,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  _i11.Future<void> logout() => (super.noSuchMethod(
+        Invocation.method(
+          #logout,
+          [],
+        ),
+        returnValue: _i11.Future<void>.value(),
+        returnValueForMissingStub: _i11.Future<void>.value(),
+      ) as _i11.Future<void>);
+
+  @override
+  _i11.Future<void> handleServerLogout() => (super.noSuchMethod(
+        Invocation.method(
+          #handleServerLogout,
+          [],
+        ),
+        returnValue: _i11.Future<void>.value(),
+        returnValueForMissingStub: _i11.Future<void>.value(),
+      ) as _i11.Future<void>);
+
+  @override
+  _i11.Future<void> saveSessionBackup() => (super.noSuchMethod(
+        Invocation.method(
+          #saveSessionBackup,
+          [],
+        ),
+        returnValue: _i11.Future<void>.value(),
+        returnValueForMissingStub: _i11.Future<void>.value(),
+      ) as _i11.Future<void>);
 
   @override
   _i11.Future<_i13.ServerAuthCapabilities> getServerAuthCapabilities(
@@ -8238,26 +8327,6 @@ class MockAuthService extends _i1.Mock implements _i7.AuthService {
   _i11.Future<void> persistCredentials() => (super.noSuchMethod(
         Invocation.method(
           #persistCredentials,
-          [],
-        ),
-        returnValue: _i11.Future<void>.value(),
-        returnValueForMissingStub: _i11.Future<void>.value(),
-      ) as _i11.Future<void>);
-
-  @override
-  void startPostLoginSync(_i11.Future<void> Function()? runSync) =>
-      super.noSuchMethod(
-        Invocation.method(
-          #startPostLoginSync,
-          [runSync],
-        ),
-        returnValueForMissingStub: null,
-      );
-
-  @override
-  _i11.Future<void> awaitPostLoginSync() => (super.noSuchMethod(
-        Invocation.method(
-          #awaitPostLoginSync,
           [],
         ),
         returnValue: _i11.Future<void>.value(),

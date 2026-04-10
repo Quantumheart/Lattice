@@ -256,27 +256,11 @@ void main() {
     });
   });
 
-  group('loginError and postLoginSyncError', () {
-    test('getters and setters work', () {
+  group('loginError', () {
+    test('getter and setter work', () {
       expect(service.loginError, isNull);
       service.loginError = 'bad';
       expect(service.loginError, 'bad');
-
-      expect(service.postLoginSyncError, isNull);
-      service.postLoginSyncError = 'sync failed';
-      expect(service.postLoginSyncError, 'sync failed');
-    });
-  });
-
-  group('startPostLoginSync', () {
-    test('exposes postLoginSyncFuture', () async {
-      expect(service.postLoginSyncFuture, isNull);
-
-      service.startPostLoginSync(() async {});
-
-      expect(service.postLoginSyncFuture, isNotNull);
-      await service.postLoginSyncFuture;
-      expect(service.postLoginSyncFuture, isNull);
     });
   });
 }

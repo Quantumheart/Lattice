@@ -1092,6 +1092,15 @@ class MockMatrixService extends _i1.Mock implements _i16.MatrixService {
       );
 
   @override
+  void dispose() => super.noSuchMethod(
+        Invocation.method(
+          #dispose,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
   _i11.Future<void> init({bool? restoreSession = true}) => (super.noSuchMethod(
         Invocation.method(
           #init,
@@ -1101,25 +1110,6 @@ class MockMatrixService extends _i1.Mock implements _i16.MatrixService {
         returnValue: _i11.Future<void>.value(),
         returnValueForMissingStub: _i11.Future<void>.value(),
       ) as _i11.Future<void>);
-
-  @override
-  _i11.Future<void> saveSessionBackup() => (super.noSuchMethod(
-        Invocation.method(
-          #saveSessionBackup,
-          [],
-        ),
-        returnValue: _i11.Future<void>.value(),
-        returnValueForMissingStub: _i11.Future<void>.value(),
-      ) as _i11.Future<void>);
-
-  @override
-  void dispose() => super.noSuchMethod(
-        Invocation.method(
-          #dispose,
-          [],
-        ),
-        returnValueForMissingStub: null,
-      );
 
   @override
   _i11.Future<bool> login({
