@@ -230,6 +230,15 @@ class BootstrapController extends ChangeNotifier {
       }
     }
 
+    if (_driver.bootstrap?.newSsssKey != null) {
+      try {
+        await client.database.markInboundGroupSessionsAsNeedingUpload();
+        debugPrint('[Bootstrap] Marked all local sessions for backup upload');
+      } catch (e) {
+        debugPrint('[Bootstrap] Failed to mark sessions for upload: $e');
+      }
+    }
+
     try {
       await encryption?.keyManager.loadAllKeys();
       debugPrint('[Bootstrap] Room keys restored from online backup');

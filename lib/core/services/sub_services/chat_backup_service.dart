@@ -82,14 +82,15 @@ class ChatBackupService extends ChangeNotifier {
 
       try {
         final state = await _client.getCryptoIdentityState();
-        if (state.connected) {
-          debugPrint('[Lattice] Skip restore: already connected');
+        if (state.connected && await _storedKeyMatchesServer(storedKey)) {
+          debugPrint('[Lattice] Skip restore: already connected and key valid');
         } else {
           await _client.restoreCryptoIdentity(storedKey);
         }
         await _restoreRoomKeys();
       } catch (e) {
         debugPrint('[Lattice] Failed: $e');
+        await _handleStaleStoredKey();
       }
     } else {
       requestMissingRoomKeys();
@@ -97,6 +98,36 @@ class ChatBackupService extends ChangeNotifier {
 
     await checkChatBackupStatus();
     debugPrint('[Lattice] Complete, chatBackupNeeded=$_chatBackupNeeded');
+  }
+
+  Future<bool> _storedKeyMatchesServer(String storedKey) async {
+    try {
+      final encryption = _client.encryption;
+      if (encryption == null) return false;
+      final backupInfo =
+          await encryption.keyManager.getRoomKeysBackupInfo(false);
+      final serverPublicKey =
+          backupInfo.authData['public_key'] as String?;
+      if (serverPublicKey == null) return false;
+      final cachedSecret =
+          await encryption.ssss.getCached(EventTypes.MegolmBackup);
+      if (cachedSecret == null) return false;
+      final cachedBytes = base64decodeUnpadded(cachedSecret);
+      final decryption = vod.PkDecryption.fromSecretKey(
+        vod.Curve25519PublicKey.fromBytes(cachedBytes),
+      );
+      return decryption.publicKey == serverPublicKey;
+    } catch (e) {
+      debugPrint('[Lattice] Key match check failed: $e');
+      return false;
+    }
+  }
+
+  Future<void> _handleStaleStoredKey() async {
+    debugPrint('[Lattice] Stored recovery key is stale — clearing');
+    await deleteStoredRecoveryKey();
+    _chatBackupNeeded = true;
+    notifyListeners();
   }
 
   void requestMissingRoomKeys() {
