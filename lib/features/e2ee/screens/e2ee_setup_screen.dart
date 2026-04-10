@@ -85,20 +85,20 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
   Future<void> _showUiaPasswordPrompt(UiaRequest<dynamic> request) async {
     if (!mounted || _uiaPromptShowing) return;
     _uiaPromptShowing = true;
-    final passwordController = TextEditingController();
+    var passwordValue = '';
     final password = await showDialog<String>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
         title: const Text('Authentication required'),
         content: TextField(
-          controller: passwordController,
           obscureText: true,
           autofocus: true,
           decoration: const InputDecoration(
             labelText: 'Password',
             border: OutlineInputBorder(),
           ),
+          onChanged: (value) => passwordValue = value,
           onSubmitted: (value) => Navigator.pop(ctx, value),
         ),
         actions: [
@@ -107,13 +107,12 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
             child: const Text('Cancel'),
           ),
           FilledButton(
-            onPressed: () => Navigator.pop(ctx, passwordController.text),
+            onPressed: () => Navigator.pop(ctx, passwordValue),
             child: const Text('Submit'),
           ),
         ],
       ),
     );
-    passwordController.dispose();
     _uiaPromptShowing = false;
     if (password != null && password.isNotEmpty) {
       _matrixService.uia.completeUiaWithPassword(request, password);
