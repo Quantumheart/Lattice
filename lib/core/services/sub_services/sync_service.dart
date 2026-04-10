@@ -21,6 +21,13 @@ class SyncService extends ChangeNotifier {
   String? get autoUnlockError => _autoUnlockError;
 
   StreamSubscription<SyncUpdate>? _syncSub;
+  bool _disposed = false;
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
+  }
 
   Future<void> startSync({Duration? timeout = const Duration(seconds: 30)}) async {
     _syncing = true;
@@ -37,6 +44,7 @@ class SyncService extends ChangeNotifier {
       return _onPostSyncBackup();
     }).catchError((Object e) {
       debugPrint('[Lattice] Background E2EE auto-unlock error: $e');
+      if (_disposed) return;
       _autoUnlockError = e.toString();
       notifyListeners();
     },),);
