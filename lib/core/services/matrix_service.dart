@@ -264,6 +264,7 @@ class MatrixService extends ChangeNotifier {
     unawaited(_loginStateSub?.cancel());
     sync.cancelSyncSub();
     _isLoggedIn = false;
+    notifyListeners();
     await auth.awaitPostLoginSync();
 
     try {

@@ -326,6 +326,56 @@ void main() {
       verify(mockStorage.delete(key: 'lattice_session_backup_test')).called(1);
       verifyNever(mockStorage.deleteAll());
     });
+
+    test('notifies listeners immediately when isLoggedIn is set to false', () async {
+      when(mockClient.checkHomeserver(any)).thenAnswer((_) async => (
+            null,
+            GetVersionsResponse.fromJson({'versions': ['v1.1']}),
+            <LoginFlow>[],
+            null,
+          ),);
+      when(mockClient.login(
+        any,
+        identifier: anyNamed('identifier'),
+        password: anyNamed('password'),
+        initialDeviceDisplayName: anyNamed('initialDeviceDisplayName'),
+        refreshToken: anyNamed('refreshToken'),
+      ),).thenAnswer((_) async => LoginResponse.fromJson({
+            'access_token': 'token123',
+            'device_id': 'DEV1',
+            'user_id': '@user:example.com',
+          }),);
+      when(mockClient.accessToken).thenReturn('token123');
+      when(mockClient.userID).thenReturn('@user:example.com');
+      when(mockClient.homeserver).thenReturn(Uri.parse('https://example.com'));
+      when(mockClient.deviceID).thenReturn('DEV1');
+      when(mockClient.encryption).thenReturn(null);
+      final syncController = CachedStreamController<SyncUpdate>();
+      when(mockClient.onSync).thenReturn(syncController);
+      when(mockClient.onUiaRequest).thenReturn(CachedStreamController());
+      when(mockClient.onLoginStateChanged).thenReturn(CachedStreamController());
+
+      Future<void>.delayed(Duration.zero, () => syncController.add(SyncUpdate(nextBatch: 'batch1')));
+      await service.login(
+        homeserver: 'example.com',
+        username: 'user',
+        password: 'pass',
+      );
+      expect(service.isLoggedIn, isTrue);
+
+      var notifiedWhileLogoutInProgress = false;
+      service.addListener(() {
+        if (!service.isLoggedIn) notifiedWhileLogoutInProgress = true;
+      });
+
+      final logoutFuture = service.logout();
+      // isLoggedIn and notifyListeners() must fire before the first async suspension,
+      // so they are observable here without awaiting the full logout.
+      expect(service.isLoggedIn, isFalse);
+      expect(notifiedWhileLogoutInProgress, isTrue);
+
+      await logoutFuture;
+    });
   });
 
   group('soft logout', () {
