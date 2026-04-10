@@ -65,3 +65,29 @@ jobs:
             GIPHY_API_KEY=${{ secrets.GIPHY_API_KEY }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up SSH
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -H "$HOST" >> ~/.ssh/known_hosts
+
+      - name: Deploy
+        env:
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+        run: |
+          IMAGE="ghcr.io/${{ github.repository }}:latest"
+          ssh -i ~/.ssh/id_deploy "${DEPLOY_USER}@${HOST}" \
+            "docker pull ${IMAGE} && \
+             docker stop lattice 2>/dev/null || true && \
+             docker rm lattice 2>/dev/null || true && \
+             docker run -d --name lattice -p 80:80 --restart unless-stopped ${IMAGE}"
