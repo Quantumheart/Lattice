@@ -119,6 +119,43 @@ void main() {
 
       expect(service.chatBackupNeeded, isTrue);
     });
+
+    test('requests missing room keys when no stored key', () async {
+      when(mockClient.userID).thenReturn('@user:example.com');
+      when(mockStorage.read(key: 'ssss_recovery_key_@user:example.com'))
+          .thenAnswer((_) async => null);
+      when(mockCrossSigning.enabled).thenReturn(false);
+      when(mockKeyManager.enabled).thenReturn(false);
+      when(mockCrossSigning.isCached()).thenAnswer((_) async => false);
+      when(mockKeyManager.isCached()).thenAnswer((_) async => false);
+
+      final mockRoom = MockRoom();
+      when(mockClient.rooms).thenReturn([mockRoom]);
+      when(mockRoom.id).thenReturn('!room:example.com');
+      when(mockRoom.lastEvent).thenReturn(Event(
+        type: EventTypes.Encrypted,
+        content: {
+          'msgtype': MessageTypes.BadEncrypted,
+          'can_request_session': true,
+          'session_id': 'session123',
+          'sender_key': 'key456',
+        },
+        senderId: '@user:example.com',
+        eventId: r'$ev1',
+        originServerTs: DateTime.now(),
+        room: mockRoom,
+      ),);
+
+      await service.tryAutoUnlockBackup();
+
+      verify(
+        mockKeyManager.maybeAutoRequest(
+          '!room:example.com',
+          'session123',
+          'key456',
+        ),
+      ).called(1);
+    });
   });
 
   group('recovery key storage', () {

@@ -41,7 +41,39 @@ class ChatBackupService extends ChangeNotifier {
     }
   }
 
-  // ── Auto-unlock Backup ──────────────────────────────────────
+  Future<void> disableChatBackup() async {
+    _chatBackupError = null;
+    _chatBackupLoading = true;
+    notifyListeners();
+
+    try {
+      final encryption = _client.encryption;
+      if (encryption == null) {
+        throw Exception('Encryption is not available');
+      }
+      try {
+        final info = await encryption.keyManager.getRoomKeysBackupInfo();
+        await _client.deleteRoomKeysVersion(info.version);
+      } on MatrixException catch (e) {
+        if (e.errcode != 'M_NOT_FOUND') rethrow;
+        debugPrint('[Lattice] No server-side key backup to delete');
+      }
+      await deleteStoredRecoveryKey();
+      _chatBackupNeeded = true;
+    } catch (e) {
+      debugPrint('[Lattice] disableChatBackup error: $e');
+      _chatBackupError = 'Failed to disable chat backup. Please try again.';
+    } finally {
+      _chatBackupLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void resetChatBackupState() {
+    _chatBackupNeeded = null;
+  }
+
+  // ── Key Restoration ──────────────────────────────────────────
 
   Future<void> tryAutoUnlockBackup() async {
     final storedKey = await getStoredRecoveryKey();
@@ -59,24 +91,12 @@ class ChatBackupService extends ChangeNotifier {
       } catch (e) {
         debugPrint('[Lattice] Failed: $e');
       }
+    } else {
+      requestMissingRoomKeys();
     }
 
     await checkChatBackupStatus();
     debugPrint('[Lattice] Complete, chatBackupNeeded=$_chatBackupNeeded');
-  }
-
-  Future<void> _restoreRoomKeys() async {
-    final encryption = _client.encryption;
-    if (encryption == null) return;
-
-    try {
-      await encryption.keyManager.loadAllKeys();
-      debugPrint('[Lattice] Room keys restored from online backup');
-    } catch (e) {
-      debugPrint('[Lattice] Failed to load keys from backup: $e');
-    }
-
-    requestMissingRoomKeys();
   }
 
   void requestMissingRoomKeys() {
@@ -106,7 +126,27 @@ class ChatBackupService extends ChangeNotifier {
     }
   }
 
-  // ── Backup Version ───────────────────────────────────────────
+  // ── Recovery Key Storage ──────────────────────────────────────
+
+  Future<String?> getStoredRecoveryKey() async {
+    final userId = _client.userID;
+    if (userId == null) return null;
+    return _storage.read(key: 'ssss_recovery_key_$userId');
+  }
+
+  Future<void> storeRecoveryKey(String key) async {
+    final userId = _client.userID;
+    if (userId == null) return;
+    await _storage.write(key: 'ssss_recovery_key_$userId', value: key);
+  }
+
+  Future<void> deleteStoredRecoveryKey() async {
+    final userId = _client.userID;
+    if (userId == null) return;
+    await _storage.delete(key: 'ssss_recovery_key_$userId');
+  }
+
+  // ── Private ──────────────────────────────────────────────────
 
   Future<void> _ensureBackupVersionExists() async {
     final encryption = _client.encryption;
@@ -140,55 +180,17 @@ class ChatBackupService extends ChangeNotifier {
     await _client.database.markInboundGroupSessionsAsNeedingUpload();
   }
 
-  // ── Recovery Key Storage ──────────────────────────────────────
-
-  Future<String?> getStoredRecoveryKey() async {
-    final userId = _client.userID;
-    if (userId == null) return null;
-    return _storage.read(key: 'ssss_recovery_key_$userId');
-  }
-
-  Future<void> storeRecoveryKey(String key) async {
-    final userId = _client.userID;
-    if (userId == null) return;
-    await _storage.write(key: 'ssss_recovery_key_$userId', value: key);
-  }
-
-  Future<void> deleteStoredRecoveryKey() async {
-    final userId = _client.userID;
-    if (userId == null) return;
-    await _storage.delete(key: 'ssss_recovery_key_$userId');
-  }
-
-  Future<void> disableChatBackup() async {
-    _chatBackupError = null;
-    _chatBackupLoading = true;
-    notifyListeners();
+  Future<void> _restoreRoomKeys() async {
+    final encryption = _client.encryption;
+    if (encryption == null) return;
 
     try {
-      final encryption = _client.encryption;
-      if (encryption == null) {
-        throw Exception('Encryption is not available');
-      }
-      try {
-        final info = await encryption.keyManager.getRoomKeysBackupInfo();
-        await _client.deleteRoomKeysVersion(info.version);
-      } on MatrixException catch (e) {
-        if (e.errcode != 'M_NOT_FOUND') rethrow;
-        debugPrint('[Lattice] No server-side key backup to delete');
-      }
-      await deleteStoredRecoveryKey();
-      _chatBackupNeeded = true;
+      await encryption.keyManager.loadAllKeys();
+      debugPrint('[Lattice] Room keys restored from online backup');
     } catch (e) {
-      debugPrint('[Lattice] disableChatBackup error: $e');
-      _chatBackupError = 'Failed to disable chat backup. Please try again.';
-    } finally {
-      _chatBackupLoading = false;
-      notifyListeners();
+      debugPrint('[Lattice] Failed to load keys from backup: $e');
     }
-  }
 
-  void resetChatBackupState() {
-    _chatBackupNeeded = null;
+    requestMissingRoomKeys();
   }
 }

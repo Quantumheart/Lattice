@@ -13,18 +13,19 @@
 │       │                 │                        │              │
 │       ▼                 ▼                        ▼              │
 │  ┌─────────┐    ┌──────────────┐    ┌───────────────────────┐   │
-│  │ Sync +   │    │ Sync + Auto  │    │ Sync + Check          │  │
-│  │ Check    │    │ Unlock       │    │ → "Not set up"        │  │
-│  │ Backup   │    │ → Backed up  │    │                       │  │
+│  │ Sync +   │    │ Sync + Auto  │    │ Sync + Request keys   │  │
+│  │ Check    │    │ Unlock       │    │ from other sessions   │  │
+│  │ Backup   │    │ → Backed up  │    │ → "Not set up"        │  │
 │  └────┬─────┘    └──────────────┘    └───────────┬───────────┘  │
 │       │                                          │              │
 │       ▼                                          ▼              │
-│  User taps                              User taps "Chat backup" │
-│  "Chat backup"                          in Settings             │
+│  User taps                              Router redirects to     │
+│  "Chat backup"                          /e2ee-setup, or user   │
+│  in Settings                            taps banner            │
 │       │                                          │              │
 │       └──────────────┬───────────────────────────┘              │
 │                      ▼                                          │
-│              BootstrapDialog                                    │
+│              E2EE Setup Screen                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -42,85 +43,89 @@ User enters credentials
 │                    │
 │ • Validate server  │
 │ • Authenticate     │
-│ • Cache password   │  ← 5-min expiry timer
+│ • Cache password   │  ← stored in UiaService (30s expiry)
 │   (for UIA later)  │
 │ • Store credentials│
 └────────┬──────────┘
          │
          ▼
 ┌───────────────────┐     ┌─────────────────────────┐
-│ _startSync()       │     │ First /sync response     │
+│ sync.startSync()   │     │ First /sync response     │
 │                    │────▶│ arrives from server       │
 │ await firstSync    │     │ (device keys, account     │
 │                    │     │  data now available)      │
 └────────┬──────────┘     └─────────────────────────┘
          │
-         ▼
+         ▼  (onPostSyncBackup callback fires)
+┌────────────────────────────────────┐
+│ tryAutoUnlockBackup()              │
+│                                    │
+│  Stored recovery key exists?       │
+│                                    │
+│  NO ──▶ requestMissingRoomKeys()   │
+│         (request keys from other   │
+│          sessions peer-to-peer)    │
+│         │                          │
+│  YES ──▶ getCryptoIdentityState()  │
+│          │                         │
+│     ┌────┴──────┐                  │
+│     │connected? │                  │
+│     └────┬──────┘                  │
+│    YES   │    NO                   │
+│   (skip) │    ▼                    │
+│     │    │ restoreCryptoIdentity() │
+│     │    │ (headless bootstrap)    │
+│     │    └────┬───────             │
+│     │         │                    │
+│     └────┬────┘                    │
+│          ▼                         │
+│   _restoreRoomKeys()               │
+│   • loadAllKeys() from backup      │
+│   • requestMissingRoomKeys()       │
+│                                    │
+└────────────┬───────────────────────┘
+             │
+             ▼
 ┌────────────────────────────────────┐
 │ checkChatBackupStatus()            │
 │                                    │
 │ getCryptoIdentityState() returns:  │
-│   initialized: crossSigning +     │
+│   initialized: crossSigning +      │
 │                keyBackup enabled?  │
 │   connected:   secrets cached      │
 │                locally?            │
 │                                    │
 │ chatBackupNeeded =                 │
 │   !initialized || !connected       │
-└────────┬───────────────────────────┘
+└────────────────────────────────────┘
          │
     ┌────┴────┐
     │ needed? │
     └────┬────┘
-    YES  │        NO
+    NO   │       YES
     ▼    │        ▼
-┌────────┴──┐  (done — "Your keys are backed up")
-│ _tryAuto   │
-│ Unlock()   │
-└────┬───────┘
-     │
-     ▼
-┌──────────────────────────────────────────────────┐
-│ Stored recovery key exists?                       │
-│                                                   │
-│  NO ──────────────────────────┐                   │
-│    (silent return,            │                   │
-│     stays "Not set up")       │                   │
-│                               │                   │
-│  YES ─▶ getCryptoIdentityState│                   │
-│         │                     │                   │
-│    ┌────┴──────┐              │                   │
-│    │connected? │              │                   │
-│    └────┬──────┘              │                   │
-│   YES   │    NO               │                   │
-│   (skip)│    ▼                │                   │
-│    │    │ restoreCrypto       │                   │
-│    │    │  Identity()         │                   │
-│    │    │  (headless          │                   │
-│    │    │   bootstrap)        │                   │
-│    │    └────┬───────         │                   │
-│    │         │                │                   │
-│    └────┬────┘                │                   │
-│         ▼                     │                   │
-│  checkChatBackupStatus()      │                   │
-│  (re-check after attempt)     │                   │
-└───────────────────────────────┘
+(done)   │  Router redirects to /e2ee-setup
+         │  (if !hasSkippedSetup)
+         │  or KeyBackupBanner shown
 ```
 
-**Source:** `lib/core/services/matrix_service.dart` — `login()` (line 130), `_startSync()` (line 281), `_tryAutoUnlockBackup()` (line 361)
+**Source:** `lib/core/services/matrix_service.dart` — `login()`, `_activateSession()`, `_runPostLoginSync()`; `lib/core/services/sub_services/sync_service.dart` — `startSync()`, `onPostSyncBackup`; `lib/core/services/sub_services/chat_backup_service.dart` — `tryAutoUnlockBackup()`
 
 ---
 
-## 2. Bootstrap Dialog — State Machine
+## 2. E2EE Setup Screen — State Machine
 
 ```
-User taps "Chat backup: Not set up"
+Router redirects to /e2ee-setup
+  (chatBackupNeeded == true && !hasSkippedSetup)
+or user taps "Chat backup" tile in Settings
                 │
                 ▼
     ┌───────────────────────┐
-    │   BootstrapDialog     │
-    │   .show(context)      │
+    │   E2eeSetupScreen     │
     │                       │
+    │  • Show explainer     │
+    │  • User taps "Next"   │
     │  • Create controller  │
     │  • Listen for UIA     │
     │  • Start bootstrap    │
@@ -128,124 +133,140 @@ User taps "Chat backup: Not set up"
                 │
                 ▼
   ┌─────────────────────────────────────────────────────────────┐
-  │                  SDK Bootstrap State Machine                 │
+  │              SDK Bootstrap State Machine                     │
+  │              (driven by BootstrapDriver)                     │
   │                                                              │
   │  AUTO-ADVANCED (no user interaction needed):                 │
-  │  ┌──────────┐  ┌────────────┐  ┌───────────────────────┐    │
-  │  │ loading  ├─▶│ askWipe    ├─▶│ askSetupCrossSigning  │    │
-  │  └──────────┘  │ Ssss       │  │ (spinner: "Setting    │    │
-  │                └────────────┘  │  up cross-signing")   │    │
-  │                                └───────────┬───────────┘    │
-  │                                            │                │
-  │  ┌──────────────────────┐  ┌───────────────┴─────────────┐  │
+  │  ┌──────────────┐  ┌──────────────┐  ┌─────────────────┐   │
+  │  │ askWipeSsss  ├─▶│ askWipeCross ├─▶│ askSetupCross   │   │
+  │  │              │  │ Signing      │  │ Signing         │   │
+  │  └──────────────┘  └──────────────┘  │ (spinner)       │   │
+  │                                      └────────┬────────┘   │
+  │                                               │             │
+  │  ┌──────────────────────┐  ┌──────────────────┴──────────┐  │
   │  │ askWipeOnlineKey     ├─▶│ askSetupOnlineKeyBackup     │  │
-  │  │  Backup              │  │ (spinner: "Setting up       │  │
-  │  └──────────────────────┘  │  online key backup")        │  │
-  │                            └───────────────┬─────────────┘  │
-  │                                            │                │
-  │                           ┌────────────────┴──────┐         │
-  │                           │ New backup or existing?│         │
-  │                           └──┬──────────────────┬─┘         │
-  │                              │                  │            │
-  │                    NEW SETUP │     EXISTING     │            │
-  │                              ▼                  ▼            │
-  │                    ┌──────────────┐  ┌──────────────────┐    │
-  │                    │  askNewSsss  │  │ openExistingSsss │    │
-  │                    │  (MANUAL)    │  │ (MANUAL)         │    │
-  │                    └──────┬───────┘  └────────┬─────────┘    │
-  │                           │                   │              │
-  └───────────────────────────┼───────────────────┼──────────────┘
-                              │                   │
-              ┌───────────────┘                   └──────────────┐
-              ▼                                                  ▼
-┌──────────────────────────────┐        ┌────────────────────────────────┐
-│  "Save your recovery key"    │        │  "Enter recovery key"          │
-│                              │        │                                │
-│  ┌────────────────────────┐  │        │  ┌──────────────────────────┐  │
-│  │ EsJt X7wK ... 4dQm     │  │        │  │ [___________________]    │  │
-│  │                         │  │        │  │  Recovery key input      │  │
-│  │  [Copy to clipboard]   │  │        │  └──────────────────────────┘  │
-│  └────────────────────────┘  │        │                                │
-│                              │        │  ☑ Save key to this device     │
-│  ☑ Save key to this device   │        │                                │
-│                              │        │  ─────── or ───────            │
-│  ┌────────┐  ┌────────────┐  │        │                                │
-│  │ Cancel │  │ Next       │  │        │  [Verify with another          │
-│  │        │  │ (disabled   │  │        │      device]                   │
-│  │        │  │  until key  │  │        │                                │
-│  │        │  │  copied or  │  │        │  [Lost recovery key?]          │
-│  │        │  │  saved)     │  │        │                                │
-│  └────────┘  └─────┬──────┘  │        │  ┌────────┐  ┌─────────────┐  │
-│                     │        │        │  │ Cancel │  │ Unlock      │  │
-└─────────────────────┼────────┘        │  └────────┘  └──────┬──────┘  │
-                      │                 └──────────────────────┼────────┘
-                      │                                        │
-                      │              ┌─────────────────────────┘
-                      │              │
-                      │         ┌────┴────┐
-                      │         │Valid key?│
-                      │         └────┬────┘
-                      │         NO   │   YES
-                      │         ▼    │    │
-                      │    "Invalid  │    │
-                      │     recovery │    │
-                      │     key"     │    │
-                      │              │    │
-                      └──────┬───────┘    │
-                             │            │
-                             ▼            │
-                    ┌─────────────────────┴──┐
-                    │      onDone()          │
-                    │                        │
-                    │ • Store recovery key   │
-                    │   (if save checked)    │
-                    │ • Cache SSSS secrets   │
-                    │ • Self-sign device     │
-                    │ • Update device keys   │
-                    │ • Re-request keys for  │
-                    │   undecryptable msgs   │
-                    │ • Check backup status  │
-                    │ • Clear cached password│
-                    └───────────┬────────────┘
-                                │
-                                ▼
-                    ┌─────────────────────┐
-                    │  "Backup complete"  │
-                    │                     │
-                    │   ✅ Success icon   │
-                    │                     │
-                    │  "Your chat backup  │
-                    │   has been set up"  │
-                    │                     │
-                    │      [Done]         │
-                    └─────────┬───────────┘
-                              │
-                              ▼
-                     Dialog closes,
-                     Settings tile →
-                     "Your keys are backed up"
+  │  │  Backup              │  │ (spinner)                   │  │
+  │  │  (auto-detects if no │  └──────────────┬──────────────┘  │
+  │  │   backup exists)     │                 │                  │
+  │  └──────────────────────┘                 │                  │
+  │                                           │                  │
+  │  ┌──────────────┐  ┌─────────────────────┘                  │
+  │  │ askBadSsss   │  │                                         │
+  │  │ (ignored)    │  ▼                                         │
+  │  └──────────────┘  askUseExistingSsss ──▶ askUnlockSsss     │
+  │                         │                    (auto-advance)  │
+  │                NEW      │      EXISTING                      │
+  │                ▼        │        ▼                           │
+  │       askNewSsss        │  openExistingSsss                  │
+  │       (MANUAL)          │  (MANUAL)                          │
+  └───────────┬─────────────┼──────────────┬─────────────────────┘
+              │             │              │
+              ▼             │              ▼
+┌──────────────────────────┐│  ┌────────────────────────────────┐
+│  "Save your recovery key" ││  │  "Unlock your backup"          │
+│                           ││  │                                │
+│  ┌────────────────────┐   ││  │  ┌──────────────────────────┐  │
+│  │ EsJt X7wK ... 4dQm │   ││  │  │ [___________________]    │  │
+│  │                     │   ││  │  │  Recovery key input      │  │
+│  │  [Copy to clipboard]│   ││  │  └──────────────────────────┘  │
+│  └────────────────────┘   ││  │                                │
+│                           ││  │  ☑ Save key to this device     │
+│  ☑ Save key to this device ││  │                                │
+│                           ││  │  ─────── or ───────            │
+│  ┌────────┐  ┌──────────┐ ││  │                                │
+│  │ Back   │  │ Next     │ ││  │  [Verify with another device]  │
+│  │        │  │ (disabled │ ││  │                                │
+│  │        │  │  until key│ ││  │  [Create new key]              │
+│  │        │  │  copied   │ ││  │                                │
+│  │        │  │  or saved)│ ││  │  ┌────────┐  ┌─────────────┐  │
+│  └────────┘  └─────┬─────┘ ││  │  │ Back   │  │ Unlock      │  │
+└───────────────────┬┘ │     ││  │  └────────┘  └──────┬──────┘  │
+                    │  │     │└──────────────────────────┼────────┘
+                    │  │     │                      ┌────┴────┐
+                    │  │     │                      │Valid key?│
+                    │  │     │                      └────┬────┘
+                    │  │     │                  NO  │        │ YES
+                    │  │     │                  ▼   │        │
+                    │  │     │           "Invalid   │        │
+                    │  │     │            recovery  │        │
+                    │  │     │            key"      │        │
+                    └──┘     └──────────────────────┘        │
+                    │                                         │
+                    └──────────────────┬──────────────────────┘
+                                       │
+                                       ▼
+                          ┌────────────────────────┐
+                          │      _onDone()          │
+                          │                        │
+                          │ • Store recovery key   │
+                          │   (if save checked,    │
+                          │    new key flow only)  │
+                          │ • maybeCacheAll()      │
+                          │   SSSS secrets         │
+                          │ • selfSign device      │
+                          │ • updateUserDeviceKeys │
+                          │ • signWithCross        │
+                          │   Signing (backup key) │
+                          │ • loadAllKeys()        │
+                          │   from server backup   │
+                          │ • requestMissing       │
+                          │   RoomKeys()           │
+                          │ • checkChatBackup      │
+                          │   Status()             │
+                          │ • clearCachedPassword  │
+                          └───────────┬────────────┘
+                                      │
+                                      ▼
+                          ┌─────────────────────┐
+                          │   "You're all set!"  │
+                          │                     │
+                          │   ✅ Success icon   │
+                          │                     │
+                          │  "Your messages are │
+                          │   backed up and     │
+                          │   accessible from   │
+                          │   any device."      │
+                          │                     │
+                          │      [Done]         │
+                          └─────────┬───────────┘
+                                    │
+                                    ▼
+                          Screen closes (context.go('/'))
 ```
 
-**Source:** `lib/features/e2ee/widgets/bootstrap_controller.dart` — state machine (line 149), `onDone()` (line 378); `lib/features/e2ee/widgets/bootstrap_views.dart` — UI rendering; `lib/features/e2ee/widgets/bootstrap_dialog.dart` — dialog orchestration
+**Source:** `lib/features/e2ee/screens/e2ee_setup_screen.dart` — screen + UI; `lib/features/e2ee/widgets/bootstrap_controller.dart` — `_onDone()` (line 198); `lib/features/e2ee/widgets/bootstrap_driver.dart` — state machine; `lib/features/e2ee/widgets/recovery_key_handler.dart` — key handling
 
 ---
 
 ## 3. Device Verification (Alternative to Recovery Key)
 
+Triggered from the "Unlock your backup" screen via the "Verify with another device" button.
+The verification runs **inline** inside the setup screen (no separate dialog).
+
 ```
 User taps "Verify with another device"
-    (from openExistingSsss view)
+    (from unlock screen)
                 │
                 ▼
 ┌──────────────────────────────────────┐
-│  KeyVerificationDialog               │
+│  bootstrap_controller                │
+│  .startVerification()                │
+│                                      │
+│  • updateUserDeviceKeys()            │
+│  • Create KeyVerification            │
+│    (userId/*, all devices)           │
+│  • verification.start()              │
+│  • phase → SetupPhase.verification   │
+└──────────────────┬───────────────────┘
+                   │
+                   ▼
+┌──────────────────────────────────────┐
+│  KeyVerificationInline               │
+│  (rendered inside setup screen)      │
 │                                      │
 │  waitingAccept                       │
 │  "Waiting for the other device       │
 │   to accept..."                      │
-│  ┌─────────────────────────────┐     │
-│  │        ⏳ Spinner            │     │
-│  └─────────────────────────────┘     │
 └──────────────────┬───────────────────┘
                    │
                    ▼
@@ -254,10 +275,7 @@ User taps "Verify with another device"
 │  "Compare these emoji with the       │
 │   other device"                      │
 │                                      │
-│  ┌─────────────────────────────────┐ │
-│  │  🐶  🔑  🎵  🌍  ❤️  🔒  🎉   │ │
-│  │  Dog Key Music Globe Heart Lock │ │
-│  └─────────────────────────────────┘ │
+│  🐶  🔑  🎵  🌍  ❤️  🔒  🎉        │
 │                                      │
 │  [They don't match]  [They match]    │
 └──────────────────┬───────────────────┘
@@ -268,33 +286,22 @@ User taps "Verify with another device"
           NO   │       │  YES
           ▼    │       │
      (cancel,  │       ▼
-      return   │  ┌──────────────────┐
-      to key   │  │ waitingSas       │
-      input)   │  │ "Verifying..."   │
-               │  └────────┬─────────┘
-               │           │
-               │           ▼
-               │  ┌──────────────────────────────┐
-               │  │ done                          │
-               │  │ "Device verified              │
-               │  │  successfully!"               │
-               │  │                               │
-               │  │ Wait for secrets to propagate │
-               │  │ (30s timeout on               │
-               │  │  onSecretStored stream)       │
-               │  │                               │
-               │  │         [Done]                │
-               │  └──────────┬───────────────────┘
-               │             │
-               │             ▼
-               │   Bootstrap auto-finalized
-               │   via onDone()
-               │             │
+      back to  │  "Verifying..."
+      key input)│
+               │       ▼
+               │  Waits up to 10s for secrets
+               │  to propagate (isCached check,
+               │  1s polling)
+               │       │
+               │       ▼
+               │   _onDone()
+               │   (same as successful key entry)
+               │
                └─────────────▼
-                    Dialog closes
+                    Screen closes
 ```
 
-**Source:** `lib/features/e2ee/widgets/key_verification_dialog.dart` — states (line 29), SAS auto-selection (line 56); `lib/features/e2ee/widgets/bootstrap_dialog.dart` — `_showVerificationDialog()` (line 156)
+**Source:** `lib/features/e2ee/widgets/bootstrap_controller.dart` — `startVerification()` (line 143), `onVerificationDone()` (line 163); `lib/features/e2ee/screens/e2ee_setup_screen.dart` — `KeyVerificationInline` usage
 
 ---
 
@@ -306,7 +313,7 @@ Bootstrap needs server-side auth
                 │
                 ▼
 ┌──────────────────────────────────┐
-│ MatrixService._handleUiaRequest  │
+│ UiaService                       │
 │                                  │
 │  ┌────────────────────┐          │
 │  │ Cached password     │── YES ──▶ Auto-complete UIA
@@ -314,13 +321,10 @@ Bootstrap needs server-side auth
 │  └────────┬───────────┘          │
 │       NO  │                      │
 │           ▼                      │
-│  ┌────────────────────────────┐  │
-│  │ Forward to UI via          │  │
-│  │ onUiaRequest stream        │  │
-│  └────────────┬───────────────┘  │
-│               │                  │
-└───────────────┼──────────────────┘
-                ▼
+│  Emit via onUiaRequest stream    │
+└───────────┬──────────────────────┘
+            │
+            ▼ (E2eeSetupScreen listens)
 ┌──────────────────────────────────┐
 │  "Authentication required"       │
 │                                  │
@@ -332,7 +336,7 @@ Bootstrap needs server-side auth
 └──────────────────────────────────┘
 ```
 
-**Source:** `lib/core/services/matrix_service.dart` — `_handleUiaRequest()` (line 215), `_setCachedPassword()` (line 261)
+**Source:** `lib/core/services/sub_services/uia_service.dart` — UIA logic; `lib/core/services/matrix_service.dart` — `uia.listenForUia()`, `uia.setCachedPassword()`; `lib/features/e2ee/screens/e2ee_setup_screen.dart` — `_showUiaPasswordPrompt()`
 
 ---
 
@@ -346,59 +350,61 @@ Bootstrap needs server-side auth
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │ ☁️  Chat backup                                          │  │
 │  │    ├─ "Checking..."             (null — loading)         │  │
-│  │    ├─ "Not set up"              (true — tap → Bootstrap) │  │
-│  │    └─ "Your keys are backed up" (false — tap → Info)     │  │
+│  │    ├─ "Setting up…"             (chatBackupLoading)      │  │
+│  │    ├─ "Not set up"              (true — tap → /e2ee-setup)│  │
+│  │    └─ "Your keys are backed up" (false — tap → /e2ee-setup)│ │
 │  └──────────────────────────────────────────────────────────┘  │
 └────────────────────────────────────────────────────────────────┘
 
-         │                              │
-    (Not set up)                  (Backed up)
-         │                              │
-         ▼                              ▼
-  BootstrapDialog            ┌─────────────────────┐
-  (see §2 above)             │  "Chat backup"      │
-                             │                     │
-                             │   ✅ Check icon     │
-                             │                     │
-                             │  "Your keys are     │
-                             │   backed up and     │
-                             │   accessible from   │
-                             │   any device."      │
-                             │                     │
-                             │  [Disable backup]   │
-                             │  [OK]               │
-                             └──────────┬──────────┘
-                                        │
-                              (Disable backup)
-                                        │
-                                        ▼
-                             ┌─────────────────────┐
-                             │ "Disable chat        │
-                             │  backup?"            │
-                             │                      │
-                             │ "You will lose       │
-                             │  access to encrypted │
-                             │  history on new      │
-                             │  devices."           │
-                             │                      │
-                             │  [Cancel]  [Disable] │
-                             └──────────┬───────────┘
-                                        │
-                                  (Disable)
-                                        │
-                                        ▼
-                             ┌──────────────────────┐
-                             │ disableChatBackup()   │
-                             │ • Delete backup from  │
-                             │   server              │
-                             │ • Delete stored       │
-                             │   recovery key        │
-                             │ • Set status →        │
-                             │   "Not set up"        │
-                             └──────────────────────┘
+All states navigate to /e2ee-setup on tap.
+The E2eeSetupScreen detects chatBackupEnabled and shows the
+management view ("Chat backup" / ✅) or the setup flow accordingly.
+
+         From management view:
+         ┌─────────────────────┐
+         │  "Chat backup"      │
+         │                     │
+         │   ✅ Check icon     │
+         │                     │
+         │  "Your keys are     │
+         │   backed up and     │
+         │   accessible from   │
+         │   any device."      │
+         │                     │
+         │  [Create new key]   │
+         │  [Disable backup]   │
+         └──────────┬──────────┘
+                    │
+          (Disable backup)
+                    │
+                    ▼
+         ┌─────────────────────┐
+         │ "Disable backup?"   │
+         │                     │
+         │ "Your recovery key  │
+         │  and server-side    │
+         │  backup will be     │
+         │  deleted..."        │
+         │                     │
+         │  [Go back]          │
+         │  [Disable backup]   │
+         └──────────┬──────────┘
+                    │
+              (Disable)
+                    │
+                    ▼
+         ┌──────────────────────┐
+         │ disableChatBackup()  │
+         │ • Delete backup from │
+         │   server             │
+         │ • Delete stored      │
+         │   recovery key       │
+         │ • chatBackupNeeded   │
+         │   → true             │
+         └──────────────────────┘
 ```
 
-**Source:** `lib/features/settings/screens/settings_screen.dart` — backup tile (line 109), `_showBackupInfo()` (line 182), `_confirmDisableBackup()` (line 223)
+**Source:** `lib/features/settings/screens/settings_screen.dart` — backup tile (line 413); `lib/features/e2ee/screens/e2ee_setup_screen.dart` — management view; `lib/core/services/sub_services/chat_backup_service.dart` — `disableChatBackup()`
 
 ---
 
@@ -408,66 +414,61 @@ Bootstrap needs server-side auth
 User taps "Sign Out"
         │
         ▼
-   ┌────┴──────────┐
-   │ Backup enabled?│
-   └────┬──────────┘
-   YES  │       NO
-   │    │        │
-   │    │        ▼
-   │    │  ┌─────────────────────────────────┐
-   │    │  │  ⚠️  "Your encryption keys are  │
-   │    │  │  not backed up. You will         │
-   │    │  │  permanently lose access to      │
-   │    │  │  your encrypted messages."       │
-   │    │  │                                  │
-   │    │  │  [Set up backup first]           │
-   │    │  │  [Cancel]                        │
-   │    │  │  [Sign Out] (red/error style)    │
-   │    │  └──────────┬──────────────────────┘
-   │    │             │
-   │    │    ┌────────┴──────────┐
-   │    │    │                   │
-   │    │ (setup)          (sign out)
-   │    │    │                   │
-   │    │    ▼                   │
-   │    │  Bootstrap             │
-   │    │  Dialog                │
-   │    │                        │
-   ▼    │                        │
-┌───────┴────────┐               │
-│ Standard logout │               │
-│ confirmation    │◀──────────────┘
-│                 │
-│ [Cancel]        │
-│ [Sign Out]      │
-└────────┬────────┘
+┌──────────────────────────────────┐
+│  _confirmLogout() AlertDialog    │
+│                                  │
+│  ┌────────────────────────────┐  │
+│  │ Backup missing?             │── YES ──▶ Show warning:
+│  │ (!chatBackupEnabled)        │          ⚠️ "Your encryption
+│  └────────────────────────────┘           keys are not backed
+│                                           up. You will
+│                                           permanently lose
+│                                           access to your
+│                                           encrypted messages."
+└──────────────────────────────────┘
          │
+         │  Actions shown:
+         │  [Cancel]
+         │  [Set up backup first]  ← only if backup missing
+         │                           (navigates to /e2ee-setup)
+         │  [Sign Out]             ← error style if backup missing,
+         │                           normal style if backed up
          ▼
-   MatrixService.logout()
-   • client.logout()
+   matrix.logout()
+   manager.removeService(matrix)
+   • client.logout() (server-side)
    • Clear all session keys
    • Clear cached password
+   • Delete session backup
+   • Delete stored recovery key
    • Reset all state → null
 ```
 
-**Source:** `lib/features/settings/screens/settings_screen.dart` — `_confirmLogout()` (line 254); `lib/core/services/matrix_service.dart` — `logout()` (line 183)
+**Source:** `lib/features/settings/screens/settings_screen.dart` — `_confirmLogout()` (line 491); `lib/core/services/matrix_service.dart` — `logout()` (line 263)
 
 ---
 
 ## Key Storage Map
 
 ```
-FlutterSecureStorage
-├── lattice_access_token        ← session credential
-├── lattice_user_id             ← session credential
-├── lattice_homeserver          ← session credential
-├── lattice_device_id           ← session credential
-└── ssss_recovery_key_{userId}  ← recovery key (if "Save to device" checked)
+FlutterSecureStorage (localStorage on web, Keychain/Keystore on native)
+├── lattice_{clientName}_access_token   ← session credential
+├── lattice_{clientName}_refresh_token  ← session credential
+├── lattice_{clientName}_user_id        ← session credential
+├── lattice_{clientName}_homeserver     ← session credential
+├── lattice_{clientName}_device_id      ← session credential
+├── lattice_session_backup_{clientName} ← JSON: tokens + olmAccount pickle
+└── ssss_recovery_key_{userId}          ← recovery key (if "Save to device" checked)
 
-In-Memory (MatrixService)
-├── _cachedPassword             ← login password (5-min TTL)
-├── _chatBackupNeeded           ← null | true | false
-└── _client.encryption          ← SDK manages cached SSSS secrets
+In-Memory (UiaService)
+└── _cachedPassword             ← login password (30s TTL)
+
+In-Memory (ChatBackupService)
+└── _chatBackupNeeded           ← null | true | false
+
+SDK Database (IndexedDB on web, SQLite on native)
+└── _client.encryption          ← OLM account, inbound group sessions,
+                                   cached SSSS secrets, device keys
 ```
 
-**Source:** `lib/core/services/matrix_service.dart` — storage keys (line 316), recovery key (line 389), password caching (line 261)
+**Source:** `lib/core/services/matrix_service.dart` — `latticeKey()` helper; `lib/core/services/session_backup.dart`; `lib/core/services/sub_services/chat_backup_service.dart` — `storeRecoveryKey()`; `lib/core/services/sub_services/uia_service.dart`; `lib/core/services/client_factory_web.dart` — `MatrixSdkDatabase.init()`
