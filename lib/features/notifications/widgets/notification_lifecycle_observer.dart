@@ -8,6 +8,7 @@ import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 import 'package:lattice/features/notifications/services/notification_service.dart';
 import 'package:lattice/features/notifications/services/push_service.dart';
+import 'package:lattice/features/notifications/services/web_focus_listener.dart';
 import 'package:lattice/features/notifications/services/web_push_service_export.dart';
 import 'package:provider/provider.dart';
 
@@ -39,6 +40,7 @@ class _NotificationLifecycleObserverState
   WebPushService? _webPushService;
   bool _wasLoggedIn = false;
   String? _lastSelectedRoomId;
+  Object? _focusListenerHandle;
 
   @override
   void initState() {
@@ -46,6 +48,12 @@ class _NotificationLifecycleObserverState
     WidgetsBinding.instance.addObserver(this);
     widget.matrixService.addListener(_onMatrixChanged);
     unawaited(_initServices());
+    if (kIsWeb) {
+      _focusListenerHandle = registerWindowFocusListeners(
+        onFocus: () => _notificationService?.isAppResumed = true,
+        onBlur: () => _notificationService?.isAppResumed = false,
+      );
+    }
   }
 
   Future<void> _initServices() async {
@@ -150,6 +158,7 @@ class _NotificationLifecycleObserverState
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     widget.matrixService.removeListener(_onMatrixChanged);
+    unregisterWindowFocusListeners(_focusListenerHandle);
     _notificationService?.dispose();
     _pushService?.dispose();
     _webPushService?.dispose();
