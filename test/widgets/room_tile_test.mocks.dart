@@ -11076,6 +11076,13 @@ class MockCallService extends _i1.Mock implements _i19.CallService {
       ) as bool);
 
   @override
+  bool get isScreenAudioEnabled => (super.noSuchMethod(
+        Invocation.getter(#isScreenAudioEnabled),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
   List<_i21.Participant<_i21.TrackPublication<_i21.Track>>>
       get activeSpeakers => (super.noSuchMethod(
             Invocation.getter(#activeSpeakers),
@@ -11211,12 +11218,28 @@ class MockCallService extends _i1.Mock implements _i19.CallService {
       ) as _i10.Future<void>);
 
   @override
-  _i10.Future<void> toggleScreenShare({String? sourceId}) =>
+  _i10.Future<void> toggleScreenShare({
+    String? sourceId,
+    bool? captureScreenAudio = false,
+  }) =>
       (super.noSuchMethod(
         Invocation.method(
           #toggleScreenShare,
           [],
-          {#sourceId: sourceId},
+          {
+            #sourceId: sourceId,
+            #captureScreenAudio: captureScreenAudio,
+          },
+        ),
+        returnValue: _i10.Future<void>.value(),
+        returnValueForMissingStub: _i10.Future<void>.value(),
+      ) as _i10.Future<void>);
+
+  @override
+  _i10.Future<void> toggleScreenAudio() => (super.noSuchMethod(
+        Invocation.method(
+          #toggleScreenAudio,
+          [],
         ),
         returnValue: _i10.Future<void>.value(),
         returnValueForMissingStub: _i10.Future<void>.value(),

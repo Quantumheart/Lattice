@@ -1239,6 +1239,25 @@ class MockChatBackupService extends _i1.Mock implements _i4.ChatBackupService {
       ) as _i11.Future<void>);
 
   @override
+  _i11.Future<void> disableChatBackup() => (super.noSuchMethod(
+        Invocation.method(
+          #disableChatBackup,
+          [],
+        ),
+        returnValue: _i11.Future<void>.value(),
+        returnValueForMissingStub: _i11.Future<void>.value(),
+      ) as _i11.Future<void>);
+
+  @override
+  void resetChatBackupState() => super.noSuchMethod(
+        Invocation.method(
+          #resetChatBackupState,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
   _i11.Future<void> tryAutoUnlockBackup() => (super.noSuchMethod(
         Invocation.method(
           #tryAutoUnlockBackup,
@@ -1286,25 +1305,6 @@ class MockChatBackupService extends _i1.Mock implements _i4.ChatBackupService {
         returnValue: _i11.Future<void>.value(),
         returnValueForMissingStub: _i11.Future<void>.value(),
       ) as _i11.Future<void>);
-
-  @override
-  _i11.Future<void> disableChatBackup() => (super.noSuchMethod(
-        Invocation.method(
-          #disableChatBackup,
-          [],
-        ),
-        returnValue: _i11.Future<void>.value(),
-        returnValueForMissingStub: _i11.Future<void>.value(),
-      ) as _i11.Future<void>);
-
-  @override
-  void resetChatBackupState() => super.noSuchMethod(
-        Invocation.method(
-          #resetChatBackupState,
-          [],
-        ),
-        returnValueForMissingStub: null,
-      );
 
   @override
   void addListener(_i18.VoidCallback? listener) => super.noSuchMethod(

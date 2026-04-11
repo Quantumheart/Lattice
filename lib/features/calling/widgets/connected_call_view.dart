@@ -106,10 +106,13 @@ class ConnectedCallView extends StatelessWidget {
               isMicMuted: !callService.isMicEnabled,
               isCameraOff: !callService.isCameraEnabled,
               isScreenSharing: callService.isScreenShareEnabled,
+              isScreenAudioEnabled: callService.isScreenAudioEnabled,
               onToggleMic: callService.toggleMicrophone,
               onToggleCamera: callService.toggleCamera,
               onToggleScreenShare: () =>
                   _toggleScreenShare(context, callService),
+              onToggleScreenAudio:
+                  isNativeDesktop ? callService.toggleScreenAudio : null,
               onHangUp: callService.leaveCall,
               isPTTActive: prefs.pushToTalkEnabled,
               isPTTKeyHeld: ptt.isKeyHeld,

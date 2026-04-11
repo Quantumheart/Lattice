@@ -96,6 +96,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
   bool get isMicEnabled => _liveKit.isMicEnabled;
   bool get isCameraEnabled => _liveKit.isCameraEnabled;
   bool get isScreenShareEnabled => _liveKit.isScreenShareEnabled;
+  bool get isScreenAudioEnabled => _liveKit.isScreenAudioEnabled;
   List<livekit.Participant> get activeSpeakers => _liveKit.activeSpeakers;
   String? get cachedLivekitServiceUrl => _liveKit.cachedLivekitServiceUrl;
   bool get isCallingAvailable => _liveKit.cachedLivekitServiceUrl != null;
@@ -105,8 +106,15 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<void> toggleMicrophone() => _liveKit.toggleMicrophone();
   Future<void> toggleCamera() => _liveKit.toggleCamera();
-  Future<void> toggleScreenShare({String? sourceId}) =>
-      _liveKit.toggleScreenShare(sourceId: sourceId);
+  Future<void> toggleScreenShare({
+    String? sourceId,
+    bool captureScreenAudio = false,
+  }) =>
+      _liveKit.toggleScreenShare(
+        sourceId: sourceId,
+        captureScreenAudio: captureScreenAudio,
+      );
+  Future<void> toggleScreenAudio() => _liveKit.toggleScreenAudio();
   Future<void> setOutputVolume(double volume) =>
       _liveKit.setOutputVolume(volume);
 

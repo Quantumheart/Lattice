@@ -80,6 +80,9 @@ class LiveKitService {
   bool _isScreenShareEnabled = false;
   bool get isScreenShareEnabled => _isScreenShareEnabled;
 
+  bool _isScreenAudioEnabled = false;
+  bool get isScreenAudioEnabled => _isScreenAudioEnabled;
+
   double _outputVolume = 1;
 
   List<livekit.Participant> _activeSpeakers = [];
@@ -195,7 +198,10 @@ class LiveKitService {
     );
   }
 
-  Future<void> toggleScreenShare({String? sourceId}) async {
+  Future<void> toggleScreenShare({
+    String? sourceId,
+    bool captureScreenAudio = false,
+  }) async {
     final localParticipant = _livekitRoom?.localParticipant;
     if (localParticipant == null) return;
 
@@ -215,14 +221,38 @@ class LiveKitService {
       label: 'screen share',
       apply: (enabled) => localParticipant.setScreenShareEnabled(
         enabled,
-        captureScreenAudio: true,
+        captureScreenAudio: isNativeLinux || captureScreenAudio,
         screenShareCaptureOptions: options,
       ),
     );
 
+    _isScreenAudioEnabled = _isScreenShareEnabled &&
+        (isNativeLinux || captureScreenAudio);
+
     if (isNativeAndroid && !_isScreenShareEnabled) {
       await _stopAndroidMediaProjectionService();
     }
+  }
+
+  Future<void> toggleScreenAudio() async {
+    if (!_isScreenShareEnabled) return;
+    final localParticipant = _livekitRoom?.localParticipant;
+    if (localParticipant == null) return;
+
+    final newAudioState = !_isScreenAudioEnabled;
+
+    await localParticipant.setScreenShareEnabled(
+      false,
+      captureScreenAudio: false,
+    );
+
+    await localParticipant.setScreenShareEnabled(
+      true,
+      captureScreenAudio: newAudioState,
+    );
+
+    _isScreenAudioEnabled = newAudioState;
+    _onChanged();
   }
 
   static const _androidBgConfig = FlutterBackgroundAndroidConfig(
@@ -418,6 +448,7 @@ class LiveKitService {
     }
     _isCameraEnabled = false;
     _isScreenShareEnabled = false;
+    _isScreenAudioEnabled = false;
     _syncParticipants();
 
     if (inputVolume != 1.0) {
@@ -561,6 +592,7 @@ class LiveKitService {
     _isMicEnabled = false;
     _isCameraEnabled = false;
     _isScreenShareEnabled = false;
+    _isScreenAudioEnabled = false;
     _outputVolume = 1;
 
     try {

@@ -13,6 +13,8 @@ class CallControlBar extends StatelessWidget {
     required this.onToggleScreenShare,
     required this.onHangUp,
     this.onFlipCamera,
+    this.isScreenAudioEnabled = false,
+    this.onToggleScreenAudio,
     this.isPTTActive = false,
     this.isPTTKeyHeld = false,
     this.isSpeakerOn,
@@ -28,6 +30,8 @@ class CallControlBar extends StatelessWidget {
   final VoidCallback onToggleScreenShare;
   final VoidCallback onHangUp;
   final VoidCallback? onFlipCamera;
+  final bool isScreenAudioEnabled;
+  final VoidCallback? onToggleScreenAudio;
   final bool isPTTActive;
   final bool isPTTKeyHeld;
   final bool? isSpeakerOn;
@@ -74,6 +78,16 @@ class CallControlBar extends StatelessWidget {
               onPressed: onToggleScreenShare,
               tooltip: isScreenSharing ? 'Stop sharing' : 'Share screen',
             ),
+            if (isScreenSharing && onToggleScreenAudio != null)
+              _ControlButton(
+                icon: Icons.volume_up,
+                activeIcon: Icons.volume_off,
+                isActive: !isScreenAudioEnabled,
+                onPressed: onToggleScreenAudio!,
+                tooltip: isScreenAudioEnabled
+                    ? 'Stop sharing audio'
+                    : 'Share system audio',
+              ),
             if (onToggleSpeaker != null && isSpeakerOn != null)
               _ControlButton(
                 icon: Icons.volume_up_rounded,
