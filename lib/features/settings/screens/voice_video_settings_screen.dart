@@ -146,7 +146,7 @@ class _VoiceVideoSettingsScreenState extends State<VoiceVideoSettingsScreen> {
           Card(
             child: Column(
               children: [
-                if (isNativeDesktop || !isNativeMobile)
+                if (isNativeDesktop || (!isNativeMobile && !isTouchDevice))
                   _DeviceDropdown(
                     label: 'Input device',
                     icon: Icons.mic_rounded,
@@ -266,7 +266,7 @@ class _VoiceVideoSettingsScreenState extends State<VoiceVideoSettingsScreen> {
           Card(
             child: Column(
               children: [
-                if (isNativeDesktop || !isNativeMobile)
+                if (isNativeDesktop || (!isNativeMobile && !isTouchDevice))
                   _DeviceDropdown(
                     label: 'Output device',
                     icon: Icons.volume_up_rounded,
