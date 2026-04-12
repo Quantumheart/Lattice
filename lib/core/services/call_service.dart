@@ -194,11 +194,13 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
       _hadRemoteParticipant = true;
     }
 
-    if ((_callState == LatticeCallState.connected ||
+    final isDm = _client.getRoomById(roomId)?.isDirectChat ?? false;
+    if (isDm &&
+        (_callState == LatticeCallState.connected ||
             _callState == LatticeCallState.reconnecting) &&
         !hasRemote &&
         _hadRemoteParticipant) {
-      debugPrint('[Lattice] All remote members left, ending call');
+      debugPrint('[Lattice] DM remote member left, ending call');
       unawaited(leaveCall());
       return;
     }
