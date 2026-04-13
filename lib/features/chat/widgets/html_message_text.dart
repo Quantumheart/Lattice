@@ -54,6 +54,11 @@ class _HtmlMessageTextState extends State<HtmlMessageText> {
 
   final _recognizers = <TapGestureRecognizer>[];
 
+  List<InlineSpan>? _cachedSpans;
+  String? _cachedHtml;
+  TextStyle? _cachedStyle;
+  Color? _cachedLinkColor;
+
   @override
   void dispose() {
     for (final r in _recognizers) {
@@ -70,31 +75,37 @@ class _HtmlMessageTextState extends State<HtmlMessageText> {
 
   @override
   Widget build(BuildContext context) {
-    // Dispose previous recognizers before rebuilding.
-    for (final r in _recognizers) {
-      r.dispose();
-    }
-    _recognizers.clear();
-
     final cs = Theme.of(context).colorScheme;
     final linkColor = widget.isMe
         ? cs.onPrimary.withValues(alpha: 0.85)
         : cs.primary;
 
-    // Strip mx-reply blocks before parsing.
-    final cleaned = widget.html.replaceAll(_mxReplyRegex, '');
-    final document = html_parser.parseFragment(cleaned);
+    if (_cachedSpans == null ||
+        _cachedHtml != widget.html ||
+        _cachedStyle != widget.style ||
+        _cachedLinkColor != linkColor) {
+      for (final r in _recognizers) {
+        r.dispose();
+      }
+      _recognizers.clear();
 
-    final spans = <InlineSpan>[];
-    for (final node in document.nodes) {
-      _buildSpans(node, widget.style ?? const TextStyle(), linkColor, spans);
+      final cleaned = widget.html.replaceAll(_mxReplyRegex, '');
+      final document = html_parser.parseFragment(cleaned);
+
+      final spans = <InlineSpan>[];
+      for (final node in document.nodes) {
+        _buildSpans(node, widget.style ?? const TextStyle(), linkColor, spans);
+      }
+      _trimNewlines(spans);
+
+      _cachedSpans = spans;
+      _cachedHtml = widget.html;
+      _cachedStyle = widget.style;
+      _cachedLinkColor = linkColor;
     }
 
-    // Trim leading/trailing newlines.
-    _trimNewlines(spans);
-
     return Text.rich(
-      TextSpan(children: spans),
+      TextSpan(children: _cachedSpans),
       maxLines: widget.maxLines,
       overflow: widget.overflow ?? TextOverflow.clip,
     );
