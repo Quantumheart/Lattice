@@ -140,38 +140,47 @@ class _LoginScreenState extends State<LoginScreen>
 
                   // ── Username & Password ──
                   if (_controller.supportsPassword && !isSsoInProgress) ...[
-                    TextField(
-                      controller: _usernameCtrl,
-                      enabled: formEnabled,
-                      decoration: InputDecoration(
-                        prefixIcon: Icon(Icons.person_outline,
-                            color: cs.onSurfaceVariant,),
-                        hintText: 'Username',
-                      ),
-                      textInputAction: TextInputAction.next,
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      controller: _passwordCtrl,
-                      enabled: formEnabled,
-                      obscureText: _obscurePassword,
-                      decoration: InputDecoration(
-                        prefixIcon: Icon(Icons.lock_outline,
-                            color: cs.onSurfaceVariant,),
-                        hintText: 'Password',
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off_outlined
-                                : Icons.visibility_outlined,
-                            color: cs.onSurfaceVariant,
+                    AutofillGroup(
+                      child: Column(
+                        children: [
+                          TextField(
+                            controller: _usernameCtrl,
+                            enabled: formEnabled,
+                            autofillHints: const [AutofillHints.username],
+                            autocorrect: false,
+                            decoration: InputDecoration(
+                              prefixIcon: Icon(Icons.person_outline,
+                                  color: cs.onSurfaceVariant,),
+                              hintText: 'Username',
+                            ),
+                            textInputAction: TextInputAction.next,
                           ),
-                          onPressed: () => setState(
-                              () => _obscurePassword = !_obscurePassword,),
-                        ),
+                          const SizedBox(height: 14),
+                          TextField(
+                            controller: _passwordCtrl,
+                            enabled: formEnabled,
+                            obscureText: _obscurePassword,
+                            autofillHints: const [AutofillHints.password],
+                            decoration: InputDecoration(
+                              prefixIcon: Icon(Icons.lock_outline,
+                                  color: cs.onSurfaceVariant,),
+                              hintText: 'Password',
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                  color: cs.onSurfaceVariant,
+                                ),
+                                onPressed: () => setState(
+                                    () => _obscurePassword = !_obscurePassword,),
+                              ),
+                            ),
+                            textInputAction: TextInputAction.done,
+                            onSubmitted: formEnabled ? (_) => _login() : null,
+                          ),
+                        ],
                       ),
-                      textInputAction: TextInputAction.done,
-                      onSubmitted: formEnabled ? (_) => _login() : null,
                     ),
                     const SizedBox(height: 8),
 
