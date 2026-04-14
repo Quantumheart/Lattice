@@ -28,26 +28,38 @@ self.addEventListener('push', function (event) {
   }
 
   event.waitUntil(
-    self.registration.showNotification(roomName, {
-      body: body,
-      icon: 'icons/Icon-192.png',
-      badge: 'icons/Icon-maskable-192.png',
-      tag: tag,
-      renotify: tag !== 'lattice-push',
-      data: data,
-      actions: [
-        { action: 'mark_read', title: 'Mark as read' },
-        { action: 'open', title: 'Open' },
-      ],
-    }).then(function () {
-      try {
-        if (self.navigator && self.navigator.setAppBadge && data.unreadCount) {
-          self.navigator.setAppBadge(data.unreadCount);
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then(function (clientList) {
+        var hasVisibleClient = clientList.some(function (c) {
+          return c.visibilityState === 'visible' || c.focused;
+        });
+        if (hasVisibleClient) {
+          // Open app will decrypt via matrix sync and post a
+          // 'show_notification' message with the real body.
+          return;
         }
-      } catch (e) {}
-    }).catch(function (e) {
-      console.error('[Lattice SW] showNotification failed:', e);
-    })
+        return self.registration.showNotification(roomName, {
+          body: body,
+          icon: 'icons/Icon-192.png',
+          badge: 'icons/Icon-maskable-192.png',
+          tag: tag,
+          renotify: tag !== 'lattice-push',
+          data: data,
+          actions: [
+            { action: 'mark_read', title: 'Mark as read' },
+            { action: 'open', title: 'Open' },
+          ],
+        }).then(function () {
+          try {
+            if (self.navigator && self.navigator.setAppBadge && data.unreadCount) {
+              self.navigator.setAppBadge(data.unreadCount);
+            }
+          } catch (e) {}
+        });
+      })
+      .catch(function (e) {
+        console.error('[Lattice SW] showNotification failed:', e);
+      })
   );
 });
 
