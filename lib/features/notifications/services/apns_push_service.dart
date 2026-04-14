@@ -26,6 +26,7 @@ class ApnsPushService {
   final CallService callService;
 
   String? _currentToken;
+  bool _initialized = false;
   bool _disposed = false;
 
   static const _channel = MethodChannel('lattice/apns');
@@ -35,6 +36,8 @@ class ApnsPushService {
 
   Future<void> init() async {
     if (!isNativeIOS) return;
+    if (_initialized) return;
+    _initialized = true;
 
     _channel.setMethodCallHandler(_handleMethodCall);
     debugPrint('[Lattice] ApnsPushService initialized');
@@ -44,7 +47,9 @@ class ApnsPushService {
     switch (call.method) {
       case 'onToken':
         final token = call.arguments as String;
-        debugPrint('[Lattice] APNs token received: ${token.substring(0, 8)}...');
+        debugPrint(
+          '[Lattice] APNs token received: ${token.substring(0, token.length.clamp(0, 8))}...',
+        );
         _currentToken = token;
         unawaited(_registerPusher(token));
       case 'onRegistrationError':
@@ -97,24 +102,28 @@ class ApnsPushService {
     final gatewayUrl = _gatewayUrl;
     if (gatewayUrl == null) return;
 
-    await client.postPusher(
-      Pusher(
-        appId: _appId,
-        pushkey: token,
-        appDisplayName: NotificationChannel.appName,
-        deviceDisplayName:
-            client.deviceName ?? NotificationChannel.iosDefaultDeviceName,
-        kind: 'http',
-        lang: NotificationChannel.defaultLang,
-        data: PusherData(
-          url: Uri.parse(gatewayUrl),
-          format: 'event_id_only',
+    try {
+      await client.postPusher(
+        Pusher(
+          appId: _appId,
+          pushkey: token,
+          appDisplayName: NotificationChannel.appName,
+          deviceDisplayName:
+              client.deviceName ?? NotificationChannel.iosDefaultDeviceName,
+          kind: 'http',
+          lang: NotificationChannel.defaultLang,
+          data: PusherData(
+            url: Uri.parse(gatewayUrl),
+            format: 'event_id_only',
+          ),
+          profileTag: client.deviceID,
         ),
-        profileTag: client.deviceID,
-      ),
-      append: true,
-    );
-    debugPrint('[Lattice] APNs pusher registered with gateway $gatewayUrl');
+        append: true,
+      );
+      debugPrint('[Lattice] APNs pusher registered with gateway $gatewayUrl');
+    } catch (e) {
+      debugPrint('[Lattice] Failed to register APNs pusher: $e');
+    }
   }
 
   Future<void> _unregisterPusher() async {
@@ -269,5 +278,7 @@ class ApnsPushService {
 
   void dispose() {
     _disposed = true;
+    _initialized = false;
+    _channel.setMethodCallHandler(null);
   }
 }

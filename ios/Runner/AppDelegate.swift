@@ -10,6 +10,7 @@ import UserNotifications
   private var apnsChannel: FlutterMethodChannel?
   private var pendingPushPayloads: [[AnyHashable: Any]] = []
   private var channelReady = false
+  private static let maxPendingPayloads = 20
 
   override func application(
     _ application: UIApplication,
@@ -80,11 +81,21 @@ import UserNotifications
     fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
   ) {
     if channelReady {
+      var completed = false
       apnsChannel?.invokeMethod("onRemoteMessage", arguments: userInfo) { _ in
+        guard !completed else { return }
+        completed = true
+        completionHandler(.newData)
+      }
+      DispatchQueue.main.asyncAfter(deadline: .now() + 25) {
+        guard !completed else { return }
+        completed = true
         completionHandler(.newData)
       }
     } else {
-      pendingPushPayloads.append(userInfo)
+      if pendingPushPayloads.count < AppDelegate.maxPendingPayloads {
+        pendingPushPayloads.append(userInfo)
+      }
       completionHandler(.newData)
     }
   }
