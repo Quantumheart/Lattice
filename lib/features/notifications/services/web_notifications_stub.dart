@@ -7,7 +7,6 @@ void showWebNotification({
   bool silent = false,
   bool renotify = true,
   int unreadCount = 0,
-  void Function()? onClick,
 }) {}
 
 void closeWebNotification(String tag) {}

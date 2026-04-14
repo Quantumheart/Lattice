@@ -503,6 +503,7 @@ class NotificationService {
         silent: !preferencesService.notificationSoundEnabled,
         unreadCount: unreadCount,
       );
+      if (unreadCount == 0) clearWebAppBadge();
       return;
     }
     if (_useLinux) {

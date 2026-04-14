@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
+import 'package:flutter/foundation.dart';
 import 'package:web/web.dart' as web;
 
 final Map<String, web.Notification> _activeFallback = {};
@@ -20,7 +21,6 @@ void showWebNotification({
   bool silent = false,
   bool renotify = true,
   int unreadCount = 0,
-  void Function()? onClick,
 }) {
   if (web.Notification.permission != 'granted') return;
 
@@ -34,6 +34,7 @@ void showWebNotification({
     msg.setProperty('body'.toJS, body.toJS);
     msg.setProperty('tag'.toJS, (tag ?? '').toJS);
     msg.setProperty('roomId'.toJS, (roomId ?? tag ?? '').toJS);
+    // SW notification is always silent — sound is played client-side above.
     msg.setProperty('silent'.toJS, true.toJS);
     msg.setProperty('renotify'.toJS, renotify.toJS);
     msg.setProperty('unreadCount'.toJS, unreadCount.toJS);
@@ -47,15 +48,6 @@ void showWebNotification({
   if (icon != null) options.icon = icon;
 
   final notification = web.Notification(title, options);
-
-  if (onClick != null) {
-    notification.onclick = (web.Event event) {
-      event.preventDefault();
-      web.window.focus();
-      onClick();
-      notification.close();
-    }.toJS;
-  }
 
   if (tag != null) {
     _activeFallback[tag]?.close();
@@ -111,13 +103,22 @@ Future<String?> resolveWebAvatarUrl(
     final init = web.RequestInit(method: 'GET');
     if (headers != null && headers.isNotEmpty) {
       final h = web.Headers();
-      headers.forEach((k, v) => h.set(k, v));
+      headers.forEach(h.set);
       init.headers = h;
     }
     final response = await web.window.fetch(url.toJS, init).toDart;
     if (!response.ok) return null;
     final blob = await response.blob().toDart;
-    return web.URL.createObjectURL(blob);
+    final reader = web.FileReader();
+    final completer = Completer<String?>();
+    reader.onload = (web.Event _) {
+      completer.complete((reader.result as JSString?)?.toDart);
+    }.toJS;
+    reader.onerror = (web.Event _) {
+      completer.complete(null);
+    }.toJS;
+    reader.readAsDataURL(blob);
+    return await completer.future;
   } catch (_) {
     return null;
   }
@@ -129,5 +130,7 @@ Future<void> _playNotificationSound() async {
   try {
     final audio = web.HTMLAudioElement()..src = 'audio/notification.mp3';
     await audio.play().toDart;
-  } catch (_) {}
+  } catch (e) {
+    debugPrint('[Lattice] Failed to play notification sound: $e');
+  }
 }
