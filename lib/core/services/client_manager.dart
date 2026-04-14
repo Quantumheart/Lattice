@@ -28,6 +28,10 @@ class ClientManager extends ChangeNotifier {
     MatrixServiceFactory? serviceFactory,
   })  : _storage = storage ??
               const FlutterSecureStorage(
+                iOptions: IOSOptions(
+                  groupId: 'group.io.github.quantumheart.lattice',
+                  accessibility: KeychainAccessibility.first_unlock,
+                ),
                 webOptions: WebOptions(
                   dbName: 'LatticeEncryptedStorage',
                   publicKey: 'LatticeSecureStorage',

@@ -6,7 +6,6 @@ import 'package:lattice/core/services/app_config.dart';
 import 'package:lattice/core/services/call_service.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/core/utils/notification_filter.dart';
 import 'package:lattice/core/utils/platform_info.dart';
 import 'package:lattice/features/notifications/models/notification_constants.dart';
 import 'package:lattice/features/notifications/services/notification_service.dart';
@@ -58,6 +57,10 @@ class ApnsPushService {
       case 'onRemoteMessage':
         final payload = Map<String, dynamic>.from(call.arguments as Map);
         unawaited(_processPushMessage(payload));
+      case 'onNotificationTap':
+        final roomId = call.arguments as String;
+        debugPrint('[Lattice] APNs notification tapped for room $roomId');
+        notificationService.navigateToRoom(roomId);
     }
   }
 
@@ -141,8 +144,6 @@ class ApnsPushService {
 
   Future<void> _processPushMessage(Map<String, dynamic> payload) async {
     if (_disposed) return;
-    if (!preferencesService.osNotificationsEnabled) return;
-    if (preferencesService.notificationLevel == NotificationLevel.off) return;
 
     try {
       final notification =
@@ -156,85 +157,23 @@ class ApnsPushService {
       final client = matrixService.client;
       final room = client.getRoomById(roomId);
 
-      if (room?.pushRuleState == PushRuleState.dontNotify) return;
-
-      if (eventId == null) {
-        await notificationService.showPushNotification(
-          roomId: roomId,
-          title: room?.getLocalizedDisplayname() ??
-              NotificationText.newMessageTitle,
-          body: NotificationText.newMessageBody,
-        );
-        return;
-      }
+      if (eventId == null) return;
 
       MatrixEvent matrixEvent;
       try {
         matrixEvent = await client.getOneRoomEvent(roomId, eventId);
       } catch (e) {
         debugPrint('[Lattice] Failed to fetch push event: $e');
-        await notificationService.showPushNotification(
-          roomId: roomId,
-          title: room?.getLocalizedDisplayname() ??
-              NotificationText.newMessageTitle,
-          body: NotificationText.newMessageBody,
-        );
         return;
       }
 
       if (matrixEvent.type == 'm.call.invite' ||
           matrixEvent.type == 'm.call.member') {
         _handleCallEvent(roomId, matrixEvent, room);
-        return;
       }
-
-      if (room == null) {
-        await notificationService.showPushNotification(
-          roomId: roomId,
-          title: NotificationText.newMessageTitle,
-          body: NotificationText.newMessageBody,
-        );
-        return;
-      }
-
-      await _handleMessageEvent(room, matrixEvent);
     } catch (e) {
       debugPrint('[Lattice] APNs push message processing error: $e');
     }
-  }
-
-  Future<void> _handleMessageEvent(Room room, MatrixEvent matrixEvent) async {
-    final client = matrixService.client;
-    if (matrixEvent.senderId == client.userID) return;
-
-    final event = Event.fromMatrixEvent(matrixEvent, room);
-    String body;
-
-    if (matrixEvent.type == EventTypes.Encrypted) {
-      body = await _tryDecrypt(room, event);
-    } else {
-      body = event.body;
-    }
-
-    if (!shouldNotifyForEvent(
-      eventBody: body,
-      senderId: matrixEvent.senderId,
-      ownUserId: client.userID,
-      room: room,
-      prefs: preferencesService,
-    )) {
-      return;
-    }
-
-    final sender =
-        room.unsafeGetUserFromMemoryOrFallback(matrixEvent.senderId);
-
-    await notificationService.showPushNotification(
-      roomId: room.id,
-      title: room.getLocalizedDisplayname(),
-      senderName: sender.calcDisplayname(),
-      body: body,
-    );
   }
 
   void _handleCallEvent(String roomId, MatrixEvent event, Room? room) {
@@ -254,20 +193,6 @@ class ApnsPushService {
       callerName: callerName,
       isVideo: isVideo,
     );
-  }
-
-  // ── Decryption ───────────────────────────────────────────────
-
-  Future<String> _tryDecrypt(Room room, Event event) async {
-    try {
-      final decrypted = await room.client.encryption
-          ?.decryptRoomEvent(event)
-          .timeout(const Duration(seconds: 3));
-      return decrypted?.body ?? NotificationText.encryptedMessage;
-    } catch (e) {
-      debugPrint('[Lattice] APNs push decryption failed: $e');
-      return NotificationText.encryptedMessage;
-    }
   }
 
   // ── Gateway resolution ───────────────────────────────────────

@@ -352,6 +352,38 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  Future<void> migrateKeychainToAppGroup() async {
+    const marker = 'lattice_app_group_migrated';
+    final migrated = await _storage.read(key: marker);
+    if (migrated != null) return;
+
+    debugPrint('[Lattice] Migrating keychain to shared App Group');
+
+    const legacyStorage = FlutterSecureStorage();
+    final keys = [
+      latticeKey(_clientName, 'access_token'),
+      latticeKey(_clientName, 'refresh_token'),
+      latticeKey(_clientName, 'user_id'),
+      latticeKey(_clientName, 'homeserver'),
+      latticeKey(_clientName, 'device_id'),
+      latticeKey(_clientName, 'olm_account'),
+    ];
+
+    for (final key in keys) {
+      try {
+        final value = await legacyStorage.read(key: key);
+        if (value != null) {
+          await _storage.write(key: key, value: value);
+        }
+      } catch (e) {
+        debugPrint('[Lattice] Keychain migration skipped for $key: $e');
+      }
+    }
+
+    await _storage.write(key: marker, value: 'true');
+    debugPrint('[Lattice] Keychain App Group migration complete');
+  }
+
   // ── Credential Persistence ──────────────────────────────────
 
   Future<void> persistCredentials() async {

@@ -282,6 +282,7 @@ class NotificationService {
     List<MatrixEvent> events,
   ) async {
     if (_disposed) return;
+    if (isNativeIOS && preferencesService.apnsPushEnabled) return;
     final client = matrixService.client;
     final room = client.getRoomById(roomId);
     if (room == null) return;
@@ -624,7 +625,7 @@ class NotificationService {
           debugPrint(
             '[Lattice] Linux notification tapped for room $roomId',
           );
-          _navigateToRoom(roomId);
+          navigateToRoom(roomId);
         }
       }),);
       _linuxNotifications[roomId] = notification;
@@ -638,7 +639,7 @@ class NotificationService {
 
   // ── Notification tap ─────────────────────────────────────────
 
-  void _navigateToRoom(String roomId) {
+  void navigateToRoom(String roomId) {
     if (router != null) {
       router!.goNamed(Routes.room, pathParameters: {'roomId': roomId});
     } else {
@@ -650,7 +651,7 @@ class NotificationService {
     final roomId = response.payload;
     if (roomId != null && roomId.isNotEmpty) {
       debugPrint('[Lattice] Notification tapped, selecting room $roomId');
-      _navigateToRoom(roomId);
+      navigateToRoom(roomId);
     }
   }
 

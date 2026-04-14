@@ -16,50 +16,28 @@ import UserNotifications
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    if let controller = window?.rootViewController as? FlutterViewController {
-      apnsChannel = FlutterMethodChannel(
-        name: "lattice/apns",
-        binaryMessenger: controller.binaryMessenger
-      )
-
-      apnsChannel?.setMethodCallHandler { [weak self] (call, result) in
-        switch call.method {
-        case "requestToken":
-          self?.channelReady = true
-          self?.flushPendingPayloads()
-          UNUserNotificationCenter.current().requestAuthorization(
-            options: [.alert, .badge, .sound]
-          ) { granted, error in
-            DispatchQueue.main.async {
-              if granted {
-                UIApplication.shared.registerForRemoteNotifications()
-                result(nil)
-              } else {
-                result(FlutterError(
-                  code: "PERMISSION_DENIED",
-                  message: error?.localizedDescription ?? "Notification permission denied",
-                  details: nil
-                ))
-              }
-            }
-          }
-        case "unregister":
-          UIApplication.shared.unregisterForRemoteNotifications()
-          result(nil)
-        default:
-          result(FlutterMethodNotImplemented)
-        }
-      }
-    }
-
+    UNUserNotificationCenter.current().delegate = self
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  override func userNotificationCenter(
+    _ center: UNUserNotificationCenter,
+    didReceive response: UNNotificationResponse,
+    withCompletionHandler completionHandler: @escaping () -> Void
+  ) {
+    let userInfo = response.notification.request.content.userInfo
+    if let notification = userInfo["notification"] as? [String: Any],
+       let roomId = notification["room_id"] as? String {
+      apnsChannel?.invokeMethod("onNotificationTap", arguments: roomId)
+    }
+    completionHandler()
   }
 
   // ── APNs token callbacks ────────────────────────────────────
 
   override func application(
     _ application: UIApplication,
-    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Foundation.Data
   ) {
     let token = deviceToken.map { String(format: "%02x", $0) }.joined()
     apnsChannel?.invokeMethod("onToken", arguments: token)
@@ -111,6 +89,44 @@ import UserNotifications
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+
+    guard let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "LatticeApnsPlugin") else { return }
+    let messenger = registrar.messenger()
+
+    apnsChannel = FlutterMethodChannel(name: "lattice/apns", binaryMessenger: messenger)
+    apnsChannel?.setMethodCallHandler { [weak self] (call, result) in
+      switch call.method {
+      case "requestToken":
+        self?.channelReady = true
+        self?.flushPendingPayloads()
+        UNUserNotificationCenter.current().requestAuthorization(
+          options: [.alert, .badge, .sound]
+        ) { granted, error in
+          DispatchQueue.main.async {
+            if granted {
+              UIApplication.shared.registerForRemoteNotifications()
+              result(nil)
+            } else {
+              result(FlutterError(
+                code: "PERMISSION_DENIED",
+                message: error?.localizedDescription ?? "Notification permission denied",
+                details: nil
+              ))
+            }
+          }
+        }
+      case "unregister":
+        UIApplication.shared.unregisterForRemoteNotifications()
+        result(nil)
+      case "getAppGroupPath":
+        let path = FileManager.default.containerURL(
+          forSecurityApplicationGroupIdentifier: "group.io.github.quantumheart.lattice"
+        )?.path
+        result(path)
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
   }
 
   // ── CallKit ─────────────────────────────────────────────────

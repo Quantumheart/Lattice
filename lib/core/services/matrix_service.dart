@@ -31,6 +31,10 @@ class MatrixService extends ChangeNotifier {
   })  : _client = client,
         _storage = storage ??
             const FlutterSecureStorage(
+              iOptions: IOSOptions(
+                groupId: 'group.io.github.quantumheart.lattice',
+                accessibility: KeychainAccessibility.first_unlock,
+              ),
               webOptions: WebOptions(
                 dbName: 'LatticeEncryptedStorage',
                 publicKey: 'LatticeSecureStorage',
@@ -116,6 +120,7 @@ class MatrixService extends ChangeNotifier {
 
   Future<void> init({bool restoreSession = true}) async {
     if (restoreSession) await auth.migrateStorageKeys();
+    if (restoreSession) await auth.migrateKeychainToAppGroup();
     if (restoreSession) {
       await _restoreSession();
       notifyListeners();
