@@ -242,7 +242,9 @@ class NotificationService {
             width: 128,
             height: 128,
           );
-          avatarUrl = uri.toString();
+          final rawUrl = uri.toString();
+          final headers = mediaAuthHeaders(client, rawUrl);
+          avatarUrl = await resolveWebAvatarUrl(rawUrl, headers) ?? rawUrl;
         } catch (_) {}
       } else if (_useLinux) {
         avatarPath =
@@ -360,7 +362,9 @@ class NotificationService {
           width: 128,
           height: 128,
         );
-        avatarUrl = uri.toString();
+        final rawUrl = uri.toString();
+        final headers = mediaAuthHeaders(client, rawUrl);
+        avatarUrl = await resolveWebAvatarUrl(rawUrl, headers) ?? rawUrl;
       } catch (_) {}
     } else if (_useLinux) {
       avatarPath = await downloadAvatarToTemp(
@@ -485,6 +489,9 @@ class NotificationService {
     bool isGrouped = false,
   }) async {
     if (kIsWeb) {
+      final unreadCount = matrixService.client.rooms
+          .where((r) => r.notificationCount > 0)
+          .fold<int>(0, (sum, r) => sum + r.notificationCount);
       showWebNotification(
         title: title,
         body: senderName.isNotEmpty
@@ -492,7 +499,9 @@ class NotificationService {
             : body,
         icon: avatarUrl,
         tag: roomId,
-        onClick: () => _navigateToRoom(roomId),
+        roomId: roomId,
+        silent: !preferencesService.notificationSoundEnabled,
+        unreadCount: unreadCount,
       );
       return;
     }
@@ -666,6 +675,7 @@ class NotificationService {
   Future<void> cancelForRoom(String roomId) async {
     if (kIsWeb) {
       closeWebNotification(roomId);
+      clearWebAppBadge();
       return;
     }
     if (_useLinux) {
@@ -687,6 +697,7 @@ class NotificationService {
   Future<void> cancelAll() async {
     if (kIsWeb) {
       closeAllWebNotifications();
+      clearWebAppBadge();
       return;
     }
     if (_useLinux) {

@@ -95,6 +95,58 @@ self.addEventListener('notificationclick', function (event) {
   );
 });
 
+// ── Client messages ──────────────────────────────────────────
+self.addEventListener('message', function (event) {
+  if (!event.data || !event.data.type) return;
+
+  var msg = event.data;
+
+  if (msg.type === 'show_notification') {
+    event.waitUntil(
+      self.registration.showNotification(msg.title, {
+        body: msg.body,
+        icon: msg.icon || 'icons/Icon-192.png',
+        badge: 'icons/Icon-maskable-192.png',
+        tag: msg.tag,
+        renotify: !!msg.renotify,
+        silent: !!msg.silent,
+        data: { roomId: msg.roomId || null, unreadCount: msg.unreadCount || 0 },
+        actions: [
+          { action: 'mark_read', title: 'Mark as read' },
+          { action: 'open', title: 'Open' },
+        ],
+      }).then(function () {
+        try {
+          if (msg.unreadCount && self.navigator && self.navigator.setAppBadge) {
+            self.navigator.setAppBadge(msg.unreadCount);
+          }
+        } catch (e) {}
+      }).catch(function (e) {
+        console.error('[Lattice SW] showNotification failed:', e);
+      })
+    );
+  } else if (msg.type === 'close_notification') {
+    event.waitUntil(
+      self.registration.getNotifications({ tag: msg.tag }).then(function (notifications) {
+        notifications.forEach(function (n) { n.close(); });
+      })
+    );
+  } else if (msg.type === 'close_all_notifications') {
+    event.waitUntil(
+      self.registration.getNotifications().then(function (notifications) {
+        notifications.forEach(function (n) { n.close(); });
+        try {
+          if (self.navigator && self.navigator.clearAppBadge) self.navigator.clearAppBadge();
+        } catch (e) {}
+      })
+    );
+  } else if (msg.type === 'clear_badge') {
+    try {
+      if (self.navigator && self.navigator.clearAppBadge) self.navigator.clearAppBadge();
+    } catch (e) {}
+  }
+});
+
 // ── Subscription change ──────────────────────────────────────
 self.addEventListener('pushsubscriptionchange', function (event) {
   var options = (event.oldSubscription && event.oldSubscription.options) || {};
