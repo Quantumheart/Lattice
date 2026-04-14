@@ -1,3 +1,4 @@
 {
-  "defaultHomeserver": "quantum-matrix.xyz"
+  "defaultHomeserver": "quantum-matrix.xyz",
+      "apnsPushGatewayUrl": "http://matrix-push-gateway:7002/_matrix/push/v1/notify"
 }
