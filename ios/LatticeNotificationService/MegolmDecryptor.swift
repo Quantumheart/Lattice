@@ -80,24 +80,7 @@ struct MegolmDecryptor {
 
         let stepResult = sqlite3_step(stmt)
         guard stepResult == SQLITE_ROW else {
-            NSLog("[LatticeNSE] Session lookup result: %d (expected %d for SQLITE_ROW)", stepResult, SQLITE_ROW)
-            // Debug: dump a few keys and total count
-            var countStmt: OpaquePointer?
-            if sqlite3_prepare_v2(db, "SELECT COUNT(*) FROM box_inbound_group_session", -1, &countStmt, nil) == SQLITE_OK {
-                if sqlite3_step(countStmt) == SQLITE_ROW {
-                    NSLog("[LatticeNSE] Total sessions: %d", sqlite3_column_int(countStmt, 0))
-                }
-                sqlite3_finalize(countStmt)
-            }
-            var sampleStmt: OpaquePointer?
-            if sqlite3_prepare_v2(db, "SELECT k FROM box_inbound_group_session LIMIT 3", -1, &sampleStmt, nil) == SQLITE_OK {
-                while sqlite3_step(sampleStmt) == SQLITE_ROW {
-                    if let cKey = sqlite3_column_text(sampleStmt, 0) {
-                        NSLog("[LatticeNSE] Sample key: %@", String(cString: cKey))
-                    }
-                }
-                sqlite3_finalize(sampleStmt)
-            }
+            NSLog("[LatticeNSE] Session not found (result: %d)", stepResult)
             return nil
         }
 
