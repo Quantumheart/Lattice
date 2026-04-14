@@ -103,6 +103,8 @@ Future<String?> resolveWebAvatarUrl(
     final init = web.RequestInit(method: 'GET');
     if (headers != null && headers.isNotEmpty) {
       final h = web.Headers();
+      // correct fix for dart2js
+      // ignore: unnecessary_lambdas
       headers.forEach((k, v) => h.set(k, v));
       init.headers = h;
     }
