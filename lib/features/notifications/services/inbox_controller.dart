@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:lattice/features/notifications/services/apns_push_service.dart';
 import 'package:matrix/matrix.dart' as matrix_sdk;
 import 'package:matrix/matrix.dart'
     show Client, Event, EventTypes, MatrixException, Membership;
@@ -257,6 +258,7 @@ class InboxController extends ChangeNotifier {
         if (g.roomId != roomId) g,
     ];
     _updateUnreadCount();
+    unawaited(ApnsPushService.clearBadge());
     if (!_disposed) notifyListeners();
 
     try {

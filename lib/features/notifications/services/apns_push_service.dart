@@ -61,6 +61,18 @@ class ApnsPushService {
         final roomId = call.arguments as String;
         debugPrint('[Lattice] APNs notification tapped for room $roomId');
         notificationService.navigateToRoom(roomId);
+      case 'onNotificationReply':
+        final args = Map<String, dynamic>.from(call.arguments as Map);
+        final roomId = args['roomId'] as String;
+        final text = args['text'] as String;
+        debugPrint('[Lattice] APNs inline reply for room $roomId');
+        unawaited(_handleInlineReply(roomId, text));
+      case 'onNotificationMarkAsRead':
+        final args = Map<String, dynamic>.from(call.arguments as Map);
+        final roomId = args['roomId'] as String;
+        final eventId = args['eventId'] as String?;
+        debugPrint('[Lattice] APNs mark as read for room $roomId');
+        unawaited(_handleMarkAsRead(roomId, eventId));
     }
   }
 
@@ -193,6 +205,51 @@ class ApnsPushService {
       callerName: callerName,
       isVideo: isVideo,
     );
+  }
+
+  // ── Notification actions ─────────────────────────────────────
+
+  Future<void> _handleInlineReply(String roomId, String text) async {
+    if (_disposed || text.isEmpty) return;
+    try {
+      final room = matrixService.client.getRoomById(roomId);
+      if (room == null) {
+        debugPrint('[Lattice] Reply failed: room $roomId not found');
+        return;
+      }
+      await room.sendTextEvent(text);
+      debugPrint('[Lattice] Inline reply sent to room $roomId');
+    } catch (e) {
+      debugPrint('[Lattice] Failed to send inline reply: $e');
+    }
+  }
+
+  Future<void> _handleMarkAsRead(String roomId, String? eventId) async {
+    if (_disposed) return;
+    try {
+      final room = matrixService.client.getRoomById(roomId);
+      if (room == null) {
+        debugPrint('[Lattice] Mark as read failed: room $roomId not found');
+        return;
+      }
+      final targetEventId = eventId ?? room.lastEvent?.eventId;
+      if (targetEventId == null) return;
+      await room.setReadMarker(targetEventId, mRead: targetEventId);
+      debugPrint('[Lattice] Marked room $roomId as read');
+    } catch (e) {
+      debugPrint('[Lattice] Failed to mark as read: $e');
+    }
+  }
+
+  // ── Badge ────────────────────────────────────────────────────
+
+  static Future<void> clearBadge() async {
+    if (!isNativeIOS) return;
+    try {
+      await _channel.invokeMethod<void>('clearBadge');
+    } catch (e) {
+      debugPrint('[Lattice] Failed to clear badge: $e');
+    }
   }
 
   // ── Gateway resolution ───────────────────────────────────────

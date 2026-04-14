@@ -9,6 +9,7 @@ import UserNotifications
 @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate, CallkitIncomingAppDelegate {
   private var apnsChannel: FlutterMethodChannel?
   private var pendingPushPayloads: [[AnyHashable: Any]] = []
+  private var pendingNotificationActions: [(action: String, roomId: String, eventId: String?, replyText: String?)] = []
   private var channelReady = false
   private static let maxPendingPayloads = 20
 
@@ -16,8 +17,29 @@ import UserNotifications
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    let replyAction = UNTextInputNotificationAction(
+      identifier: "reply",
+      title: "Reply",
+      textInputButtonTitle: "Send",
+      textInputPlaceholder: "Message..."
+    )
+    let markReadAction = UNNotificationAction(
+      identifier: "mark_read",
+      title: "Mark as Read"
+    )
+    let category = UNNotificationCategory(
+      identifier: "MESSAGE",
+      actions: [replyAction, markReadAction],
+      intentIdentifiers: []
+    )
+    UNUserNotificationCenter.current().setNotificationCategories([category])
     UNUserNotificationCenter.current().delegate = self
+    application.applicationIconBadgeNumber = 0
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  override func applicationDidBecomeActive(_ application: UIApplication) {
+    application.applicationIconBadgeNumber = 0
   }
 
   override func userNotificationCenter(
@@ -26,11 +48,45 @@ import UserNotifications
     withCompletionHandler completionHandler: @escaping () -> Void
   ) {
     let userInfo = response.notification.request.content.userInfo
-    if let notification = userInfo["notification"] as? [String: Any],
-       let roomId = notification["room_id"] as? String {
+    guard let notification = userInfo["notification"] as? [String: Any],
+          let roomId = notification["room_id"] as? String else {
+      completionHandler()
+      return
+    }
+
+    let eventId = notification["event_id"] as? String
+
+    switch response.actionIdentifier {
+    case "reply":
+      let replyText = (response as? UNTextInputNotificationResponse)?.userText
+      dispatchOrQueue(action: "reply", roomId: roomId, eventId: eventId, replyText: replyText)
+    case "mark_read":
+      dispatchOrQueue(action: "mark_read", roomId: roomId, eventId: eventId, replyText: nil)
+    default:
+      dispatchOrQueue(action: "tap", roomId: roomId, eventId: eventId, replyText: nil)
+    }
+
+    UIApplication.shared.applicationIconBadgeNumber = 0
+    completionHandler()
+  }
+
+  private func dispatchOrQueue(action: String, roomId: String, eventId: String?, replyText: String?) {
+    if channelReady {
+      dispatchAction(action: action, roomId: roomId, eventId: eventId, replyText: replyText)
+    } else {
+      pendingNotificationActions.append((action: action, roomId: roomId, eventId: eventId, replyText: replyText))
+    }
+  }
+
+  private func dispatchAction(action: String, roomId: String, eventId: String?, replyText: String?) {
+    switch action {
+    case "reply":
+      apnsChannel?.invokeMethod("onNotificationReply", arguments: ["roomId": roomId, "text": replyText ?? ""])
+    case "mark_read":
+      apnsChannel?.invokeMethod("onNotificationMarkAsRead", arguments: ["roomId": roomId, "eventId": eventId ?? ""])
+    default:
       apnsChannel?.invokeMethod("onNotificationTap", arguments: roomId)
     }
-    completionHandler()
   }
 
   // ── APNs token callbacks ────────────────────────────────────
@@ -83,6 +139,11 @@ import UserNotifications
       apnsChannel?.invokeMethod("onRemoteMessage", arguments: payload)
     }
     pendingPushPayloads.removeAll()
+
+    for pending in pendingNotificationActions {
+      dispatchAction(action: pending.action, roomId: pending.roomId, eventId: pending.eventId, replyText: pending.replyText)
+    }
+    pendingNotificationActions.removeAll()
   }
 
   // ── Flutter engine ──────────────────────────────────────────
@@ -117,6 +178,9 @@ import UserNotifications
         }
       case "unregister":
         UIApplication.shared.unregisterForRemoteNotifications()
+        result(nil)
+      case "clearBadge":
+        UIApplication.shared.applicationIconBadgeNumber = 0
         result(nil)
       case "getAppGroupPath":
         let path = FileManager.default.containerURL(

@@ -26,6 +26,7 @@ class NotificationService: UNNotificationServiceExtension {
         }
 
         content.threadIdentifier = roomId
+        content.categoryIdentifier = "MESSAGE"
 
         Task {
             await processNotification(content: content, eventId: eventId, roomId: roomId)
