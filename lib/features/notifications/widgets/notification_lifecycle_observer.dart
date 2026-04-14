@@ -75,6 +75,7 @@ class _NotificationLifecycleObserverState
     final webPushService = WebPushService(
       matrixService: widget.matrixService,
       preferencesService: widget.preferencesService,
+      router: widget.router,
     );
 
     final loggedIn = widget.matrixService.isLoggedIn;

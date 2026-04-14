@@ -4,6 +4,8 @@ import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 
 import 'package:flutter/foundation.dart';
+import 'package:go_router/go_router.dart';
+import 'package:lattice/core/routing/route_names.dart';
 import 'package:lattice/core/services/app_config.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
@@ -35,10 +37,12 @@ class WebPushService {
   WebPushService({
     required this.matrixService,
     required this.preferencesService,
+    this.router,
   });
 
   final MatrixService matrixService;
   final PreferencesService preferencesService;
+  final GoRouter? router;
 
   bool _disposed = false;
   web.EventListener? _messageListener;
@@ -186,8 +190,12 @@ class WebPushService {
           case 'notification_click':
             final roomId = obj.getProperty<JSString>('roomId'.toJS).toDart;
             if (roomId.isNotEmpty) {
-              matrixService.selection.selectRoom(roomId);
-              debugPrint('[Lattice] Web push notification tapped, selecting room $roomId');
+              if (router != null) {
+                router!.goNamed(Routes.room, pathParameters: {'roomId': roomId});
+              } else {
+                matrixService.selection.selectRoom(roomId);
+              }
+              debugPrint('[Lattice] Web push notification tapped, navigating to room $roomId');
             }
 
           case 'mark_read':

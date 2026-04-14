@@ -1,3 +1,4 @@
+import 'package:go_router/go_router.dart';
 import 'package:lattice/core/services/matrix_service.dart';
 import 'package:lattice/core/services/preferences_service.dart';
 
@@ -5,10 +6,12 @@ class WebPushService {
   WebPushService({
     required this.matrixService,
     required this.preferencesService,
+    this.router,
   });
 
   final MatrixService matrixService;
   final PreferencesService preferencesService;
+  final GoRouter? router;
 
   static Future<bool> requestPermission() async => false;
 
