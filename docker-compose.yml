@@ -1,0 +1,21 @@
+services:
+  kohera:
+    container_name: kohera
+    image: ghcr.io/quantumheart/kohera:latest
+    restart: unless-stopped
+    volumes:
+      - ./app_config.json:/srv/assets/assets/config/app_config.json:ro
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=traefik"
+      - "traefik.http.routers.kohera.rule=Host(`kohera.quantum-matrix.xyz`)"
+      - "traefik.http.routers.kohera.entrypoints=web-secure"
+      - "traefik.http.routers.kohera.tls=true"
+      - "traefik.http.routers.kohera.tls.certresolver=default"
+      - "traefik.http.services.kohera.loadbalancer.server.port=80"
+    networks:
+      - traefik
+
+networks:
+  traefik:
+    external: true
