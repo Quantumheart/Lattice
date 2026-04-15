@@ -87,7 +87,7 @@ class _ChatScreenState extends State<ChatScreen>
     _search = _createSearchController();
     _initControllers();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _composeFocusNode.requestFocus();
+      if (mounted) _composeFocusNode.requestFocus();
     });
   }
 
