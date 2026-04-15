@@ -1,3 +1,4 @@
+import Intents
 import UserNotifications
 
 class NotificationService: UNNotificationServiceExtension {
@@ -34,7 +35,7 @@ class NotificationService: UNNotificationServiceExtension {
             await self.processNotification(
                 content: content, eventId: eventId, roomId: roomId, clientName: clientName
             )
-            contentHandler(content)
+            contentHandler(self.bestAttemptContent ?? content)
         }
     }
 
@@ -83,46 +84,107 @@ class NotificationService: UNNotificationServiceExtension {
             return
         }
 
-        let senderName = extractSenderName(from: event)
-        let eventType = event["type"] as? String ?? ""
+        let senderId = event["sender"] as? String
 
-        if eventType == "m.room.encrypted" {
-            decryptAndUpdate(
-                content: content, event: event, userId: userId,
-                clientName: clientName, senderName: senderName
+        let profileTask = Task { () -> (avatarUrl: String?, displayname: String?)? in
+            guard let senderId = senderId else { return nil }
+            return await MatrixEventFetcher.fetchProfile(
+                homeserver: homeserver, userId: senderId, accessToken: accessToken
             )
-        } else {
-            let msgContent = event["content"] as? [String: Any]
-            let body = msgContent?["body"] as? String ?? "New message"
-            updateContent(content: content, senderName: senderName, body: body)
         }
+
+        let body = resolveBody(event: event, userId: userId, clientName: clientName)
+
+        let profile = await profileTask.value
+        let senderName = nonEmpty(profile?.displayname) ?? extractSenderName(from: event)
+        updateContent(content: content, senderName: senderName, body: body)
+
+        await applySenderIntent(
+            content: content,
+            senderId: senderId,
+            senderName: senderName,
+            avatarMxc: profile?.avatarUrl,
+            homeserver: homeserver,
+            accessToken: accessToken
+        )
     }
 
-    private func decryptAndUpdate(
-        content: UNMutableNotificationContent,
-        event: [String: Any],
-        userId: String,
-        clientName: String,
-        senderName: String?
-    ) {
+    // ── Body resolution ────────────────────────────────────────────
+
+    private func resolveBody(event: [String: Any], userId: String, clientName: String) -> String {
+        let eventType = event["type"] as? String ?? ""
+        if eventType == "m.room.encrypted" {
+            return decryptBody(event: event, userId: userId, clientName: clientName)
+        }
+        let msgContent = event["content"] as? [String: Any]
+        return msgContent?["body"] as? String ?? "New message"
+    }
+
+    private func decryptBody(event: [String: Any], userId: String, clientName: String) -> String {
         guard let encContent = event["content"] as? [String: Any],
               let sessionId = encContent["session_id"] as? String,
               let ciphertext = encContent["ciphertext"] as? String else {
-            content.body = "Encrypted message"
-            return
+            return "Encrypted message"
+        }
+        return MegolmDecryptor.decrypt(
+            sessionId: sessionId, ciphertext: ciphertext,
+            userId: userId, clientName: clientName
+        ) ?? "Encrypted message"
+    }
+
+    // ── Communication notification (sender avatar as icon) ────────
+
+    private func applySenderIntent(
+        content: UNMutableNotificationContent,
+        senderId: String?,
+        senderName: String?,
+        avatarMxc: String?,
+        homeserver: String,
+        accessToken: String
+    ) async {
+        guard #available(iOS 15.0, *) else { return }
+        guard let senderId = senderId else { return }
+
+        var avatarImage: INImage?
+        if let mxcUrl = avatarMxc,
+           let fileUrl = await MatrixEventFetcher.downloadThumbnail(
+               homeserver: homeserver, mxcUrl: mxcUrl, accessToken: accessToken
+           ),
+           let data = try? Data(contentsOf: fileUrl) {
+            avatarImage = INImage(imageData: data)
         }
 
-        if let body = MegolmDecryptor.decrypt(
-            sessionId: sessionId,
-            ciphertext: ciphertext,
-            userId: userId,
-            clientName: clientName
-        ) {
-            updateContent(content: content, senderName: senderName, body: body)
-        } else {
-            content.body = "Encrypted message"
+        let handle = INPersonHandle(value: senderId, type: .unknown)
+        let sender = INPerson(
+            personHandle: handle,
+            nameComponents: nil,
+            displayName: senderName ?? senderId,
+            image: avatarImage,
+            contactIdentifier: nil,
+            customIdentifier: senderId
+        )
+
+        let intent = INSendMessageIntent(
+            recipients: nil,
+            outgoingMessageType: .outgoingMessageText,
+            content: content.body,
+            speakableGroupName: nil,
+            conversationIdentifier: content.threadIdentifier,
+            serviceName: nil,
+            sender: sender,
+            attachments: nil
+        )
+
+        let interaction = INInteraction(intent: intent, response: nil)
+        interaction.direction = .incoming
+        try? await interaction.donate()
+
+        if let updated = try? content.updating(from: intent) as? UNMutableNotificationContent {
+            self.bestAttemptContent = updated
         }
     }
+
+    // ── Helpers ────────────────────────────────────────────────────
 
     private func updateContent(content: UNMutableNotificationContent, senderName: String?, body: String) {
         if let senderName = senderName {
@@ -139,5 +201,10 @@ class NotificationService: UNNotificationServiceExtension {
             return String(localpart)
         }
         return nil
+    }
+
+    private func nonEmpty(_ string: String?) -> String? {
+        guard let string = string, !string.isEmpty else { return nil }
+        return string
     }
 }
