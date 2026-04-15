@@ -120,7 +120,6 @@ class MatrixService extends ChangeNotifier {
 
   Future<void> init({bool restoreSession = true}) async {
     if (restoreSession) await auth.migrateStorageKeys();
-    if (restoreSession) await auth.migrateKeychainToAppGroup();
     if (restoreSession) {
       await _restoreSession();
       notifyListeners();

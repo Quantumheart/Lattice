@@ -352,38 +352,6 @@ class AuthService extends ChangeNotifier {
     }
   }
 
-  Future<void> migrateKeychainToAppGroup() async {
-    const marker = 'kohera_app_group_migrated';
-    final migrated = await _storage.read(key: marker);
-    if (migrated != null) return;
-
-    debugPrint('[Kohera] Migrating keychain to shared App Group');
-
-    const legacyStorage = FlutterSecureStorage();
-    final keys = [
-      koheraKey(_clientName, 'access_token'),
-      koheraKey(_clientName, 'refresh_token'),
-      koheraKey(_clientName, 'user_id'),
-      koheraKey(_clientName, 'homeserver'),
-      koheraKey(_clientName, 'device_id'),
-      koheraKey(_clientName, 'olm_account'),
-    ];
-
-    for (final key in keys) {
-      try {
-        final value = await legacyStorage.read(key: key);
-        if (value != null) {
-          await _storage.write(key: key, value: value);
-        }
-      } catch (e) {
-        debugPrint('[Kohera] Keychain migration skipped for $key: $e');
-      }
-    }
-
-    await _storage.write(key: marker, value: 'true');
-    debugPrint('[Kohera] Keychain App Group migration complete');
-  }
-
   // ── Credential Persistence ──────────────────────────────────
 
   Future<void> persistCredentials() async {

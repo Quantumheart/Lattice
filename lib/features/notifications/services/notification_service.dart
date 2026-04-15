@@ -15,7 +15,6 @@ import 'package:kohera/core/utils/notification_filter.dart';
 import 'package:kohera/core/utils/platform_info.dart';
 import 'package:kohera/features/calling/models/call_constants.dart';
 import 'package:kohera/features/notifications/models/notification_constants.dart';
-import 'package:kohera/features/notifications/services/apns_push_service.dart';
 import 'package:kohera/features/notifications/services/web_notifications.dart';
 import 'package:kohera/features/notifications/services/windows_com_register.dart';
 import 'package:matrix/matrix.dart';
@@ -641,7 +640,6 @@ class NotificationService {
   // ── Notification tap ─────────────────────────────────────────
 
   void navigateToRoom(String roomId) {
-    unawaited(ApnsPushService.clearBadge());
     if (router != null) {
       router!.goNamed(Routes.room, pathParameters: {'roomId': roomId});
     } else {

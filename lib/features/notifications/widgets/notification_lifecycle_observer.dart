@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:kohera/core/services/call_service.dart';
 import 'package:kohera/core/services/matrix_service.dart';
 import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/core/utils/platform_info.dart';
 import 'package:kohera/features/notifications/services/apns_push_service.dart';
 import 'package:kohera/features/notifications/services/notification_service.dart';
 import 'package:kohera/features/notifications/services/push_service.dart';
@@ -92,7 +93,7 @@ class _NotificationLifecycleObserverState
     if (loggedIn) {
       notificationService.startListening();
       unawaited(pushService.register());
-      if (!kIsWeb) {
+      if (isNativeIOS) {
         unawaited(apnsPushService.register());
       }
       if (kIsWeb) {
@@ -159,7 +160,7 @@ class _NotificationLifecycleObserverState
       if (loggedIn) {
         _notificationService?.startListening();
         unawaited(_pushService?.register());
-        if (!kIsWeb) {
+        if (isNativeIOS) {
           unawaited(_apnsPushService?.register());
         }
         if (kIsWeb && _webPushService != null) {

@@ -18,7 +18,6 @@ Future<String> _getIosDatabasePath(String clientName) async {
         await _apnsChannel.invokeMethod<String>('getAppGroupPath');
     if (appGroupPath != null) {
       final sharedPath = p.join(appGroupPath, 'kohera_$clientName.db');
-      await _migrateDatabase(clientName, sharedPath);
       debugPrint('[Kohera] iOS database path: $sharedPath');
       return sharedPath;
     }
@@ -29,27 +28,6 @@ Future<String> _getIosDatabasePath(String clientName) async {
   final fallbackPath = p.join(dir.path, 'kohera_$clientName.db');
   debugPrint('[Kohera] iOS database path (fallback): $fallbackPath');
   return fallbackPath;
-}
-
-Future<void> _migrateDatabase(String clientName, String sharedPath) async {
-  final dir = await getApplicationSupportDirectory();
-  final oldPath = p.join(dir.path, 'kohera_$clientName.db');
-  final oldFile = File(oldPath);
-  final newFile = File(sharedPath);
-
-  if (oldFile.existsSync() && !newFile.existsSync()) {
-    debugPrint('[Kohera] Migrating database to shared container');
-    await oldFile.copy(sharedPath);
-    await oldFile.delete();
-    for (final suffix in ['-wal', '-shm']) {
-      final walFile = File('$oldPath$suffix');
-      if (walFile.existsSync()) {
-        await walFile.copy('$sharedPath$suffix');
-        await walFile.delete();
-      }
-    }
-    debugPrint('[Kohera] Database migration complete');
-  }
 }
 
 // coverage:ignore-start
