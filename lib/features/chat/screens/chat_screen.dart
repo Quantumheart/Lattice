@@ -86,7 +86,9 @@ class _ChatScreenState extends State<ChatScreen>
     _actions = _createActions();
     _search = _createSearchController();
     _initControllers();
-    _composeFocusNode.requestFocus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _composeFocusNode.requestFocus();
+    });
   }
 
   @override
@@ -102,7 +104,9 @@ class _ChatScreenState extends State<ChatScreen>
       _search.dispose();
       _actions = _createActions();
       _search = _createSearchController();
-      _composeFocusNode.requestFocus();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _composeFocusNode.requestFocus();
+      });
     }
   }
 
