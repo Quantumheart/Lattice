@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:lattice/core/models/upload_state.dart';
+import 'package:kohera/core/models/upload_state.dart';
 
 class UploadProgressBanner extends StatelessWidget {
   const UploadProgressBanner({

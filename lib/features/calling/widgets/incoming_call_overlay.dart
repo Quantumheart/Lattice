@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/core/services/call_service.dart';
-import 'package:lattice/core/utils/platform_info.dart';
-import 'package:lattice/features/calling/models/incoming_call_info.dart';
-import 'package:lattice/features/calling/services/call_permission_service.dart';
-import 'package:lattice/shared/widgets/pulsing_avatar.dart';
+import 'package:kohera/core/routing/route_names.dart';
+import 'package:kohera/core/services/call_service.dart';
+import 'package:kohera/core/utils/platform_info.dart';
+import 'package:kohera/features/calling/models/incoming_call_info.dart';
+import 'package:kohera/features/calling/services/call_permission_service.dart';
+import 'package:kohera/shared/widgets/pulsing_avatar.dart';
 import 'package:provider/provider.dart';
 
 class IncomingCallOverlay extends StatefulWidget {
@@ -56,7 +56,7 @@ class _IncomingCallOverlayState extends State<IncomingCallOverlay> {
   void _onCallStateChanged() {
     final callService = _callService;
     if (callService == null) return;
-    if (callService.callState != LatticeCallState.ringingIncoming &&
+    if (callService.callState != KoheraCallState.ringingIncoming &&
         _incoming != null) {
       setState(() => _incoming = null);
     }

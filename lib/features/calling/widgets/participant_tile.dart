@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart' as rtc;
-import 'package:lattice/core/services/call_service.dart';
-import 'package:lattice/features/calling/models/call_participant.dart';
-import 'package:lattice/shared/widgets/user_avatar.dart';
+import 'package:kohera/core/services/call_service.dart';
+import 'package:kohera/features/calling/models/call_participant.dart';
+import 'package:kohera/shared/widgets/user_avatar.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
 import 'package:provider/provider.dart';
 
@@ -59,7 +59,7 @@ class _ParticipantTileState extends State<ParticipantTile> {
         setState(() => _resolvedAvatarUrl = profile.avatarUrl);
       }
     } catch (e) {
-      debugPrint('[Lattice] Failed to fetch participant avatar: $e');
+      debugPrint('[Kohera] Failed to fetch participant avatar: $e');
     }
   }
 

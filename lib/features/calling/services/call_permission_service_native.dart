@@ -1,5 +1,5 @@
-import 'package:lattice/core/services/macos_permissions.dart';
-import 'package:lattice/core/utils/platform_info.dart';
+import 'package:kohera/core/services/macos_permissions.dart';
+import 'package:kohera/core/utils/platform_info.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 // coverage:ignore-start

@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:lattice/core/utils/reply_fallback.dart';
-import 'package:lattice/core/utils/sender_color.dart';
+import 'package:kohera/core/utils/reply_fallback.dart';
+import 'package:kohera/core/utils/sender_color.dart';
 import 'package:matrix/matrix.dart';
 
 // coverage:ignore-start
@@ -61,7 +61,7 @@ class _InlineReplyPreviewState extends State<InlineReplyPreview> {
         });
       }
     } catch (e) {
-      debugPrint('[Lattice] Failed to load reply parent: $e');
+      debugPrint('[Kohera] Failed to load reply parent: $e');
       if (mounted && gen == _generation) setState(() => _loaded = true);
     }
   }

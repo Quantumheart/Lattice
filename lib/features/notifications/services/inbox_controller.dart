@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:lattice/features/notifications/services/apns_push_service.dart';
+import 'package:kohera/features/notifications/services/apns_push_service.dart';
 import 'package:matrix/matrix.dart' as matrix_sdk;
 import 'package:matrix/matrix.dart'
     show Client, Event, EventTypes, MatrixException, Membership;
@@ -111,7 +111,7 @@ class InboxController extends ChangeNotifier {
         return;
       }
       _error = e.toString();
-      debugPrint('[Lattice] Inbox fetch error: $e');
+      debugPrint('[Kohera] Inbox fetch error: $e');
     } finally {
       if (!_disposed && gen == _fetchGeneration) {
         _isLoading = false;
@@ -147,7 +147,7 @@ class InboxController extends ChangeNotifier {
     } catch (e) {
       if (_disposed || gen != _fetchGeneration) return;
       _error = e.toString();
-      debugPrint('[Lattice] Inbox loadMore error: $e');
+      debugPrint('[Kohera] Inbox loadMore error: $e');
     } finally {
       if (!_disposed && gen == _fetchGeneration) {
         _isLoading = false;
@@ -172,7 +172,7 @@ class InboxController extends ChangeNotifier {
     _nextToken = null;
     _updateUnreadCount();
     if (!_disposed) notifyListeners();
-    unawaited(fetch().catchError((Object e) => debugPrint('[Lattice] Inbox fetch error: $e')));
+    unawaited(fetch().catchError((Object e) => debugPrint('[Kohera] Inbox fetch error: $e')));
   }
 
   // ── Polling ────────────────────────────────────────────────
@@ -225,7 +225,7 @@ class InboxController extends ChangeNotifier {
         _tokenExpired = true;
         return;
       }
-      debugPrint('[Lattice] Inbox poll error: $e');
+      debugPrint('[Kohera] Inbox poll error: $e');
     }
   }
 
@@ -270,7 +270,7 @@ class InboxController extends ChangeNotifier {
         _markingAsRead = false;
         return;
       }
-      debugPrint('[Lattice] Inbox markRoomAsRead error: $e');
+      debugPrint('[Kohera] Inbox markRoomAsRead error: $e');
       await fetch();
     } finally {
       _markingAsRead = false;
@@ -291,7 +291,7 @@ class InboxController extends ChangeNotifier {
     _updateUnreadCount();
     stopPolling();
     if (!_disposed) notifyListeners();
-    unawaited(fetch().catchError((Object e) => debugPrint('[Lattice] Inbox fetch error: $e')));
+    unawaited(fetch().catchError((Object e) => debugPrint('[Kohera] Inbox fetch error: $e')));
   }
 
   // ── Token expiry guard ─────────────────────────────────────

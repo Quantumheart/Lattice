@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:lattice/features/e2ee/widgets/key_verification_content.dart';
+import 'package:kohera/features/e2ee/widgets/key_verification_content.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 

@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/core/services/session_backup.dart';
+import 'package:kohera/core/services/session_backup.dart';
 import 'package:mockito/mockito.dart';
 
 import 'matrix_service_test.mocks.dart';
@@ -20,7 +20,7 @@ void main() {
         userId: '@user:example.com',
         homeserver: 'https://example.com',
         deviceId: 'DEV1',
-        deviceName: 'Lattice Flutter',
+        deviceName: 'Kohera Flutter',
         olmAccount: 'pickled_olm_data',
       );
 
@@ -31,7 +31,7 @@ void main() {
       expect(restored.userId, '@user:example.com');
       expect(restored.homeserver, 'https://example.com');
       expect(restored.deviceId, 'DEV1');
-      expect(restored.deviceName, 'Lattice Flutter');
+      expect(restored.deviceName, 'Kohera Flutter');
       expect(restored.olmAccount, 'pickled_olm_data');
     });
 
@@ -67,7 +67,7 @@ void main() {
       );
 
       final captured = verify(mockStorage.write(
-        key: 'lattice_session_backup_default',
+        key: 'kohera_session_backup_default',
         value: captureAnyNamed('value'),
       ),).captured.single as String;
 
@@ -85,7 +85,7 @@ void main() {
         'homeserver': 'https://example.com',
         'deviceId': 'DEV1',
       });
-      when(mockStorage.read(key: 'lattice_session_backup_default'))
+      when(mockStorage.read(key: 'kohera_session_backup_default'))
           .thenAnswer((_) async => json);
 
       final result = await SessionBackup.load(
@@ -99,7 +99,7 @@ void main() {
     });
 
     test('returns null when no data exists', () async {
-      when(mockStorage.read(key: 'lattice_session_backup_default'))
+      when(mockStorage.read(key: 'kohera_session_backup_default'))
           .thenAnswer((_) async => null);
 
       final result = await SessionBackup.load(
@@ -118,7 +118,7 @@ void main() {
         storage: mockStorage,
       );
 
-      verify(mockStorage.delete(key: 'lattice_session_backup_default'))
+      verify(mockStorage.delete(key: 'kohera_session_backup_default'))
           .called(1);
     });
   });

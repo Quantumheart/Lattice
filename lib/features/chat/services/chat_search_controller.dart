@@ -95,7 +95,7 @@ class ChatSearchController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('[Lattice] Searching room for: $_query');
+      debugPrint('[Kohera] Searching room for: $_query');
       final result = await room.searchEvents(
         searchTerm: _query,
         limit: searchBatchLimit,
@@ -113,7 +113,7 @@ class ChatSearchController extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      debugPrint('[Lattice] Search error: $e');
+      debugPrint('[Kohera] Search error: $e');
       if (_disposed) return;
       _isLoading = false;
       _error = 'Search failed. Please try again.';

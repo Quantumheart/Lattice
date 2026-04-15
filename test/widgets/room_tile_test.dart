@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/core/services/call_service.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/features/rooms/widgets/room_tile.dart';
+import 'package:kohera/core/routing/route_names.dart';
+import 'package:kohera/core/services/call_service.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/features/rooms/widgets/room_tile.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -430,7 +430,7 @@ void main() {
       when(mockCallService.roomHasActiveCall('!room:example.com'))
           .thenReturn(true);
       when(mockCallService.activeCallRoomId).thenReturn(null);
-      when(mockCallService.callState).thenReturn(LatticeCallState.idle);
+      when(mockCallService.callState).thenReturn(KoheraCallState.idle);
       when(mockCallService.callParticipantUserIds('!room:example.com'))
           .thenReturn({});
 
@@ -446,7 +446,7 @@ void main() {
       when(mockCallService.roomHasActiveCall('!room:example.com'))
           .thenReturn(true);
       when(mockCallService.activeCallRoomId).thenReturn('!room:example.com');
-      when(mockCallService.callState).thenReturn(LatticeCallState.connected);
+      when(mockCallService.callState).thenReturn(KoheraCallState.connected);
       when(mockCallService.callElapsed)
           .thenReturn(const Duration(seconds: 42));
       when(mockCallService.callParticipantUserIds('!room:example.com'))
@@ -490,7 +490,7 @@ void main() {
       when(mockCallService.roomHasActiveCall('!room:example.com'))
           .thenReturn(true);
       when(mockCallService.activeCallRoomId).thenReturn(null);
-      when(mockCallService.callState).thenReturn(LatticeCallState.idle);
+      when(mockCallService.callState).thenReturn(KoheraCallState.idle);
       when(mockCallService.callParticipantUserIds('!room:example.com'))
           .thenReturn({'@alice:example.com', '@bob:example.com'});
       when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
@@ -515,7 +515,7 @@ void main() {
       when(mockCallService.roomHasActiveCall('!room:example.com'))
           .thenReturn(true);
       when(mockCallService.activeCallRoomId).thenReturn('!room:example.com');
-      when(mockCallService.callState).thenReturn(LatticeCallState.connected);
+      when(mockCallService.callState).thenReturn(KoheraCallState.connected);
       when(mockCallService.callElapsed)
           .thenReturn(const Duration(seconds: 10));
       when(mockCallService.callParticipantUserIds('!room:example.com'))
@@ -549,7 +549,7 @@ void main() {
       when(mockCallService.roomHasActiveCall('!room:example.com'))
           .thenReturn(true);
       when(mockCallService.activeCallRoomId).thenReturn(null);
-      when(mockCallService.callState).thenReturn(LatticeCallState.idle);
+      when(mockCallService.callState).thenReturn(KoheraCallState.idle);
       when(mockCallService.callParticipantUserIds('!room:example.com'))
           .thenReturn(userIds);
       when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
@@ -574,7 +574,7 @@ void main() {
       when(mockCallService.roomHasActiveCall('!room:example.com'))
           .thenReturn(true);
       when(mockCallService.activeCallRoomId).thenReturn(null);
-      when(mockCallService.callState).thenReturn(LatticeCallState.idle);
+      when(mockCallService.callState).thenReturn(KoheraCallState.idle);
       when(mockCallService.callParticipantUserIds('!room:example.com'))
           .thenReturn(userIds);
       when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);

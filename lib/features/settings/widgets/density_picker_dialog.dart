@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:lattice/core/services/preferences_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
 import 'package:provider/provider.dart';
 
 // ── Density picker dialog ───────────────────────────────────────

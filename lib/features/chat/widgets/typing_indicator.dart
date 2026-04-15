@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:lattice/core/services/preferences_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 

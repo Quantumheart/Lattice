@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:lattice/core/utils/reply_fallback.dart';
+import 'package:kohera/core/utils/reply_fallback.dart';
 
 void main() {
   group('stripReplyFallback', () {

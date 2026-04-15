@@ -48,17 +48,17 @@ jobs:
       - run: flutter pub get
       - run: flutter build linux --release --dart-define=GIPHY_API_KEY=${{ secrets.GIPHY_API_KEY }}
       - name: Strip debug symbols
-        run: strip build/linux/x64/release/bundle/lattice
+        run: strip build/linux/x64/release/bundle/kohera
       - name: Archive build
-        run: tar -czf lattice-linux-x64.tar.gz -C build/linux/x64/release/bundle .
+        run: tar -czf kohera-linux-x64.tar.gz -C build/linux/x64/release/bundle .
       - name: Generate checksum
-        run: sha256sum lattice-linux-x64.tar.gz > lattice-linux-x64.tar.gz.sha256
+        run: sha256sum kohera-linux-x64.tar.gz > kohera-linux-x64.tar.gz.sha256
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: linux-release
           path: |
-            lattice-linux-x64.tar.gz
-            lattice-linux-x64.tar.gz.sha256
+            kohera-linux-x64.tar.gz
+            kohera-linux-x64.tar.gz.sha256
 
   build-windows:
     needs: analyze-and-test
@@ -77,13 +77,13 @@ jobs:
           $version = "${{ github.ref_name }}" -replace '^v', ''
           iscc /DAppVersion=$version windows\packaging\inno_setup.iss
       - name: Generate checksum
-        run: Get-FileHash build\windows\installer\lattice-windows-x64-setup.exe -Algorithm SHA256 | Format-List > build\windows\installer\lattice-windows-x64-setup.exe.sha256
+        run: Get-FileHash build\windows\installer\kohera-windows-x64-setup.exe -Algorithm SHA256 | Format-List > build\windows\installer\kohera-windows-x64-setup.exe.sha256
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: windows-release
           path: |
-            build/windows/installer/lattice-windows-x64-setup.exe
-            build/windows/installer/lattice-windows-x64-setup.exe.sha256
+            build/windows/installer/kohera-windows-x64-setup.exe
+            build/windows/installer/kohera-windows-x64-setup.exe.sha256
 
   build-macos:
     needs: analyze-and-test
@@ -100,15 +100,15 @@ jobs:
       - name: Archive build
         run: |
           cd build/macos/Build/Products/Release
-          zip -r ../../../../../lattice-macos-universal.zip lattice.app
+          zip -r ../../../../../kohera-macos-universal.zip kohera.app
       - name: Generate checksum
-        run: shasum -a 256 lattice-macos-universal.zip > lattice-macos-universal.zip.sha256
+        run: shasum -a 256 kohera-macos-universal.zip > kohera-macos-universal.zip.sha256
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: macos-release
           path: |
-            lattice-macos-universal.zip
-            lattice-macos-universal.zip.sha256
+            kohera-macos-universal.zip
+            kohera-macos-universal.zip.sha256
 
   publish-release:
     needs: [build-linux, build-windows, build-macos]
@@ -129,10 +129,10 @@ jobs:
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2
         with:
           files: |
-            lattice-linux-x64.tar.gz
-            lattice-linux-x64.tar.gz.sha256
-            lattice-windows-x64-setup.exe
-            lattice-windows-x64-setup.exe.sha256
-            lattice-macos-universal.zip
-            lattice-macos-universal.zip.sha256
+            kohera-linux-x64.tar.gz
+            kohera-linux-x64.tar.gz.sha256
+            kohera-windows-x64-setup.exe
+            kohera-windows-x64-setup.exe.sha256
+            kohera-macos-universal.zip
+            kohera-macos-universal.zip.sha256
           generate_release_notes: true

@@ -1,4 +1,4 @@
-name: lattice
+name: kohera
 description: A Flutter Matrix client with multiple adaptive layouts.
 publish_to: "none"
 version: 1.0.0+1

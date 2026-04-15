@@ -17,7 +17,7 @@ abstract class CallPermissionService {
       }
       return true;
     } catch (e) {
-      debugPrint('[Lattice] Failed to request media permissions: $e');
+      debugPrint('[Kohera] Failed to request media permissions: $e');
       return false;
     }
   }

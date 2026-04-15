@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:lattice/core/utils/media_auth.dart';
+import 'package:kohera/core/utils/media_auth.dart';
 import 'package:matrix/matrix.dart';
 
 class MxcImage extends StatefulWidget {
@@ -84,7 +84,7 @@ class _MxcImageState extends State<MxcImage> {
         });
       }
     } catch (e) {
-      debugPrint('[Lattice] Failed to resolve mxc image: $e');
+      debugPrint('[Kohera] Failed to resolve mxc image: $e');
       if (mounted) setState(() => _loading = false);
     }
   }

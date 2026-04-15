@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:lattice/core/models/upload_state.dart';
+import 'package:kohera/core/models/upload_state.dart';
 
 void main() {
   group('UploadState', () {

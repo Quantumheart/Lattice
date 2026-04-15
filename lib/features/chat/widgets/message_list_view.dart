@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/core/utils/platform_info.dart';
-import 'package:lattice/features/calling/models/call_constants.dart';
-import 'package:lattice/features/chat/widgets/call_event_tile.dart';
-import 'package:lattice/features/chat/widgets/chat_message_item.dart';
-import 'package:lattice/features/chat/widgets/read_receipts.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/core/utils/platform_info.dart';
+import 'package:kohera/features/calling/models/call_constants.dart';
+import 'package:kohera/features/chat/widgets/call_event_tile.dart';
+import 'package:kohera/features/chat/widgets/chat_message_item.dart';
+import 'package:kohera/features/chat/widgets/read_receipts.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -112,7 +112,7 @@ class MessageListViewState extends State<MessageListView> {
           unawaited(
             encryption.keyManager.loadSingleKey(widget.room.id, sessionId).catchError(
               (Object e) {
-                debugPrint('[Lattice] Key load failed for $sessionId: $e');
+                debugPrint('[Kohera] Key load failed for $sessionId: $e');
               },
             ),
           );
@@ -124,7 +124,7 @@ class MessageListViewState extends State<MessageListView> {
                 senderKey,
               );
             } catch (e) {
-              debugPrint('[Lattice] P2P key request failed for $sessionId: $e');
+              debugPrint('[Kohera] P2P key request failed for $sessionId: $e');
             }
           }
         }
@@ -159,7 +159,7 @@ class MessageListViewState extends State<MessageListView> {
             mRead: sendPublic ? lastEvent.eventId : null,
           );
         } catch (e) {
-          debugPrint('[Lattice] Failed to mark as read: $e');
+          debugPrint('[Kohera] Failed to mark as read: $e');
         }
       }
     });
@@ -192,7 +192,7 @@ class MessageListViewState extends State<MessageListView> {
         if (maxIndex < _visibleEvents.length - _historyLoadThreshold) break;
       }
     } catch (e) {
-      debugPrint('[Lattice] Failed to load history: $e');
+      debugPrint('[Kohera] Failed to load history: $e');
     } finally {
       if (mounted) setState(() => _loadingHistory = false);
     }
@@ -208,7 +208,7 @@ class MessageListViewState extends State<MessageListView> {
     final index = _visibleEvents.indexWhere((e) => e.eventId == event.eventId);
     if (index == -1) {
       debugPrint(
-        '[Lattice] Event not in loaded timeline, reloading: ${event.eventId}',
+        '[Kohera] Event not in loaded timeline, reloading: ${event.eventId}',
       );
       await _reloadTimelineAt(event.eventId);
       return;
@@ -240,7 +240,7 @@ class MessageListViewState extends State<MessageListView> {
   void _jumpToEvent(String eventId) {
     final index = _visibleEvents.indexWhere((e) => e.eventId == eventId);
     if (index == -1) {
-      debugPrint('[Lattice] Event not found after context load: $eventId');
+      debugPrint('[Kohera] Event not found after context load: $eventId');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

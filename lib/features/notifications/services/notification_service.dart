@@ -5,19 +5,19 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
-import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/core/utils/media_auth.dart';
-import 'package:lattice/core/utils/media_cache_io.dart'
-    if (dart.library.js_interop) 'package:lattice/core/utils/media_cache_web.dart';
-import 'package:lattice/core/utils/notification_filter.dart';
-import 'package:lattice/core/utils/platform_info.dart';
-import 'package:lattice/features/calling/models/call_constants.dart';
-import 'package:lattice/features/notifications/models/notification_constants.dart';
-import 'package:lattice/features/notifications/services/apns_push_service.dart';
-import 'package:lattice/features/notifications/services/web_notifications.dart';
-import 'package:lattice/features/notifications/services/windows_com_register.dart';
+import 'package:kohera/core/routing/route_names.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/core/utils/media_auth.dart';
+import 'package:kohera/core/utils/media_cache_io.dart'
+    if (dart.library.js_interop) 'package:kohera/core/utils/media_cache_web.dart';
+import 'package:kohera/core/utils/notification_filter.dart';
+import 'package:kohera/core/utils/platform_info.dart';
+import 'package:kohera/features/calling/models/call_constants.dart';
+import 'package:kohera/features/notifications/models/notification_constants.dart';
+import 'package:kohera/features/notifications/services/apns_push_service.dart';
+import 'package:kohera/features/notifications/services/web_notifications.dart';
+import 'package:kohera/features/notifications/services/windows_com_register.dart';
 import 'package:matrix/matrix.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -76,12 +76,12 @@ class NotificationService {
 
   Future<void> init() async {
     if (kIsWeb) {
-      debugPrint('[Lattice] NotificationService initialized (Web)');
+      debugPrint('[Kohera] NotificationService initialized (Web)');
       return;
     }
     if (_useLinux) {
       _linuxClient = dn.NotificationsClient();
-      debugPrint('[Lattice] NotificationService initialized (Linux D-Bus)');
+      debugPrint('[Kohera] NotificationService initialized (Linux D-Bus)');
       return;
     }
 
@@ -114,7 +114,7 @@ class NotificationService {
     );
     if (initialized != true) {
       debugPrint(
-        '[Lattice] Warning: Notification plugin initialization returned $initialized',
+        '[Kohera] Warning: Notification plugin initialization returned $initialized',
       );
       return;
     }
@@ -126,7 +126,7 @@ class NotificationService {
           ?.requestNotificationsPermission();
     }
 
-    debugPrint('[Lattice] NotificationService initialized');
+    debugPrint('[Kohera] NotificationService initialized');
   }
 
   // ── Start / stop listening ───────────────────────────────────
@@ -135,7 +135,7 @@ class NotificationService {
     _firstSyncDone = false;
     unawaited(_syncSub?.cancel());
     _syncSub = matrixService.client.onSync.stream.listen(_onSync);
-    debugPrint('[Lattice] NotificationService listening to sync stream');
+    debugPrint('[Kohera] NotificationService listening to sync stream');
   }
 
   void stopListening() {
@@ -168,7 +168,7 @@ class NotificationService {
         final roomId = entry.key;
         if (_processingRooms.contains(roomId)) continue;
         unawaited(_processRoomEvents(roomId, events).catchError((Object e) {
-          debugPrint('[Lattice] Error processing room $roomId: $e');
+          debugPrint('[Kohera] Error processing room $roomId: $e');
         },),);
       }
     }
@@ -188,7 +188,7 @@ class NotificationService {
         final roomId = entry.key;
         if (_processingRooms.contains(roomId)) continue;
         unawaited(_processInvite(roomId, entry.value).catchError((Object e) {
-          debugPrint('[Lattice] Error processing invite $roomId: $e');
+          debugPrint('[Kohera] Error processing invite $roomId: $e');
         },),);
       }
     }
@@ -419,7 +419,7 @@ class NotificationService {
       }
       return decrypted?.body ?? NotificationText.encryptedMessage;
     } catch (e) {
-      debugPrint('[Lattice] Decryption failed for notification: $e');
+      debugPrint('[Kohera] Decryption failed for notification: $e');
       return NotificationText.encryptedMessage;
     }
   }
@@ -474,7 +474,7 @@ class NotificationService {
         return path;
       }
     } catch (e) {
-      debugPrint('[Lattice] Failed to download avatar for $userId: $e');
+      debugPrint('[Kohera] Failed to download avatar for $userId: $e');
     }
     return null;
   }
@@ -565,7 +565,7 @@ class NotificationService {
       payload: roomId,
     );
 
-    debugPrint('[Lattice] Notification shown for room $roomId');
+    debugPrint('[Kohera] Notification shown for room $roomId');
   }
 
   Future<void> _showLinuxNotification({
@@ -606,35 +606,35 @@ class NotificationService {
         final room = client.getRoomById(roomId);
         if (actionKey == 'mark_read') {
           debugPrint(
-            '[Lattice] Linux notification mark_read for room $roomId',
+            '[Kohera] Linux notification mark_read for room $roomId',
           );
           final lastEventId = room?.lastEvent?.eventId;
           if (room != null && lastEventId != null) {
             unawaited(
               room.setReadMarker(lastEventId, mRead: lastEventId).catchError((Object e) {
-                debugPrint('[Lattice] Failed to mark room as read: $e');
+                debugPrint('[Kohera] Failed to mark room as read: $e');
               }),
             );
           }
           _linuxNotifications.remove(roomId);
           unawaited(
             notification.close().catchError((Object e) {
-              debugPrint('[Lattice] Failed to close notification: $e');
+              debugPrint('[Kohera] Failed to close notification: $e');
             }),
           );
         } else {
           debugPrint(
-            '[Lattice] Linux notification tapped for room $roomId',
+            '[Kohera] Linux notification tapped for room $roomId',
           );
           navigateToRoom(roomId);
         }
       }),);
       _linuxNotifications[roomId] = notification;
       debugPrint(
-        '[Lattice] Linux notification shown for room $roomId (id=${notification.id})',
+        '[Kohera] Linux notification shown for room $roomId (id=${notification.id})',
       );
     } catch (e) {
-      debugPrint('[Lattice] Failed to show Linux notification: $e');
+      debugPrint('[Kohera] Failed to show Linux notification: $e');
     }
   }
 
@@ -652,7 +652,7 @@ class NotificationService {
   void _onNotificationTap(NotificationResponse response) {
     final roomId = response.payload;
     if (roomId != null && roomId.isNotEmpty) {
-      debugPrint('[Lattice] Notification tapped, selecting room $roomId');
+      debugPrint('[Kohera] Notification tapped, selecting room $roomId');
       navigateToRoom(roomId);
     }
   }
@@ -688,7 +688,7 @@ class NotificationService {
         try {
           await notification.close();
         } catch (e) {
-          debugPrint('[Lattice] Failed to close Linux notification: $e');
+          debugPrint('[Kohera] Failed to close Linux notification: $e');
         }
       }
       return;
@@ -709,15 +709,15 @@ class NotificationService {
         try {
           await notification.close();
         } catch (e) {
-          debugPrint('[Lattice] Failed to close Linux notification: $e');
+          debugPrint('[Kohera] Failed to close Linux notification: $e');
         }
       }
       _linuxNotifications.clear();
-      debugPrint('[Lattice] All Linux notifications cancelled');
+      debugPrint('[Kohera] All Linux notifications cancelled');
       return;
     }
     await _plugin.cancelAll();
-    debugPrint('[Lattice] All notifications cancelled');
+    debugPrint('[Kohera] All notifications cancelled');
   }
 
   void dispose() {
@@ -726,7 +726,7 @@ class NotificationService {
     // Fire-and-forget but log failures — cancelAll() is async but dispose()
     // must be synchronous to match the widget lifecycle.
     unawaited(cancelAll().catchError((Object e) {
-      debugPrint('[Lattice] Error cancelling notifications during dispose: $e');
+      debugPrint('[Kohera] Error cancelling notifications during dispose: $e');
     },),);
     unawaited(_linuxClient?.close());
   }

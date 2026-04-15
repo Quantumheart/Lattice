@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart' hide Visibility;
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/utils/known_contacts.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/utils/known_contacts.dart';
 import 'package:matrix/matrix.dart';
 
 // ── New Room dialog ───────────────────────────────────────────
@@ -327,7 +327,7 @@ class _NewRoomDialogState extends State<NewRoomDialog> {
           try {
             await space.setSpaceChild(roomId);
           } catch (e) {
-            debugPrint('[Lattice] Failed to add room to space: $e');
+            debugPrint('[Kohera] Failed to add room to space: $e');
             spaceFailures++;
           }
         }

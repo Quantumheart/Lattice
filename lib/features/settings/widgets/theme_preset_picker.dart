@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/core/theme/theme_presets.dart';
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/core/theme/theme_presets.dart';
 import 'package:provider/provider.dart';
 
 class ThemePresetPicker extends StatelessWidget {

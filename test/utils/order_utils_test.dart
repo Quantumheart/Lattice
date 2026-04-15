@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:lattice/core/utils/order_utils.dart';
+import 'package:kohera/core/utils/order_utils.dart';
 
 void main() {
   group('midpoint', () {

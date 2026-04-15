@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/shared/widgets/room_avatar.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/shared/widgets/room_avatar.dart';
 import 'package:matrix/matrix.dart' hide Visibility;
 
 // ── Add Room to Space Dialog ─────────────────────────────────────
@@ -64,7 +64,7 @@ class _AddRoomToSpaceDialogState extends State<AddRoomToSpaceDialog> {
           suggested: _suggested[space.id] == true ? true : null,
         );
       } catch (e) {
-        debugPrint('[Lattice] Failed to add room to space: $e');
+        debugPrint('[Kohera] Failed to add room to space: $e');
         failures++;
       }
     }

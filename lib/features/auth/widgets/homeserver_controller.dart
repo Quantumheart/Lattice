@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 
-import 'package:lattice/core/models/server_auth_capabilities.dart';
-import 'package:lattice/core/services/matrix_service.dart';
+import 'package:kohera/core/models/server_auth_capabilities.dart';
+import 'package:kohera/core/services/matrix_service.dart';
 
 // ── HomeserverState ────────────────────────────────────────────────────────────
 

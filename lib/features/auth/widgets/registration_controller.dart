@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/utils/network_error.dart';
-import 'package:lattice/features/auth/services/recaptcha_server.dart';
-import 'package:lattice/features/e2ee/widgets/bootstrap_controller.dart' show BootstrapController;
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/utils/network_error.dart';
+import 'package:kohera/features/auth/services/recaptcha_server.dart';
+import 'package:kohera/features/e2ee/widgets/bootstrap_controller.dart' show BootstrapController;
 import 'package:matrix/matrix.dart';
 
 /// States for the registration flow state machine.
@@ -220,7 +220,7 @@ class RegistrationController extends ChangeNotifier {
       final response = await matrixService.client.register(
         username: _username,
         password: _password,
-        initialDeviceDisplayName: 'Lattice Flutter',
+        initialDeviceDisplayName: 'Kohera Flutter',
         auth: auth,
       );
 
@@ -352,7 +352,7 @@ class RegistrationController extends ChangeNotifier {
 
     try {
       final url = await server.start();
-      debugPrint('[Lattice] Opening reCAPTCHA page: $url');
+      debugPrint('[Kohera] Opening reCAPTCHA page: $url');
 
       await server.launch(Uri.parse(url));
 

@@ -36,7 +36,7 @@ target 'Runner' do
   end
 end
 
-target 'LatticeNotificationService' do
+target 'KoheraNotificationService' do
   use_frameworks!
   pod 'flutter_vodozemac', :path => '.symlinks/plugins/flutter_vodozemac/ios'
 end

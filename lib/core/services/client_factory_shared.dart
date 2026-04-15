@@ -17,7 +17,7 @@ Client buildClient(
   Future<void> Function(Client)? onSoftLogout,
 ) {
   final client = Client(
-    'Lattice ($clientName)',
+    'Kohera ($clientName)',
     database: database,
     logLevel: kReleaseMode ? Level.warning : Level.verbose,
     defaultNetworkRequestTimeout: const Duration(minutes: 2),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:lattice/core/utils/time_format.dart';
-import 'package:lattice/features/calling/models/call_constants.dart';
+import 'package:kohera/core/utils/time_format.dart';
+import 'package:kohera/features/calling/models/call_constants.dart';
 import 'package:matrix/matrix.dart';
 
 class CallEventTile extends StatelessWidget {

@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/core/services/app_config.dart';
+import 'package:kohera/core/services/app_config.dart';
 
 void main() {
   final binding = TestWidgetsFlutterBinding.ensureInitialized();

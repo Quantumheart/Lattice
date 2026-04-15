@@ -1,18 +1,18 @@
 abstract class NotificationChannel {
-  static const appId = 'io.github.quantumheart.lattice';
-  static const appName = 'Lattice';
+  static const appId = 'io.github.quantumheart.kohera';
+  static const appName = 'Kohera';
   static const windowsGuid = 'ef82b5e7-fd65-431d-bcbb-9c7fa9acb761';
 
-  static const androidChannelId = 'lattice_messages';
+  static const androidChannelId = 'kohera_messages';
   static const androidChannelName = 'Messages';
   static const androidChannelDescription = 'Chat message notifications';
-  static const androidGroupKey = 'io.github.quantumheart.lattice.MESSAGES';
+  static const androidGroupKey = 'io.github.quantumheart.kohera.MESSAGES';
 
   static const linuxSoundName = 'message-new-instant';
-  static const linuxDesktopEntry = 'lattice';
-  static const linuxAppIcon = 'lattice';
+  static const linuxDesktopEntry = 'kohera';
+  static const linuxAppIcon = 'kohera';
 
-  static const avatarTempPrefix = 'lattice_avatar_';
+  static const avatarTempPrefix = 'kohera_avatar_';
 
   static const defaultGatewayUrl =
       'https://matrix.gateway.unifiedpush.org/_matrix/push/v1/notify';
@@ -20,7 +20,7 @@ abstract class NotificationChannel {
   static const iosDefaultDeviceName = 'iOS';
   static const defaultLang = 'en';
 
-  static const webPushAppId = 'io.github.quantumheart.lattice.web';
+  static const webPushAppId = 'io.github.quantumheart.kohera.web';
   static const webDefaultDeviceName = 'Web';
 }
 

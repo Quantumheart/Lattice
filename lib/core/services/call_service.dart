@@ -2,24 +2,24 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/core/utils/platform_info.dart';
-import 'package:lattice/features/calling/models/call_participant.dart' as ui;
-import 'package:lattice/features/calling/models/call_state.dart';
-import 'package:lattice/features/calling/models/incoming_call_info.dart' as model;
-import 'package:lattice/features/calling/services/call_ringing_service.dart';
-import 'package:lattice/features/calling/services/call_signaling_service.dart';
-import 'package:lattice/features/calling/services/livekit_service.dart';
-import 'package:lattice/features/calling/services/native_call_ui_service.dart';
-import 'package:lattice/features/calling/services/ringtone_service.dart';
-import 'package:lattice/features/calling/services/rtc_membership_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/core/utils/platform_info.dart';
+import 'package:kohera/features/calling/models/call_participant.dart' as ui;
+import 'package:kohera/features/calling/models/call_state.dart';
+import 'package:kohera/features/calling/models/incoming_call_info.dart' as model;
+import 'package:kohera/features/calling/services/call_ringing_service.dart';
+import 'package:kohera/features/calling/services/call_signaling_service.dart';
+import 'package:kohera/features/calling/services/livekit_service.dart';
+import 'package:kohera/features/calling/services/native_call_ui_service.dart';
+import 'package:kohera/features/calling/services/ringtone_service.dart';
+import 'package:kohera/features/calling/services/rtc_membership_service.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
 import 'package:matrix/matrix.dart';
 
-export 'package:lattice/features/calling/models/call_state.dart';
-export 'package:lattice/features/calling/services/livekit_service.dart'
+export 'package:kohera/features/calling/models/call_state.dart';
+export 'package:kohera/features/calling/services/livekit_service.dart'
     show HttpPostFunction, LiveKitRoomFactory;
-export 'package:lattice/features/calling/services/rtc_membership_service.dart'
+export 'package:kohera/features/calling/services/rtc_membership_service.dart'
     show callMemberEventType, membershipExpiresMs, membershipRenewalInterval;
 
 // ── Call Service ────────────────────────────────────────────
@@ -136,15 +136,15 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
 
   // ── Shared State ───────────────────────────────────────────
 
-  LatticeCallState _callState = LatticeCallState.idle;
-  LatticeCallState get callState => _callState;
+  KoheraCallState _callState = KoheraCallState.idle;
+  KoheraCallState get callState => _callState;
 
-  void _setCallState(LatticeCallState next) {
+  void _setCallState(KoheraCallState next) {
     if (_callState == next) return;
     final allowed = validCallTransitions[_callState];
     if (allowed == null || !allowed.contains(next)) {
       debugPrint(
-        '[Lattice] Invalid call state transition: $_callState → $next',
+        '[Kohera] Invalid call state transition: $_callState → $next',
       );
       assert(false, 'Invalid call state transition: $_callState → $next');
       return;
@@ -152,11 +152,11 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
     _callState = next;
     notifyListeners();
     switch (next) {
-      case LatticeCallState.connected:
+      case KoheraCallState.connected:
         _nativeUi.updateNativeCallConnected();
-      case LatticeCallState.idle:
-      case LatticeCallState.disconnecting:
-      case LatticeCallState.failed:
+      case KoheraCallState.idle:
+      case KoheraCallState.disconnecting:
+      case KoheraCallState.failed:
         _nativeUi.endNativeCall();
       default:
         break;
@@ -192,8 +192,8 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
     final hasRemote =
         RtcMembershipService.roomHasRemoteActiveCall(_client, roomId);
 
-    if (_callState == LatticeCallState.ringingOutgoing && hasRemote) {
-      debugPrint('[Lattice] Detected RTC membership join, treating as answer');
+    if (_callState == KoheraCallState.ringingOutgoing && hasRemote) {
+      debugPrint('[Kohera] Detected RTC membership join, treating as answer');
       unawaited(joinCall(roomId));
       return;
     }
@@ -204,11 +204,11 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
 
     final isDm = _client.getRoomById(roomId)?.isDirectChat ?? false;
     if (isDm &&
-        (_callState == LatticeCallState.connected ||
-            _callState == LatticeCallState.reconnecting) &&
+        (_callState == KoheraCallState.connected ||
+            _callState == KoheraCallState.reconnecting) &&
         !hasRemote &&
         _hadRemoteParticipant) {
-      debugPrint('[Lattice] DM remote member left, ending call');
+      debugPrint('[Kohera] DM remote member left, ending call');
       unawaited(leaveCall());
       return;
     }
@@ -238,7 +238,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
     _nativeActionSub = _nativeUi.actions.listen(_onNativeAction);
     _liveKitConnectionSub = _liveKit.connectionEvents.listen(_onLiveKitConnection);
 
-    debugPrint('[Lattice] CallService initialized');
+    debugPrint('[Kohera] CallService initialized');
   }
 
   void _resetState() {
@@ -247,7 +247,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
     unawaited(_liveKit.cleanupLiveKit());
     _rtcMembership.cancelMembershipRenewal();
     _activeCallRoomId = null;
-    _callState = LatticeCallState.idle;
+    _callState = KoheraCallState.idle;
     _initialized = false;
     _ringing.resetIncomingCall();
     _ringing.stopRinging();
@@ -276,7 +276,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.paused &&
-        _callState == LatticeCallState.connected &&
+        _callState == KoheraCallState.connected &&
         _activeCallRoomId != null &&
         _liveKit.isScreenShareEnabled) {
       if (isNativeMobile) {
@@ -311,7 +311,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
       try {
         await _rtcMembership.removeMembershipEvent(roomId);
       } catch (e) {
-        debugPrint('[Lattice] Error removing membership: $e');
+        debugPrint('[Kohera] Error removing membership: $e');
       }
     }
     _activeCallRoomId = null;
@@ -324,7 +324,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
   bool _canJoin(String roomId) {
     if (!_initialized) init();
     final allowed = validCallTransitions[_callState];
-    if (allowed == null || !allowed.contains(LatticeCallState.joining)) {
+    if (allowed == null || !allowed.contains(KoheraCallState.joining)) {
       return false;
     }
     if (_client.getRoomById(roomId) == null) return false;
@@ -389,60 +389,60 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
     if (!_canJoin(roomId)) return;
 
     final room = _client.getRoomById(roomId)!;
-    _setCallState(LatticeCallState.joining);
+    _setCallState(KoheraCallState.joining);
 
     try {
       await _connectToLiveKit(roomId, room);
       _ringing.stopRinging();
 
-      if (_callState != LatticeCallState.joining) {
-        debugPrint('[Lattice] Call interrupted while joining, cleaning up');
+      if (_callState != KoheraCallState.joining) {
+        debugPrint('[Kohera] Call interrupted while joining, cleaning up');
         await _teardownCall(roomId: roomId);
         return;
       }
 
       _callStartTime = DateTime.now();
       _startMembershipWatcher(roomId);
-      _setCallState(LatticeCallState.connected);
-      debugPrint('[Lattice] Joined call in room $roomId');
+      _setCallState(KoheraCallState.connected);
+      debugPrint('[Kohera] Joined call in room $roomId');
     } catch (e) {
-      debugPrint('[Lattice] Failed to join call: $e');
+      debugPrint('[Kohera] Failed to join call: $e');
       await _teardownCall(roomId: _activeCallRoomId);
       _ringing.stopRinging();
-      if (_callState == LatticeCallState.joining) {
-        _setCallState(LatticeCallState.failed);
+      if (_callState == KoheraCallState.joining) {
+        _setCallState(KoheraCallState.failed);
       }
     }
   }
 
   Future<void> leaveCall() async {
-    if (_callState == LatticeCallState.ringingOutgoing) {
+    if (_callState == KoheraCallState.ringingOutgoing) {
       cancelOutgoingCall();
       return;
     }
 
-    if (_callState == LatticeCallState.ringingIncoming) {
+    if (_callState == KoheraCallState.ringingIncoming) {
       declineCall();
       return;
     }
 
-    if (_callState == LatticeCallState.joining) {
+    if (_callState == KoheraCallState.joining) {
       await _teardownCall(roomId: _activeCallRoomId);
       _activeCallId = null;
       _lastInitiatedRoomId = null;
-      _setCallState(LatticeCallState.idle);
+      _setCallState(KoheraCallState.idle);
       return;
     }
 
     if (_activeCallRoomId == null) {
-      if (_callState != LatticeCallState.idle) {
-        _setCallState(LatticeCallState.idle);
+      if (_callState != KoheraCallState.idle) {
+        _setCallState(KoheraCallState.idle);
       }
       return;
     }
 
     final roomId = _activeCallRoomId!;
-    debugPrint('[Lattice] Leaving call in room $roomId');
+    debugPrint('[Kohera] Leaving call in room $roomId');
     _stopMembershipWatcher();
 
     final callId = _activeCallId;
@@ -454,16 +454,16 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
     _activeCallId = null;
     _lastInitiatedRoomId = null;
     _ringing.stopRinging();
-    _setCallState(LatticeCallState.disconnecting);
+    _setCallState(KoheraCallState.disconnecting);
 
     await _teardownCall(roomId: roomId);
-    _setCallState(LatticeCallState.idle);
+    _setCallState(KoheraCallState.idle);
   }
 
   // ── Ringing Actions ────────────────────────────────────────
 
   Future<void> acceptCall({bool withVideo = false}) async {
-    if (_callState != LatticeCallState.ringingIncoming) return;
+    if (_callState != KoheraCallState.ringingIncoming) return;
     final info = _ringing.incomingCall;
     if (info == null) return;
 
@@ -478,7 +478,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void declineCall() {
-    if (_callState != LatticeCallState.ringingIncoming) return;
+    if (_callState != KoheraCallState.ringingIncoming) return;
     final info = _ringing.incomingCall;
 
     if (info?.callId != null) {
@@ -487,12 +487,12 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
 
     _ringing.stopRinging();
     _ringing.resetIncomingCall();
-    _setCallState(LatticeCallState.idle);
+    _setCallState(KoheraCallState.idle);
   }
 
   void cancelOutgoingCall({bool isTimeout = false}) {
-    if (_callState != LatticeCallState.ringingOutgoing &&
-        _callState != LatticeCallState.joining) {
+    if (_callState != KoheraCallState.ringingOutgoing &&
+        _callState != KoheraCallState.joining) {
       return;
     }
 
@@ -504,7 +504,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
       );
     }
 
-    if (_callState == LatticeCallState.joining) {
+    if (_callState == KoheraCallState.joining) {
       unawaited(_teardownCall(roomId: _activeCallRoomId));
     }
 
@@ -512,7 +512,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
     _ringing.stopRinging();
     _activeCallId = null;
     _lastInitiatedRoomId = null;
-    _setCallState(LatticeCallState.idle);
+    _setCallState(KoheraCallState.idle);
     _activeCallRoomId = null;
   }
 
@@ -521,8 +521,8 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
     model.CallType type = model.CallType.voice,
   }) async {
     if (!_initialized) init();
-    if (_callState != LatticeCallState.idle &&
-        _callState != LatticeCallState.failed) {
+    if (_callState != KoheraCallState.idle &&
+        _callState != KoheraCallState.failed) {
       return;
     }
 
@@ -530,7 +530,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
     _activeCallId = callId;
     _lastInitiatedRoomId = roomId;
     _activeCallRoomId = roomId;
-    _setCallState(LatticeCallState.ringingOutgoing);
+    _setCallState(KoheraCallState.ringingOutgoing);
 
     final room = _client.getRoomById(roomId);
     final callerName = room?.getLocalizedDisplayname() ?? roomId;
@@ -586,7 +586,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
       isVideo: isVideo,
     );
     _ringing.pushIncomingCall(info);
-    _setCallState(LatticeCallState.ringingIncoming);
+    _setCallState(KoheraCallState.ringingIncoming);
     _nativeUi.showNativeIncomingCall(
       callId: callId,
       roomId: roomId,
@@ -614,11 +614,11 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
         _activeCallRoomId = null;
         _lastInitiatedRoomId = null;
         _ringing.stopRinging();
-        _setCallState(LatticeCallState.idle);
+        _setCallState(KoheraCallState.idle);
       case HangupReceived():
         _activeCallId = null;
-        if (_callState == LatticeCallState.connected ||
-            _callState == LatticeCallState.reconnecting) {
+        if (_callState == KoheraCallState.connected ||
+            _callState == KoheraCallState.reconnecting) {
           unawaited(leaveCall());
         } else {
           _handleCallEnded();
@@ -628,7 +628,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
         _activeCallRoomId = null;
         _lastInitiatedRoomId = null;
         _ringing.stopRinging();
-        _setCallState(LatticeCallState.idle);
+        _setCallState(KoheraCallState.idle);
         _handleSignalingIncomingInvite(event.incomingInvite);
     }
   }
@@ -636,7 +636,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
   void _handleSignalingIncomingInvite(IncomingInvite event) {
     _activeCallId = event.callId;
     _ringing.pushIncomingCall(event.info);
-    _setCallState(LatticeCallState.ringingIncoming);
+    _setCallState(KoheraCallState.ringingIncoming);
     _nativeUi.showNativeIncomingCall(
       callId: event.info.callId,
       roomId: event.info.roomId,
@@ -654,9 +654,9 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
     _ringing.stopRinging();
     _activeCallRoomId = null;
     _lastInitiatedRoomId = null;
-    if (_callState != LatticeCallState.idle &&
-        _callState != LatticeCallState.disconnecting) {
-      _setCallState(LatticeCallState.idle);
+    if (_callState != KoheraCallState.idle &&
+        _callState != KoheraCallState.disconnecting) {
+      _setCallState(KoheraCallState.idle);
     }
   }
 
@@ -669,7 +669,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
       case NativeCallEnded():
         unawaited(leaveCall());
       case NativeCallTimedOut():
-        if (_callState == LatticeCallState.ringingIncoming) {
+        if (_callState == KoheraCallState.ringingIncoming) {
           final info = _ringing.incomingCall;
           _ringing.stopRinging();
           _ringing.resetIncomingCall();
@@ -684,7 +684,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
           }
           _activeCallId = null;
           _activeCallRoomId = null;
-          _setCallState(LatticeCallState.idle);
+          _setCallState(KoheraCallState.idle);
         } else {
           cancelOutgoingCall(isTimeout: true);
         }
@@ -694,16 +694,16 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
   void _onLiveKitConnection(LiveKitConnectionEvent event) {
     switch (event) {
       case LiveKitReconnecting():
-        _setCallState(LatticeCallState.reconnecting);
+        _setCallState(KoheraCallState.reconnecting);
       case LiveKitReconnected():
-        _setCallState(LatticeCallState.connected);
+        _setCallState(KoheraCallState.connected);
       case LiveKitDisconnected():
-        if (_callState == LatticeCallState.disconnecting ||
-            _callState == LatticeCallState.idle) {
+        if (_callState == KoheraCallState.disconnecting ||
+            _callState == KoheraCallState.idle) {
           return;
         }
-        if (_callState == LatticeCallState.joining) {
-          _setCallState(LatticeCallState.idle);
+        if (_callState == KoheraCallState.joining) {
+          _setCallState(KoheraCallState.idle);
           return;
         }
         final roomId = _activeCallRoomId;
@@ -711,13 +711,13 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
         _activeCallRoomId = null;
         _rtcMembership.cancelMembershipRenewal();
         _callStartTime = null;
-        _setCallState(LatticeCallState.failed);
+        _setCallState(KoheraCallState.failed);
         unawaited(_liveKit.cleanupLiveKit());
         if (roomId != null) {
           unawaited(
             _rtcMembership.removeMembershipEvent(roomId).catchError(
               (Object e) => debugPrint(
-                '[Lattice] Error removing membership after disconnect: $e',
+                '[Kohera] Error removing membership after disconnect: $e',
               ),
             ),
           );

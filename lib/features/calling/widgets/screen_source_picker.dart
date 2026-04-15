@@ -57,7 +57,7 @@ class _ScreenSourcePickerState extends State<_ScreenSourcePicker> {
         _sources[s.id] = s;
       }
     } catch (e) {
-      debugPrint('[Lattice] Failed to enumerate sources: $e');
+      debugPrint('[Kohera] Failed to enumerate sources: $e');
     }
     if (mounted) setState(() => _loading = false);
   }

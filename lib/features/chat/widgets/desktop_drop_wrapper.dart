@@ -1,7 +1,7 @@
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
-import 'package:lattice/core/models/pending_attachment.dart';
-import 'package:lattice/features/chat/widgets/drop_zone_overlay.dart';
+import 'package:kohera/core/models/pending_attachment.dart';
+import 'package:kohera/features/chat/widgets/drop_zone_overlay.dart';
 
 class DesktopDropWrapper extends StatefulWidget {
   const DesktopDropWrapper({

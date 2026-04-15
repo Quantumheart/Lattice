@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/sub_services/selection_service.dart';
-import 'package:lattice/features/spaces/widgets/create_subspace_dialog.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/sub_services/selection_service.dart';
+import 'package:kohera/features/spaces/widgets/create_subspace_dialog.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mockito/annotations.dart';

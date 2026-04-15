@@ -31,14 +31,14 @@ class UiaService {
     }
 
     final stage = uiaRequest.nextStages.first;
-    debugPrint('[Lattice] UIA request: stage=$stage');
+    debugPrint('[Kohera] UIA request: stage=$stage');
 
     switch (stage) {
       case AuthenticationTypes.password:
         final password = _cachedPassword;
         final userId = _client.userID;
         if (password != null && userId != null) {
-          debugPrint('[Lattice] UIA: completing with cached password');
+          debugPrint('[Kohera] UIA: completing with cached password');
           return uiaRequest.completeStage(
             AuthenticationPassword(
               session: uiaRequest.session,
@@ -47,7 +47,7 @@ class UiaService {
             ),
           );
         }
-        debugPrint('[Lattice] UIA: no cached password, forwarding to UI');
+        debugPrint('[Kohera] UIA: no cached password, forwarding to UI');
         _uiaController.add(uiaRequest);
       case AuthenticationTypes.dummy:
         return uiaRequest.completeStage(
@@ -57,7 +57,7 @@ class UiaService {
           ),
         );
       default:
-        debugPrint('[Lattice] UIA: unsupported stage $stage, cancelling');
+        debugPrint('[Kohera] UIA: unsupported stage $stage, cancelling');
         uiaRequest.cancel();
     }
   }

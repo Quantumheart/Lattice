@@ -1,4 +1,4 @@
 storePassword=<keystore password>
 keyPassword=<key password>
-keyAlias=lattice
-storeFile=<path to keystore, e.g. /home/you/lattice-release.jks>
+keyAlias=kohera
+storeFile=<path to keystore, e.g. /home/you/kohera-release.jks>

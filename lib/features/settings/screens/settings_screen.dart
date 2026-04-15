@@ -3,15 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:lattice/core/routing/nav_helper.dart';
-import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/core/services/call_service.dart';
-import 'package:lattice/core/services/client_manager.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/core/services/sub_services/chat_backup_service.dart';
-import 'package:lattice/shared/widgets/section_header.dart';
-import 'package:lattice/shared/widgets/user_avatar.dart';
+import 'package:kohera/core/routing/nav_helper.dart';
+import 'package:kohera/core/routing/route_names.dart';
+import 'package:kohera/core/services/call_service.dart';
+import 'package:kohera/core/services/client_manager.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/core/services/sub_services/chat_backup_service.dart';
+import 'package:kohera/shared/widgets/section_header.dart';
+import 'package:kohera/shared/widgets/user_avatar.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -55,7 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         });
       }
     } catch (e) {
-      debugPrint('[Lattice] Failed to fetch profile: $e');
+      debugPrint('[Kohera] Failed to fetch profile: $e');
     }
   }
 
@@ -69,10 +69,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await client.setProfileField(
         client.userID!, 'displayname', {'displayname': newName},
       );
-      debugPrint('[Lattice] Display name updated to: $newName');
+      debugPrint('[Kohera] Display name updated to: $newName');
       await _fetchProfile();
     } catch (e) {
-      debugPrint('[Lattice] Display name update failed: $e');
+      debugPrint('[Kohera] Display name update failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to update display name: ${MatrixService.friendlyAuthError(e)}')),
@@ -98,10 +98,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       final bytes = await picked.readAsBytes();
       await client.setAvatar(MatrixFile(bytes: bytes, name: picked.name));
-      debugPrint('[Lattice] Avatar uploaded: ${picked.name} (${bytes.length} bytes)');
+      debugPrint('[Kohera] Avatar uploaded: ${picked.name} (${bytes.length} bytes)');
       await _fetchProfile();
     } catch (e) {
-      debugPrint('[Lattice] Avatar upload failed: $e');
+      debugPrint('[Kohera] Avatar upload failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to upload avatar: ${MatrixService.friendlyAuthError(e)}')),
@@ -117,10 +117,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _avatarUploading = true);
     try {
       await client.setAvatar(null);
-      debugPrint('[Lattice] Avatar removed');
+      debugPrint('[Kohera] Avatar removed');
       await _fetchProfile();
     } catch (e) {
-      debugPrint('[Lattice] Avatar removal failed: $e');
+      debugPrint('[Kohera] Avatar removal failed: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to remove avatar: ${MatrixService.friendlyAuthError(e)}')),
@@ -444,7 +444,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               children: [
                 _SettingsTile(
                   icon: Icons.info_outline_rounded,
-                  title: 'Lattice',
+                  title: 'Kohera',
                   subtitle: 'v1.0.0 • Built with Flutter',
                   onTap: () {},
                 ),
@@ -454,7 +454,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   title: 'Source code',
                   subtitle: 'View on GitHub',
                   onTap: () {
-                    unawaited(launchUrl(Uri.parse('https://github.com/Quantumheart/Lattice')));
+                    unawaited(launchUrl(Uri.parse('https://github.com/Quantumheart/Kohera')));
                   },
                 ),
               ],

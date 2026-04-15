@@ -2,18 +2,18 @@ import Foundation
 import SQLite3
 
 struct MegolmDecryptor {
-    private static let appGroupId = "group.io.github.quantumheart.lattice"
+    private static let appGroupId = "group.io.github.quantumheart.kohera"
 
     static func decrypt(sessionId: String, ciphertext: String, userId: String, clientName: String = "default") -> String? {
         let pickleKey = derivePickleKey(from: userId)
         guard let pickle = lookupSession(sessionId: sessionId, clientName: clientName) else {
-            NSLog("[LatticeNSE] No session found for %@", sessionId)
+            NSLog("[KoheraNSE] No session found for %@", sessionId)
             return nil
         }
 
         guard let pickleC = pickle.cString(using: .utf8),
               let ciphertextC = ciphertext.cString(using: .utf8) else {
-            NSLog("[LatticeNSE] Failed to convert strings to C format")
+            NSLog("[KoheraNSE] Failed to convert strings to C format")
             return nil
         }
 
@@ -22,12 +22,12 @@ struct MegolmDecryptor {
 
         if let error = result.error {
             let errorMsg = String(cString: error)
-            NSLog("[LatticeNSE] Decryption failed: %@", errorMsg)
+            NSLog("[KoheraNSE] Decryption failed: %@", errorMsg)
             return nil
         }
 
         guard let plaintextPtr = result.plaintext else {
-            NSLog("[LatticeNSE] Null plaintext from decryption")
+            NSLog("[KoheraNSE] Null plaintext from decryption")
             return nil
         }
 
@@ -53,14 +53,14 @@ struct MegolmDecryptor {
         guard let containerURL = FileManager.default.containerURL(
             forSecurityApplicationGroupIdentifier: appGroupId
         ) else {
-            NSLog("[LatticeNSE] Cannot access App Group container")
+            NSLog("[KoheraNSE] Cannot access App Group container")
             return nil
         }
 
-        let dbPath = containerURL.appendingPathComponent("lattice_\(clientName).db").path
+        let dbPath = containerURL.appendingPathComponent("kohera_\(clientName).db").path
         var db: OpaquePointer?
         guard sqlite3_open_v2(dbPath, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK else {
-            NSLog("[LatticeNSE] Failed to open database")
+            NSLog("[KoheraNSE] Failed to open database")
             return nil
         }
         defer { sqlite3_close(db) }
@@ -70,17 +70,17 @@ struct MegolmDecryptor {
         let sql = "SELECT v FROM box_inbound_group_session WHERE k = ?"
         var stmt: OpaquePointer?
         guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
-            NSLog("[LatticeNSE] Failed to prepare query")
+            NSLog("[KoheraNSE] Failed to prepare query")
             return nil
         }
         defer { sqlite3_finalize(stmt) }
 
         sqlite3_bind_text(stmt, 1, sessionId, -1, SQLITE_TRANSIENT)
-        NSLog("[LatticeNSE] Looking up session: %@", sessionId)
+        NSLog("[KoheraNSE] Looking up session: %@", sessionId)
 
         let stepResult = sqlite3_step(stmt)
         guard stepResult == SQLITE_ROW else {
-            NSLog("[LatticeNSE] Session not found (result: %d)", stepResult)
+            NSLog("[KoheraNSE] Session not found (result: %d)", stepResult)
             return nil
         }
 
@@ -90,7 +90,7 @@ struct MegolmDecryptor {
         guard let jsonData = jsonString.data(using: .utf8),
               let json = try? JSONSerialization.jsonObject(with: jsonData) as? [String: Any],
               let pickle = json["pickle"] as? String else {
-            NSLog("[LatticeNSE] Failed to parse session JSON")
+            NSLog("[KoheraNSE] Failed to parse session JSON")
             return nil
         }
 
@@ -103,7 +103,7 @@ struct MegolmDecryptor {
         guard let data = plaintext.data(using: .utf8),
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let content = json["content"] as? [String: Any] else {
-            NSLog("[LatticeNSE] Failed to parse decrypted event")
+            NSLog("[KoheraNSE] Failed to parse decrypted event")
             return nil
         }
 

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lattice/features/chat/widgets/swipeable_message.dart' show SwipeableMessage;
+import 'package:kohera/features/chat/widgets/swipeable_message.dart' show SwipeableMessage;
 
 /// Detects long press using raw pointer events so it does not participate in
 /// the gesture arena and therefore does not interfere with the horizontal drag

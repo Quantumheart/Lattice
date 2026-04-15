@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/core/utils/time_format.dart';
+import 'package:kohera/core/utils/time_format.dart';
 
 void main() {
   group('formatRelativeTimestamp', () {

@@ -5,11 +5,11 @@ import 'dart:js_interop_unsafe';
 
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/core/services/app_config.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/features/notifications/models/notification_constants.dart';
+import 'package:kohera/core/routing/route_names.dart';
+import 'package:kohera/core/services/app_config.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/features/notifications/models/notification_constants.dart';
 import 'package:matrix/matrix.dart';
 import 'package:web/web.dart' as web;
 
@@ -54,7 +54,7 @@ class WebPushService {
   Future<void> register() async {
     final config = AppConfig.instance;
     if (!config.webPushConfigured) {
-      debugPrint('[Lattice] Web push not configured — skipping registration');
+      debugPrint('[Kohera] Web push not configured — skipping registration');
       return;
     }
     final vapidPublicKey = config.vapidPublicKey!;
@@ -63,13 +63,13 @@ class WebPushService {
 
     try {
       if (web.Notification.permission != 'granted') {
-        debugPrint('[Lattice] Notification permission not granted');
+        debugPrint('[Kohera] Notification permission not granted');
         return;
       }
 
       final registration = await _getRegistration();
       if (registration == null) {
-        debugPrint('[Lattice] No service worker registration found');
+        debugPrint('[Kohera] No service worker registration found');
         return;
       }
 
@@ -87,16 +87,16 @@ class WebPushService {
       final subscription = await subscriptionPromise.toDart;
 
       if (subscription == null) {
-        debugPrint('[Lattice] Web push subscription failed');
+        debugPrint('[Kohera] Web push subscription failed');
         return;
       }
 
       final pushkey = _jsonStringify(subscription).toDart;
 
       await _registerPusher(pushkey, gatewayUrl);
-      debugPrint('[Lattice] Web push registered');
+      debugPrint('[Kohera] Web push registered');
     } catch (e) {
-      debugPrint('[Lattice] Web push registration error: $e');
+      debugPrint('[Kohera] Web push registration error: $e');
     }
   }
 
@@ -120,9 +120,9 @@ class WebPushService {
       final unsubPromise =
           subscription.callMethod<JSPromise<JSBoolean>>('unsubscribe'.toJS);
       await unsubPromise.toDart;
-      debugPrint('[Lattice] Web push unregistered');
+      debugPrint('[Kohera] Web push unregistered');
     } catch (e) {
-      debugPrint('[Lattice] Web push unregister error: $e');
+      debugPrint('[Kohera] Web push unregister error: $e');
     }
   }
 
@@ -149,7 +149,7 @@ class WebPushService {
       ),
       append: true,
     );
-    debugPrint('[Lattice] Web pusher registered with gateway $gatewayUrl');
+    debugPrint('[Kohera] Web pusher registered with gateway $gatewayUrl');
   }
 
   Future<void> _unregisterPusher(String pushkey) async {
@@ -157,7 +157,7 @@ class WebPushService {
     await client.deletePusher(
       PusherId(appId: _appId, pushkey: pushkey),
     );
-    debugPrint('[Lattice] Web pusher unregistered from homeserver');
+    debugPrint('[Kohera] Web pusher unregistered from homeserver');
   }
 
   // ── Subscription change listener ─────────────────────────────
@@ -180,11 +180,11 @@ class WebPushService {
             final newSubJs = obj.getProperty<JSObject>('newSubscription'.toJS);
             final newPushkey = _jsonStringify(newSubJs).toDart;
             unawaited(_registerPusher(newPushkey, gatewayUrl));
-            debugPrint('[Lattice] Web push subscription renewed');
+            debugPrint('[Kohera] Web push subscription renewed');
 
           case 'pushsubscriptionfailed':
             final error = obj.getProperty<JSString>('error'.toJS).toDart;
-            debugPrint('[Lattice] Web push subscription renewal failed: $error');
+            debugPrint('[Kohera] Web push subscription renewal failed: $error');
             unawaited(register());
 
           case 'notification_click':
@@ -195,7 +195,7 @@ class WebPushService {
               } else {
                 matrixService.selection.selectRoom(roomId);
               }
-              debugPrint('[Lattice] Web push notification tapped, navigating to room $roomId');
+              debugPrint('[Kohera] Web push notification tapped, navigating to room $roomId');
             }
 
           case 'mark_read':
@@ -206,15 +206,15 @@ class WebPushService {
               if (room != null && lastEventId != null) {
                 unawaited(
                   room.setReadMarker(lastEventId, mRead: lastEventId).catchError((Object e) {
-                    debugPrint('[Lattice] Failed to mark room as read: $e');
+                    debugPrint('[Kohera] Failed to mark room as read: $e');
                   }),
                 );
               }
-              debugPrint('[Lattice] Web push mark_read for room $roomId');
+              debugPrint('[Kohera] Web push mark_read for room $roomId');
             }
         }
       } catch (e) {
-        debugPrint('[Lattice] Error handling service worker message: $e');
+        debugPrint('[Kohera] Error handling service worker message: $e');
       }
     }.toJS;
 

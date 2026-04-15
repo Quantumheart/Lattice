@@ -3,8 +3,8 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/foundation.dart';
-import 'package:lattice/features/calling/models/call_constants.dart';
-import 'package:lattice/features/calling/models/incoming_call_info.dart' as model;
+import 'package:kohera/features/calling/models/call_constants.dart';
+import 'package:kohera/features/calling/models/incoming_call_info.dart' as model;
 import 'package:matrix/matrix.dart';
 
 // ── Signaling Events ───────────────────────────────────────
@@ -73,7 +73,7 @@ class CallSignalingService {
       await _client.encryption?.keyManager
           .prepareOutboundGroupSession(roomId);
     } catch (e) {
-      debugPrint('[Lattice] Failed to prepare encryption for call: $e');
+      debugPrint('[Kohera] Failed to prepare encryption for call: $e');
     }
   }
 
@@ -92,7 +92,7 @@ class CallSignalingService {
       'offer': {'type': 'offer', 'sdp': ''},
       'is_video': isVideo,
     }, type: kCallInvite,);
-    debugPrint('[Lattice] Sent m.call.invite for call $callId in $roomId');
+    debugPrint('[Kohera] Sent m.call.invite for call $callId in $roomId');
   }
 
   Future<void> sendCallAnswer(String roomId, String callId) async {
@@ -103,7 +103,7 @@ class CallSignalingService {
       'call_id': callId,
       'version': 1,
     }, type: kCallAnswer,);
-    debugPrint('[Lattice] Sent m.call.answer for call $callId in $roomId');
+    debugPrint('[Kohera] Sent m.call.answer for call $callId in $roomId');
   }
 
   Future<void> sendCallReject(String roomId, String callId) async {
@@ -113,7 +113,7 @@ class CallSignalingService {
       'call_id': callId,
       'version': 1,
     }, type: kCallReject,);
-    debugPrint('[Lattice] Sent m.call.reject for call $callId in $roomId');
+    debugPrint('[Kohera] Sent m.call.reject for call $callId in $roomId');
   }
 
   Future<void> sendCallHangup(
@@ -128,7 +128,7 @@ class CallSignalingService {
       'version': 1,
       'reason': reason,
     }, type: kCallHangup,);
-    debugPrint('[Lattice] Sent m.call.hangup ($reason) for call $callId in $roomId');
+    debugPrint('[Kohera] Sent m.call.hangup ($reason) for call $callId in $roomId');
   }
 
   // ── Listener ───────────────────────────────────────────────
@@ -141,7 +141,7 @@ class CallSignalingService {
     _getActiveCallId = getActiveCallId;
     _getCallState = getCallState;
     _signalingEventSub = _client.onTimelineEvent.stream.listen(_onTimelineEvent);
-    debugPrint('[Lattice] Call signaling listener started');
+    debugPrint('[Kohera] Call signaling listener started');
   }
 
   void stopSignalingListener() {
@@ -198,7 +198,7 @@ class CallSignalingService {
     final lifetime = content.tryGet<int>('lifetime') ?? 60000;
     final expiresAt = event.originServerTs.millisecondsSinceEpoch + lifetime;
     if (DateTime.now().millisecondsSinceEpoch > expiresAt) {
-      debugPrint('[Lattice] Ignoring stale call invite $callId');
+      debugPrint('[Kohera] Ignoring stale call invite $callId');
       return null;
     }
 
@@ -213,7 +213,7 @@ class CallSignalingService {
       isVideo: isVideo,
     );
 
-    debugPrint('[Lattice] Incoming call $callId from ${sender.calcDisplayname()}');
+    debugPrint('[Kohera] Incoming call $callId from ${sender.calcDisplayname()}');
     return IncomingInvite(info: info, callId: callId);
   }
 
@@ -225,11 +225,11 @@ class CallSignalingService {
 
     final iWin = myUserId.compareTo(theirUserId) < 0;
     if (iWin) {
-      debugPrint('[Lattice] Glare: I win, ignoring their invite');
+      debugPrint('[Kohera] Glare: I win, ignoring their invite');
       return;
     }
 
-    debugPrint('[Lattice] Glare: I lose, accepting their invite');
+    debugPrint('[Kohera] Glare: I lose, accepting their invite');
     final myCallId = _getActiveCallId();
     final roomId = event.roomId!;
     if (myCallId != null) {
@@ -248,7 +248,7 @@ class CallSignalingService {
     if (callId == null || callId != activeCallId) return;
     if (_getCallState() != 'ringingOutgoing') return;
 
-    debugPrint('[Lattice] Call $callId answered');
+    debugPrint('[Kohera] Call $callId answered');
     _eventController.add(AnswerReceived(roomId: event.roomId!, callId: callId));
   }
 
@@ -258,7 +258,7 @@ class CallSignalingService {
     if (callId == null || callId != activeCallId) return;
     if (_getCallState() != 'ringingOutgoing') return;
 
-    debugPrint('[Lattice] Call $callId rejected');
+    debugPrint('[Kohera] Call $callId rejected');
     _eventController.add(RejectReceived(callId: callId));
   }
 
@@ -267,7 +267,7 @@ class CallSignalingService {
     final activeCallId = _getActiveCallId();
     if (callId == null || callId != activeCallId) return;
 
-    debugPrint('[Lattice] Call $callId remote hangup');
+    debugPrint('[Kohera] Call $callId remote hangup');
     _eventController.add(HangupReceived(callId: callId));
   }
 

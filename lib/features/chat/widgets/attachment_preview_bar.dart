@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'package:lattice/core/models/pending_attachment.dart';
+import 'package:kohera/core/models/pending_attachment.dart';
 
 // coverage:ignore-start
 

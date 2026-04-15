@@ -2,8 +2,8 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:lattice/core/models/pending_attachment.dart';
-import 'package:lattice/features/chat/widgets/paste_image_handler.dart';
+import 'package:kohera/core/models/pending_attachment.dart';
+import 'package:kohera/features/chat/widgets/paste_image_handler.dart';
 
 void main() {
   group('generatePasteFilename', () {

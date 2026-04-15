@@ -47,10 +47,10 @@ class NotificationService: UNNotificationServiceExtension {
         eventId: String,
         roomId: String
     ) async {
-        guard let accessToken = SharedKeychainReader.read(key: "lattice_default_access_token"),
-              let homeserver = SharedKeychainReader.read(key: "lattice_default_homeserver"),
-              let userId = SharedKeychainReader.read(key: "lattice_default_user_id") else {
-            NSLog("[LatticeNSE] Missing credentials in shared keychain")
+        guard let accessToken = SharedKeychainReader.read(key: "kohera_default_access_token"),
+              let homeserver = SharedKeychainReader.read(key: "kohera_default_homeserver"),
+              let userId = SharedKeychainReader.read(key: "kohera_default_user_id") else {
+            NSLog("[KoheraNSE] Missing credentials in shared keychain")
             return
         }
 
@@ -60,7 +60,7 @@ class NotificationService: UNNotificationServiceExtension {
             eventId: eventId,
             accessToken: accessToken
         ) else {
-            NSLog("[LatticeNSE] Failed to fetch event %@", eventId)
+            NSLog("[KoheraNSE] Failed to fetch event %@", eventId)
             return
         }
 

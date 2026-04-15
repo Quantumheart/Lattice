@@ -1,8 +1,8 @@
 # CLAUDE.md
 
-## What is Lattice?
+## What is Kohera?
 
-Lattice is a Flutter Matrix chat client. It uses the `matrix` Dart SDK for the Matrix protocol, Provider (ChangeNotifier) for state management, GoRouter for navigation, and Material You dynamic color theming. It supports E2EE, voice/video calling (LiveKit), multi-account, and runs on Linux, macOS, and web.
+Kohera is a Flutter Matrix chat client. It uses the `matrix` Dart SDK for the Matrix protocol, Provider (ChangeNotifier) for state management, GoRouter for navigation, and Material You dynamic color theming. It supports E2EE, voice/video calling (LiveKit), multi-account, and runs on Linux, macOS, and web.
 
 ## How to work with this project
 
@@ -28,5 +28,5 @@ See `agent_docs/architecture.md` for detailed architecture, routing, responsive 
 ## Conventions
 
 - **Commits:** `feat:`, `fix:`, `refactor:`, `style:`, `docs:`, `test:`, `chore:`
-- **Logging:** `debugPrint('[Lattice] ...')` prefix for all log messages
+- **Logging:** `debugPrint('[Kohera] ...')` prefix for all log messages
 - **No comments** -- code should be self-descriptive. Section markers (`// ── Section Name ──────`) are the exception.

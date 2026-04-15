@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:lattice/core/models/server_auth_capabilities.dart';
-import 'package:lattice/core/services/client_manager.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/features/auth/services/sso_callback_server.dart';
-import 'package:lattice/features/auth/widgets/registration_controller.dart' show RegistrationController;
+import 'package:kohera/core/models/server_auth_capabilities.dart';
+import 'package:kohera/core/services/client_manager.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/features/auth/services/sso_callback_server.dart';
+import 'package:kohera/features/auth/widgets/registration_controller.dart' show RegistrationController;
 
 // ── LoginState ──────────────────────────────────────────────────────────────
 
@@ -123,7 +123,7 @@ class LoginController extends ChangeNotifier {
         queryParameters: {'redirectUrl': callbackUrl},
       );
 
-      debugPrint('[Lattice] Opening SSO URL: $ssoUrl');
+      debugPrint('[Kohera] Opening SSO URL: $ssoUrl');
 
       await server.launch(ssoUrl);
 

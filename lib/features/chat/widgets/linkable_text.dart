@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:lattice/core/utils/emoji_spans.dart';
+import 'package:kohera/core/utils/emoji_spans.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// A text widget that detects URLs and renders them as tappable, styled links.

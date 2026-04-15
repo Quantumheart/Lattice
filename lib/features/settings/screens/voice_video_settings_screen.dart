@@ -3,13 +3,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/core/services/call_service.dart';
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/core/utils/platform_info.dart';
-import 'package:lattice/features/settings/widgets/mic_level_indicator.dart';
-import 'package:lattice/features/settings/widgets/push_to_talk_key_editor.dart';
-import 'package:lattice/shared/widgets/section_header.dart';
+import 'package:kohera/core/routing/route_names.dart';
+import 'package:kohera/core/services/call_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/core/utils/platform_info.dart';
+import 'package:kohera/features/settings/widgets/mic_level_indicator.dart';
+import 'package:kohera/features/settings/widgets/push_to_talk_key_editor.dart';
+import 'package:kohera/shared/widgets/section_header.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
 import 'package:provider/provider.dart';
 
@@ -43,7 +43,7 @@ class _VoiceVideoSettingsScreenState extends State<VoiceVideoSettingsScreen> {
         unawaited(_loadDevices());
       });
     } catch (e) {
-      debugPrint('[Lattice] Failed to initialize audio device monitoring: $e');
+      debugPrint('[Kohera] Failed to initialize audio device monitoring: $e');
     }
   }
 
@@ -82,7 +82,7 @@ class _VoiceVideoSettingsScreenState extends State<VoiceVideoSettingsScreen> {
         _clearStaleDevices();
       }
     } catch (e) {
-      debugPrint('[Lattice] Failed to enumerate audio devices: $e');
+      debugPrint('[Kohera] Failed to enumerate audio devices: $e');
     }
   }
 

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:lattice/core/models/pending_attachment.dart';
-import 'package:lattice/core/models/upload_state.dart';
-import 'package:lattice/core/utils/reply_fallback.dart';
-import 'package:lattice/features/chat/widgets/paste_image_handler.dart';
+import 'package:kohera/core/models/pending_attachment.dart';
+import 'package:kohera/core/models/upload_state.dart';
+import 'package:kohera/core/utils/reply_fallback.dart';
+import 'package:kohera/features/chat/widgets/paste_image_handler.dart';
 import 'package:matrix/matrix.dart';
 
 enum AddAttachmentResult { ok, tooMany, tooLarge }

@@ -26,7 +26,7 @@ class AppLogoHeader extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        Text('Lattice', style: tt.displayLarge),
+        Text('Kohera', style: tt.displayLarge),
         const SizedBox(height: 4),
         Text(subtitle, style: tt.bodyMedium),
         const SizedBox(height: 40),

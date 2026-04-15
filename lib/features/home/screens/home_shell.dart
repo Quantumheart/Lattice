@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lattice/core/services/call_service.dart';
-import 'package:lattice/core/services/sub_services/selection_service.dart';
-import 'package:lattice/features/calling/widgets/voice_banner.dart';
-import 'package:lattice/features/e2ee/widgets/key_backup_banner.dart';
-import 'package:lattice/features/home/widgets/narrow_layout.dart';
-import 'package:lattice/features/home/widgets/wide_layout.dart';
-import 'package:lattice/features/spaces/widgets/space_reparent_controller.dart';
+import 'package:kohera/core/services/call_service.dart';
+import 'package:kohera/core/services/sub_services/selection_service.dart';
+import 'package:kohera/features/calling/widgets/voice_banner.dart';
+import 'package:kohera/features/e2ee/widgets/key_backup_banner.dart';
+import 'package:kohera/features/home/widgets/narrow_layout.dart';
+import 'package:kohera/features/home/widgets/wide_layout.dart';
+import 'package:kohera/features/spaces/widgets/space_reparent_controller.dart';
 import 'package:provider/provider.dart';
 
 // coverage:ignore-start
@@ -88,7 +88,7 @@ class _HomeShellState extends State<HomeShell> {
 
     final selection = context.read<SelectionService>();
     context.select<SelectionService, int>((s) => Object.hashAll(s.spaces.map((sp) => sp.id)));
-    context.select<CallService, (LatticeCallState, String?)>(
+    context.select<CallService, (KoheraCallState, String?)>(
       (s) => (s.callState, s.activeCallRoomId),
     );
 

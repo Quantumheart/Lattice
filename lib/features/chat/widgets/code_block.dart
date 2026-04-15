@@ -23,7 +23,7 @@ import 'package:highlight/languages/swift.dart' as lang_swift;
 import 'package:highlight/languages/typescript.dart' as lang_ts;
 import 'package:highlight/languages/xml.dart' as lang_xml;
 import 'package:highlight/languages/yaml.dart' as lang_yaml;
-import 'package:lattice/features/chat/widgets/html_message_text.dart' show HtmlMessageText;
+import 'package:kohera/features/chat/widgets/html_message_text.dart' show HtmlMessageText;
 
 /// Renders a fenced code block with syntax highlighting and a copy button.
 ///

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:lattice/core/utils/format_duration.dart';
+import 'package:kohera/core/utils/format_duration.dart';
 
 void main() {
   group('formatDuration', () {

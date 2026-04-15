@@ -2,8 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:lattice/features/calling/models/call_state.dart';
-import 'package:lattice/features/calling/services/livekit_service.dart';
+import 'package:kohera/features/calling/models/call_state.dart';
+import 'package:kohera/features/calling/services/livekit_service.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
 import 'package:matrix/matrix.dart';
 import 'package:mockito/annotations.dart';
@@ -62,7 +62,7 @@ void main() {
     await service.connectLiveKit(
       livekitServiceUrl: serviceUrl,
       livekitAlias: alias,
-      currentState: () => LatticeCallState.joining,
+      currentState: () => KoheraCallState.joining,
     );
 
     changedCount = 0;
@@ -139,8 +139,8 @@ void main() {
         currentState: () {
           callCount++;
           return callCount <= 1
-              ? LatticeCallState.idle
-              : LatticeCallState.joining;
+              ? KoheraCallState.idle
+              : KoheraCallState.joining;
         },
       );
 
@@ -169,8 +169,8 @@ void main() {
         currentState: () {
           callCount++;
           return callCount <= 1
-              ? LatticeCallState.joining
-              : LatticeCallState.idle;
+              ? KoheraCallState.joining
+              : KoheraCallState.idle;
         },
       );
 
@@ -196,7 +196,7 @@ void main() {
       await service.connectLiveKit(
         livekitServiceUrl: 'https://lk.example.com',
         livekitAlias: '!room:example.com',
-        currentState: () => LatticeCallState.joining,
+        currentState: () => KoheraCallState.joining,
       );
 
       expect(fakeRoom.connected, isTrue);
@@ -219,7 +219,7 @@ void main() {
       await service.connectLiveKit(
         livekitServiceUrl: 'https://lk.example.com',
         livekitAlias: '!room:example.com',
-        currentState: () => LatticeCallState.joining,
+        currentState: () => KoheraCallState.joining,
       );
 
       expect(fakeRoom.connected, isTrue);
@@ -237,7 +237,7 @@ void main() {
         () => service.connectLiveKit(
           livekitServiceUrl: 'https://lk.example.com',
           livekitAlias: '!room:example.com',
-          currentState: () => LatticeCallState.joining,
+          currentState: () => KoheraCallState.joining,
         ),
         throwsA(isA<Exception>().having(
           (e) => e.toString(),
@@ -268,7 +268,7 @@ void main() {
       await service.connectLiveKit(
         livekitServiceUrl: 'https://lk.example.com',
         livekitAlias: '!room:example.com',
-        currentState: () => LatticeCallState.joining,
+        currentState: () => KoheraCallState.joining,
       );
 
       expect(capturedBody, isNotNull);
@@ -310,7 +310,7 @@ void main() {
       await service.connectLiveKit(
         livekitServiceUrl: 'https://lk.example.com',
         livekitAlias: '!room:example.com',
-        currentState: () => LatticeCallState.joining,
+        currentState: () => KoheraCallState.joining,
       );
 
       expect(requestCount, 2);
@@ -337,7 +337,7 @@ void main() {
       await service.connectLiveKit(
         livekitServiceUrl: 'https://lk.example.com',
         livekitAlias: '!room:example.com',
-        currentState: () => LatticeCallState.joining,
+        currentState: () => KoheraCallState.joining,
       );
 
       expect(requestCount, 2);
@@ -363,7 +363,7 @@ void main() {
       await service.connectLiveKit(
         livekitServiceUrl: 'https://lk.example.com',
         livekitAlias: '!room:example.com',
-        currentState: () => LatticeCallState.joining,
+        currentState: () => KoheraCallState.joining,
       );
 
       expect(requestCount, 2);
@@ -389,7 +389,7 @@ void main() {
       await service.connectLiveKit(
         livekitServiceUrl: 'https://lk.example.com',
         livekitAlias: '!room:example.com',
-        currentState: () => LatticeCallState.joining,
+        currentState: () => KoheraCallState.joining,
       );
 
       expect(requestCount, 4);
@@ -405,7 +405,7 @@ void main() {
         () => service.connectLiveKit(
           livekitServiceUrl: 'https://lk.example.com',
           livekitAlias: '!room:example.com',
-          currentState: () => LatticeCallState.joining,
+          currentState: () => KoheraCallState.joining,
         ),
         throwsA(isA<Exception>().having(
           (e) => e.toString(),
@@ -424,7 +424,7 @@ void main() {
         () => service.connectLiveKit(
           livekitServiceUrl: 'https://lk.example.com',
           livekitAlias: '!room:example.com',
-          currentState: () => LatticeCallState.joining,
+          currentState: () => KoheraCallState.joining,
         ),
         throwsA(isA<Exception>().having(
           (e) => e.toString(),
@@ -456,7 +456,7 @@ void main() {
       await service.connectLiveKit(
         livekitServiceUrl: 'https://lk.example.com',
         livekitAlias: '!room:example.com',
-        currentState: () => LatticeCallState.joining,
+        currentState: () => KoheraCallState.joining,
       );
 
       expect(secondUrl?.host, 'lk.example.com');
@@ -1048,7 +1048,7 @@ void main() {
       await service.connectLiveKit(
         livekitServiceUrl: 'https://lk.example.com/',
         livekitAlias: '!room:example.com',
-        currentState: () => LatticeCallState.joining,
+        currentState: () => KoheraCallState.joining,
       );
 
       expect(capturedUrl?.path, '/sfu/get');
@@ -1071,7 +1071,7 @@ void main() {
       await service.connectLiveKit(
         livekitServiceUrl: 'https://lk.example.com',
         livekitAlias: '!room:example.com',
-        currentState: () => LatticeCallState.joining,
+        currentState: () => KoheraCallState.joining,
       );
 
       expect(capturedUrl?.path, '/sfu/get');
@@ -1107,7 +1107,7 @@ void main() {
       await service.connectLiveKit(
         livekitServiceUrl: 'https://lk.example.com',
         livekitAlias: '!room:example.com',
-        currentState: () => LatticeCallState.joining,
+        currentState: () => KoheraCallState.joining,
       );
 
       expect(capturedBody!['device_id'], 'DEVICE2');

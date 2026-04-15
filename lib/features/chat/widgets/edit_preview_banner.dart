@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lattice/core/utils/reply_fallback.dart';
+import 'package:kohera/core/utils/reply_fallback.dart';
 import 'package:matrix/matrix.dart';
 
 class EditPreviewBanner extends StatelessWidget {

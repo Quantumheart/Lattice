@@ -1,7 +1,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/features/calling/models/call_constants.dart';
-import 'package:lattice/features/calling/services/call_signaling_service.dart';
+import 'package:kohera/features/calling/models/call_constants.dart';
+import 'package:kohera/features/calling/services/call_signaling_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mockito/annotations.dart';

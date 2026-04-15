@@ -1,8 +1,8 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:html/parser.dart' as html_parser;
-import 'package:lattice/features/chat/widgets/html_span_builder.dart';
-import 'package:lattice/features/chat/widgets/linkable_span_builder.dart';
+import 'package:kohera/features/chat/widgets/html_span_builder.dart';
+import 'package:kohera/features/chat/widgets/linkable_span_builder.dart';
 import 'package:matrix/matrix.dart';
 
 class HtmlMessageText extends StatefulWidget {

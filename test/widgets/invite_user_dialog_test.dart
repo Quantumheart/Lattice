@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/features/rooms/widgets/invite_user_dialog.dart';
+import 'package:kohera/features/rooms/widgets/invite_user_dialog.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mockito/annotations.dart';
 

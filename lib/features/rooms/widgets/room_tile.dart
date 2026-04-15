@@ -2,24 +2,24 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/core/services/call_service.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/core/services/sub_services/selection_service.dart';
-import 'package:lattice/core/utils/notification_filter.dart';
-import 'package:lattice/core/utils/order_utils.dart' as order_utils;
-import 'package:lattice/core/utils/platform_info.dart';
-import 'package:lattice/core/utils/reply_fallback.dart';
-import 'package:lattice/features/calling/models/call_constants.dart';
-import 'package:lattice/features/calling/services/call_navigator.dart';
-import 'package:lattice/features/calling/widgets/call_state_views.dart'
+import 'package:kohera/core/routing/route_names.dart';
+import 'package:kohera/core/services/call_service.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/core/services/sub_services/selection_service.dart';
+import 'package:kohera/core/utils/notification_filter.dart';
+import 'package:kohera/core/utils/order_utils.dart' as order_utils;
+import 'package:kohera/core/utils/platform_info.dart';
+import 'package:kohera/core/utils/reply_fallback.dart';
+import 'package:kohera/features/calling/models/call_constants.dart';
+import 'package:kohera/features/calling/services/call_navigator.dart';
+import 'package:kohera/features/calling/widgets/call_state_views.dart'
     show formatCallElapsed;
-import 'package:lattice/features/chat/widgets/typing_indicator.dart' show TypingIndicator;
-import 'package:lattice/features/rooms/widgets/room_context_menu.dart';
-import 'package:lattice/features/spaces/widgets/space_reparent_controller.dart';
-import 'package:lattice/shared/widgets/room_avatar.dart';
-import 'package:lattice/shared/widgets/user_avatar.dart';
+import 'package:kohera/features/chat/widgets/typing_indicator.dart' show TypingIndicator;
+import 'package:kohera/features/rooms/widgets/room_context_menu.dart';
+import 'package:kohera/features/spaces/widgets/space_reparent_controller.dart';
+import 'package:kohera/shared/widgets/room_avatar.dart';
+import 'package:kohera/shared/widgets/user_avatar.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
@@ -96,7 +96,7 @@ class _RoomTileState extends State<RoomTile> {
     final hasMenu = widget.hasContextMenu;
 
     final isUserInThisCall = callService.activeCallRoomId == room.id &&
-        callService.callState == LatticeCallState.connected;
+        callService.callState == KoheraCallState.connected;
     final hasActiveCall = callService.roomHasActiveCall(room.id) ||
         isUserInThisCall;
 
@@ -551,7 +551,7 @@ class _CallParticipantList extends StatelessWidget {
     final myUserId = client.userID;
     final participantIds = callService.callParticipantUserIds(roomId).toList();
     final isConnected = callService.activeCallRoomId == roomId &&
-        callService.callState == LatticeCallState.connected;
+        callService.callState == KoheraCallState.connected;
 
     if (myUserId != null) {
       if (isConnected) {
@@ -764,14 +764,14 @@ class _ReorderDragTargetState extends State<_ReorderDragTarget> {
 
       final newOrder = order_utils.midpoint(neighborBefore, neighborAfter);
       if (newOrder == null) {
-        debugPrint('[Lattice] Could not compute order midpoint for drag');
+        debugPrint('[Kohera] Could not compute order midpoint for drag');
         return;
       }
 
       await space.setSpaceChild(data.roomId, order: newOrder);
       selection.invalidateSpaceTree();
     } catch (e) {
-      debugPrint('[Lattice] Drag reorder failed: $e');
+      debugPrint('[Kohera] Drag reorder failed: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to reorder: $e')),

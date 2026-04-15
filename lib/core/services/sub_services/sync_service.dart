@@ -43,7 +43,7 @@ class SyncService extends ChangeNotifier {
       _autoUnlockError = null;
       return _onPostSyncBackup();
     }).catchError((Object e) {
-      debugPrint('[Lattice] Background E2EE auto-unlock error: $e');
+      debugPrint('[Kohera] Background E2EE auto-unlock error: $e');
       if (_disposed) return;
       _autoUnlockError = e.toString();
       notifyListeners();
@@ -53,7 +53,7 @@ class SyncService extends ChangeNotifier {
       await firstSync.future.timeout(
         timeout,
         onTimeout: () {
-          debugPrint('[Lattice] First sync timed out after ${timeout.inSeconds}s');
+          debugPrint('[Kohera] First sync timed out after ${timeout.inSeconds}s');
           throw TimeoutException('Initial sync timed out. Check your connection.');
         },
       );

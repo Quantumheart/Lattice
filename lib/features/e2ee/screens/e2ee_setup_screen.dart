@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/sub_services/chat_backup_service.dart';
-import 'package:lattice/features/e2ee/widgets/bootstrap_controller.dart';
-import 'package:lattice/features/e2ee/widgets/key_verification_inline.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/sub_services/chat_backup_service.dart';
+import 'package:kohera/features/e2ee/widgets/bootstrap_controller.dart';
+import 'package:kohera/features/e2ee/widgets/key_verification_inline.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
@@ -600,7 +600,7 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
           ),
           const SizedBox(height: 16),
           const Text(
-            'Open Lattice on another device and confirm the emoji match.',
+            'Open Kohera on another device and confirm the emoji match.',
           ),
           const SizedBox(height: 24),
           KeyVerificationInline(

@@ -1,6 +1,6 @@
 import 'package:go_router/go_router.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/preferences_service.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
 
 class WebPushService {
   WebPushService({

@@ -80,7 +80,7 @@ class RtcMembershipService {
         livekitAlias,
         livekitServiceUrl: livekitServiceUrl,
       ).catchError(
-        (Object e) => debugPrint('[Lattice] Failed to renew membership: $e'),
+        (Object e) => debugPrint('[Kohera] Failed to renew membership: $e'),
       ),
     );
   }

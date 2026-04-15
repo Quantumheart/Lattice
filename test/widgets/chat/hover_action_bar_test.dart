@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/features/chat/widgets/hover_action_bar.dart';
+import 'package:kohera/features/chat/widgets/hover_action_bar.dart';
 
 void main() {
   Widget buildTestWidget({

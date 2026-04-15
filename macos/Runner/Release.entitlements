@@ -6,7 +6,7 @@
 	<true/>
 	<key>com.apple.security.keychain-access-groups</key>
 	<array>
-		<string>$(AppIdentifierPrefix)io.github.quantumheart.lattice</string>
+		<string>$(AppIdentifierPrefix)io.github.quantumheart.kohera</string>
 	</array>
 	<key>com.apple.security.network.client</key>
 	<true/>

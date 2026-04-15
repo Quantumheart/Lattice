@@ -65,7 +65,7 @@ class TypingController {
     try {
       await room.setTyping(typing, timeout: typing ? _inactivityTimeout.inMilliseconds : null);
     } catch (e) {
-      debugPrint('[Lattice] Failed to set typing: $e');
+      debugPrint('[Kohera] Failed to set typing: $e');
     }
   }
 }

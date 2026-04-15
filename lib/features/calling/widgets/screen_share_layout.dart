@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:lattice/features/calling/models/call_participant.dart';
-import 'package:lattice/features/calling/widgets/participant_tile.dart';
+import 'package:kohera/features/calling/models/call_participant.dart';
+import 'package:kohera/features/calling/widgets/participant_tile.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
 
 // coverage:ignore-start

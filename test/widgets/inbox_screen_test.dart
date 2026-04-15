@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/sub_services/selection_service.dart';
-import 'package:lattice/features/home/widgets/inbox_screen.dart';
-import 'package:lattice/features/notifications/services/inbox_controller.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/sub_services/selection_service.dart';
+import 'package:kohera/features/home/widgets/inbox_screen.dart';
+import 'package:kohera/features/notifications/services/inbox_controller.dart';
 import 'package:matrix/matrix.dart' as matrix_sdk;
 import 'package:matrix/matrix.dart' show Client, GetNotificationsResponse, MatrixEvent, Membership, Room, SyncUpdate, User;
 import 'package:matrix/src/utils/cached_stream_controller.dart';

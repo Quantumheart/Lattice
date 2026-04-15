@@ -1,4 +1,4 @@
-import 'package:lattice/features/rooms/services/room_list_search_controller.dart';
+import 'package:kohera/features/rooms/services/room_list_search_controller.dart';
 import 'package:matrix/matrix.dart';
 
 // ── List item types for the flat interleaved list ──────────

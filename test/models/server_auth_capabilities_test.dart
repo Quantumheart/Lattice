@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/core/models/server_auth_capabilities.dart';
+import 'package:kohera/core/models/server_auth_capabilities.dart';
 
 void main() {
   group('ServerAuthCapabilities', () {

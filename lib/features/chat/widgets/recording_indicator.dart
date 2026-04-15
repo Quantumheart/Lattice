@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import 'package:lattice/core/utils/format_duration.dart';
-import 'package:lattice/features/chat/services/voice_recording_controller.dart';
+import 'package:kohera/core/utils/format_duration.dart';
+import 'package:kohera/features/chat/services/voice_recording_controller.dart';
 
 // coverage:ignore-start
 

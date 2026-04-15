@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart';
-import 'package:lattice/core/services/matrix_service.dart';
+import 'package:kohera/core/services/matrix_service.dart';
 import 'package:matrix/encryption.dart';
 
 class RecoveryKeyHandler {

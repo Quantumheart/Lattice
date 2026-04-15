@@ -5,17 +5,17 @@ import 'package:cached_network_image_platform_interface/cached_network_image_pla
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/core/services/client_manager.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/core/services/sub_services/selection_service.dart';
-import 'package:lattice/core/utils/media_auth.dart';
-import 'package:lattice/features/notifications/services/inbox_controller.dart';
-import 'package:lattice/features/rooms/widgets/invite_dialog.dart';
-import 'package:lattice/features/spaces/widgets/space_action_dialog.dart';
-import 'package:lattice/features/spaces/widgets/space_context_menu.dart';
-import 'package:lattice/shared/widgets/user_avatar.dart';
+import 'package:kohera/core/routing/route_names.dart';
+import 'package:kohera/core/services/client_manager.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/core/services/sub_services/selection_service.dart';
+import 'package:kohera/core/utils/media_auth.dart';
+import 'package:kohera/features/notifications/services/inbox_controller.dart';
+import 'package:kohera/features/rooms/widgets/invite_dialog.dart';
+import 'package:kohera/features/spaces/widgets/space_action_dialog.dart';
+import 'package:kohera/features/spaces/widgets/space_context_menu.dart';
+import 'package:kohera/shared/widgets/user_avatar.dart';
 import 'package:matrix/matrix.dart' hide Visibility;
 import 'package:provider/provider.dart';
 
@@ -377,7 +377,7 @@ class _RailIconState extends State<_RailIcon> {
         setState(() => _resolvedUrl = uri.toString());
       }
     } catch (e) {
-      debugPrint('[Lattice] Failed to resolve space avatar thumbnail: $e');
+      debugPrint('[Kohera] Failed to resolve space avatar thumbnail: $e');
     }
   }
 
@@ -557,7 +557,7 @@ class _AccountButtonState extends State<_AccountButton> {
       final profile = await client.fetchOwnProfile();
       if (mounted) setState(() => _avatarUrl = profile.avatarUrl);
     } catch (e) {
-      debugPrint('[Lattice] Failed to fetch profile: $e');
+      debugPrint('[Kohera] Failed to fetch profile: $e');
     }
   }
 

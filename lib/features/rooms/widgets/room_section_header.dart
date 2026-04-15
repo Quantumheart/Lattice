@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/core/services/sub_services/selection_service.dart';
-import 'package:lattice/features/rooms/widgets/new_room_dialog.dart';
-import 'package:lattice/features/rooms/widgets/room_list_models.dart';
-import 'package:lattice/features/spaces/widgets/create_subspace_dialog.dart';
-import 'package:lattice/features/spaces/widgets/space_reparent_controller.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/core/services/sub_services/selection_service.dart';
+import 'package:kohera/features/rooms/widgets/new_room_dialog.dart';
+import 'package:kohera/features/rooms/widgets/room_list_models.dart';
+import 'package:kohera/features/spaces/widgets/create_subspace_dialog.dart';
+import 'package:kohera/features/spaces/widgets/space_reparent_controller.dart';
 import 'package:provider/provider.dart';
 
 // ── Popup menu actions ──────────────────────────────────────
@@ -266,7 +266,7 @@ class RoomSectionHeader extends StatelessWidget {
 
       selection.invalidateSpaceTree();
     } catch (e) {
-      debugPrint('[Lattice] Reparent failed: $e');
+      debugPrint('[Kohera] Reparent failed: $e');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to move: $e')),

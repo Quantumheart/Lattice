@@ -2,13 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:lattice/core/services/call_service.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/core/utils/notification_filter.dart';
-import 'package:lattice/core/utils/platform_info.dart';
-import 'package:lattice/features/notifications/models/notification_constants.dart';
-import 'package:lattice/features/notifications/services/notification_service.dart';
+import 'package:kohera/core/services/call_service.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/core/utils/notification_filter.dart';
+import 'package:kohera/core/utils/platform_info.dart';
+import 'package:kohera/features/notifications/models/notification_constants.dart';
+import 'package:kohera/features/notifications/services/notification_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:unifiedpush/unifiedpush.dart';
 
@@ -52,7 +52,7 @@ class PushService {
       await UnifiedPush.saveDistributor(savedDistributor);
     }
 
-    debugPrint('[Lattice] PushService initialized');
+    debugPrint('[Kohera] PushService initialized');
   }
 
   // ── Registration ─────────────────────────────────────────────
@@ -63,12 +63,12 @@ class PushService {
 
     final hasDistributor = await UnifiedPush.tryUseCurrentOrDefaultDistributor();
     if (!hasDistributor) {
-      debugPrint('[Lattice] No UnifiedPush distributor available');
+      debugPrint('[Kohera] No UnifiedPush distributor available');
       return;
     }
 
     await UnifiedPush.register();
-    debugPrint('[Lattice] UnifiedPush registration requested');
+    debugPrint('[Kohera] UnifiedPush registration requested');
   }
 
   Future<void> unregister() async {
@@ -76,32 +76,32 @@ class PushService {
     try {
       await _unregisterPusher();
     } catch (e) {
-      debugPrint('[Lattice] Failed to unregister pusher: $e');
+      debugPrint('[Kohera] Failed to unregister pusher: $e');
     }
     try {
       await UnifiedPush.unregister();
     } catch (e) {
-      debugPrint('[Lattice] Failed to unregister from distributor: $e');
+      debugPrint('[Kohera] Failed to unregister from distributor: $e');
     }
     _currentEndpoint = null;
-    debugPrint('[Lattice] UnifiedPush unregistered');
+    debugPrint('[Kohera] UnifiedPush unregistered');
   }
 
   // ── UnifiedPush callbacks ────────────────────────────────────
 
   void _onNewEndpoint(PushEndpoint endpoint, String instance) {
     final url = endpoint.url;
-    debugPrint('[Lattice] New push endpoint: $url');
+    debugPrint('[Kohera] New push endpoint: $url');
     _currentEndpoint = url;
     unawaited(_registerPusher(url));
   }
 
   void _onRegistrationFailed(FailedReason reason, String instance) {
-    debugPrint('[Lattice] Push registration failed: $reason');
+    debugPrint('[Kohera] Push registration failed: $reason');
   }
 
   void _onUnregistered(String instance) {
-    debugPrint('[Lattice] Push unregistered by distributor');
+    debugPrint('[Kohera] Push unregistered by distributor');
     _currentEndpoint = null;
   }
 
@@ -135,7 +135,7 @@ class PushService {
       ),
       append: true,
     );
-    debugPrint('[Lattice] Pusher registered with gateway $gatewayUrl');
+    debugPrint('[Kohera] Pusher registered with gateway $gatewayUrl');
   }
 
   Future<void> _unregisterPusher() async {
@@ -146,7 +146,7 @@ class PushService {
     await client.deletePusher(
       PusherId(appId: _appId, pushkey: endpoint),
     );
-    debugPrint('[Lattice] Pusher unregistered from homeserver');
+    debugPrint('[Kohera] Pusher unregistered from homeserver');
   }
 
   // ── Push message processing ──────────────────────────────────
@@ -186,7 +186,7 @@ class PushService {
       try {
         matrixEvent = await client.getOneRoomEvent(roomId, eventId);
       } catch (e) {
-        debugPrint('[Lattice] Failed to fetch push event: $e');
+        debugPrint('[Kohera] Failed to fetch push event: $e');
         await notificationService.showPushNotification(
           roomId: roomId,
           title: room?.getLocalizedDisplayname() ??
@@ -213,7 +213,7 @@ class PushService {
 
       await _handleMessageEvent(room, matrixEvent);
     } catch (e) {
-      debugPrint('[Lattice] Push message processing error: $e');
+      debugPrint('[Kohera] Push message processing error: $e');
     }
   }
 
@@ -279,7 +279,7 @@ class PushService {
           .timeout(const Duration(seconds: 3));
       return decrypted?.body ?? NotificationText.encryptedMessage;
     } catch (e) {
-      debugPrint('[Lattice] Push decryption failed: $e');
+      debugPrint('[Kohera] Push decryption failed: $e');
       return NotificationText.encryptedMessage;
     }
   }

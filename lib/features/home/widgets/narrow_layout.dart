@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/features/spaces/widgets/space_rail.dart';
+import 'package:kohera/core/routing/route_names.dart';
+import 'package:kohera/features/spaces/widgets/space_rail.dart';
 
 // coverage:ignore-start
 

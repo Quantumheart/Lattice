@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:lattice/core/utils/media_cache_io.dart'
-    if (dart.library.js_interop) 'package:lattice/core/utils/media_cache_web.dart';
-import 'package:lattice/features/chat/services/voice_recording_service.dart';
+import 'package:kohera/core/utils/media_cache_io.dart'
+    if (dart.library.js_interop) 'package:kohera/core/utils/media_cache_web.dart';
+import 'package:kohera/features/chat/services/voice_recording_service.dart';
 import 'package:path_provider/path_provider.dart';
 
 // coverage:ignore-start
@@ -43,7 +43,7 @@ class VoiceRecordingController extends ChangeNotifier {
     } else {
       final dir = await getTemporaryDirectory();
       _filePath =
-          '${dir.path}/lattice_voice_${DateTime.now().millisecondsSinceEpoch}.mp3';
+          '${dir.path}/kohera_voice_${DateTime.now().millisecondsSinceEpoch}.mp3';
     }
 
     await _service.start(_filePath!);

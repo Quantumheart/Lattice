@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lattice/core/services/call_service.dart';
-import 'package:lattice/features/calling/widgets/voice_banner.dart';
+import 'package:kohera/core/services/call_service.dart';
+import 'package:kohera/features/calling/widgets/voice_banner.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
 
@@ -19,7 +19,7 @@ void main() {
     mockRoom = MockRoom();
 
     when(mockCallService.client).thenReturn(mockClient);
-    when(mockCallService.callState).thenReturn(LatticeCallState.idle);
+    when(mockCallService.callState).thenReturn(KoheraCallState.idle);
     when(mockCallService.activeCallRoomId).thenReturn(null);
   });
 
@@ -52,7 +52,7 @@ void main() {
 
     testWidgets('hidden when user is viewing the same room as active call',
         (tester) async {
-      when(mockCallService.callState).thenReturn(LatticeCallState.connected);
+      when(mockCallService.callState).thenReturn(KoheraCallState.connected);
       when(mockCallService.activeCallRoomId).thenReturn('!room:example.com');
 
       await tester.pumpWidget(
@@ -65,7 +65,7 @@ void main() {
 
     testWidgets('visible when user is in call but viewing different room',
         (tester) async {
-      when(mockCallService.callState).thenReturn(LatticeCallState.connected);
+      when(mockCallService.callState).thenReturn(KoheraCallState.connected);
       when(mockCallService.activeCallRoomId).thenReturn('!call-room:example.com');
       when(mockCallService.callElapsed)
           .thenReturn(const Duration(minutes: 1, seconds: 30));

@@ -151,10 +151,10 @@ import UserNotifications
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
 
-    guard let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "LatticeApnsPlugin") else { return }
+    guard let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "KoheraApnsPlugin") else { return }
     let messenger = registrar.messenger()
 
-    apnsChannel = FlutterMethodChannel(name: "lattice/apns", binaryMessenger: messenger)
+    apnsChannel = FlutterMethodChannel(name: "kohera/apns", binaryMessenger: messenger)
     apnsChannel?.setMethodCallHandler { [weak self] (call, result) in
       switch call.method {
       case "requestToken":
@@ -184,7 +184,7 @@ import UserNotifications
         result(nil)
       case "getAppGroupPath":
         let path = FileManager.default.containerURL(
-          forSecurityApplicationGroupIdentifier: "group.io.github.quantumheart.lattice"
+          forSecurityApplicationGroupIdentifier: "group.io.github.quantumheart.kohera"
         )?.path
         result(path)
       default:

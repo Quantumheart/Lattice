@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:lattice/features/chat/widgets/mention_autocomplete_controller.dart';
-import 'package:lattice/shared/widgets/room_avatar.dart';
-import 'package:lattice/shared/widgets/user_avatar.dart';
+import 'package:kohera/features/chat/widgets/mention_autocomplete_controller.dart';
+import 'package:kohera/shared/widgets/room_avatar.dart';
+import 'package:kohera/shared/widgets/user_avatar.dart';
 import 'package:matrix/matrix.dart';
 
 /// Displays filtered mention suggestions above the compose bar text field.

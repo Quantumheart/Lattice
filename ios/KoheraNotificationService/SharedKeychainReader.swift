@@ -1,7 +1,7 @@
 import Foundation
 
 struct SharedKeychainReader {
-    static let accessGroup = "group.io.github.quantumheart.lattice"
+    static let accessGroup = "group.io.github.quantumheart.kohera"
 
     static func read(key: String) -> String? {
         let query: [String: Any] = [
@@ -14,7 +14,7 @@ struct SharedKeychainReader {
         let status = SecItemCopyMatching(query as CFDictionary, &item)
         guard status == errSecSuccess, let data = item as? Data,
               let value = String(data: data, encoding: .utf8) else {
-            NSLog("[LatticeNSE] Keychain read failed for %@: %d", key, status)
+            NSLog("[KoheraNSE] Keychain read failed for %@: %d", key, status)
             return nil
         }
         return value

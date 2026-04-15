@@ -1,19 +1,19 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/core/services/sub_services/selection_service.dart';
-import 'package:lattice/features/rooms/services/room_list_search_controller.dart';
-import 'package:lattice/features/rooms/widgets/invite_tile.dart';
-import 'package:lattice/features/rooms/widgets/message_search_tiles.dart';
-import 'package:lattice/features/rooms/widgets/new_dm_dialog.dart';
-import 'package:lattice/features/rooms/widgets/new_room_dialog.dart';
-import 'package:lattice/features/rooms/widgets/room_list_builder.dart';
-import 'package:lattice/features/rooms/widgets/room_list_models.dart';
-import 'package:lattice/features/rooms/widgets/room_section_header.dart';
-import 'package:lattice/features/rooms/widgets/room_tile.dart';
-import 'package:lattice/shared/widgets/speed_dial_item.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/core/services/sub_services/selection_service.dart';
+import 'package:kohera/features/rooms/services/room_list_search_controller.dart';
+import 'package:kohera/features/rooms/widgets/invite_tile.dart';
+import 'package:kohera/features/rooms/widgets/message_search_tiles.dart';
+import 'package:kohera/features/rooms/widgets/new_dm_dialog.dart';
+import 'package:kohera/features/rooms/widgets/new_room_dialog.dart';
+import 'package:kohera/features/rooms/widgets/room_list_builder.dart';
+import 'package:kohera/features/rooms/widgets/room_list_models.dart';
+import 'package:kohera/features/rooms/widgets/room_section_header.dart';
+import 'package:kohera/features/rooms/widgets/room_tile.dart';
+import 'package:kohera/shared/widgets/speed_dial_item.dart';
 import 'package:provider/provider.dart';
 
 class RoomList extends StatefulWidget {

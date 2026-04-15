@@ -133,6 +133,6 @@ Future<void> _playNotificationSound() async {
     final audio = web.HTMLAudioElement()..src = 'audio/notification.mp3';
     await audio.play().toDart;
   } catch (e) {
-    debugPrint('[Lattice] Failed to play notification sound: $e');
+    debugPrint('[Kohera] Failed to play notification sound: $e');
   }
 }

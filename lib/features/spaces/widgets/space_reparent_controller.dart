@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-import 'package:lattice/core/models/space_node.dart';
+import 'package:kohera/core/models/space_node.dart';
 
 // ── Drag data types ─────────────────────────────────────────
 sealed class ReparentDragData {}

@@ -2,8 +2,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/core/models/pending_attachment.dart';
-import 'package:lattice/features/chat/services/compose_state_controller.dart';
+import 'package:kohera/core/models/pending_attachment.dart';
+import 'package:kohera/features/chat/services/compose_state_controller.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';

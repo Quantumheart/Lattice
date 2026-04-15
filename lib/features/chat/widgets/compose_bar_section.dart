@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:lattice/core/models/pending_attachment.dart';
-import 'package:lattice/core/models/upload_state.dart';
-import 'package:lattice/features/chat/services/typing_controller.dart';
-import 'package:lattice/features/chat/services/voice_recording_controller.dart';
-import 'package:lattice/features/chat/widgets/compose_bar.dart';
+import 'package:kohera/core/models/pending_attachment.dart';
+import 'package:kohera/core/models/upload_state.dart';
+import 'package:kohera/features/chat/services/typing_controller.dart';
+import 'package:kohera/features/chat/services/voice_recording_controller.dart';
+import 'package:kohera/features/chat/widgets/compose_bar.dart';
 import 'package:matrix/matrix.dart';
 
 class ComposeBarSection extends StatelessWidget {

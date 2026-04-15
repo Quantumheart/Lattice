@@ -1,6 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/core/services/matrix_service.dart';
+import 'package:kohera/core/services/matrix_service.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/encryption/cross_signing.dart';
 import 'package:matrix/matrix.dart';
@@ -231,23 +231,23 @@ void main() {
 
       // Verify namespaced storage keys.
       verify(mockStorage.write(
-              key: 'lattice_test_access_token', value: 'token123',),)
+              key: 'kohera_test_access_token', value: 'token123',),)
           .called(1);
       verify(mockStorage.write(
-              key: 'lattice_test_refresh_token', value: null,),)
+              key: 'kohera_test_refresh_token', value: null,),)
           .called(1);
       verify(mockStorage.write(
-              key: 'lattice_test_user_id', value: '@user:example.com',),)
+              key: 'kohera_test_user_id', value: '@user:example.com',),)
           .called(1);
       verify(mockStorage.write(
-              key: 'lattice_test_homeserver', value: 'https://example.com',),)
+              key: 'kohera_test_homeserver', value: 'https://example.com',),)
           .called(1);
       verify(mockStorage.write(
-              key: 'lattice_test_device_id', value: 'DEV1',),)
+              key: 'kohera_test_device_id', value: 'DEV1',),)
           .called(1);
       // Verify session backup is saved.
       verify(mockStorage.write(
-        key: 'lattice_session_backup_test',
+        key: 'kohera_session_backup_test',
         value: anyNamed('value'),
       ),).called(1);
     });
@@ -313,14 +313,14 @@ void main() {
       expect(service.selection.selectedSpaceIds, isEmpty);
       expect(service.selection.selectedRoomId, isNull);
       // Verify namespaced key deletion.
-      verify(mockStorage.delete(key: 'lattice_test_access_token')).called(1);
-      verify(mockStorage.delete(key: 'lattice_test_refresh_token')).called(1);
-      verify(mockStorage.delete(key: 'lattice_test_user_id')).called(1);
-      verify(mockStorage.delete(key: 'lattice_test_homeserver')).called(1);
-      verify(mockStorage.delete(key: 'lattice_test_device_id')).called(1);
-      verify(mockStorage.delete(key: 'lattice_test_olm_account')).called(1);
+      verify(mockStorage.delete(key: 'kohera_test_access_token')).called(1);
+      verify(mockStorage.delete(key: 'kohera_test_refresh_token')).called(1);
+      verify(mockStorage.delete(key: 'kohera_test_user_id')).called(1);
+      verify(mockStorage.delete(key: 'kohera_test_homeserver')).called(1);
+      verify(mockStorage.delete(key: 'kohera_test_device_id')).called(1);
+      verify(mockStorage.delete(key: 'kohera_test_olm_account')).called(1);
       // Verify session backup is deleted.
-      verify(mockStorage.delete(key: 'lattice_session_backup_test')).called(1);
+      verify(mockStorage.delete(key: 'kohera_session_backup_test')).called(1);
       verifyNever(mockStorage.deleteAll());
     });
 

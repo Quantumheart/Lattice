@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:lattice/core/utils/reply_fallback.dart';
-import 'package:lattice/features/chat/widgets/html_message_text.dart';
-import 'package:lattice/features/chat/widgets/linkable_text.dart';
-import 'package:lattice/shared/widgets/user_avatar.dart';
+import 'package:kohera/core/utils/reply_fallback.dart';
+import 'package:kohera/features/chat/widgets/html_message_text.dart';
+import 'package:kohera/features/chat/widgets/linkable_text.dart';
+import 'package:kohera/shared/widgets/user_avatar.dart';
 import 'package:matrix/matrix.dart';
 
 /// Shows a popup panel anchored below the pin icon listing pinned messages.
@@ -159,7 +159,7 @@ class _PinnedMessagesPanelState extends State<_PinnedMessagesPanel> {
         try {
           return await widget.room.getEventById(id);
         } catch (e) {
-          debugPrint('[Lattice] Failed to load pinned event $id: $e');
+          debugPrint('[Kohera] Failed to load pinned event $id: $e');
           return null;
         }
       }),

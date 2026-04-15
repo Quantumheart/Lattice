@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lattice/core/models/server_auth_capabilities.dart';
-import 'package:lattice/core/services/client_manager.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/features/auth/widgets/login_controller.dart';
+import 'package:kohera/core/models/server_auth_capabilities.dart';
+import 'package:kohera/core/services/client_manager.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/features/auth/widgets/login_controller.dart';
 import 'package:provider/provider.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -126,7 +126,7 @@ class _LoginScreenState extends State<LoginScreen>
                     const SizedBox(height: 16),
                     Text(
                       'Complete sign-in in your browser,\n'
-                      'then return to Lattice.',
+                      'then return to Kohera.',
                       textAlign: TextAlign.center,
                       style: tt.bodyMedium,
                     ),

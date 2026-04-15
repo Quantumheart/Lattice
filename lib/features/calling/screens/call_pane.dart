@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/core/services/call_service.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/features/calling/services/call_navigator.dart';
-import 'package:lattice/features/calling/widgets/call_state_views.dart';
-import 'package:lattice/features/calling/widgets/connected_call_view.dart';
+import 'package:kohera/core/routing/route_names.dart';
+import 'package:kohera/core/services/call_service.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/features/calling/services/call_navigator.dart';
+import 'package:kohera/features/calling/widgets/call_state_views.dart';
+import 'package:kohera/features/calling/widgets/connected_call_view.dart';
 import 'package:provider/provider.dart';
 
 // coverage:ignore-start
@@ -27,19 +27,19 @@ class CallPane extends StatelessWidget {
     final roomId = callService.activeCallRoomId;
 
     final body = switch (state) {
-      LatticeCallState.ringingOutgoing => CallRingingOutgoingView(
+      KoheraCallState.ringingOutgoing => CallRingingOutgoingView(
           displayName: _resolveRoomName(context, callService),
           onCancel: callService.cancelOutgoingCall,
         ),
-      LatticeCallState.ringingIncoming ||
-      LatticeCallState.joining => CallJoiningView(
+      KoheraCallState.ringingIncoming ||
+      KoheraCallState.joining => CallJoiningView(
           displayName: _resolveRoomName(context, callService),
         ),
-      LatticeCallState.connected => const ConnectedCallView(),
-      LatticeCallState.reconnecting => const CallReconnectingView(),
-      LatticeCallState.disconnecting ||
-      LatticeCallState.idle => const Center(child: Text('No active call')),
-      LatticeCallState.failed => CallEndedView(
+      KoheraCallState.connected => const ConnectedCallView(),
+      KoheraCallState.reconnecting => const CallReconnectingView(),
+      KoheraCallState.disconnecting ||
+      KoheraCallState.idle => const Center(child: Text('No active call')),
+      KoheraCallState.failed => CallEndedView(
           onReturn: () => CallNavigator.endCall(context),
         ),
     };
@@ -47,8 +47,8 @@ class CallPane extends StatelessWidget {
     return Column(
       children: [
         if (roomId != null &&
-            state != LatticeCallState.idle &&
-            state != LatticeCallState.failed)
+            state != KoheraCallState.idle &&
+            state != KoheraCallState.failed)
           AppBar(
             leading: IconButton(
               icon: const Icon(Icons.arrow_back_rounded),

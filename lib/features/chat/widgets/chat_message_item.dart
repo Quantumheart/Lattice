@@ -2,15 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lattice/core/utils/reply_fallback.dart';
-import 'package:lattice/features/chat/widgets/delete_event_dialog.dart';
-import 'package:lattice/features/chat/widgets/emoji_picker_sheet.dart';
-import 'package:lattice/features/chat/widgets/long_press_wrapper.dart';
-import 'package:lattice/features/chat/widgets/message_action_sheet.dart';
-import 'package:lattice/features/chat/widgets/message_bubble.dart' show MessageBubble;
-import 'package:lattice/features/chat/widgets/reaction_chips.dart';
-import 'package:lattice/features/chat/widgets/read_receipts.dart';
-import 'package:lattice/features/chat/widgets/swipeable_message.dart';
+import 'package:kohera/core/utils/reply_fallback.dart';
+import 'package:kohera/features/chat/widgets/delete_event_dialog.dart';
+import 'package:kohera/features/chat/widgets/emoji_picker_sheet.dart';
+import 'package:kohera/features/chat/widgets/long_press_wrapper.dart';
+import 'package:kohera/features/chat/widgets/message_action_sheet.dart';
+import 'package:kohera/features/chat/widgets/message_bubble.dart' show MessageBubble;
+import 'package:kohera/features/chat/widgets/reaction_chips.dart';
+import 'package:kohera/features/chat/widgets/read_receipts.dart';
+import 'package:kohera/features/chat/widgets/swipeable_message.dart';
 import 'package:matrix/matrix.dart';
 
 class ChatMessageItem extends StatelessWidget {

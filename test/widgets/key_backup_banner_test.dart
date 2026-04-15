@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/core/services/sub_services/chat_backup_service.dart';
-import 'package:lattice/features/e2ee/widgets/key_backup_banner.dart';
+import 'package:kohera/core/services/sub_services/chat_backup_service.dart';
+import 'package:kohera/features/e2ee/widgets/key_backup_banner.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';

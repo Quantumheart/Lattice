@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart'
     show DefaultEmojiTextStyle;
 import 'package:flutter/material.dart';
-import 'package:lattice/shared/widgets/user_avatar.dart';
+import 'package:kohera/shared/widgets/user_avatar.dart';
 import 'package:matrix/matrix.dart';
 
 // ── ReactionChips ────────────────────────────────────────────

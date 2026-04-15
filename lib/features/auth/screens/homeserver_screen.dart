@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/core/services/app_config.dart';
-import 'package:lattice/core/services/matrix_service.dart' show MatrixService;
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/features/auth/widgets/app_logo_header.dart';
-import 'package:lattice/features/auth/widgets/homeserver_controller.dart';
+import 'package:kohera/core/routing/route_names.dart';
+import 'package:kohera/core/services/app_config.dart';
+import 'package:kohera/core/services/matrix_service.dart' show MatrixService;
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/features/auth/widgets/app_logo_header.dart';
+import 'package:kohera/features/auth/widgets/homeserver_controller.dart';
 import 'package:provider/provider.dart';
 
 class HomeserverScreen extends StatefulWidget {

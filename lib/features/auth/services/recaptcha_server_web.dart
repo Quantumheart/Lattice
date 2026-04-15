@@ -31,7 +31,7 @@ class RecaptchaServer {
   Future<String> start() async {
     _timeout = Timer(_timeoutDuration, () {
       if (!_tokenCompleter.isCompleted) {
-        debugPrint('[Lattice] RecaptchaServer timed out');
+        debugPrint('[Kohera] RecaptchaServer timed out');
         _tokenCompleter.completeError(
           RecaptchaException('reCAPTCHA timed out. Please try again.'),
         );
@@ -58,7 +58,7 @@ class RecaptchaServer {
 
       final token = map['token'] as String?;
       if (token != null && token.isNotEmpty && !_tokenCompleter.isCompleted) {
-        debugPrint('[Lattice] reCAPTCHA token received via postMessage');
+        debugPrint('[Kohera] reCAPTCHA token received via postMessage');
         _tokenCompleter.complete(token);
         _popup?.close();
         _popup = null;
@@ -78,7 +78,7 @@ class RecaptchaServer {
   Future<void> launch(Uri url) async {
     _popup = web.window.open(
       url.toString(),
-      'lattice_recaptcha',
+      'kohera_recaptcha',
       'width=450,height=600,popup=yes',
     );
     if (_popup == null) {

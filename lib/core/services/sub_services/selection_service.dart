@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:lattice/core/models/space_node.dart';
-import 'package:lattice/core/utils/order_utils.dart' as order_utils;
+import 'package:kohera/core/models/space_node.dart';
+import 'package:kohera/core/utils/order_utils.dart' as order_utils;
 import 'package:matrix/matrix.dart';
 
 class SelectionService extends ChangeNotifier {

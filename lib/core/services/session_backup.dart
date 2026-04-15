@@ -46,7 +46,7 @@ class SessionBackup {
   // ── Storage helpers ──────────────────────────────────────────
 
   static String _storageKey(String clientName) =>
-      'lattice_session_backup_$clientName';
+      'kohera_session_backup_$clientName';
 
   static Future<void> save(
     SessionBackup backup, {

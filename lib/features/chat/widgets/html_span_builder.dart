@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:html/dom.dart' as dom;
-import 'package:lattice/features/chat/widgets/code_block.dart';
-import 'package:lattice/features/chat/widgets/linkable_span_builder.dart';
-import 'package:lattice/shared/widgets/mxc_image.dart';
+import 'package:kohera/features/chat/widgets/code_block.dart';
+import 'package:kohera/features/chat/widgets/linkable_span_builder.dart';
+import 'package:kohera/shared/widgets/mxc_image.dart';
 import 'package:matrix/matrix.dart';
 
 class HtmlSpanBuilder {

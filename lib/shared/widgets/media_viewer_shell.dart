@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:lattice/core/utils/media_cache_io.dart'
-    if (dart.library.js_interop) 'package:lattice/core/utils/media_cache_web.dart';
-import 'package:lattice/core/utils/time_format.dart';
-import 'package:lattice/shared/widgets/user_avatar.dart';
+import 'package:kohera/core/utils/media_cache_io.dart'
+    if (dart.library.js_interop) 'package:kohera/core/utils/media_cache_web.dart';
+import 'package:kohera/core/utils/time_format.dart';
+import 'package:kohera/shared/widgets/user_avatar.dart';
 import 'package:matrix/matrix.dart';
 
 // ── Shared fullscreen media viewer shell ─────────────────────
@@ -79,7 +79,7 @@ class _MediaViewerShellState extends State<MediaViewerShell> {
     try {
       final file = await widget.event.downloadAndDecryptAttachment();
       final path = await FilePicker.platform.saveFile(
-        dialogTitle: 'Lattice',
+        dialogTitle: 'Kohera',
         fileName: widget.event.body,
         bytes: file.bytes,
       );
@@ -91,7 +91,7 @@ class _MediaViewerShellState extends State<MediaViewerShell> {
         );
       }
     } catch (e) {
-      debugPrint('[Lattice] Media download failed: $e');
+      debugPrint('[Kohera] Media download failed: $e');
       scaffold.showSnackBar(
         const SnackBar(content: Text('Failed to save')),
       );

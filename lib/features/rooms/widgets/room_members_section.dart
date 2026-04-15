@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/sub_services/selection_service.dart';
-import 'package:lattice/core/utils/sender_color.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/sub_services/selection_service.dart';
+import 'package:kohera/core/utils/sender_color.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
@@ -61,7 +61,7 @@ class _RoomMembersSectionState extends State<RoomMembersSection> {
         _lastMemberCount = widget.room.summary.mJoinedMemberCount;
       });
     } catch (e) {
-      debugPrint('[Lattice] Failed to load members: $e');
+      debugPrint('[Kohera] Failed to load members: $e');
       if (mounted) {
         setState(() {
           _loading = false;
@@ -244,7 +244,7 @@ class _MemberTileState extends State<_MemberTile> {
                       if (!mounted) return;
                       context.read<SelectionService>().selectRoom(dmRoomId);
                     } catch (e) {
-                      debugPrint('[Lattice] Start DM failed: $e');
+                      debugPrint('[Kohera] Start DM failed: $e');
                       if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Failed to start chat: ${MatrixService.friendlyAuthError(e)}')),
@@ -285,7 +285,7 @@ class _MemberTileState extends State<_MemberTile> {
                         try {
                           await widget.room.kick(widget.user.id);
                         } catch (e) {
-                          debugPrint('[Lattice] Kick failed: $e');
+                          debugPrint('[Kohera] Kick failed: $e');
                           if (!mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('Kick failed: ${MatrixService.friendlyAuthError(e)}')),
@@ -326,7 +326,7 @@ class _MemberTileState extends State<_MemberTile> {
                         try {
                           await widget.room.ban(widget.user.id);
                         } catch (e) {
-                          debugPrint('[Lattice] Ban failed: $e');
+                          debugPrint('[Kohera] Ban failed: $e');
                           if (!mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(content: Text('Ban failed: ${MatrixService.friendlyAuthError(e)}')),

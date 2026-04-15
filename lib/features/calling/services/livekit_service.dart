@@ -5,10 +5,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_background/flutter_background.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart' as rtc;
 import 'package:http/http.dart' as http;
-import 'package:lattice/core/utils/platform_info.dart';
-import 'package:lattice/features/calling/models/call_participant.dart' as ui;
-import 'package:lattice/features/calling/models/call_participant_mapper.dart';
-import 'package:lattice/features/calling/models/call_state.dart';
+import 'package:kohera/core/utils/platform_info.dart';
+import 'package:kohera/features/calling/models/call_participant.dart' as ui;
+import 'package:kohera/features/calling/models/call_participant_mapper.dart';
+import 'package:kohera/features/calling/models/call_state.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
 import 'package:matrix/matrix.dart';
 
@@ -168,7 +168,7 @@ class LiveKitService {
     try {
       await apply(!currentValue);
     } catch (e) {
-      debugPrint('[Lattice] Failed to toggle $label: $e');
+      debugPrint('[Kohera] Failed to toggle $label: $e');
       updateField(currentValue);
       _onChanged();
     }
@@ -256,7 +256,7 @@ class LiveKitService {
   }
 
   static const _androidBgConfig = FlutterBackgroundAndroidConfig(
-    notificationTitle: 'Lattice',
+    notificationTitle: 'Kohera',
     notificationText: 'Sharing screen',
   );
 
@@ -265,7 +265,7 @@ class LiveKitService {
       await FlutterBackground.initialize(androidConfig: _androidBgConfig);
       await FlutterBackground.enableBackgroundExecution();
     } catch (e) {
-      debugPrint('[Lattice] Failed to start media projection service: $e');
+      debugPrint('[Kohera] Failed to start media projection service: $e');
     }
   }
 
@@ -275,7 +275,7 @@ class LiveKitService {
         await FlutterBackground.disableBackgroundExecution();
       }
     } catch (e) {
-      debugPrint('[Lattice] Failed to stop media projection service: $e');
+      debugPrint('[Kohera] Failed to stop media projection service: $e');
     }
   }
 
@@ -390,7 +390,7 @@ class LiveKitService {
   Future<void> connectLiveKit({
     required String livekitServiceUrl,
     required String livekitAlias,
-    required LatticeCallState Function() currentState,
+    required KoheraCallState Function() currentState,
     bool autoMuteOnJoin = false,
     bool noiseSuppression = true,
     bool echoCancellation = true,
@@ -409,7 +409,7 @@ class LiveKitService {
       livekitAlias: livekitAlias,
     );
 
-    if (currentState() != LatticeCallState.joining) return;
+    if (currentState() != KoheraCallState.joining) return;
 
     _outputVolume = outputVolume;
 
@@ -432,7 +432,7 @@ class LiveKitService {
 
     await _livekitRoom!.connect(credentials.url, credentials.token);
 
-    if (currentState() != LatticeCallState.joining) {
+    if (currentState() != KoheraCallState.joining) {
       await cleanupLiveKit();
       return;
     }
@@ -459,7 +459,7 @@ class LiveKitService {
           await rtc.Helper.setVolume(inputVolume, audioTrack.mediaStreamTrack);
         }
       } catch (e) {
-        debugPrint('[Lattice] Failed to set input volume: $e');
+        debugPrint('[Kohera] Failed to set input volume: $e');
       }
     }
 
@@ -472,7 +472,7 @@ class LiveKitService {
         );
         await livekit.Hardware.instance.selectAudioOutput(device);
       } catch (e) {
-        debugPrint('[Lattice] Failed to set output device: $e');
+        debugPrint('[Kohera] Failed to set output device: $e');
       }
     }
 
@@ -494,7 +494,7 @@ class LiveKitService {
               track.mediaStreamTrack,
             );
           } catch (e) {
-            debugPrint('[Lattice] Failed to set output volume: $e');
+            debugPrint('[Kohera] Failed to set output volume: $e');
           }
         }
       }
@@ -553,7 +553,7 @@ class LiveKitService {
           rtc.Helper.setVolume(_outputVolume, event.track.mediaStreamTrack)
               .catchError((Object e) {
             debugPrint(
-              '[Lattice] Failed to set output volume on new track: $e',
+              '[Kohera] Failed to set output volume on new track: $e',
             );
           }),
         );
@@ -598,17 +598,17 @@ class LiveKitService {
     try {
       await listener?.dispose();
     } catch (e) {
-      debugPrint('[Lattice] Error disconnecting LiveKit: $e');
+      debugPrint('[Kohera] Error disconnecting LiveKit: $e');
     }
     try {
       await room?.disconnect();
     } catch (e) {
-      debugPrint('[Lattice] Error disposing LiveKit listener: $e');
+      debugPrint('[Kohera] Error disposing LiveKit listener: $e');
     }
     try {
       await room?.dispose();
     } catch (e) {
-      debugPrint('[Lattice] Error disposing LiveKit room: $e');
+      debugPrint('[Kohera] Error disposing LiveKit room: $e');
     }
   }
 
@@ -646,13 +646,13 @@ class LiveKitService {
             _cachedLivekitServiceUrl = serviceUrl;
             _wellKnownFetchedAt = DateTime.now();
             _onChanged();
-            debugPrint('[Lattice] LiveKit service URL: $serviceUrl');
+            debugPrint('[Kohera] LiveKit service URL: $serviceUrl');
             return;
           }
         }
       }
     } catch (e) {
-      debugPrint('[Lattice] Failed to fetch LiveKit well-known: $e');
+      debugPrint('[Kohera] Failed to fetch LiveKit well-known: $e');
     }
   }
 

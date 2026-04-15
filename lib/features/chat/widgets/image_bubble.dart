@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:lattice/core/utils/media_auth.dart';
-import 'package:lattice/shared/widgets/full_image_view.dart';
+import 'package:kohera/core/utils/media_auth.dart';
+import 'package:kohera/shared/widgets/full_image_view.dart';
 import 'package:matrix/matrix.dart';
 
 // coverage:ignore-start
@@ -67,7 +67,7 @@ class _ImageBubbleState extends State<ImageBubble> {
         }
       }
     } catch (e) {
-      debugPrint('[Lattice] Image bubble load failed: $e');
+      debugPrint('[Kohera] Image bubble load failed: $e');
       if (mounted) setState(() => _loading = false);
     }
   }

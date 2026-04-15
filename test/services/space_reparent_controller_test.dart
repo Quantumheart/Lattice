@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/core/models/space_node.dart';
-import 'package:lattice/features/spaces/widgets/space_reparent_controller.dart';
+import 'package:kohera/core/models/space_node.dart';
+import 'package:kohera/features/spaces/widgets/space_reparent_controller.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/core/utils/notification_filter.dart';
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/core/utils/notification_filter.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';

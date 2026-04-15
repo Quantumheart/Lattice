@@ -4,8 +4,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:html/parser.dart' as html_parser;
 import 'package:http/http.dart' as http;
-import 'package:lattice/features/chat/services/opengraph_io.dart'
-    if (dart.library.js_interop) 'package:lattice/features/chat/services/opengraph_web.dart';
+import 'package:kohera/features/chat/services/opengraph_io.dart'
+    if (dart.library.js_interop) 'package:kohera/features/chat/services/opengraph_web.dart';
 
 // ── OpenGraph data model ─────────────────────────────────────
 
@@ -159,7 +159,7 @@ class OpenGraphService {
     final addresses = await resolve(host).timeout(_fetchTimeout);
     if (addresses.isEmpty) return null;
     if (addresses.any(_isPrivateAddress)) {
-      debugPrint('[Lattice] OpenGraph blocked private IP for $host');
+      debugPrint('[Kohera] OpenGraph blocked private IP for $host');
       return null;
     }
     return addresses;
@@ -174,7 +174,7 @@ class OpenGraphService {
         if (addresses == null) return null;
 
         final request = http.Request('GET', uri)
-          ..headers['User-Agent'] = 'Lattice/1.0 (Flutter Matrix client)'
+          ..headers['User-Agent'] = 'Kohera/1.0 (Flutter Matrix client)'
           ..followRedirects = false;
         final streamed =
             await _client.send(request).timeout(_fetchTimeout);
@@ -195,7 +195,7 @@ class OpenGraphService {
 
       return null;
     } catch (e) {
-      debugPrint('[Lattice] OpenGraph fetch failed for $url: $e');
+      debugPrint('[Kohera] OpenGraph fetch failed for $url: $e');
       return null;
     }
   }

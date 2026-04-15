@@ -29,11 +29,11 @@ class RecaptchaServer {
   Future<String> start() async {
     _server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final port = _server!.port;
-    debugPrint('[Lattice] RecaptchaServer listening on port $port');
+    debugPrint('[Kohera] RecaptchaServer listening on port $port');
 
     _timeout = Timer(_timeoutDuration, () {
       if (!_tokenCompleter.isCompleted) {
-        debugPrint('[Lattice] RecaptchaServer timed out');
+        debugPrint('[Kohera] RecaptchaServer timed out');
         _tokenCompleter.completeError(
           RecaptchaException('reCAPTCHA timed out. Please try again.'),
         );
@@ -97,7 +97,7 @@ class RecaptchaServer {
           ..write('Not found');
         unawaited(request.response.close());
       } catch (e) {
-        debugPrint('[Lattice] RecaptchaServer request error: $e');
+        debugPrint('[Kohera] RecaptchaServer request error: $e');
         try {
           unawaited(request.response.close());
         } catch (_) {}
@@ -168,7 +168,7 @@ class RecaptchaServer {
 <body>
   <div style="text-align: center">
     <h2>Verification complete</h2>
-    <p>You can close this tab and return to Lattice.</p>
+    <p>You can close this tab and return to Kohera.</p>
   </div>
 </body>
 </html>
@@ -178,7 +178,7 @@ class RecaptchaServer {
     _timeout?.cancel();
     _timeout = null;
     unawaited(_server?.close(force: true).then((_) {
-      debugPrint('[Lattice] RecaptchaServer shut down');
+      debugPrint('[Kohera] RecaptchaServer shut down');
     }),);
     _server = null;
     if (!_tokenCompleter.isCompleted) {

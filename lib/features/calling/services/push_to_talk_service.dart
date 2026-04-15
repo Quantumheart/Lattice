@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
-import 'package:lattice/core/services/call_service.dart';
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/features/calling/services/ringtone_service.dart';
+import 'package:kohera/core/services/call_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/features/calling/services/ringtone_service.dart';
 
 class PushToTalkService extends ChangeNotifier {
   PushToTalkService({
@@ -30,7 +30,7 @@ class PushToTalkService extends ChangeNotifier {
 
   void _syncState() {
     final shouldListen = _prefs.pushToTalkEnabled &&
-        _callService.callState == LatticeCallState.connected;
+        _callService.callState == KoheraCallState.connected;
 
     if (shouldListen && !_registered) {
       HardwareKeyboard.instance.addHandler(_onKeyEvent);

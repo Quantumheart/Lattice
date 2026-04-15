@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/features/settings/widgets/push_to_talk_key_editor.dart';
+import 'package:kohera/features/settings/widgets/push_to_talk_key_editor.dart';
 
 void main() {
   late int capturedKeyId;

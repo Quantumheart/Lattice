@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
-import 'package:lattice/core/services/client_manager.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/features/rooms/widgets/room_details_panel.dart';
+import 'package:kohera/core/services/client_manager.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/features/rooms/widgets/room_details_panel.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mockito/mockito.dart';

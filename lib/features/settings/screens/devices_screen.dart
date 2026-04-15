@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:lattice/core/extensions/device_extension.dart';
-import 'package:lattice/core/routing/nav_helper.dart';
-import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/features/e2ee/widgets/key_verification_dialog.dart';
-import 'package:lattice/features/settings/widgets/device_list_item.dart';
-import 'package:lattice/shared/widgets/section_header.dart';
+import 'package:kohera/core/extensions/device_extension.dart';
+import 'package:kohera/core/routing/nav_helper.dart';
+import 'package:kohera/core/routing/route_names.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/features/e2ee/widgets/key_verification_dialog.dart';
+import 'package:kohera/features/settings/widgets/device_list_item.dart';
+import 'package:kohera/shared/widgets/section_header.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
@@ -56,7 +56,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
         _loading = false;
       });
     } catch (e) {
-      debugPrint('[Lattice] Failed to load devices: $e');
+      debugPrint('[Kohera] Failed to load devices: $e');
       if (!mounted) return;
       setState(() {
         _error = 'Failed to load devices';
@@ -145,7 +145,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
       await client.updateDevice(device.deviceId, displayName: newName);
       await _loadDevices();
     } catch (e) {
-      debugPrint('[Lattice] Failed to rename device: $e');
+      debugPrint('[Kohera] Failed to rename device: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to rename device')),
@@ -190,7 +190,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
       );
       await _loadDevices();
     } catch (e) {
-      debugPrint('[Lattice] Failed to remove device: $e');
+      debugPrint('[Kohera] Failed to remove device: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to remove device')),
@@ -243,7 +243,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
       );
       await _loadDevices();
     } catch (e) {
-      debugPrint('[Lattice] Failed to remove devices: $e');
+      debugPrint('[Kohera] Failed to remove devices: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to remove devices')),
@@ -275,7 +275,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
       await KeyVerificationDialog.show(context, verification: verification);
       await _loadDevices();
     } catch (e) {
-      debugPrint('[Lattice] Failed to start verification: $e');
+      debugPrint('[Kohera] Failed to start verification: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to start verification')),
@@ -298,7 +298,7 @@ class _DevicesScreenState extends State<DevicesScreen> {
       await deviceKeys.setBlocked(!deviceKeys.blocked);
       await _loadDevices();
     } catch (e) {
-      debugPrint('[Lattice] Failed to toggle block: $e');
+      debugPrint('[Kohera] Failed to toggle block: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to update device')),

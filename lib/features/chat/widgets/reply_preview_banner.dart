@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:lattice/core/utils/reply_fallback.dart';
-import 'package:lattice/core/utils/sender_color.dart';
+import 'package:kohera/core/utils/reply_fallback.dart';
+import 'package:kohera/core/utils/sender_color.dart';
 import 'package:matrix/matrix.dart';
 
 class ReplyPreviewBanner extends StatelessWidget {

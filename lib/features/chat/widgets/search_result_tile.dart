@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:lattice/core/utils/text_highlight.dart';
-import 'package:lattice/core/utils/time_format.dart';
-import 'package:lattice/shared/widgets/user_avatar.dart';
+import 'package:kohera/core/utils/text_highlight.dart';
+import 'package:kohera/core/utils/time_format.dart';
+import 'package:kohera/shared/widgets/user_avatar.dart';
 import 'package:matrix/matrix.dart';
 
 // coverage:ignore-start

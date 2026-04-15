@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:lattice/shared/widgets/pulsing_avatar.dart';
+import 'package:kohera/shared/widgets/pulsing_avatar.dart';
 
 // coverage:ignore-start
 

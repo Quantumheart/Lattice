@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "io.github.quantumheart" "\0"
-            VALUE "FileDescription", "lattice" "\0"
+            VALUE "FileDescription", "kohera" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "lattice" "\0"
+            VALUE "InternalName", "kohera" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 io.github.quantumheart. All rights reserved." "\0"
-            VALUE "OriginalFilename", "lattice.exe" "\0"
-            VALUE "ProductName", "lattice" "\0"
+            VALUE "OriginalFilename", "kohera.exe" "\0"
+            VALUE "ProductName", "kohera" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

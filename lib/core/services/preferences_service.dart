@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lattice/core/theme/custom_theme.dart';
+import 'package:kohera/core/theme/custom_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Controls how compact or spacious message bubbles appear.
@@ -73,7 +73,7 @@ class PreferencesService extends ChangeNotifier {
     } else {
       await _prefs?.setString(_defaultHomeserverKey, server);
     }
-    debugPrint('[Lattice] Default homeserver set to $server');
+    debugPrint('[Kohera] Default homeserver set to $server');
     notifyListeners();
   }
 
@@ -90,7 +90,7 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setMessageDensity(MessageDensity density) async {
     await _prefs?.setString(_densityKey, density.name);
-    debugPrint('[Lattice] Message density set to ${density.label}');
+    debugPrint('[Kohera] Message density set to ${density.label}');
     notifyListeners();
   }
 
@@ -109,7 +109,7 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setThemeMode(ThemeMode mode) async {
     await _prefs?.setString(_themeModeKey, mode.name);
-    debugPrint('[Lattice] Theme mode set to ${mode.name}');
+    debugPrint('[Kohera] Theme mode set to ${mode.name}');
     notifyListeners();
   }
 
@@ -123,7 +123,7 @@ class PreferencesService extends ChangeNotifier {
     } else {
       await _prefs?.setString(_themePresetKey, id);
     }
-    debugPrint('[Lattice] Theme preset set to $id');
+    debugPrint('[Kohera] Theme preset set to $id');
     notifyListeners();
   }
 
@@ -144,7 +144,7 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setCustomTheme(CustomTheme theme) async {
     await _prefs?.setString(_customThemeKey, theme.toJsonString());
-    debugPrint('[Lattice] Custom theme updated');
+    debugPrint('[Kohera] Custom theme updated');
     notifyListeners();
   }
 
@@ -159,7 +159,7 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setCustomThemeMode(ThemeMode mode) async {
     await _prefs?.setString(_customThemeModeKey, mode.name);
-    debugPrint('[Lattice] Custom theme mode set to ${mode.name}');
+    debugPrint('[Kohera] Custom theme mode set to ${mode.name}');
     notifyListeners();
   }
 
@@ -236,7 +236,7 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setNotificationLevel(NotificationLevel level) async {
     await _prefs?.setString(_notificationLevelKey, level.name);
-    debugPrint('[Lattice] Notification level set to ${level.label}');
+    debugPrint('[Kohera] Notification level set to ${level.label}');
     notifyListeners();
   }
 
@@ -249,7 +249,7 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setNotificationKeywords(List<String> keywords) async {
     await _prefs?.setStringList(_notificationKeywordsKey, keywords);
-    debugPrint('[Lattice] Notification keywords updated: $keywords');
+    debugPrint('[Kohera] Notification keywords updated: $keywords');
     notifyListeners();
   }
 
@@ -277,7 +277,7 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setShowLinkPreviews(bool value) async {
     await _prefs?.setBool(_showLinkPreviewsKey, value);
     debugPrint(
-      '[Lattice] Link previews ${value ? "enabled" : "disabled"}',
+      '[Kohera] Link previews ${value ? "enabled" : "disabled"}',
     );
     notifyListeners();
   }
@@ -291,7 +291,7 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setTypingIndicators(bool value) async {
     await _prefs?.setBool(_typingIndicatorsKey, value);
     debugPrint(
-      '[Lattice] Typing indicators ${value ? "enabled" : "disabled"}',
+      '[Kohera] Typing indicators ${value ? "enabled" : "disabled"}',
     );
     notifyListeners();
   }
@@ -305,7 +305,7 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setReadReceipts(bool value) async {
     await _prefs?.setBool(_readReceiptsKey, value);
     debugPrint(
-      '[Lattice] Read receipts ${value ? "enabled" : "disabled"}',
+      '[Kohera] Read receipts ${value ? "enabled" : "disabled"}',
     );
     notifyListeners();
   }
@@ -324,7 +324,7 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setOsNotificationsEnabled(bool value) async {
     await _prefs?.setBool(_osNotificationsEnabledKey, value);
-    debugPrint('[Lattice] OS notifications ${value ? "enabled" : "disabled"}');
+    debugPrint('[Kohera] OS notifications ${value ? "enabled" : "disabled"}');
     notifyListeners();
   }
 
@@ -334,7 +334,7 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setNotificationSoundEnabled(bool value) async {
     await _prefs?.setBool(_notificationSoundEnabledKey, value);
     debugPrint(
-      '[Lattice] Notification sound ${value ? "enabled" : "disabled"}',
+      '[Kohera] Notification sound ${value ? "enabled" : "disabled"}',
     );
     notifyListeners();
   }
@@ -345,7 +345,7 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setNotificationVibrationEnabled(bool value) async {
     await _prefs?.setBool(_notificationVibrationEnabledKey, value);
     debugPrint(
-      '[Lattice] Notification vibration ${value ? "enabled" : "disabled"}',
+      '[Kohera] Notification vibration ${value ? "enabled" : "disabled"}',
     );
     notifyListeners();
   }
@@ -356,7 +356,7 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setForegroundNotificationsEnabled(bool value) async {
     await _prefs?.setBool(_foregroundNotificationsEnabledKey, value);
     debugPrint(
-      '[Lattice] Foreground notifications ${value ? "enabled" : "disabled"}',
+      '[Kohera] Foreground notifications ${value ? "enabled" : "disabled"}',
     );
     notifyListeners();
   }
@@ -371,7 +371,7 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setPushEnabled(bool value) async {
     await _prefs?.setBool(_pushEnabledKey, value);
     debugPrint(
-        '[Lattice] Push notifications ${value ? "enabled" : "disabled"}',);
+        '[Kohera] Push notifications ${value ? "enabled" : "disabled"}',);
     notifyListeners();
   }
 
@@ -383,7 +383,7 @@ class PreferencesService extends ChangeNotifier {
     } else {
       await _prefs?.setString(_pushDistributorKey, distributor);
     }
-    debugPrint('[Lattice] Push distributor set to $distributor');
+    debugPrint('[Kohera] Push distributor set to $distributor');
     notifyListeners();
   }
 
@@ -396,7 +396,7 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setWebPushEnabled(bool value) async {
     await _prefs?.setBool(_webPushEnabledKey, value);
     debugPrint(
-      '[Lattice] Web push notifications ${value ? "enabled" : "disabled"}',
+      '[Kohera] Web push notifications ${value ? "enabled" : "disabled"}',
     );
     notifyListeners();
   }
@@ -410,7 +410,7 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setApnsPushEnabled(bool value) async {
     await _prefs?.setBool(_apnsPushEnabledKey, value);
     debugPrint(
-      '[Lattice] APNs push notifications ${value ? "enabled" : "disabled"}',
+      '[Kohera] APNs push notifications ${value ? "enabled" : "disabled"}',
     );
     notifyListeners();
   }
@@ -437,7 +437,7 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setAutoMuteOnJoin(bool value) async {
     await _prefs?.setBool(_autoMuteOnJoinKey, value);
-    debugPrint('[Lattice] Auto-mute on join ${value ? "enabled" : "disabled"}');
+    debugPrint('[Kohera] Auto-mute on join ${value ? "enabled" : "disabled"}');
     notifyListeners();
   }
 
@@ -445,7 +445,7 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setNoiseSuppression(bool value) async {
     await _prefs?.setBool(_noiseSuppressionKey, value);
-    debugPrint('[Lattice] Noise suppression ${value ? "enabled" : "disabled"}');
+    debugPrint('[Kohera] Noise suppression ${value ? "enabled" : "disabled"}');
     notifyListeners();
   }
 
@@ -453,7 +453,7 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setEchoCancellation(bool value) async {
     await _prefs?.setBool(_echoCancellationKey, value);
-    debugPrint('[Lattice] Echo cancellation ${value ? "enabled" : "disabled"}');
+    debugPrint('[Kohera] Echo cancellation ${value ? "enabled" : "disabled"}');
     notifyListeners();
   }
 
@@ -462,7 +462,7 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setPushToTalkEnabled(bool value) async {
     await _prefs?.setBool(_pushToTalkEnabledKey, value);
-    debugPrint('[Lattice] Push-to-talk ${value ? "enabled" : "disabled"}');
+    debugPrint('[Kohera] Push-to-talk ${value ? "enabled" : "disabled"}');
     notifyListeners();
   }
 
@@ -472,7 +472,7 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setPushToTalkKeyId(int keyId) async {
     await _prefs?.setInt(_pushToTalkKeyIdKey, keyId);
-    debugPrint('[Lattice] Push-to-talk key set to $keyId');
+    debugPrint('[Kohera] Push-to-talk key set to $keyId');
     notifyListeners();
   }
 
@@ -484,7 +484,7 @@ class PreferencesService extends ChangeNotifier {
     } else {
       await _prefs?.setString(_inputDeviceIdKey, deviceId);
     }
-    debugPrint('[Lattice] Input device set to $deviceId');
+    debugPrint('[Kohera] Input device set to $deviceId');
     notifyListeners();
   }
 
@@ -496,7 +496,7 @@ class PreferencesService extends ChangeNotifier {
     } else {
       await _prefs?.setString(_outputDeviceIdKey, deviceId);
     }
-    debugPrint('[Lattice] Output device set to $deviceId');
+    debugPrint('[Kohera] Output device set to $deviceId');
     notifyListeners();
   }
 
@@ -504,7 +504,7 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setInputVolume(double value) async {
     await _prefs?.setDouble(_inputVolumeKey, value.clamp(0.0, 1.0));
-    debugPrint('[Lattice] Input volume set to $value');
+    debugPrint('[Kohera] Input volume set to $value');
     notifyListeners();
   }
 
@@ -512,7 +512,7 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setOutputVolume(double value) async {
     await _prefs?.setDouble(_outputVolumeKey, value.clamp(0.0, 1.0));
-    debugPrint('[Lattice] Output volume set to $value');
+    debugPrint('[Kohera] Output volume set to $value');
     notifyListeners();
   }
 
@@ -520,7 +520,7 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setAutoGainControl(bool value) async {
     await _prefs?.setBool(_autoGainControlKey, value);
-    debugPrint('[Lattice] Auto gain control ${value ? "enabled" : "disabled"}');
+    debugPrint('[Kohera] Auto gain control ${value ? "enabled" : "disabled"}');
     notifyListeners();
   }
 
@@ -528,7 +528,7 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setVoiceIsolation(bool value) async {
     await _prefs?.setBool(_voiceIsolationKey, value);
-    debugPrint('[Lattice] Voice isolation ${value ? "enabled" : "disabled"}');
+    debugPrint('[Kohera] Voice isolation ${value ? "enabled" : "disabled"}');
     notifyListeners();
   }
 
@@ -538,7 +538,7 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setTypingNoiseDetection(bool value) async {
     await _prefs?.setBool(_typingNoiseDetectionKey, value);
     debugPrint(
-      '[Lattice] Typing noise detection ${value ? "enabled" : "disabled"}',
+      '[Kohera] Typing noise detection ${value ? "enabled" : "disabled"}',
     );
     notifyListeners();
   }
@@ -554,7 +554,7 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setAudioQuality(AudioQuality quality) async {
     await _prefs?.setString(_audioQualityKey, quality.name);
-    debugPrint('[Lattice] Audio quality set to ${quality.label}');
+    debugPrint('[Kohera] Audio quality set to ${quality.label}');
     notifyListeners();
   }
 
@@ -562,7 +562,7 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setHighPassFilter(bool value) async {
     await _prefs?.setBool(_highPassFilterKey, value);
-    debugPrint('[Lattice] High pass filter ${value ? "enabled" : "disabled"}');
+    debugPrint('[Kohera] High pass filter ${value ? "enabled" : "disabled"}');
     notifyListeners();
   }
 
@@ -570,7 +570,7 @@ class PreferencesService extends ChangeNotifier {
 
   Future<void> setPttSoundEnabled(bool value) async {
     await _prefs?.setBool(_pttSoundEnabledKey, value);
-    debugPrint('[Lattice] PTT sound ${value ? "enabled" : "disabled"}');
+    debugPrint('[Kohera] PTT sound ${value ? "enabled" : "disabled"}');
     notifyListeners();
   }
 }

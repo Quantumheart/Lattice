@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lattice/core/services/sub_services/chat_backup_service.dart';
+import 'package:kohera/core/services/sub_services/chat_backup_service.dart';
 import 'package:provider/provider.dart';
 
 class KeyBackupBanner extends StatelessWidget {

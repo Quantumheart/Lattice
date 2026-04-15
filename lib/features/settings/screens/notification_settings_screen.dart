@@ -2,15 +2,15 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:lattice/core/routing/nav_helper.dart';
-import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/core/services/app_config.dart';
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/core/utils/platform_info.dart';
-import 'package:lattice/features/notifications/services/apns_push_service.dart';
-import 'package:lattice/features/notifications/services/push_service.dart';
-import 'package:lattice/features/notifications/services/web_push_service_export.dart';
-import 'package:lattice/shared/widgets/section_header.dart';
+import 'package:kohera/core/routing/nav_helper.dart';
+import 'package:kohera/core/routing/route_names.dart';
+import 'package:kohera/core/services/app_config.dart';
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/core/utils/platform_info.dart';
+import 'package:kohera/features/notifications/services/apns_push_service.dart';
+import 'package:kohera/features/notifications/services/push_service.dart';
+import 'package:kohera/features/notifications/services/web_push_service_export.dart';
+import 'package:kohera/shared/widgets/section_header.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 

@@ -1,4 +1,4 @@
-enum LatticeCallState {
+enum KoheraCallState {
   idle,
   ringingOutgoing,
   ringingIncoming,
@@ -9,43 +9,43 @@ enum LatticeCallState {
   failed,
 }
 
-const Map<LatticeCallState, Set<LatticeCallState>> validCallTransitions = {
-  LatticeCallState.idle: {
-    LatticeCallState.joining,
-    LatticeCallState.ringingOutgoing,
-    LatticeCallState.ringingIncoming,
+const Map<KoheraCallState, Set<KoheraCallState>> validCallTransitions = {
+  KoheraCallState.idle: {
+    KoheraCallState.joining,
+    KoheraCallState.ringingOutgoing,
+    KoheraCallState.ringingIncoming,
   },
-  LatticeCallState.ringingOutgoing: {
-    LatticeCallState.joining,
-    LatticeCallState.connected,
-    LatticeCallState.idle,
-    LatticeCallState.failed,
+  KoheraCallState.ringingOutgoing: {
+    KoheraCallState.joining,
+    KoheraCallState.connected,
+    KoheraCallState.idle,
+    KoheraCallState.failed,
   },
-  LatticeCallState.ringingIncoming: {
-    LatticeCallState.joining,
-    LatticeCallState.idle,
+  KoheraCallState.ringingIncoming: {
+    KoheraCallState.joining,
+    KoheraCallState.idle,
   },
-  LatticeCallState.joining: {
-    LatticeCallState.connected,
-    LatticeCallState.idle,
-    LatticeCallState.failed,
+  KoheraCallState.joining: {
+    KoheraCallState.connected,
+    KoheraCallState.idle,
+    KoheraCallState.failed,
   },
-  LatticeCallState.connected: {
-    LatticeCallState.reconnecting,
-    LatticeCallState.disconnecting,
-    LatticeCallState.failed,
+  KoheraCallState.connected: {
+    KoheraCallState.reconnecting,
+    KoheraCallState.disconnecting,
+    KoheraCallState.failed,
   },
-  LatticeCallState.reconnecting: {
-    LatticeCallState.connected,
-    LatticeCallState.disconnecting,
-    LatticeCallState.failed,
+  KoheraCallState.reconnecting: {
+    KoheraCallState.connected,
+    KoheraCallState.disconnecting,
+    KoheraCallState.failed,
   },
-  LatticeCallState.disconnecting: {
-    LatticeCallState.idle,
+  KoheraCallState.disconnecting: {
+    KoheraCallState.idle,
   },
-  LatticeCallState.failed: {
-    LatticeCallState.idle,
-    LatticeCallState.joining,
-    LatticeCallState.ringingOutgoing,
+  KoheraCallState.failed: {
+    KoheraCallState.idle,
+    KoheraCallState.joining,
+    KoheraCallState.ringingOutgoing,
   },
 };

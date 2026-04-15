@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:lattice/core/utils/media_auth.dart';
-import 'package:lattice/shared/widgets/media_viewer_shell.dart';
+import 'package:kohera/core/utils/media_auth.dart';
+import 'package:kohera/shared/widgets/media_viewer_shell.dart';
 import 'package:matrix/matrix.dart';
 
 void showFullImageDialog(BuildContext context, Event event) {
@@ -57,7 +57,7 @@ class _FullImageContentState extends State<_FullImageContent> {
         }
       }
     } catch (e) {
-      debugPrint('[Lattice] Full image load failed: $e');
+      debugPrint('[Kohera] Full image load failed: $e');
       if (mounted) setState(() => _loading = false);
     }
   }

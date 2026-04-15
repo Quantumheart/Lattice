@@ -50,7 +50,7 @@ android/key.properties
 *.keystore
 /.metadata
 .claude/settings.json
-lattice.code-workspace
+kohera.code-workspace
 
 # Web build artifacts
 web/native_executor.js*

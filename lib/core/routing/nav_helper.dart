@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lattice/features/home/screens/home_shell.dart';
+import 'package:kohera/features/home/screens/home_shell.dart';
 
 extension NavHelper on BuildContext {
   bool get _isNarrow =>

@@ -452,12 +452,12 @@ User taps "Sign Out"
 
 ```
 FlutterSecureStorage (localStorage on web, Keychain/Keystore on native)
-├── lattice_{clientName}_access_token   ← session credential
-├── lattice_{clientName}_refresh_token  ← session credential
-├── lattice_{clientName}_user_id        ← session credential
-├── lattice_{clientName}_homeserver     ← session credential
-├── lattice_{clientName}_device_id      ← session credential
-├── lattice_session_backup_{clientName} ← JSON: tokens + olmAccount pickle
+├── kohera_{clientName}_access_token   ← session credential
+├── kohera_{clientName}_refresh_token  ← session credential
+├── kohera_{clientName}_user_id        ← session credential
+├── kohera_{clientName}_homeserver     ← session credential
+├── kohera_{clientName}_device_id      ← session credential
+├── kohera_session_backup_{clientName} ← JSON: tokens + olmAccount pickle
 └── ssss_recovery_key_{userId}          ← recovery key (if "Save to device" checked)
 
 In-Memory (UiaService)
@@ -471,4 +471,4 @@ SDK Database (IndexedDB on web, SQLite on native)
                                    cached SSSS secrets, device keys
 ```
 
-**Source:** `lib/core/services/matrix_service.dart` — `latticeKey()` helper; `lib/core/services/session_backup.dart`; `lib/core/services/sub_services/chat_backup_service.dart` — `storeRecoveryKey()`; `lib/core/services/sub_services/uia_service.dart`; `lib/core/services/client_factory_web.dart` — `MatrixSdkDatabase.init()`
+**Source:** `lib/core/services/matrix_service.dart` — `koheraKey()` helper; `lib/core/services/session_backup.dart`; `lib/core/services/sub_services/chat_backup_service.dart` — `storeRecoveryKey()`; `lib/core/services/sub_services/uia_service.dart`; `lib/core/services/client_factory_web.dart` — `MatrixSdkDatabase.init()`

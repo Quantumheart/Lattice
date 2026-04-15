@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/sub_services/selection_service.dart';
-import 'package:lattice/shared/widgets/room_avatar.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/sub_services/selection_service.dart';
+import 'package:kohera/shared/widgets/room_avatar.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
@@ -41,7 +41,7 @@ class _InviteDialogState extends State<InviteDialog> {
       await widget.room.join();
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
-      debugPrint('[Lattice] Accept invite failed: $e');
+      debugPrint('[Kohera] Accept invite failed: $e');
       if (mounted) {
         setState(() {
           _accepting = false;
@@ -78,7 +78,7 @@ class _InviteDialogState extends State<InviteDialog> {
       await widget.room.leave();
       if (mounted) Navigator.pop(context, false);
     } catch (e) {
-      debugPrint('[Lattice] Decline invite failed: $e');
+      debugPrint('[Kohera] Decline invite failed: $e');
       if (mounted) {
         setState(() {
           _declining = false;

@@ -1,4 +1,4 @@
-import 'package:lattice/core/services/client_factory_shared.dart';
+import 'package:kohera/core/services/client_factory_shared.dart';
 import 'package:matrix/matrix.dart';
 
 // coverage:ignore-start
@@ -6,7 +6,7 @@ Future<Client> createDefaultClient(
   String clientName, {
   Future<void> Function(Client)? onSoftLogout,
 }) async {
-  final database = await MatrixSdkDatabase.init('lattice_$clientName');
+  final database = await MatrixSdkDatabase.init('kohera_$clientName');
   return buildClient(
     clientName,
     database,

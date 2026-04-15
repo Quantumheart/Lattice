@@ -3,8 +3,8 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/features/e2ee/widgets/key_verification_dialog.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/features/e2ee/widgets/key_verification_dialog.dart';
 import 'package:matrix/encryption.dart';
 import 'package:provider/provider.dart';
 
@@ -53,7 +53,7 @@ class _VerificationRequestListenerState
     }
 
     if (_dialogOpen) {
-      debugPrint('[Lattice] Queuing verification request from '
+      debugPrint('[Kohera] Queuing verification request from '
           '${verification.userId} (dialog already open)');
       _pending.add(verification);
       return;
@@ -63,7 +63,7 @@ class _VerificationRequestListenerState
   }
 
   Future<void> _showVerification(KeyVerification verification) async {
-    debugPrint('[Lattice] Incoming verification request from '
+    debugPrint('[Kohera] Incoming verification request from '
         '${verification.userId}');
 
     final navContext =

@@ -6,7 +6,7 @@ import 'package:flutter_callkit_incoming/entities/call_event.dart';
 import 'package:flutter_callkit_incoming/entities/call_kit_params.dart';
 import 'package:flutter_callkit_incoming/entities/ios_params.dart';
 import 'package:flutter_callkit_incoming/flutter_callkit_incoming.dart';
-import 'package:lattice/core/utils/platform_info.dart';
+import 'package:kohera/core/utils/platform_info.dart';
 
 // coverage:ignore-start
 

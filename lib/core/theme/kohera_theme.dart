@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:lattice/core/theme/theme_presets.dart';
+import 'package:kohera/core/theme/theme_presets.dart';
 
-class LatticeTheme {
-  LatticeTheme._();
+class KoheraTheme {
+  KoheraTheme._();
 
   static const Color _fallbackSeed = Color(0xFF1976D2);
 

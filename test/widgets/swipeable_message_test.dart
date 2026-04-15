@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:lattice/features/chat/widgets/swipeable_message.dart';
+import 'package:kohera/features/chat/widgets/swipeable_message.dart';
 
 void main() {
   group('SwipeableMessage', () {

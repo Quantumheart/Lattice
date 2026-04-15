@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/sub_services/selection_service.dart';
-import 'package:lattice/core/utils/order_utils.dart' as order_utils;
-import 'package:lattice/features/rooms/widgets/add_room_to_space_dialog.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/sub_services/selection_service.dart';
+import 'package:kohera/core/utils/order_utils.dart' as order_utils;
+import 'package:kohera/features/rooms/widgets/add_room_to_space_dialog.dart';
 import 'package:matrix/matrix.dart' hide Visibility;
 import 'package:provider/provider.dart';
 
@@ -173,14 +173,14 @@ Future<void> _handleReorder(
 
     final newOrder = order_utils.midpoint(neighborBefore, neighborAfter);
     if (newOrder == null) {
-      debugPrint('[Lattice] Could not compute order midpoint');
+      debugPrint('[Kohera] Could not compute order midpoint');
       return;
     }
 
     await space.setSpaceChild(roomId, order: newOrder);
     selection.invalidateSpaceTree();
   } catch (e) {
-    debugPrint('[Lattice] Reorder failed: $e');
+    debugPrint('[Kohera] Reorder failed: $e');
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to reorder: $e')),

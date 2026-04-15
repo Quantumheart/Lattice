@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:lattice/features/notifications/models/notification_constants.dart';
+import 'package:kohera/features/notifications/models/notification_constants.dart';
 
 Future<void> registerWindowsComServer() async {
   const keyPath =
@@ -13,9 +13,9 @@ Future<void> registerWindowsComServer() async {
       await Process.run('reg', ['add', keyPath, '/ve', '/d', exe, '/f']);
   if (result.exitCode != 0) {
     debugPrint(
-      '[Lattice] Failed to register Windows COM server: ${result.stderr}',
+      '[Kohera] Failed to register Windows COM server: ${result.stderr}',
     );
   } else {
-    debugPrint('[Lattice] Windows COM server registered at $exe');
+    debugPrint('[Kohera] Windows COM server registered at $exe');
   }
 }

@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:lattice/core/services/client_factory.dart';
-import 'package:lattice/core/services/matrix_service.dart';
+import 'package:kohera/core/services/client_factory.dart';
+import 'package:kohera/core/services/matrix_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -29,18 +29,18 @@ class ClientManager extends ChangeNotifier {
   })  : _storage = storage ??
               const FlutterSecureStorage(
                 iOptions: IOSOptions(
-                  groupId: 'group.io.github.quantumheart.lattice',
+                  groupId: 'group.io.github.quantumheart.kohera',
                   accessibility: KeychainAccessibility.first_unlock,
                 ),
                 webOptions: WebOptions(
-                  dbName: 'LatticeEncryptedStorage',
-                  publicKey: 'LatticeSecureStorage',
+                  dbName: 'KoheraEncryptedStorage',
+                  publicKey: 'KoheraSecureStorage',
                 ),
               ),
         _prefs = prefs,
         _serviceFactory = serviceFactory;
 
-  static const _clientNamesKey = 'lattice_client_names';
+  static const _clientNamesKey = 'kohera_client_names';
 
   final FlutterSecureStorage _storage;
   SharedPreferences? _prefs;

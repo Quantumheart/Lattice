@@ -4,7 +4,7 @@ import 'dart:ui';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart'
     show DefaultEmojiTextStyle;
 import 'package:flutter/material.dart';
-import 'package:lattice/features/chat/widgets/message_bubble.dart';
+import 'package:kohera/features/chat/widgets/message_bubble.dart';
 import 'package:matrix/matrix.dart';
 
 // ── Data class ──────────────────────────────────────────

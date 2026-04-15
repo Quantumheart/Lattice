@@ -1,7 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/core/services/client_manager.dart';
-import 'package:lattice/core/services/matrix_service.dart';
+import 'package:kohera/core/services/client_manager.dart';
+import 'package:kohera/core/services/matrix_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mockito/annotations.dart';
@@ -58,7 +58,7 @@ void main() {
 
   group('init', () {
     test('creates single default service when no stored names', () async {
-      when(mockPrefs.getStringList('lattice_client_names')).thenReturn(null);
+      when(mockPrefs.getStringList('kohera_client_names')).thenReturn(null);
       when(mockPrefs.setStringList(any, any)).thenAnswer((_) async => true);
 
       final createdNames = <String>[];
@@ -76,7 +76,7 @@ void main() {
     });
 
     test('creates services for each stored name', () async {
-      when(mockPrefs.getStringList('lattice_client_names'))
+      when(mockPrefs.getStringList('kohera_client_names'))
           .thenReturn(['default', 'work']);
       when(mockPrefs.setStringList(any, any)).thenAnswer((_) async => true);
 
@@ -94,7 +94,7 @@ void main() {
     });
 
     test('removes non-logged-in services in multi-account init', () async {
-      when(mockPrefs.getStringList('lattice_client_names'))
+      when(mockPrefs.getStringList('kohera_client_names'))
           .thenReturn(['default', 'expired']);
       when(mockPrefs.setStringList(any, any)).thenAnswer((_) async => true);
 
@@ -114,7 +114,7 @@ void main() {
 
   group('setActiveAccount', () {
     test('switches active service and notifies listeners', () async {
-      when(mockPrefs.getStringList('lattice_client_names'))
+      when(mockPrefs.getStringList('kohera_client_names'))
           .thenReturn(['default', 'work']);
       when(mockPrefs.setStringList(any, any)).thenAnswer((_) async => true);
 
@@ -136,7 +136,7 @@ void main() {
     });
 
     test('ignores out-of-bounds index', () async {
-      when(mockPrefs.getStringList('lattice_client_names')).thenReturn(null);
+      when(mockPrefs.getStringList('kohera_client_names')).thenReturn(null);
       when(mockPrefs.setStringList(any, any)).thenAnswer((_) async => true);
 
       final manager = ClientManager(
@@ -154,7 +154,7 @@ void main() {
 
   group('addService', () {
     test('adds service, makes it active, and persists names', () async {
-      when(mockPrefs.getStringList('lattice_client_names')).thenReturn(null);
+      when(mockPrefs.getStringList('kohera_client_names')).thenReturn(null);
       when(mockPrefs.setStringList(any, any)).thenAnswer((_) async => true);
 
       final manager = ClientManager(
@@ -179,7 +179,7 @@ void main() {
       expect(manager.activeIndex, 1);
       expect(manager.activeService.clientName, 'account_1');
       verify(mockPrefs.setStringList(
-        'lattice_client_names',
+        'kohera_client_names',
         ['default', 'account_1'],
       ),).called(1);
     });
@@ -187,7 +187,7 @@ void main() {
 
   group('removeService', () {
     test('removes service and adjusts active index', () async {
-      when(mockPrefs.getStringList('lattice_client_names'))
+      when(mockPrefs.getStringList('kohera_client_names'))
           .thenReturn(['default', 'work']);
       when(mockPrefs.setStringList(any, any)).thenAnswer((_) async => true);
 
@@ -210,7 +210,7 @@ void main() {
     });
 
     test('creates fresh default when last account removed', () async {
-      when(mockPrefs.getStringList('lattice_client_names')).thenReturn(null);
+      when(mockPrefs.getStringList('kohera_client_names')).thenReturn(null);
       when(mockPrefs.setStringList(any, any)).thenAnswer((_) async => true);
 
       final services = <MatrixService>[];
@@ -237,7 +237,7 @@ void main() {
 
   group('hasMultipleAccounts', () {
     test('returns false with single account', () async {
-      when(mockPrefs.getStringList('lattice_client_names')).thenReturn(null);
+      when(mockPrefs.getStringList('kohera_client_names')).thenReturn(null);
       when(mockPrefs.setStringList(any, any)).thenAnswer((_) async => true);
 
       final manager = ClientManager(
@@ -251,7 +251,7 @@ void main() {
     });
 
     test('returns true with multiple accounts', () async {
-      when(mockPrefs.getStringList('lattice_client_names'))
+      when(mockPrefs.getStringList('kohera_client_names'))
           .thenReturn(['default', 'work']);
       when(mockPrefs.setStringList(any, any)).thenAnswer((_) async => true);
 

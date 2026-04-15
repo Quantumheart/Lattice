@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/core/theme/custom_theme.dart';
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/core/theme/custom_theme.dart';
 import 'package:provider/provider.dart';
 
 class CustomThemeEditor extends StatelessWidget {

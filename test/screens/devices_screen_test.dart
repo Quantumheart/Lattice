@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/sub_services/chat_backup_service.dart';
-import 'package:lattice/core/services/sub_services/uia_service.dart';
-import 'package:lattice/features/settings/screens/devices_screen.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/sub_services/chat_backup_service.dart';
+import 'package:kohera/core/services/sub_services/uia_service.dart';
+import 'package:kohera/features/settings/screens/devices_screen.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
@@ -74,7 +74,7 @@ void main() {
       when(mockClient.getDevices()).thenAnswer((_) async => [
             Device(
               deviceId: 'THISDEVICE',
-              displayName: 'Lattice Flutter',
+              displayName: 'Kohera Flutter',
               lastSeenTs: now,
             ),
             Device(
@@ -94,7 +94,7 @@ void main() {
 
       expect(find.text('THIS DEVICE'), findsOneWidget);
       expect(find.text('OTHER DEVICES'), findsOneWidget);
-      expect(find.text('Lattice Flutter'), findsOneWidget);
+      expect(find.text('Kohera Flutter'), findsOneWidget);
       expect(find.text('Element Android'), findsOneWidget);
       expect(find.text('Element Web'), findsOneWidget);
       expect(find.text('Remove all other devices'), findsOneWidget);
@@ -104,7 +104,7 @@ void main() {
       when(mockClient.getDevices()).thenAnswer((_) async => [
             Device(
               deviceId: 'THISDEVICE',
-              displayName: 'Lattice Flutter',
+              displayName: 'Kohera Flutter',
             ),
           ],);
 
@@ -118,7 +118,7 @@ void main() {
     testWidgets('shows backup warning when backup needed', (tester) async {
       when(mockChatBackup.chatBackupNeeded).thenReturn(true);
       when(mockClient.getDevices()).thenAnswer((_) async => [
-            Device(deviceId: 'THISDEVICE', displayName: 'Lattice Flutter'),
+            Device(deviceId: 'THISDEVICE', displayName: 'Kohera Flutter'),
           ],);
 
       await tester.pumpWidget(buildTestWidget());
@@ -135,7 +135,7 @@ void main() {
       when(mockClient.getDevices()).thenAnswer((_) async => [
             Device(
               deviceId: 'THISDEVICE',
-              displayName: 'Lattice Flutter',
+              displayName: 'Kohera Flutter',
             ),
           ],);
       when(mockClient.updateDevice(any, displayName: anyNamed('displayName')))
@@ -145,7 +145,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap the current device to rename.
-      await tester.tap(find.text('Lattice Flutter'));
+      await tester.tap(find.text('Kohera Flutter'));
       await tester.pumpAndSettle();
 
       expect(find.text('Rename device'), findsOneWidget);
@@ -162,7 +162,7 @@ void main() {
     testWidgets('remove device shows confirmation dialog', (tester) async {
       final now = DateTime.now().millisecondsSinceEpoch;
       when(mockClient.getDevices()).thenAnswer((_) async => [
-            Device(deviceId: 'THISDEVICE', displayName: 'Lattice Flutter'),
+            Device(deviceId: 'THISDEVICE', displayName: 'Kohera Flutter'),
             Device(
               deviceId: 'OTHER1',
               displayName: 'Old Phone',

@@ -1,8 +1,8 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:lattice/core/utils/format_file_size.dart';
-import 'package:lattice/core/utils/media_cache_io.dart'
-    if (dart.library.js_interop) 'package:lattice/core/utils/media_cache_web.dart';
+import 'package:kohera/core/utils/format_file_size.dart';
+import 'package:kohera/core/utils/media_cache_io.dart'
+    if (dart.library.js_interop) 'package:kohera/core/utils/media_cache_web.dart';
 import 'package:matrix/matrix.dart';
 
 // coverage:ignore-start
@@ -29,7 +29,7 @@ class _FileBubbleState extends State<FileBubble> {
     try {
       final file = await widget.event.downloadAndDecryptAttachment();
       final path = await FilePicker.platform.saveFile(
-        dialogTitle: 'Lattice',
+        dialogTitle: 'Kohera',
         fileName: widget.event.body,
         bytes: file.bytes,
       );
@@ -41,7 +41,7 @@ class _FileBubbleState extends State<FileBubble> {
         );
       }
     } catch (e) {
-      debugPrint('[Lattice] File download failed: $e');
+      debugPrint('[Kohera] File download failed: $e');
       scaffold.showSnackBar(
         const SnackBar(content: Text('Failed to save')),
       );

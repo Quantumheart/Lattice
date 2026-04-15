@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cached_network_image_platform_interface/cached_network_image_platform_interface.dart';
 import 'package:flutter/material.dart';
-import 'package:lattice/core/utils/media_auth.dart';
+import 'package:kohera/core/utils/media_auth.dart';
 import 'package:matrix/matrix.dart';
 
 /// Displays a user's Matrix avatar with a colored-initial fallback.
@@ -56,7 +56,7 @@ class _UserAvatarState extends State<UserAvatar> {
       );
       if (mounted) setState(() => _resolvedUrl = uri.toString());
     } catch (e) {
-      debugPrint('[Lattice] Failed to resolve avatar thumbnail: $e');
+      debugPrint('[Kohera] Failed to resolve avatar thumbnail: $e');
     }
   }
 

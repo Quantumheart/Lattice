@@ -1,4 +1,4 @@
-# Lattice
+# Kohera
 
 A modern, adaptive Matrix chat client built with Flutter. Supports end-to-end encryption, rich messaging, spaces, and responsive layouts from mobile to desktop.
 
@@ -52,8 +52,8 @@ A modern, adaptive Matrix chat client built with Flutter. Supports end-to-end en
 ### Setup
 
 ```bash
-git clone https://github.com/<your-org>/lattice.git
-cd lattice
+git clone https://github.com/<your-org>/kohera.git
+cd kohera
 flutter pub get
 flutter run              # default device
 flutter run -d linux     # Linux desktop
@@ -74,8 +74,8 @@ flutter build windows --release
 Build and run the containerized web app locally:
 
 ```bash
-docker build -t lattice-web .
-docker run -p 8080:80 lattice-web
+docker build -t kohera-web .
+docker run -p 8080:80 kohera-web
 ```
 
 Then open `http://localhost:8080`.
@@ -83,8 +83,8 @@ Then open `http://localhost:8080`.
 Pull the latest release image from GHCR:
 
 ```bash
-docker pull ghcr.io/quantumheart/lattice:latest
-docker run -p 8080:80 ghcr.io/quantumheart/lattice:latest
+docker pull ghcr.io/quantumheart/kohera:latest
+docker run -p 8080:80 ghcr.io/quantumheart/kohera:latest
 ```
 
 ## Architecture

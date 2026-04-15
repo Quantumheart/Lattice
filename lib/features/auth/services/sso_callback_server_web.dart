@@ -15,12 +15,12 @@ class SsoCallbackServer {
   Future<String> get tokenFuture => _tokenCompleter.future;
 
   static const _timeoutDuration = Duration(minutes: 5);
-  static const _storageKey = 'lattice_sso_homeserver';
+  static const _storageKey = 'kohera_sso_homeserver';
 
   Future<String> start() async {
     _timeout = Timer(_timeoutDuration, () {
       if (!_tokenCompleter.isCompleted) {
-        debugPrint('[Lattice] SsoCallbackServer timed out');
+        debugPrint('[Kohera] SsoCallbackServer timed out');
         _tokenCompleter.completeError(
           SsoException('SSO login timed out. Please try again.'),
         );
@@ -40,7 +40,7 @@ class SsoCallbackServer {
     if (homeserver != null) {
       web.window.sessionStorage.setItem(_storageKey, homeserver!);
     }
-    debugPrint('[Lattice] Redirecting to SSO: $url');
+    debugPrint('[Kohera] Redirecting to SSO: $url');
     web.window.location.href = url.toString();
   }
 

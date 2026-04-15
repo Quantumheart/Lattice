@@ -4,7 +4,7 @@
 self.addEventListener('push', function (event) {
   var roomName = 'New message';
   var body = 'You have a new message';
-  var tag = 'lattice-push';
+  var tag = 'kohera-push';
   var data = {};
 
   if (event.data) {
@@ -33,7 +33,7 @@ self.addEventListener('push', function (event) {
       icon: 'icons/Icon-192.png',
       badge: 'icons/Icon-maskable-192.png',
       tag: tag,
-      renotify: tag !== 'lattice-push',
+      renotify: tag !== 'kohera-push',
       data: data,
       actions: [
         { action: 'mark_read', title: 'Mark as read' },
@@ -46,7 +46,7 @@ self.addEventListener('push', function (event) {
         }
       } catch (e) {}
     }).catch(function (e) {
-      console.error('[Lattice SW] showNotification failed:', e);
+      console.error('[Kohera SW] showNotification failed:', e);
     })
   );
 });
@@ -122,7 +122,7 @@ self.addEventListener('message', function (event) {
           }
         } catch (e) {}
       }).catch(function (e) {
-        console.error('[Lattice SW] showNotification failed:', e);
+        console.error('[Kohera SW] showNotification failed:', e);
       })
     );
   } else if (msg.type === 'close_notification') {

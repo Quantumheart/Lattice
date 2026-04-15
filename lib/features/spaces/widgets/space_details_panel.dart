@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/features/rooms/widgets/admin_settings_section.dart';
-import 'package:lattice/features/rooms/widgets/invite_user_dialog.dart';
-import 'package:lattice/features/rooms/widgets/room_members_section.dart';
-import 'package:lattice/features/spaces/widgets/notification_radio_group.dart';
-import 'package:lattice/features/spaces/widgets/space_context_menu.dart';
-import 'package:lattice/shared/widgets/avatar_edit_overlay.dart';
+import 'package:kohera/core/routing/route_names.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/features/rooms/widgets/admin_settings_section.dart';
+import 'package:kohera/features/rooms/widgets/invite_user_dialog.dart';
+import 'package:kohera/features/rooms/widgets/room_members_section.dart';
+import 'package:kohera/features/spaces/widgets/notification_radio_group.dart';
+import 'package:kohera/features/spaces/widgets/space_context_menu.dart';
+import 'package:kohera/shared/widgets/avatar_edit_overlay.dart';
 import 'package:matrix/matrix.dart' hide Visibility;
 import 'package:provider/provider.dart';
 
@@ -43,7 +43,7 @@ class _SpaceDetailsPanelState extends State<SpaceDetailsPanel> {
     try {
       await task();
     } catch (e) {
-      debugPrint('[Lattice] $action failed: $e');
+      debugPrint('[Kohera] $action failed: $e');
       if (mounted) setState(() => _error = MatrixService.friendlyAuthError(e));
     } finally {
       if (mounted) setState(() => _inFlight.remove(action));

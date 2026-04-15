@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:lattice/core/utils/media_auth.dart';
-import 'package:lattice/shared/widgets/full_image_view.dart';
+import 'package:kohera/core/utils/media_auth.dart';
+import 'package:kohera/shared/widgets/full_image_view.dart';
 import 'package:matrix/matrix.dart';
 
 /// Displays a grid of images/videos and a list of files shared in a room.
@@ -69,7 +69,7 @@ class _SharedMediaSectionState extends State<SharedMediaSection> {
         _loading = false;
       });
     } catch (e) {
-      debugPrint('[Lattice] Load media failed: $e');
+      debugPrint('[Kohera] Load media failed: $e');
       if (mounted && gen == _generation) setState(() => _loading = false);
     }
   }
@@ -246,7 +246,7 @@ class _MediaThumbnailState extends State<_MediaThumbnail> {
         }
       }
     } catch (e) {
-      debugPrint('[Lattice] Thumbnail load failed: $e');
+      debugPrint('[Kohera] Thumbnail load failed: $e');
       if (mounted) setState(() => _loading = false);
     }
   }

@@ -30,12 +30,12 @@ class ChatBackupService extends ChangeNotifier {
     try {
       await _ensureBackupVersionExists();
       final state = await _client.getCryptoIdentityState();
-      debugPrint('[Lattice] Backup status: initialized=${state.initialized}, '
+      debugPrint('[Kohera] Backup status: initialized=${state.initialized}, '
           'connected=${state.connected}');
       _chatBackupNeeded = !state.initialized || !state.connected;
       notifyListeners();
     } catch (e) {
-      debugPrint('[Lattice] checkChatBackupStatus error: $e');
+      debugPrint('[Kohera] checkChatBackupStatus error: $e');
       _chatBackupNeeded = true;
       notifyListeners();
     }
@@ -56,12 +56,12 @@ class ChatBackupService extends ChangeNotifier {
         await _client.deleteRoomKeysVersion(info.version);
       } on MatrixException catch (e) {
         if (e.errcode != 'M_NOT_FOUND') rethrow;
-        debugPrint('[Lattice] No server-side key backup to delete');
+        debugPrint('[Kohera] No server-side key backup to delete');
       }
       await deleteStoredRecoveryKey();
       _chatBackupNeeded = true;
     } catch (e) {
-      debugPrint('[Lattice] disableChatBackup error: $e');
+      debugPrint('[Kohera] disableChatBackup error: $e');
       _chatBackupError = 'Failed to disable chat backup. Please try again.';
     } finally {
       _chatBackupLoading = false;
@@ -78,18 +78,18 @@ class ChatBackupService extends ChangeNotifier {
   Future<void> tryAutoUnlockBackup() async {
     final storedKey = await getStoredRecoveryKey();
     if (storedKey != null) {
-      debugPrint('[Lattice] Attempting auto-unlock with stored key');
+      debugPrint('[Kohera] Attempting auto-unlock with stored key');
 
       try {
         final state = await _client.getCryptoIdentityState();
         if (state.connected && await _storedKeyMatchesServer(storedKey)) {
-          debugPrint('[Lattice] Skip restore: already connected and key valid');
+          debugPrint('[Kohera] Skip restore: already connected and key valid');
         } else {
           await _client.restoreCryptoIdentity(storedKey);
         }
         await _restoreRoomKeys();
       } catch (e) {
-        debugPrint('[Lattice] Failed: $e');
+        debugPrint('[Kohera] Failed: $e');
         await _handleStaleStoredKey();
       }
     } else {
@@ -97,7 +97,7 @@ class ChatBackupService extends ChangeNotifier {
     }
 
     await checkChatBackupStatus();
-    debugPrint('[Lattice] Complete, chatBackupNeeded=$_chatBackupNeeded');
+    debugPrint('[Kohera] Complete, chatBackupNeeded=$_chatBackupNeeded');
   }
 
   Future<bool> _storedKeyMatchesServer(String storedKey) async {
@@ -118,13 +118,13 @@ class ChatBackupService extends ChangeNotifier {
       );
       return decryption.publicKey == serverPublicKey;
     } catch (e) {
-      debugPrint('[Lattice] Key match check failed: $e');
+      debugPrint('[Kohera] Key match check failed: $e');
       return false;
     }
   }
 
   Future<void> _handleStaleStoredKey() async {
-    debugPrint('[Lattice] Stored recovery key is stale — clearing');
+    debugPrint('[Kohera] Stored recovery key is stale — clearing');
     await deleteStoredRecoveryKey();
     _chatBackupNeeded = true;
     notifyListeners();
@@ -150,7 +150,7 @@ class ChatBackupService extends ChangeNotifier {
               senderKey,
             );
           } catch (e) {
-            debugPrint('[Lattice] Key request failed for ${room.id}: $e');
+            debugPrint('[Kohera] Key request failed for ${room.id}: $e');
           }
         }
       }
@@ -196,7 +196,7 @@ class ChatBackupService extends ChangeNotifier {
         await encryption.ssss.getCached(EventTypes.MegolmBackup);
     if (cachedKey == null) return;
 
-    debugPrint('[Lattice] Creating backup version from cached megolm key');
+    debugPrint('[Kohera] Creating backup version from cached megolm key');
     final privateKey = base64decodeUnpadded(cachedKey);
     final decryption = vod.PkDecryption.fromSecretKey(
       vod.Curve25519PublicKey.fromBytes(privateKey),
@@ -206,7 +206,7 @@ class ChatBackupService extends ChangeNotifier {
       BackupAlgorithm.mMegolmBackupV1Curve25519AesSha2,
       <String, dynamic>{'public_key': decryption.publicKey},
     );
-    debugPrint('[Lattice] Backup version created on server');
+    debugPrint('[Kohera] Backup version created on server');
 
     await _client.database.markInboundGroupSessionsAsNeedingUpload();
   }
@@ -217,9 +217,9 @@ class ChatBackupService extends ChangeNotifier {
 
     try {
       await encryption.keyManager.loadAllKeys();
-      debugPrint('[Lattice] Room keys restored from online backup');
+      debugPrint('[Kohera] Room keys restored from online backup');
     } catch (e) {
-      debugPrint('[Lattice] Failed to load keys from backup: $e');
+      debugPrint('[Kohera] Failed to load keys from backup: $e');
     }
 
     requestMissingRoomKeys();

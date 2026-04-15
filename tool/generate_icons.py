@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Lattice app icons for all platforms from a single source rendering."""
+"""Generate Kohera app icons for all platforms from a single source rendering."""
 
 import math
 import os
@@ -137,7 +137,7 @@ def generate_windows():
 
 
 if __name__ == "__main__":
-    print(f"Generating Lattice app icons (bg={BG_COLOR[:3]}, fg=white)\n")
+    print(f"Generating Kohera app icons (bg={BG_COLOR[:3]}, fg=white)\n")
     generate_android()
     generate_ios()
     generate_macos()

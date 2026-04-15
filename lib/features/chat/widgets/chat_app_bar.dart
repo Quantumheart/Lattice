@@ -1,14 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:lattice/core/routing/nav_helper.dart';
-import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/core/services/call_service.dart';
-import 'package:lattice/features/calling/models/incoming_call_info.dart' as model;
-import 'package:lattice/features/calling/services/call_navigator.dart';
-import 'package:lattice/features/chat/widgets/pinned_messages_popup.dart';
-import 'package:lattice/features/home/screens/home_shell.dart';
-import 'package:lattice/shared/widgets/room_avatar.dart';
+import 'package:kohera/core/routing/nav_helper.dart';
+import 'package:kohera/core/routing/route_names.dart';
+import 'package:kohera/core/services/call_service.dart';
+import 'package:kohera/features/calling/models/incoming_call_info.dart' as model;
+import 'package:kohera/features/calling/services/call_navigator.dart';
+import 'package:kohera/features/chat/widgets/pinned_messages_popup.dart';
+import 'package:kohera/features/home/screens/home_shell.dart';
+import 'package:kohera/shared/widgets/room_avatar.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
@@ -165,8 +165,8 @@ class _CallButtonState extends State<_CallButton> {
     final roomHasCall = callService.roomHasActiveCall(widget.room.id);
     final isInCall = callService.activeCallRoomId == widget.room.id;
     final busy = _starting ||
-        (callState != LatticeCallState.idle &&
-            callState != LatticeCallState.failed &&
+        (callState != KoheraCallState.idle &&
+            callState != KoheraCallState.failed &&
             !roomHasCall);
 
     if (roomHasCall && !isInCall) {

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/features/calling/models/call_participant.dart';
-import 'package:lattice/features/calling/models/call_participant_mapper.dart';
+import 'package:kohera/features/calling/models/call_participant.dart';
+import 'package:kohera/features/calling/models/call_participant_mapper.dart';
 
 import '../services/call_test_helpers.dart';
 

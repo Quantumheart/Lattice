@@ -1,11 +1,11 @@
 [Desktop Entry]
-Name=Lattice
+Name=Kohera
 GenericName=Matrix Client
 Comment=A Matrix chat client
-Exec=lattice %u
-Icon=io.github.quantumheart.lattice
+Exec=kohera %u
+Icon=io.github.quantumheart.kohera
 Terminal=false
 Type=Application
 Categories=Network;InstantMessaging;Chat;
-StartupWMClass=io.github.quantumheart.lattice
+StartupWMClass=io.github.quantumheart.kohera
 MimeType=x-scheme-handler/matrix;

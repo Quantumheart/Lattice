@@ -2,14 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/core/services/sub_services/selection_service.dart';
-import 'package:lattice/core/utils/reply_fallback.dart';
-import 'package:lattice/core/utils/time_format.dart';
-import 'package:lattice/features/notifications/models/notification_constants.dart';
-import 'package:lattice/features/notifications/services/inbox_controller.dart';
-import 'package:lattice/features/rooms/widgets/invite_tile.dart';
-import 'package:lattice/shared/widgets/room_avatar.dart';
+import 'package:kohera/core/routing/route_names.dart';
+import 'package:kohera/core/services/sub_services/selection_service.dart';
+import 'package:kohera/core/utils/reply_fallback.dart';
+import 'package:kohera/core/utils/time_format.dart';
+import 'package:kohera/features/notifications/models/notification_constants.dart';
+import 'package:kohera/features/notifications/services/inbox_controller.dart';
+import 'package:kohera/features/rooms/widgets/invite_tile.dart';
+import 'package:kohera/shared/widgets/room_avatar.dart';
 import 'package:matrix/matrix.dart' as matrix_sdk;
 import 'package:provider/provider.dart';
 

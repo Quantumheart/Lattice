@@ -1,8 +1,8 @@
 import 'dart:collection';
 
 import 'package:flutter/foundation.dart';
-import 'package:lattice/core/utils/media_cache_io.dart'
-    if (dart.library.js_interop) 'package:lattice/core/utils/media_cache_web.dart';
+import 'package:kohera/core/utils/media_cache_io.dart'
+    if (dart.library.js_interop) 'package:kohera/core/utils/media_cache_web.dart';
 import 'package:matrix/matrix.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:path_provider/path_provider.dart';
@@ -35,7 +35,7 @@ class MediaCache {
     final dir = await getTemporaryDirectory();
     final sanitized = eventId.replaceAll(RegExp(r'[^\w]'), '_');
     final ext = _extensionForMime(mimetype);
-    final path = '${dir.path}/lattice_media_$sanitized$ext';
+    final path = '${dir.path}/kohera_media_$sanitized$ext';
     final file = File(path);
     await file.writeAsBytes(bytes);
     _tempFiles[eventId] = path;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/shared/widgets/speed_dial_item.dart';
+import 'package:kohera/shared/widgets/speed_dial_item.dart';
 
 void main() {
   Widget buildTestWidget({

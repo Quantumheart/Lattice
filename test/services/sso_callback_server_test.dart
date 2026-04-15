@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/features/auth/services/sso_callback_server.dart';
+import 'package:kohera/features/auth/services/sso_callback_server.dart';
 
 void main() {
   group('SsoCallbackServer', () {

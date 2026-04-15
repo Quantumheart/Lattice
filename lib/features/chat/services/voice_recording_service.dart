@@ -21,7 +21,7 @@ class VoiceRecordingService {
     try {
       await _recorder.cancel();
     } catch (e) {
-      debugPrint('[Lattice] Recording cancel failed: $e');
+      debugPrint('[Kohera] Recording cancel failed: $e');
     }
   }
 

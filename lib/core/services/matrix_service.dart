@@ -2,19 +2,19 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:lattice/core/services/session_backup.dart';
-import 'package:lattice/core/services/sub_services/auth_service.dart';
-import 'package:lattice/core/services/sub_services/chat_backup_service.dart';
-import 'package:lattice/core/services/sub_services/selection_service.dart';
-import 'package:lattice/core/services/sub_services/sync_service.dart';
-import 'package:lattice/core/services/sub_services/uia_service.dart';
-import 'package:lattice/core/utils/network_error.dart';
+import 'package:kohera/core/services/session_backup.dart';
+import 'package:kohera/core/services/sub_services/auth_service.dart';
+import 'package:kohera/core/services/sub_services/chat_backup_service.dart';
+import 'package:kohera/core/services/sub_services/selection_service.dart';
+import 'package:kohera/core/services/sub_services/sync_service.dart';
+import 'package:kohera/core/services/sub_services/uia_service.dart';
+import 'package:kohera/core/utils/network_error.dart';
 import 'package:matrix/matrix.dart';
 // ignore: implementation_imports, no public API for ClientInitException
 import 'package:matrix/src/utils/client_init_exception.dart';
 
-String latticeKey(String clientName, String suffix) =>
-    'lattice_${clientName}_$suffix';
+String koheraKey(String clientName, String suffix) =>
+    'kohera_${clientName}_$suffix';
 
 class MatrixService extends ChangeNotifier {
   static String friendlyAuthError(Object e) {
@@ -32,12 +32,12 @@ class MatrixService extends ChangeNotifier {
         _storage = storage ??
             const FlutterSecureStorage(
               iOptions: IOSOptions(
-                groupId: 'group.io.github.quantumheart.lattice',
+                groupId: 'group.io.github.quantumheart.kohera',
                 accessibility: KeychainAccessibility.first_unlock,
               ),
               webOptions: WebOptions(
-                dbName: 'LatticeEncryptedStorage',
-                publicKey: 'LatticeSecureStorage',
+                dbName: 'KoheraEncryptedStorage',
+                publicKey: 'KoheraSecureStorage',
               ),
             ) {
     uia = UiaService(client: _client);
@@ -145,7 +145,7 @@ class MatrixService extends ChangeNotifier {
         await sync.startSync(timeout: const Duration(minutes: 5));
         await auth.saveSessionBackup();
       } catch (e) {
-        debugPrint('[Lattice] Post-login sync error: $e');
+        debugPrint('[Kohera] Post-login sync error: $e');
       }
     }
     return success;
@@ -166,7 +166,7 @@ class MatrixService extends ChangeNotifier {
         await sync.startSync(timeout: const Duration(minutes: 5));
         await auth.saveSessionBackup();
       } catch (e) {
-        debugPrint('[Lattice] Post-login sync error: $e');
+        debugPrint('[Kohera] Post-login sync error: $e');
       }
     }
     return success;
@@ -184,7 +184,7 @@ class MatrixService extends ChangeNotifier {
       await sync.startSync(timeout: const Duration(minutes: 5));
       await auth.saveSessionBackup();
     } catch (e) {
-      debugPrint('[Lattice] Post-login sync error: $e');
+      debugPrint('[Kohera] Post-login sync error: $e');
     }
   }
 
@@ -198,14 +198,14 @@ class MatrixService extends ChangeNotifier {
   // ── Soft Logout ──────────────────────────────────────────────
 
   Future<void> handleSoftLogout() async {
-    debugPrint('[Lattice] Soft logout detected, attempting token refresh...');
+    debugPrint('[Kohera] Soft logout detected, attempting token refresh...');
     try {
       await _client.refreshAccessToken();
       await auth.persistCredentials();
       await auth.saveSessionBackup();
-      debugPrint('[Lattice] Token refreshed successfully');
+      debugPrint('[Kohera] Token refreshed successfully');
     } catch (e) {
-      debugPrint('[Lattice] Token refresh failed: $e');
+      debugPrint('[Kohera] Token refresh failed: $e');
       await auth.logout();
       await chatBackup.deleteStoredRecoveryKey();
     }
@@ -236,7 +236,7 @@ class MatrixService extends ChangeNotifier {
     if (_loginStateSub != null) return;
     _loginStateSub = _client.onLoginStateChanged.stream.listen((state) async {
       if (state == LoginState.loggedOut && auth.isLoggedIn) {
-        debugPrint('[Lattice] Server-side logout detected');
+        debugPrint('[Kohera] Server-side logout detected');
         await auth.handleServerLogout();
         await chatBackup.deleteStoredRecoveryKey();
       }
@@ -250,7 +250,7 @@ class MatrixService extends ChangeNotifier {
     try {
       await sync.startSync();
     } on TimeoutException {
-      debugPrint('[Lattice] Initial sync timed out during session restore – '
+      debugPrint('[Kohera] Initial sync timed out during session restore – '
           'continuing in background');
     }
   }
@@ -271,11 +271,11 @@ class MatrixService extends ChangeNotifier {
         String? deviceId
       })> _readSessionKeys() async {
     final results = await Future.wait([
-      _storage.read(key: latticeKey(clientName, 'access_token')),
-      _storage.read(key: latticeKey(clientName, 'refresh_token')),
-      _storage.read(key: latticeKey(clientName, 'user_id')),
-      _storage.read(key: latticeKey(clientName, 'homeserver')),
-      _storage.read(key: latticeKey(clientName, 'device_id')),
+      _storage.read(key: koheraKey(clientName, 'access_token')),
+      _storage.read(key: koheraKey(clientName, 'refresh_token')),
+      _storage.read(key: koheraKey(clientName, 'user_id')),
+      _storage.read(key: koheraKey(clientName, 'homeserver')),
+      _storage.read(key: koheraKey(clientName, 'device_id')),
     ]);
     return (
       token: results[0],
@@ -299,7 +299,7 @@ class MatrixService extends ChangeNotifier {
     try {
       keys = await _readSessionKeys();
     } catch (e) {
-      debugPrint('[Lattice] Failed to read session keys: $e');
+      debugPrint('[Kohera] Failed to read session keys: $e');
       return;
     }
 
@@ -314,7 +314,7 @@ class MatrixService extends ChangeNotifier {
     );
 
     debugPrint(
-        '[Lattice] Restoring session for ${keys.userId} on ${keys.homeserver} '
+        '[Kohera] Restoring session for ${keys.userId} on ${keys.homeserver} '
         '(deviceId=${keys.deviceId}, clientName=$clientName)');
 
     try {
@@ -326,17 +326,17 @@ class MatrixService extends ChangeNotifier {
         newUserID: keys.userId,
         newDeviceID: keys.deviceId,
         newHomeserver: homeserverUri,
-        newDeviceName: 'Lattice Flutter',
+        newDeviceName: 'Kohera Flutter',
         newOlmAccount: backup?.olmAccount,
       );
-      debugPrint('[Lattice] Session restored – '
+      debugPrint('[Kohera] Session restored – '
           'encryption=${_client.encryption != null ? "available" : "null"}, '
           'encryptionEnabled=${_client.encryptionEnabled}');
       await _activateSession();
       await auth.saveSessionBackup();
     } catch (e, s) {
-      debugPrint('[Lattice] Session restore failed: $e');
-      debugPrint('[Lattice] Stack trace:\n$s');
+      debugPrint('[Kohera] Session restore failed: $e');
+      debugPrint('[Kohera] Stack trace:\n$s');
 
       final cause = _unwrapInitException(e);
 
@@ -353,7 +353,7 @@ class MatrixService extends ChangeNotifier {
   }
 
   Future<bool> _tryDatabaseRestore() async {
-    debugPrint('[Lattice] Attempting database-only restore (token refresh)...');
+    debugPrint('[Kohera] Attempting database-only restore (token refresh)...');
     try {
       await _client.init();
       if (_client.isLogged()) {
@@ -362,12 +362,12 @@ class MatrixService extends ChangeNotifier {
         }
         await _activateSession();
         await auth.saveSessionBackup();
-        debugPrint('[Lattice] Session restored via database token refresh');
+        debugPrint('[Kohera] Session restored via database token refresh');
         return true;
       }
       return false;
     } catch (e) {
-      debugPrint('[Lattice] Database-only restore failed: $e');
+      debugPrint('[Kohera] Database-only restore failed: $e');
       return false;
     }
   }

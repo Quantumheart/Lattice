@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/core/services/matrix_service.dart';
+import 'package:kohera/core/services/matrix_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mockito/mockito.dart';
@@ -311,25 +311,25 @@ void main() {
       verify(mockClient.login(
         LoginType.mLoginToken,
         token: 'test_sso_token',
-        initialDeviceDisplayName: 'Lattice Flutter',
+        initialDeviceDisplayName: 'Kohera Flutter',
         refreshToken: true,
       ),).called(1);
 
       // Verify credentials persisted
       verify(mockStorage.write(
-              key: 'lattice_test_access_token', value: 'sso_token',),)
+              key: 'kohera_test_access_token', value: 'sso_token',),)
           .called(1);
       verify(mockStorage.write(
-              key: 'lattice_test_refresh_token', value: null,),)
+              key: 'kohera_test_refresh_token', value: null,),)
           .called(1);
       verify(mockStorage.write(
-              key: 'lattice_test_user_id', value: '@ssouser:example.com',),)
+              key: 'kohera_test_user_id', value: '@ssouser:example.com',),)
           .called(1);
       verify(mockStorage.write(
-              key: 'lattice_test_homeserver', value: 'https://example.com',),)
+              key: 'kohera_test_homeserver', value: 'https://example.com',),)
           .called(1);
       verify(mockStorage.write(
-              key: 'lattice_test_device_id', value: 'SSO_DEV',),)
+              key: 'kohera_test_device_id', value: 'SSO_DEV',),)
           .called(1);
     });
 
@@ -424,19 +424,19 @@ void main() {
 
       expect(service.isLoggedIn, isTrue);
       verify(mockStorage.write(
-              key: 'lattice_test_access_token', value: 'reg_token',),)
+              key: 'kohera_test_access_token', value: 'reg_token',),)
           .called(1);
       verify(mockStorage.write(
-              key: 'lattice_test_refresh_token', value: null,),)
+              key: 'kohera_test_refresh_token', value: null,),)
           .called(1);
       verify(mockStorage.write(
-              key: 'lattice_test_user_id', value: '@newuser:example.com',),)
+              key: 'kohera_test_user_id', value: '@newuser:example.com',),)
           .called(1);
       verify(mockStorage.write(
-              key: 'lattice_test_homeserver', value: 'https://example.com',),)
+              key: 'kohera_test_homeserver', value: 'https://example.com',),)
           .called(1);
       verify(mockStorage.write(
-              key: 'lattice_test_device_id', value: 'REG_DEV',),)
+              key: 'kohera_test_device_id', value: 'REG_DEV',),)
           .called(1);
     });
 
@@ -451,7 +451,7 @@ void main() {
       ),);
 
       verify(mockStorage.write(
-        key: 'lattice_session_backup_test',
+        key: 'kohera_session_backup_test',
         value: anyNamed('value'),
       ),).called(1);
     });

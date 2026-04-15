@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/core/services/sub_services/auth_service.dart';
+import 'package:kohera/core/services/sub_services/auth_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mockito/mockito.dart';
 
@@ -158,22 +158,22 @@ void main() {
       await service.clearSessionKeys();
 
       verify(
-        mockStorage.delete(key: 'lattice_test_access_token'),
+        mockStorage.delete(key: 'kohera_test_access_token'),
       ).called(1);
       verify(
-        mockStorage.delete(key: 'lattice_test_refresh_token'),
+        mockStorage.delete(key: 'kohera_test_refresh_token'),
       ).called(1);
       verify(
-        mockStorage.delete(key: 'lattice_test_user_id'),
+        mockStorage.delete(key: 'kohera_test_user_id'),
       ).called(1);
       verify(
-        mockStorage.delete(key: 'lattice_test_homeserver'),
+        mockStorage.delete(key: 'kohera_test_homeserver'),
       ).called(1);
       verify(
-        mockStorage.delete(key: 'lattice_test_device_id'),
+        mockStorage.delete(key: 'kohera_test_device_id'),
       ).called(1);
       verify(
-        mockStorage.delete(key: 'lattice_test_olm_account'),
+        mockStorage.delete(key: 'kohera_test_olm_account'),
       ).called(1);
     });
   });
@@ -186,22 +186,22 @@ void main() {
         clientName: 'default',
         );
 
-      when(mockStorage.read(key: 'lattice_access_token'))
+      when(mockStorage.read(key: 'kohera_access_token'))
           .thenAnswer((_) async => 'old_token');
-      when(mockStorage.read(key: 'lattice_user_id'))
+      when(mockStorage.read(key: 'kohera_user_id'))
           .thenAnswer((_) async => '@user:e.com');
-      when(mockStorage.read(key: 'lattice_homeserver'))
+      when(mockStorage.read(key: 'kohera_homeserver'))
           .thenAnswer((_) async => 'https://e.com');
-      when(mockStorage.read(key: 'lattice_device_id'))
+      when(mockStorage.read(key: 'kohera_device_id'))
           .thenAnswer((_) async => 'D1');
-      when(mockStorage.read(key: 'lattice_olm_account'))
+      when(mockStorage.read(key: 'kohera_olm_account'))
           .thenAnswer((_) async => null);
 
       await defaultService.migrateStorageKeys();
 
       verify(
         mockStorage.write(
-          key: 'lattice_default_access_token',
+          key: 'kohera_default_access_token',
           value: 'old_token',
         ),
       ).called(1);
@@ -210,7 +210,7 @@ void main() {
     test('is no-op for non-default client', () async {
       await service.migrateStorageKeys();
 
-      verifyNever(mockStorage.read(key: 'lattice_access_token'));
+      verifyNever(mockStorage.read(key: 'kohera_access_token'));
     });
   });
 
@@ -225,31 +225,31 @@ void main() {
 
       verify(
         mockStorage.write(
-          key: 'lattice_test_access_token',
+          key: 'kohera_test_access_token',
           value: 'token',
         ),
       ).called(1);
       verify(
         mockStorage.write(
-          key: 'lattice_test_refresh_token',
+          key: 'kohera_test_refresh_token',
           value: null,
         ),
       ).called(1);
       verify(
         mockStorage.write(
-          key: 'lattice_test_user_id',
+          key: 'kohera_test_user_id',
           value: '@user:e.com',
         ),
       ).called(1);
       verify(
         mockStorage.write(
-          key: 'lattice_test_homeserver',
+          key: 'kohera_test_homeserver',
           value: 'https://e.com',
         ),
       ).called(1);
       verify(
         mockStorage.write(
-          key: 'lattice_test_device_id',
+          key: 'kohera_test_device_id',
           value: 'D1',
         ),
       ).called(1);

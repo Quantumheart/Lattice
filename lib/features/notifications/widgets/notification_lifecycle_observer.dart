@@ -3,14 +3,14 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lattice/core/services/call_service.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/features/notifications/services/apns_push_service.dart';
-import 'package:lattice/features/notifications/services/notification_service.dart';
-import 'package:lattice/features/notifications/services/push_service.dart';
-import 'package:lattice/features/notifications/services/web_focus_listener.dart';
-import 'package:lattice/features/notifications/services/web_push_service_export.dart';
+import 'package:kohera/core/services/call_service.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/features/notifications/services/apns_push_service.dart';
+import 'package:kohera/features/notifications/services/notification_service.dart';
+import 'package:kohera/features/notifications/services/push_service.dart';
+import 'package:kohera/features/notifications/services/web_focus_listener.dart';
+import 'package:kohera/features/notifications/services/web_push_service_export.dart';
 import 'package:provider/provider.dart';
 
 class NotificationLifecycleObserver extends StatefulWidget {

@@ -1,15 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:lattice/core/routing/nav_helper.dart';
-import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/sub_services/selection_service.dart';
-import 'package:lattice/features/e2ee/widgets/key_verification_dialog.dart';
-import 'package:lattice/features/rooms/widgets/admin_settings_section.dart';
-import 'package:lattice/features/rooms/widgets/room_members_section.dart';
-import 'package:lattice/features/rooms/widgets/shared_media_section.dart';
-import 'package:lattice/shared/widgets/avatar_edit_overlay.dart';
+import 'package:kohera/core/routing/nav_helper.dart';
+import 'package:kohera/core/routing/route_names.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/sub_services/selection_service.dart';
+import 'package:kohera/features/e2ee/widgets/key_verification_dialog.dart';
+import 'package:kohera/features/rooms/widgets/admin_settings_section.dart';
+import 'package:kohera/features/rooms/widgets/room_members_section.dart';
+import 'package:kohera/features/rooms/widgets/shared_media_section.dart';
+import 'package:kohera/shared/widgets/avatar_edit_overlay.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 
@@ -78,7 +78,7 @@ class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
     try {
       await task();
     } catch (e) {
-      debugPrint('[Lattice] $action failed: $e');
+      debugPrint('[Kohera] $action failed: $e');
       if (mounted) setState(() => _error = MatrixService.friendlyAuthError(e));
     } finally {
       if (mounted) setState(() => _inFlight.remove(action));
@@ -411,7 +411,7 @@ class _RoomDetailsPanelState extends State<RoomDetailsPanel> {
       await client.updateUserDeviceKeys();
       if (mounted) setState(() {});
     } catch (e) {
-      debugPrint('[Lattice] Failed to start verification: $e');
+      debugPrint('[Kohera] Failed to start verification: $e');
       scaffold.showSnackBar(
         const SnackBar(content: Text('Failed to start verification')),
       );

@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:lattice/core/routing/nav_helper.dart';
-import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/core/services/call_service.dart';
-import 'package:lattice/features/calling/services/call_navigator.dart';
-import 'package:lattice/features/calling/widgets/call_state_views.dart';
-import 'package:lattice/features/calling/widgets/connected_call_view.dart';
+import 'package:kohera/core/routing/nav_helper.dart';
+import 'package:kohera/core/routing/route_names.dart';
+import 'package:kohera/core/services/call_service.dart';
+import 'package:kohera/features/calling/services/call_navigator.dart';
+import 'package:kohera/features/calling/widgets/call_state_views.dart';
+import 'package:kohera/features/calling/widgets/connected_call_view.dart';
 import 'package:provider/provider.dart';
 
 // coverage:ignore-start
@@ -28,7 +28,7 @@ class _CallScreenState extends State<CallScreen> {
   void _onCallChanged() {
     if (!mounted) return;
     final state = _callService.callState;
-    if (state == LatticeCallState.idle || state == LatticeCallState.failed) {
+    if (state == KoheraCallState.idle || state == KoheraCallState.failed) {
       _popTimer ??= Timer(const Duration(seconds: 2), () {
         _popTimer = null;
         if (mounted) unawaited(CallNavigator.endCall(context));
@@ -72,17 +72,17 @@ class _CallScreenState extends State<CallScreen> {
         title: Text(widget.displayName),
       ),
       body: switch (state) {
-        LatticeCallState.ringingOutgoing => CallRingingOutgoingView(
+        KoheraCallState.ringingOutgoing => CallRingingOutgoingView(
             displayName: widget.displayName,
             onCancel: callService.cancelOutgoingCall,
           ),
-        LatticeCallState.ringingIncoming => CallJoiningView(displayName: widget.displayName),
-        LatticeCallState.joining => CallJoiningView(displayName: widget.displayName),
-        LatticeCallState.connected => const ConnectedCallView(),
-        LatticeCallState.reconnecting => const CallReconnectingView(),
-        LatticeCallState.disconnecting ||
-        LatticeCallState.idle ||
-        LatticeCallState.failed => const CallEndedView(),
+        KoheraCallState.ringingIncoming => CallJoiningView(displayName: widget.displayName),
+        KoheraCallState.joining => CallJoiningView(displayName: widget.displayName),
+        KoheraCallState.connected => const ConnectedCallView(),
+        KoheraCallState.reconnecting => const CallReconnectingView(),
+        KoheraCallState.disconnecting ||
+        KoheraCallState.idle ||
+        KoheraCallState.failed => const CallEndedView(),
       },
     );
   }

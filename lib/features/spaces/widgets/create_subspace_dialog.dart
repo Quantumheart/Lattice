@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart' hide Visibility;
-import 'package:lattice/core/services/matrix_service.dart';
+import 'package:kohera/core/services/matrix_service.dart';
 import 'package:matrix/matrix.dart';
 
 /// Dialog to create a new subspace within a parent space.
@@ -86,17 +86,17 @@ class _CreateSubspaceDialogState extends State<CreateSubspaceDialog> {
       await widget.parentSpace.setSpaceChild(roomId);
       widget.matrixService.selection.invalidateSpaceTree();
 
-      debugPrint('[Lattice] Subspace created: $roomId under ${widget.parentSpace.id}');
+      debugPrint('[Kohera] Subspace created: $roomId under ${widget.parentSpace.id}');
 
       if (!mounted) return;
       Navigator.pop(context);
     } on TimeoutException {
-      debugPrint('[Lattice] Subspace creation timed out');
+      debugPrint('[Kohera] Subspace creation timed out');
       if (!mounted) return;
       setState(() => _networkError =
           'Timed out waiting for the server. The subspace may still be created.',);
     } catch (e) {
-      debugPrint('[Lattice] Subspace creation failed: $e');
+      debugPrint('[Kohera] Subspace creation failed: $e');
       if (!mounted) return;
       setState(() => _networkError = MatrixService.friendlyAuthError(e));
     } finally {

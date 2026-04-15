@@ -21,11 +21,11 @@ class SsoCallbackServer {
   Future<String> start() async {
     _server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     final port = _server!.port;
-    debugPrint('[Lattice] SsoCallbackServer listening on port $port');
+    debugPrint('[Kohera] SsoCallbackServer listening on port $port');
 
     _timeout = Timer(_timeoutDuration, () {
       if (!_tokenCompleter.isCompleted) {
-        debugPrint('[Lattice] SsoCallbackServer timed out');
+        debugPrint('[Kohera] SsoCallbackServer timed out');
         _tokenCompleter.completeError(
           SsoException('SSO login timed out. Please try again.'),
         );
@@ -78,7 +78,7 @@ class SsoCallbackServer {
           ..write('Not found');
         unawaited(request.response.close());
       } catch (e) {
-        debugPrint('[Lattice] SsoCallbackServer request error: $e');
+        debugPrint('[Kohera] SsoCallbackServer request error: $e');
         try {
           unawaited(request.response.close());
         } catch (_) {}
@@ -107,7 +107,7 @@ class SsoCallbackServer {
 <body>
   <div style="text-align: center">
     <h2>Login successful</h2>
-    <p>You can close this tab and return to Lattice.</p>
+    <p>You can close this tab and return to Kohera.</p>
   </div>
 </body>
 </html>
@@ -134,7 +134,7 @@ class SsoCallbackServer {
 <body>
   <div style="text-align: center">
     <h2>Login failed</h2>
-    <p>No login token was received. Please try again from Lattice.</p>
+    <p>No login token was received. Please try again from Kohera.</p>
   </div>
 </body>
 </html>
@@ -144,7 +144,7 @@ class SsoCallbackServer {
     _timeout?.cancel();
     _timeout = null;
     unawaited(_server?.close(force: true).then((_) {
-      debugPrint('[Lattice] SsoCallbackServer shut down');
+      debugPrint('[Kohera] SsoCallbackServer shut down');
     }),);
     _server = null;
     if (!_tokenCompleter.isCompleted) {

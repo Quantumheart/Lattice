@@ -1,4 +1,4 @@
-package io.github.quantumheart.lattice
+package io.github.quantumheart.kohera
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,4 +1,4 @@
-import 'package:lattice/core/services/preferences_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
 import 'package:matrix/matrix.dart';
 
 /// Whether [text] contains [word] as a whole word (bounded by non-letter

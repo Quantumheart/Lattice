@@ -94,7 +94,7 @@ class _MicLevelIndicatorState extends State<MicLevelIndicator> {
         setState(() => _level = normalized);
       });
     } catch (e) {
-      debugPrint('[Lattice] Mic level capture failed: $e');
+      debugPrint('[Kohera] Mic level capture failed: $e');
       if (mounted) setState(() => _error = 'Microphone access denied');
     }
   }
@@ -165,7 +165,7 @@ class _MicLevelIndicatorState extends State<MicLevelIndicator> {
       await _remotePc!.setLocalDescription(answer);
       await _localPc!.setRemoteDescription(answer);
     } catch (e) {
-      debugPrint('[Lattice] Loopback failed: $e');
+      debugPrint('[Kohera] Loopback failed: $e');
       await _stopLoopback();
     }
   }

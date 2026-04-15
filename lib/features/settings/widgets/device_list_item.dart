@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lattice/core/extensions/device_extension.dart';
+import 'package:kohera/core/extensions/device_extension.dart';
 import 'package:matrix/matrix.dart';
 
 /// A list tile displaying a single Matrix device with its verification status.

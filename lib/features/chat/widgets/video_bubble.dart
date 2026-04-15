@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:lattice/core/utils/format_duration.dart';
-import 'package:lattice/core/utils/format_file_size.dart';
-import 'package:lattice/core/utils/media_auth.dart';
-import 'package:lattice/core/utils/media_cache.dart';
-import 'package:lattice/features/chat/services/media_playback_service.dart';
-import 'package:lattice/features/chat/widgets/full_video_view.dart';
+import 'package:kohera/core/utils/format_duration.dart';
+import 'package:kohera/core/utils/format_file_size.dart';
+import 'package:kohera/core/utils/media_auth.dart';
+import 'package:kohera/core/utils/media_cache.dart';
+import 'package:kohera/features/chat/services/media_playback_service.dart';
+import 'package:kohera/features/chat/widgets/full_video_view.dart';
 import 'package:matrix/matrix.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -97,7 +97,7 @@ class _VideoBubbleState extends State<VideoBubble> {
         }
       }
     } catch (e) {
-      debugPrint('[Lattice] Video thumbnail load failed: $e');
+      debugPrint('[Kohera] Video thumbnail load failed: $e');
       if (mounted) setState(() => _state = _VideoState.initial);
     }
   }
@@ -132,7 +132,7 @@ class _VideoBubbleState extends State<VideoBubble> {
           );
       setState(() => _state = _VideoState.playing);
     } catch (e) {
-      debugPrint('[Lattice] Video playback failed: $e');
+      debugPrint('[Kohera] Video playback failed: $e');
       if (mounted) setState(() => _state = _VideoState.error);
     }
   }

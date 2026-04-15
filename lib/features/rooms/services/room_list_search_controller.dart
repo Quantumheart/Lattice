@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:lattice/core/utils/reply_fallback.dart';
+import 'package:kohera/core/utils/reply_fallback.dart';
 import 'package:matrix/matrix.dart';
 
 // ── Data class ──────────────────────────────────────────────
@@ -105,7 +105,7 @@ class RoomListSearchController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      debugPrint('[Lattice] Searching messages for: $searchQuery');
+      debugPrint('[Kohera] Searching messages for: $searchQuery');
 
       // Run server search and local encrypted search in parallel.
       // On loadMore, only paginate the server search — local search
@@ -198,7 +198,7 @@ class RoomListSearchController extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      debugPrint('[Lattice] Message search error: $e');
+      debugPrint('[Kohera] Message search error: $e');
       if (_disposed || generation != _searchGeneration) return;
       _isLoading = false;
       _error = 'Message search failed. The server may not support it.';
@@ -220,7 +220,7 @@ class RoomListSearchController extends ChangeNotifier {
     if (encryptedRooms.isEmpty) return [];
 
     debugPrint(
-      '[Lattice] Searching ${encryptedRooms.length} encrypted rooms locally',
+      '[Kohera] Searching ${encryptedRooms.length} encrypted rooms locally',
     );
 
     // Search rooms in batches to avoid excessive concurrent DB queries.
@@ -261,7 +261,7 @@ class RoomListSearchController extends ChangeNotifier {
               .toList();
         } catch (e) {
           debugPrint(
-            '[Lattice] Local search failed for ${room.id}: $e',
+            '[Kohera] Local search failed for ${room.id}: $e',
           );
           return <MessageSearchResult>[];
         }

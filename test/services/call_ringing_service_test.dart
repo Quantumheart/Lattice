@@ -1,7 +1,7 @@
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/features/calling/models/incoming_call_info.dart';
-import 'package:lattice/features/calling/services/call_ringing_service.dart';
+import 'package:kohera/features/calling/models/incoming_call_info.dart';
+import 'package:kohera/features/calling/services/call_ringing_service.dart';
 
 import 'call_test_helpers.dart';
 

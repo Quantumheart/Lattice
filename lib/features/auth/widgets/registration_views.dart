@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lattice/features/auth/widgets/registration_controller.dart';
+import 'package:kohera/features/auth/widgets/registration_controller.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // coverage:ignore-start
@@ -47,7 +47,7 @@ Widget _buildRecaptchaView(
         const SizedBox(height: 16),
         Text(
           'Complete the verification in your browser,\n'
-          'then return to Lattice.',
+          'then return to Kohera.',
           textAlign: TextAlign.center,
           style: tt.bodyMedium,
         ),

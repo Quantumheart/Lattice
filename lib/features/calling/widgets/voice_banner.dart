@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:lattice/core/services/call_service.dart';
-import 'package:lattice/features/calling/services/call_navigator.dart';
-import 'package:lattice/features/calling/widgets/call_state_views.dart'
+import 'package:kohera/core/services/call_service.dart';
+import 'package:kohera/features/calling/services/call_navigator.dart';
+import 'package:kohera/features/calling/widgets/call_state_views.dart'
     show formatCallElapsed;
 import 'package:provider/provider.dart';
 
@@ -43,7 +43,7 @@ class _VoiceBannerState extends State<VoiceBanner> {
   @override
   Widget build(BuildContext context) {
     final callService = context.watch<CallService>();
-    final isConnected = callService.callState == LatticeCallState.connected;
+    final isConnected = callService.callState == KoheraCallState.connected;
     final activeRoomId = callService.activeCallRoomId;
     final viewingDifferentRoom =
         activeRoomId != null && activeRoomId != widget.currentViewingRoomId;

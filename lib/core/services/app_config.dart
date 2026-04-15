@@ -77,7 +77,7 @@ class AppConfig {
             : json['giphyApiKey'] as String?,
       );
     } catch (e) {
-      debugPrint('[Lattice] Failed to load app config: $e');
+      debugPrint('[Kohera] Failed to load app config: $e');
       _instance = AppConfig._(
         defaultHomeserver: _fallbackHomeserver,
       );

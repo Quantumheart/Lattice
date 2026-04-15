@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:lattice/core/services/call_service.dart';
-import 'package:lattice/features/calling/services/call_navigator.dart';
+import 'package:kohera/core/services/call_service.dart';
+import 'package:kohera/features/calling/services/call_navigator.dart';
 import 'package:matrix/matrix.dart';
 
 // coverage:ignore-start

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:lattice/core/services/call_service.dart';
-import 'package:lattice/core/services/macos_permissions.dart';
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/core/utils/platform_info.dart';
-import 'package:lattice/features/calling/services/push_to_talk_service.dart';
-import 'package:lattice/features/calling/widgets/call_control_bar.dart';
-import 'package:lattice/features/calling/widgets/pip_self_view.dart';
-import 'package:lattice/features/calling/widgets/screen_source_picker.dart';
-import 'package:lattice/features/calling/widgets/video_grid.dart';
+import 'package:kohera/core/services/call_service.dart';
+import 'package:kohera/core/services/macos_permissions.dart';
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/core/utils/platform_info.dart';
+import 'package:kohera/features/calling/services/push_to_talk_service.dart';
+import 'package:kohera/features/calling/widgets/call_control_bar.dart';
+import 'package:kohera/features/calling/widgets/pip_self_view.dart';
+import 'package:kohera/features/calling/widgets/screen_source_picker.dart';
+import 'package:kohera/features/calling/widgets/video_grid.dart';
 import 'package:provider/provider.dart';
 
 // coverage:ignore-start
@@ -50,7 +50,7 @@ class ConnectedCallView extends StatelessWidget {
       builder: (_) => AlertDialog(
         title: const Text('Screen Recording Permission Required'),
         content: const Text(
-          'Lattice needs screen recording permission to share your screen. '
+          'Kohera needs screen recording permission to share your screen. '
           'Please enable it in System Settings > Privacy & Security > '
           'Screen Recording, then try again.',
         ),

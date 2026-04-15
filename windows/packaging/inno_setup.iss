@@ -1,14 +1,14 @@
 [Setup]
-AppId={{io.github.quantumheart.lattice}
-AppName=Lattice
+AppId={{io.github.quantumheart.kohera}
+AppName=Kohera
 AppVersion={#AppVersion}
-AppPublisher=Lattice
-AppPublisherURL=https://github.com/Quantumheart/Lattice
-DefaultDirName={autopf}\Lattice
-DefaultGroupName=Lattice
+AppPublisher=Kohera
+AppPublisherURL=https://github.com/Quantumheart/Kohera
+DefaultDirName={autopf}\Kohera
+DefaultGroupName=Kohera
 DisableProgramGroupPage=yes
 OutputDir=..\..\build\windows\installer
-OutputBaseFilename=lattice-windows-x64-setup
+OutputBaseFilename=kohera-windows-x64-setup
 SetupIconFile=..\runner\resources\app_icon.ico
 Compression=lzma2
 SolidCompression=yes
@@ -26,8 +26,8 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 Source: "..\..\build\windows\x64\runner\Release\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
-Name: "{group}\Lattice"; Filename: "{app}\lattice.exe"; AppUserModelID: "io.github.quantumheart.lattice"
-Name: "{autodesktop}\Lattice"; Filename: "{app}\lattice.exe"; Tasks: desktopicon; AppUserModelID: "io.github.quantumheart.lattice"
+Name: "{group}\Kohera"; Filename: "{app}\kohera.exe"; AppUserModelID: "io.github.quantumheart.kohera"
+Name: "{autodesktop}\Kohera"; Filename: "{app}\kohera.exe"; Tasks: desktopicon; AppUserModelID: "io.github.quantumheart.kohera"
 
 [Run]
-Filename: "{app}\lattice.exe"; Description: "{cm:LaunchProgram,Lattice}"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\kohera.exe"; Description: "{cm:LaunchProgram,Kohera}"; Flags: nowait postinstall skipifsilent

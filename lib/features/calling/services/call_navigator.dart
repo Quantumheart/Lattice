@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:go_router/go_router.dart';
-import 'package:lattice/core/routing/nav_helper.dart';
-import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/core/services/call_service.dart';
-import 'package:lattice/features/calling/models/incoming_call_info.dart' as model;
-import 'package:lattice/features/calling/services/call_permission_service.dart';
+import 'package:kohera/core/routing/nav_helper.dart';
+import 'package:kohera/core/routing/route_names.dart';
+import 'package:kohera/core/services/call_service.dart';
+import 'package:kohera/features/calling/models/incoming_call_info.dart' as model;
+import 'package:kohera/features/calling/services/call_permission_service.dart';
 import 'package:provider/provider.dart';
 
 // coverage:ignore-start
@@ -17,8 +17,8 @@ abstract class CallNavigator {
     model.CallType type = model.CallType.voice,
   }) async {
     final callService = context.read<CallService>();
-    if (callService.callState != LatticeCallState.idle &&
-        callService.callState != LatticeCallState.failed) {
+    if (callService.callState != KoheraCallState.idle &&
+        callService.callState != KoheraCallState.failed) {
       return;
     }
 

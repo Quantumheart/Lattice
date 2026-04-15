@@ -5,13 +5,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
 import 'package:integration_test/integration_test.dart';
-import 'package:lattice/core/routing/route_names.dart';
-import 'package:lattice/core/services/call_service.dart';
-import 'package:lattice/core/services/client_manager.dart';
-import 'package:lattice/core/services/matrix_service.dart';
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/features/calling/screens/call_pane.dart';
-import 'package:lattice/features/calling/widgets/incoming_call_overlay.dart';
+import 'package:kohera/core/routing/route_names.dart';
+import 'package:kohera/core/services/call_service.dart';
+import 'package:kohera/core/services/client_manager.dart';
+import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/features/calling/screens/call_pane.dart';
+import 'package:kohera/features/calling/widgets/incoming_call_overlay.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
@@ -256,7 +256,7 @@ void callFlowTests() {
       await h.callService.initiateCall(_roomId);
       await tester.pump();
 
-      expect(h.callService.callState, LatticeCallState.ringingOutgoing);
+      expect(h.callService.callState, KoheraCallState.ringingOutgoing);
       expect(find.textContaining('Calling'), findsOneWidget);
       expect(find.byIcon(Icons.call_end_rounded), findsOneWidget);
     });
@@ -271,7 +271,7 @@ void callFlowTests() {
       await tester.tap(find.byIcon(Icons.call_end_rounded));
       await tester.pumpAndSettle();
 
-      expect(h.callService.callState, LatticeCallState.idle);
+      expect(h.callService.callState, KoheraCallState.idle);
     });
 
     testWidgets('joinCall transitions to connected with control bar',
@@ -282,7 +282,7 @@ void callFlowTests() {
       await h.callService.joinCall(_roomId);
       await tester.pumpAndSettle();
 
-      expect(h.callService.callState, LatticeCallState.connected);
+      expect(h.callService.callState, KoheraCallState.connected);
       expect(find.byIcon(Icons.mic), findsOneWidget);
       expect(find.byIcon(Icons.call_end), findsOneWidget);
     });
@@ -297,7 +297,7 @@ void callFlowTests() {
       await tester.tap(find.byIcon(Icons.call_end));
       await tester.pumpAndSettle();
 
-      expect(h.callService.callState, LatticeCallState.idle);
+      expect(h.callService.callState, KoheraCallState.idle);
     });
   });
 
@@ -312,7 +312,7 @@ void callFlowTests() {
       _injectCallInvite(h);
       await tester.pump();
 
-      expect(h.callService.callState, LatticeCallState.ringingIncoming);
+      expect(h.callService.callState, KoheraCallState.ringingIncoming);
       expect(find.byIcon(Icons.call_end_rounded), findsOneWidget);
       expect(find.byIcon(Icons.call_rounded), findsOneWidget);
       expect(find.byIcon(Icons.videocam_rounded), findsOneWidget);
@@ -329,7 +329,7 @@ void callFlowTests() {
       await tester.tap(find.byIcon(Icons.call_end_rounded));
       await tester.pumpAndSettle();
 
-      expect(h.callService.callState, LatticeCallState.idle);
+      expect(h.callService.callState, KoheraCallState.idle);
       expect(find.byIcon(Icons.call_rounded), findsNothing);
     });
 
@@ -347,7 +347,7 @@ void callFlowTests() {
 
       expect(
         h.callService.callState,
-        LatticeCallState.connected,
+        KoheraCallState.connected,
       );
     });
   });
@@ -466,7 +466,7 @@ void callFlowTests() {
       await tester.pump();
       await tester.pump();
 
-      expect(h.callService.callState, LatticeCallState.failed);
+      expect(h.callService.callState, KoheraCallState.failed);
     });
   });
 
@@ -491,7 +491,7 @@ void callFlowTests() {
       await tester.pump();
       await tester.pump();
 
-      expect(h.callService.callState, LatticeCallState.idle);
+      expect(h.callService.callState, KoheraCallState.idle);
     });
 
     testWidgets('remote hangup during connected call ends call',
@@ -506,14 +506,14 @@ void callFlowTests() {
       await h.callService.joinCall(_roomId);
       await tester.pumpAndSettle();
 
-      expect(h.callService.callState, LatticeCallState.connected);
+      expect(h.callService.callState, KoheraCallState.connected);
 
       _injectSignalingEvent(h, type: 'm.call.hangup', callId: callId);
       await tester.pump();
       await tester.pump();
       await tester.pump();
 
-      expect(h.callService.callState, LatticeCallState.idle);
+      expect(h.callService.callState, KoheraCallState.idle);
     });
   });
 }

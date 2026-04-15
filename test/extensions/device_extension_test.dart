@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lattice/core/extensions/device_extension.dart';
+import 'package:kohera/core/extensions/device_extension.dart';
 import 'package:matrix/matrix.dart';
 
 void main() {
@@ -24,7 +24,7 @@ void main() {
       test('returns phone icon for Android', () {
         final device = Device(
           deviceId: 'id',
-          displayName: 'Lattice Android',
+          displayName: 'Kohera Android',
         );
         expect(device.deviceIcon, Icons.phone_android_outlined);
       });
@@ -72,7 +72,7 @@ void main() {
       test('returns desktop icon for macOS', () {
         final device = Device(
           deviceId: 'id',
-          displayName: 'Lattice macOS',
+          displayName: 'Kohera macOS',
         );
         expect(device.deviceIcon, Icons.desktop_mac_outlined);
       });

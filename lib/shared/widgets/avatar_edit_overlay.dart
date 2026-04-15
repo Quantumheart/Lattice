@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:lattice/shared/widgets/room_avatar.dart';
+import 'package:kohera/shared/widgets/room_avatar.dart';
 import 'package:matrix/matrix.dart';
 
 /// Wraps a [RoomAvatarWidget] with avatar editing controls.
@@ -92,14 +92,14 @@ class _AvatarEditOverlayState extends State<AvatarEditOverlay> {
 
       final bytes = await picked.readAsBytes();
       await widget.room.setAvatar(MatrixFile(bytes: bytes, name: picked.name));
-      debugPrint('[Lattice] Room avatar uploaded: ${picked.name} (${bytes.length} bytes)');
+      debugPrint('[Kohera] Room avatar uploaded: ${picked.name} (${bytes.length} bytes)');
       if (mounted) {
         scaffold.showSnackBar(
           const SnackBar(content: Text('Avatar updated')),
         );
       }
     } catch (e) {
-      debugPrint('[Lattice] Avatar upload failed: $e');
+      debugPrint('[Kohera] Avatar upload failed: $e');
       if (mounted) {
         scaffold.showSnackBar(
           const SnackBar(content: Text('Failed to update avatar')),
@@ -115,14 +115,14 @@ class _AvatarEditOverlayState extends State<AvatarEditOverlay> {
     setState(() => _busy = true);
     try {
       await widget.room.setAvatar(null);
-      debugPrint('[Lattice] Room avatar removed');
+      debugPrint('[Kohera] Room avatar removed');
       if (mounted) {
         scaffold.showSnackBar(
           const SnackBar(content: Text('Avatar removed')),
         );
       }
     } catch (e) {
-      debugPrint('[Lattice] Avatar removal failed: $e');
+      debugPrint('[Kohera] Avatar removal failed: $e');
       if (mounted) {
         scaffold.showSnackBar(
           const SnackBar(content: Text('Failed to remove avatar')),

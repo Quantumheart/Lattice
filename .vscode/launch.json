@@ -11,12 +11,12 @@
             "program": "./test/"
         },
         {
-            "name": "lattice",
+            "name": "kohera",
             "request": "launch",
             "type": "dart"
         },
         {
-            "name": "lattice (linux)",
+            "name": "kohera (linux)",
             "request": "launch",
             "type": "dart",
             "args": [
@@ -25,18 +25,18 @@
             ]
         },
         {
-            "name": "lattice (attach)",
+            "name": "kohera (attach)",
             "request": "attach",
             "type": "dart"
         },
         {
-            "name": "lattice (profile mode)",
+            "name": "kohera (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
-            "name": "lattice (release mode)",
+            "name": "kohera (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"

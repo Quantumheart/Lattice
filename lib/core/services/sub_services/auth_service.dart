@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:lattice/core/models/server_auth_capabilities.dart';
-import 'package:lattice/core/services/matrix_service.dart' show latticeKey;
-import 'package:lattice/core/services/session_backup.dart';
+import 'package:kohera/core/models/server_auth_capabilities.dart';
+import 'package:kohera/core/services/matrix_service.dart' show koheraKey;
+import 'package:kohera/core/services/session_backup.dart';
 import 'package:matrix/matrix.dart';
 // ignore: implementation_imports, no public API for ClientInitException
 import 'package:matrix/src/utils/client_init_exception.dart';
@@ -48,19 +48,19 @@ class AuthService extends ChangeNotifier {
       if (hs.isEmpty) throw ArgumentError('Homeserver cannot be empty');
       if (!hs.startsWith('http')) hs = 'https://$hs';
 
-      debugPrint('[Lattice] Checking homeserver: $hs');
+      debugPrint('[Kohera] Checking homeserver: $hs');
       await _client.checkHomeserver(Uri.parse(hs));
-      debugPrint('[Lattice] Homeserver OK');
+      debugPrint('[Kohera] Homeserver OK');
 
-      debugPrint('[Lattice] Logging in as $username ...');
+      debugPrint('[Kohera] Logging in as $username ...');
       await _client.login(
         LoginType.mLoginPassword,
         identifier: AuthenticationUserIdentifier(user: username.trim()),
         password: password,
-        initialDeviceDisplayName: 'Lattice Flutter',
+        initialDeviceDisplayName: 'Kohera Flutter',
         refreshToken: true,
       );
-      debugPrint('[Lattice] Login complete – '
+      debugPrint('[Kohera] Login complete – '
           'deviceId=${_client.deviceID}, '
           'userId=${_client.userID}, '
           'encryption=${_client.encryption != null ? "available" : "null"}, '
@@ -72,13 +72,13 @@ class AuthService extends ChangeNotifier {
       try {
         await persistCredentials();
       } catch (e) {
-        debugPrint('[Lattice] Credential persistence failed (non-fatal): $e');
+        debugPrint('[Kohera] Credential persistence failed (non-fatal): $e');
       }
 
       return true;
     } catch (e, s) {
-      debugPrint('[Lattice] Login failed: $e');
-      debugPrint('[Lattice] Stack trace:\n$s');
+      debugPrint('[Kohera] Login failed: $e');
+      debugPrint('[Kohera] Stack trace:\n$s');
       loginError = e.toString();
       return false;
     }
@@ -99,14 +99,14 @@ class AuthService extends ChangeNotifier {
 
       await _client.checkHomeserver(Uri.parse(hs));
 
-      debugPrint('[Lattice] Completing SSO login ...');
+      debugPrint('[Kohera] Completing SSO login ...');
       await _client.login(
         LoginType.mLoginToken,
         token: loginToken,
-        initialDeviceDisplayName: 'Lattice Flutter',
+        initialDeviceDisplayName: 'Kohera Flutter',
         refreshToken: true,
       );
-      debugPrint('[Lattice] SSO login complete – '
+      debugPrint('[Kohera] SSO login complete – '
           'deviceId=${_client.deviceID}, '
           'userId=${_client.userID}');
 
@@ -116,13 +116,13 @@ class AuthService extends ChangeNotifier {
       try {
         await persistCredentials();
       } catch (e) {
-        debugPrint('[Lattice] Credential persistence failed (non-fatal): $e');
+        debugPrint('[Kohera] Credential persistence failed (non-fatal): $e');
       }
 
       return true;
     } catch (e, s) {
-      debugPrint('[Lattice] SSO login failed: $e');
-      debugPrint('[Lattice] Stack trace:\n$s');
+      debugPrint('[Kohera] SSO login failed: $e');
+      debugPrint('[Kohera] Stack trace:\n$s');
       loginError = e.toString();
       return false;
     }
@@ -134,7 +134,7 @@ class AuthService extends ChangeNotifier {
     RegisterResponse response, {
     String? password,
   }) async {
-    debugPrint('[Lattice] Registration complete – userId=${response.userId}');
+    debugPrint('[Kohera] Registration complete – userId=${response.userId}');
 
     if (_client.accessToken == null || _client.userID == null) {
       throw StateError('Client was not initialized after register(). '
@@ -147,7 +147,7 @@ class AuthService extends ChangeNotifier {
     try {
       await persistCredentials();
     } catch (e) {
-      debugPrint('[Lattice] Credential persistence failed (non-fatal): $e');
+      debugPrint('[Kohera] Credential persistence failed (non-fatal): $e');
     }
   }
 
@@ -169,7 +169,7 @@ class AuthService extends ChangeNotifier {
         await _client.logout();
       }
     } catch (e) {
-      debugPrint('[Lattice] Logout error: $e');
+      debugPrint('[Kohera] Logout error: $e');
     }
     await clearSessionKeys();
     await SessionBackup.delete(clientName: _clientName, storage: _storage);
@@ -192,7 +192,7 @@ class AuthService extends ChangeNotifier {
       userId: _client.userID!,
       homeserver: _client.homeserver.toString(),
       deviceId: _client.deviceID!,
-      deviceName: 'Lattice Flutter',
+      deviceName: 'Kohera Flutter',
       olmAccount: _client.encryption?.pickledOlmAccount,
     );
     await SessionBackup.save(
@@ -200,7 +200,7 @@ class AuthService extends ChangeNotifier {
       clientName: _clientName,
       storage: _storage,
     );
-    debugPrint('[Lattice] Session backup saved for $_clientName');
+    debugPrint('[Kohera] Session backup saved for $_clientName');
   }
 
   Future<String?> _readRefreshToken() async {
@@ -215,7 +215,7 @@ class AuthService extends ChangeNotifier {
     required bool isLoggedIn,
   }) async {
     if (isLoggedIn) {
-      debugPrint('[Lattice] getServerAuthCapabilities called while logged in, '
+      debugPrint('[Kohera] getServerAuthCapabilities called while logged in, '
           'skipping to avoid mutating shared client state');
       return const ServerAuthCapabilities();
     }
@@ -316,12 +316,12 @@ class AuthService extends ChangeNotifier {
 
   Future<void> clearSessionKeys() async {
     await Future.wait([
-      _storage.delete(key: latticeKey(_clientName, 'access_token')),
-      _storage.delete(key: latticeKey(_clientName, 'refresh_token')),
-      _storage.delete(key: latticeKey(_clientName, 'user_id')),
-      _storage.delete(key: latticeKey(_clientName, 'homeserver')),
-      _storage.delete(key: latticeKey(_clientName, 'device_id')),
-      _storage.delete(key: latticeKey(_clientName, 'olm_account')),
+      _storage.delete(key: koheraKey(_clientName, 'access_token')),
+      _storage.delete(key: koheraKey(_clientName, 'refresh_token')),
+      _storage.delete(key: koheraKey(_clientName, 'user_id')),
+      _storage.delete(key: koheraKey(_clientName, 'homeserver')),
+      _storage.delete(key: koheraKey(_clientName, 'device_id')),
+      _storage.delete(key: koheraKey(_clientName, 'olm_account')),
     ]);
   }
 
@@ -330,17 +330,17 @@ class AuthService extends ChangeNotifier {
   Future<void> migrateStorageKeys() async {
     if (_clientName != 'default') return;
 
-    final oldToken = await _storage.read(key: 'lattice_access_token');
+    final oldToken = await _storage.read(key: 'kohera_access_token');
     if (oldToken == null) return;
 
-    debugPrint('[Lattice] Migrating old storage keys to namespaced format');
+    debugPrint('[Kohera] Migrating old storage keys to namespaced format');
 
     const migrations = {
-      'lattice_access_token': 'lattice_default_access_token',
-      'lattice_user_id': 'lattice_default_user_id',
-      'lattice_homeserver': 'lattice_default_homeserver',
-      'lattice_device_id': 'lattice_default_device_id',
-      'lattice_olm_account': 'lattice_default_olm_account',
+      'kohera_access_token': 'kohera_default_access_token',
+      'kohera_user_id': 'kohera_default_user_id',
+      'kohera_homeserver': 'kohera_default_homeserver',
+      'kohera_device_id': 'kohera_default_device_id',
+      'kohera_olm_account': 'kohera_default_olm_account',
     };
 
     for (final entry in migrations.entries) {
@@ -353,20 +353,20 @@ class AuthService extends ChangeNotifier {
   }
 
   Future<void> migrateKeychainToAppGroup() async {
-    const marker = 'lattice_app_group_migrated';
+    const marker = 'kohera_app_group_migrated';
     final migrated = await _storage.read(key: marker);
     if (migrated != null) return;
 
-    debugPrint('[Lattice] Migrating keychain to shared App Group');
+    debugPrint('[Kohera] Migrating keychain to shared App Group');
 
     const legacyStorage = FlutterSecureStorage();
     final keys = [
-      latticeKey(_clientName, 'access_token'),
-      latticeKey(_clientName, 'refresh_token'),
-      latticeKey(_clientName, 'user_id'),
-      latticeKey(_clientName, 'homeserver'),
-      latticeKey(_clientName, 'device_id'),
-      latticeKey(_clientName, 'olm_account'),
+      koheraKey(_clientName, 'access_token'),
+      koheraKey(_clientName, 'refresh_token'),
+      koheraKey(_clientName, 'user_id'),
+      koheraKey(_clientName, 'homeserver'),
+      koheraKey(_clientName, 'device_id'),
+      koheraKey(_clientName, 'olm_account'),
     ];
 
     for (final key in keys) {
@@ -376,12 +376,12 @@ class AuthService extends ChangeNotifier {
           await _storage.write(key: key, value: value);
         }
       } catch (e) {
-        debugPrint('[Lattice] Keychain migration skipped for $key: $e');
+        debugPrint('[Kohera] Keychain migration skipped for $key: $e');
       }
     }
 
     await _storage.write(key: marker, value: 'true');
-    debugPrint('[Lattice] Keychain App Group migration complete');
+    debugPrint('[Kohera] Keychain App Group migration complete');
   }
 
   // ── Credential Persistence ──────────────────────────────────
@@ -391,18 +391,18 @@ class AuthService extends ChangeNotifier {
     final refreshToken = stored?.tryGet<String>('refresh_token');
     await Future.wait([
       _storage.write(
-          key: latticeKey(_clientName, 'access_token'),
+          key: koheraKey(_clientName, 'access_token'),
           value: _client.accessToken,),
       _storage.write(
-          key: latticeKey(_clientName, 'refresh_token'),
+          key: koheraKey(_clientName, 'refresh_token'),
           value: refreshToken,),
       _storage.write(
-          key: latticeKey(_clientName, 'user_id'), value: _client.userID,),
+          key: koheraKey(_clientName, 'user_id'), value: _client.userID,),
       _storage.write(
-          key: latticeKey(_clientName, 'homeserver'),
+          key: koheraKey(_clientName, 'homeserver'),
           value: _client.homeserver.toString(),),
       _storage.write(
-          key: latticeKey(_clientName, 'device_id'), value: _client.deviceID,),
+          key: koheraKey(_clientName, 'device_id'), value: _client.deviceID,),
     ]);
   }
 

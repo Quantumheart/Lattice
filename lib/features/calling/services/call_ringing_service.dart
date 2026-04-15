@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:lattice/features/calling/models/incoming_call_info.dart' as model;
-import 'package:lattice/features/calling/services/ringtone_service.dart';
+import 'package:kohera/features/calling/models/incoming_call_info.dart' as model;
+import 'package:kohera/features/calling/services/ringtone_service.dart';
 
 class CallRingingService {
   CallRingingService({RingtoneService? ringtoneService})

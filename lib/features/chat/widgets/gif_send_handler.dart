@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:lattice/core/models/upload_state.dart';
-import 'package:lattice/core/services/matrix_service.dart';
+import 'package:kohera/core/models/upload_state.dart';
+import 'package:kohera/core/services/matrix_service.dart';
 import 'package:matrix/matrix.dart';
 
 // coverage:ignore-start

@@ -2,10 +2,10 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:lattice/core/utils/format_duration.dart';
-import 'package:lattice/core/utils/format_file_size.dart';
-import 'package:lattice/core/utils/media_cache.dart';
-import 'package:lattice/features/chat/services/media_playback_service.dart';
+import 'package:kohera/core/utils/format_duration.dart';
+import 'package:kohera/core/utils/format_file_size.dart';
+import 'package:kohera/core/utils/media_cache.dart';
+import 'package:kohera/features/chat/services/media_playback_service.dart';
 import 'package:matrix/matrix.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
@@ -108,7 +108,7 @@ class _AudioBubbleState extends State<AudioBubble> {
           );
       setState(() => _state = _AudioState.ready);
     } catch (e) {
-      debugPrint('[Lattice] Audio playback failed: $e');
+      debugPrint('[Kohera] Audio playback failed: $e');
       if (mounted) setState(() => _state = _AudioState.error);
     }
   }

@@ -3,7 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
-import 'package:lattice/core/services/call_service.dart';
+import 'package:kohera/core/services/call_service.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
@@ -81,7 +81,7 @@ void main() {
 
   group('CallService initial state', () {
     test('callState starts as idle', () {
-      expect(service.callState, LatticeCallState.idle);
+      expect(service.callState, KoheraCallState.idle);
     });
 
     test('activeCallRoomId starts as null', () {
@@ -105,7 +105,7 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      expect(service.callState, LatticeCallState.connected);
+      expect(service.callState, KoheraCallState.connected);
       expect(service.activeCallRoomId, '!room:example.com');
       expect(service.livekitRoom, isNotNull);
 
@@ -132,7 +132,7 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      expect(service.callState, LatticeCallState.failed);
+      expect(service.callState, KoheraCallState.failed);
     });
 
     test('returns early when room not found', () async {
@@ -144,7 +144,7 @@ void main() {
         ..init();
       await service.joinCall('!missing:example.com');
 
-      expect(service.callState, LatticeCallState.idle);
+      expect(service.callState, KoheraCallState.idle);
     });
 
     test('rejects concurrent join attempts', () async {
@@ -162,11 +162,11 @@ void main() {
 
       final firstJoin = service.joinCall('!room:example.com');
 
-      expect(service.callState, LatticeCallState.joining);
+      expect(service.callState, KoheraCallState.joining);
 
       await service.joinCall('!room:example.com');
 
-      expect(service.callState, LatticeCallState.joining);
+      expect(service.callState, KoheraCallState.joining);
 
       completer.complete();
       await firstJoin;
@@ -177,10 +177,10 @@ void main() {
       setupMockRoom();
 
       await service.joinCall('!room:example.com');
-      expect(service.callState, LatticeCallState.connected);
+      expect(service.callState, KoheraCallState.connected);
 
       await service.joinCall('!room:example.com');
-      expect(service.callState, LatticeCallState.connected);
+      expect(service.callState, KoheraCallState.connected);
     });
 
     test('cleans up on LiveKit connect failure', () async {
@@ -190,7 +190,7 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      expect(service.callState, LatticeCallState.failed);
+      expect(service.callState, KoheraCallState.failed);
       expect(service.activeCallRoomId, isNull);
       expect(service.livekitRoom, isNull);
 
@@ -214,7 +214,7 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      expect(service.callState, LatticeCallState.failed);
+      expect(service.callState, KoheraCallState.failed);
       expect(service.activeCallRoomId, isNull);
     });
   });
@@ -278,7 +278,7 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      expect(service.callState, LatticeCallState.failed);
+      expect(service.callState, KoheraCallState.failed);
     });
   });
 
@@ -288,11 +288,11 @@ void main() {
       setupMockRoom();
 
       await service.joinCall('!room:example.com');
-      expect(service.callState, LatticeCallState.connected);
+      expect(service.callState, KoheraCallState.connected);
 
       await service.leaveCall();
 
-      expect(service.callState, LatticeCallState.idle);
+      expect(service.callState, KoheraCallState.idle);
       expect(service.activeCallRoomId, isNull);
       expect(service.livekitRoom, isNull);
       expect(fakeRoom.disconnected, isTrue);
@@ -309,7 +309,7 @@ void main() {
 
     test('does nothing when no active call', () async {
       await service.leaveCall();
-      expect(service.callState, LatticeCallState.idle);
+      expect(service.callState, KoheraCallState.idle);
     });
 
     test('handles membership removal error gracefully', () async {
@@ -329,7 +329,7 @@ void main() {
 
       await service.leaveCall();
 
-      expect(service.callState, LatticeCallState.idle);
+      expect(service.callState, KoheraCallState.idle);
     });
   });
 
@@ -343,7 +343,7 @@ void main() {
       fakeRoom.listener!.fire(const livekit.RoomReconnectingEvent());
       await Future<void>.delayed(Duration.zero);
 
-      expect(service.callState, LatticeCallState.reconnecting);
+      expect(service.callState, KoheraCallState.reconnecting);
     });
 
     test('reconnected event sets connected state', () async {
@@ -355,7 +355,7 @@ void main() {
       fakeRoom.listener!.fire(const livekit.RoomReconnectedEvent());
       await Future<void>.delayed(Duration.zero);
 
-      expect(service.callState, LatticeCallState.connected);
+      expect(service.callState, KoheraCallState.connected);
     });
 
     test('disconnect event cleans up and removes membership', () async {
@@ -367,7 +367,7 @@ void main() {
       fakeRoom.listener!.fire(livekit.RoomDisconnectedEvent());
       await Future<void>.delayed(Duration.zero);
 
-      expect(service.callState, LatticeCallState.failed);
+      expect(service.callState, KoheraCallState.failed);
       expect(service.activeCallRoomId, isNull);
 
       await Future<void>.delayed(Duration.zero);
@@ -493,19 +493,19 @@ void main() {
   group('ringing actions', () {
     test('declineCall resets state', () {
       service.declineCall();
-      expect(service.callState, LatticeCallState.idle);
+      expect(service.callState, KoheraCallState.idle);
     });
 
     test('cancelOutgoingCall resets state', () {
       service.cancelOutgoingCall();
-      expect(service.callState, LatticeCallState.idle);
+      expect(service.callState, KoheraCallState.idle);
     });
   });
 
   group('handleCallEnded', () {
     test('resets ringing state', () {
       service.simulateCallEnded();
-      expect(service.callState, LatticeCallState.idle);
+      expect(service.callState, KoheraCallState.idle);
     });
   });
 
@@ -600,7 +600,7 @@ void main() {
 
       await service.initiateCall('!room:example.com');
 
-      expect(service.callState, LatticeCallState.ringingOutgoing);
+      expect(service.callState, KoheraCallState.ringingOutgoing);
       expect(service.activeCallId, isNotNull);
     });
 
@@ -612,11 +612,11 @@ void main() {
       when(room.isDirectChat).thenReturn(true);
 
       await service.initiateCall('!room:example.com');
-      expect(service.callState, LatticeCallState.ringingOutgoing);
+      expect(service.callState, KoheraCallState.ringingOutgoing);
 
       service.cancelOutgoingCall();
 
-      expect(service.callState, LatticeCallState.idle);
+      expect(service.callState, KoheraCallState.idle);
     });
   });
 
@@ -627,14 +627,14 @@ void main() {
       fakeRoom.throwOnConnect = true;
 
       await service.joinCall('!room:example.com');
-      expect(service.callState, LatticeCallState.failed);
+      expect(service.callState, KoheraCallState.failed);
 
       fakeRoom.throwOnConnect = false;
       final freshRoom = FakeLiveKitRoom();
       service.roomFactoryForTest = ({roomOptions}) => freshRoom;
 
       await service.joinCall('!room:example.com');
-      expect(service.callState, LatticeCallState.connected);
+      expect(service.callState, KoheraCallState.connected);
     });
 
     test('second joinCall ignored while first in progress', () async {
@@ -654,7 +654,7 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      expect(service.callState, LatticeCallState.joining);
+      expect(service.callState, KoheraCallState.joining);
 
       completer.complete();
       await firstJoin;
@@ -712,7 +712,7 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      expect(service.callState, LatticeCallState.connected);
+      expect(service.callState, KoheraCallState.connected);
       expect(capturedUrl.toString(), contains('sfu/get'));
       final decoded = jsonDecode(
         utf8.decode(capturedBody! as List<int>),
@@ -750,7 +750,7 @@ void main() {
 
       await service.joinCall('!room:example.com');
 
-      expect(service.callState, LatticeCallState.connected);
+      expect(service.callState, KoheraCallState.connected);
       expect(callCount, 2);
     });
   });
@@ -814,13 +814,13 @@ void main() {
       setupMockRoom();
 
       await service.joinCall('!room:example.com');
-      expect(service.callState, LatticeCallState.connected);
+      expect(service.callState, KoheraCallState.connected);
 
       final newClient = MockClient();
       when(newClient.rooms).thenReturn([]);
       service.updateClient(newClient);
 
-      expect(service.callState, LatticeCallState.idle);
+      expect(service.callState, KoheraCallState.idle);
       expect(service.activeCallRoomId, isNull);
     });
 
@@ -831,7 +831,7 @@ void main() {
       await service.joinCall('!room:example.com');
       service.updateClient(mockClient);
 
-      expect(service.callState, LatticeCallState.connected);
+      expect(service.callState, KoheraCallState.connected);
     });
   });
 }

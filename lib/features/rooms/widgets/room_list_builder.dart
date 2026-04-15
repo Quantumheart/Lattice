@@ -1,7 +1,7 @@
-import 'package:lattice/core/models/space_node.dart';
-import 'package:lattice/core/services/preferences_service.dart';
-import 'package:lattice/core/services/sub_services/selection_service.dart';
-import 'package:lattice/features/rooms/widgets/room_list_models.dart';
+import 'package:kohera/core/models/space_node.dart';
+import 'package:kohera/core/services/preferences_service.dart';
+import 'package:kohera/core/services/sub_services/selection_service.dart';
+import 'package:kohera/features/rooms/widgets/room_list_models.dart';
 import 'package:matrix/matrix.dart';
 
 // ── Section-building helpers for the room list ──────────

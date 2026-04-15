@@ -1,4 +1,4 @@
-import 'package:lattice/features/calling/models/call_participant.dart';
+import 'package:kohera/features/calling/models/call_participant.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
 
 class CallParticipantMapper {

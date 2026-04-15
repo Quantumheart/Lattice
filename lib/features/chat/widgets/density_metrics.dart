@@ -1,4 +1,4 @@
-import 'package:lattice/core/services/preferences_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
 
 // ── Density metrics ──────────────────────────────────────────
 

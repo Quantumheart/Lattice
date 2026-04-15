@@ -1,9 +1,9 @@
 {
-  "app-id": "io.github.quantumheart.lattice",
+  "app-id": "io.github.quantumheart.kohera",
   "runtime": "org.gnome.Platform",
   "runtime-version": "48",
   "sdk": "org.gnome.Sdk",
-  "command": "lattice",
+  "command": "kohera",
   "finish-args": [
     "--share=network",
     "--share=ipc",
@@ -75,15 +75,15 @@
       ]
     },
     {
-      "name": "lattice",
+      "name": "kohera",
       "buildsystem": "simple",
       "build-commands": [
-        "cp -r bundle/ /app/lattice/",
+        "cp -r bundle/ /app/kohera/",
         "mkdir -p /app/bin",
-        "ln -s /app/lattice/lattice /app/bin/lattice",
-        "install -Dm644 io.github.quantumheart.lattice.desktop /app/share/applications/io.github.quantumheart.lattice.desktop",
-        "install -Dm644 io.github.quantumheart.lattice.metainfo.xml /app/share/metainfo/io.github.quantumheart.lattice.metainfo.xml",
-        "install -Dm644 io.github.quantumheart.lattice.png /app/share/icons/hicolor/512x512/apps/io.github.quantumheart.lattice.png"
+        "ln -s /app/kohera/kohera /app/bin/kohera",
+        "install -Dm644 io.github.quantumheart.kohera.desktop /app/share/applications/io.github.quantumheart.kohera.desktop",
+        "install -Dm644 io.github.quantumheart.kohera.metainfo.xml /app/share/metainfo/io.github.quantumheart.kohera.metainfo.xml",
+        "install -Dm644 io.github.quantumheart.kohera.png /app/share/icons/hicolor/512x512/apps/io.github.quantumheart.kohera.png"
       ],
       "sources": [
         {
@@ -93,16 +93,16 @@
         },
         {
           "type": "file",
-          "path": "io.github.quantumheart.lattice.metainfo.xml"
+          "path": "io.github.quantumheart.kohera.metainfo.xml"
         },
         {
           "type": "file",
-          "path": "../linux/io.github.quantumheart.lattice.desktop"
+          "path": "../linux/io.github.quantumheart.kohera.desktop"
         },
         {
           "type": "file",
           "path": "../macos/Runner/Assets.xcassets/AppIcon.appiconset/app_icon_512.png",
-          "dest-filename": "io.github.quantumheart.lattice.png"
+          "dest-filename": "io.github.quantumheart.kohera.png"
         }
       ]
     }
