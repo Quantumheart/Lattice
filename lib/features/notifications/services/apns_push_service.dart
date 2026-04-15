@@ -60,6 +60,7 @@ class ApnsPushService {
       case 'onNotificationTap':
         final roomId = call.arguments as String;
         debugPrint('[Kohera] APNs notification tapped for room $roomId');
+        unawaited(clearBadge());
         notificationService.navigateToRoom(roomId);
       case 'onNotificationReply':
         final args = Map<String, dynamic>.from(call.arguments as Map);
@@ -183,6 +184,8 @@ class ApnsPushService {
           matrixEvent.type == 'm.call.member') {
         _handleCallEvent(roomId, matrixEvent, room);
       }
+
+      await client.oneShotSync();
     } catch (e) {
       debugPrint('[Kohera] APNs push message processing error: $e');
     }
