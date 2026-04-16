@@ -19,12 +19,22 @@ import 'package:mockito/mockito.dart';
   MockSpec<Bootstrap>(),
   MockSpec<OpenSSSS>(),
   MockSpec<SSSS>(unsupportedMembers: {#pendingShareRequests}),
+  MockSpec<DatabaseApi>(),
 ])
 import 'matrix_service_test.mocks.dart';
 
 class _FakeDatabase extends Fake implements DatabaseApi {
   @override
   Future<Map<String, dynamic>?> getClient(String name) async => null;
+
+  @override
+  Future<List<Event>> getEventList(
+    Room room, {
+    int start = 0,
+    bool onlySending = false,
+    int? limit,
+  }) async =>
+      <Event>[];
 }
 
 void main() {
@@ -722,44 +732,66 @@ void main() {
   group('requestMissingRoomKeys', () {
     late MockEncryption mockEncryption;
     late MockKeyManager mockKeyManager;
+    late MockDatabaseApi mockDatabase;
 
     setUp(() {
       mockEncryption = MockEncryption();
       mockKeyManager = MockKeyManager();
+      mockDatabase = MockDatabaseApi();
       when(mockEncryption.keyManager).thenReturn(mockKeyManager);
       when(mockEncryption.crossSigning).thenReturn(MockCrossSigning());
+      when(mockClient.database).thenReturn(mockDatabase);
+      when(mockDatabase.getEventList(any,
+              start: anyNamed('start'),
+              onlySending: anyNamed('onlySending'),
+              limit: anyNamed('limit'),),)
+          .thenAnswer((_) async => <Event>[]);
     });
 
-    test('is a no-op when encryption is null', () {
+    Event badEncrypted(
+      MockRoom room, {
+      required String sessionId,
+      required String senderKey,
+      bool canRequest = true,
+      String eventId = r'$evt',
+    }) =>
+        Event(
+          type: EventTypes.Encrypted,
+          content: {
+            'msgtype': MessageTypes.BadEncrypted,
+            if (canRequest) 'can_request_session': true,
+            'session_id': sessionId,
+            'sender_key': senderKey,
+          },
+          eventId: eventId,
+          senderId: '@alice:example.com',
+          originServerTs: DateTime.now(),
+          room: room,
+        );
+
+    test('is a no-op when encryption is null', () async {
       when(mockClient.encryption).thenReturn(null);
 
-      service.chatBackup.requestMissingRoomKeys();
+      await service.chatBackup.requestMissingRoomKeys();
 
       verifyNever(mockClient.rooms);
     });
 
-    test('requests session keys for undecryptable last events', () {
+    test('requests session keys for undecryptable cached events', () async {
       when(mockClient.encryption).thenReturn(mockEncryption);
 
       final room = MockRoom();
       when(room.id).thenReturn('!room:example.com');
-      when(room.lastEvent).thenReturn(Event(
-        type: EventTypes.Encrypted,
-        content: {
-          'msgtype': MessageTypes.BadEncrypted,
-          'can_request_session': true,
-          'session_id': 'sess123',
-          'sender_key': 'key456',
-        },
-        eventId: r'$evt1',
-        senderId: '@alice:example.com',
-        originServerTs: DateTime.now(),
-        room: room,
-      ),);
-
       when(mockClient.rooms).thenReturn([room]);
+      when(mockDatabase.getEventList(room,
+              start: anyNamed('start'),
+              onlySending: anyNamed('onlySending'),
+              limit: anyNamed('limit'),),)
+          .thenAnswer((_) async => [
+                badEncrypted(room, sessionId: 'sess123', senderKey: 'key456'),
+              ],);
 
-      service.chatBackup.requestMissingRoomKeys();
+      await service.chatBackup.requestMissingRoomKeys();
 
       verify(mockKeyManager.maybeAutoRequest(
         '!room:example.com',
@@ -768,73 +800,165 @@ void main() {
       ),).called(1);
     });
 
-    test('skips rooms with decryptable last events', () {
+    test('scans older events, not just room.lastEvent', () async {
       when(mockClient.encryption).thenReturn(mockEncryption);
 
       final room = MockRoom();
       when(room.id).thenReturn('!room:example.com');
-      when(room.lastEvent).thenReturn(Event(
-        type: EventTypes.Message,
-        content: {'body': 'hello', 'msgtype': 'm.text'},
-        eventId: r'$evt1',
-        senderId: '@alice:example.com',
-        originServerTs: DateTime.now(),
-        room: room,
-      ),);
-
       when(mockClient.rooms).thenReturn([room]);
+      when(mockDatabase.getEventList(room,
+              start: anyNamed('start'),
+              onlySending: anyNamed('onlySending'),
+              limit: anyNamed('limit'),),)
+          .thenAnswer((_) async => [
+                badEncrypted(room,
+                    sessionId: 'old1', senderKey: 'k1', eventId: r'$e1',),
+                badEncrypted(room,
+                    sessionId: 'old2', senderKey: 'k2', eventId: r'$e2',),
+                badEncrypted(room,
+                    sessionId: 'new3', senderKey: 'k3', eventId: r'$e3',),
+              ],);
 
-      service.chatBackup.requestMissingRoomKeys();
+      await service.chatBackup.requestMissingRoomKeys();
+
+      verify(mockKeyManager.maybeAutoRequest(
+              '!room:example.com', 'old1', 'k1',),)
+          .called(1);
+      verify(mockKeyManager.maybeAutoRequest(
+              '!room:example.com', 'old2', 'k2',),)
+          .called(1);
+      verify(mockKeyManager.maybeAutoRequest(
+              '!room:example.com', 'new3', 'k3',),)
+          .called(1);
+    });
+
+    test('dedupes by (roomId, sessionId) across events', () async {
+      when(mockClient.encryption).thenReturn(mockEncryption);
+
+      final room = MockRoom();
+      when(room.id).thenReturn('!room:example.com');
+      when(mockClient.rooms).thenReturn([room]);
+      when(mockDatabase.getEventList(room,
+              start: anyNamed('start'),
+              onlySending: anyNamed('onlySending'),
+              limit: anyNamed('limit'),),)
+          .thenAnswer((_) async => [
+                badEncrypted(room,
+                    sessionId: 'same', senderKey: 'k', eventId: r'$a',),
+                badEncrypted(room,
+                    sessionId: 'same', senderKey: 'k', eventId: r'$b',),
+                badEncrypted(room,
+                    sessionId: 'same', senderKey: 'k', eventId: r'$c',),
+              ],);
+
+      await service.chatBackup.requestMissingRoomKeys();
+
+      verify(mockKeyManager.maybeAutoRequest(
+              '!room:example.com', 'same', 'k',),)
+          .called(1);
+    });
+
+    test('continues past a room whose getEventList throws', () async {
+      when(mockClient.encryption).thenReturn(mockEncryption);
+
+      final bad = MockRoom();
+      final good = MockRoom();
+      when(bad.id).thenReturn('!bad:example.com');
+      when(good.id).thenReturn('!good:example.com');
+      when(mockClient.rooms).thenReturn([bad, good]);
+      when(mockDatabase.getEventList(bad,
+              start: anyNamed('start'),
+              onlySending: anyNamed('onlySending'),
+              limit: anyNamed('limit'),),)
+          .thenThrow(StateError('db error'));
+      when(mockDatabase.getEventList(good,
+              start: anyNamed('start'),
+              onlySending: anyNamed('onlySending'),
+              limit: anyNamed('limit'),),)
+          .thenAnswer((_) async => [
+                badEncrypted(good, sessionId: 's', senderKey: 'k'),
+              ],);
+
+      await service.chatBackup.requestMissingRoomKeys();
+
+      verify(mockKeyManager.maybeAutoRequest(
+              '!good:example.com', 's', 'k',),)
+          .called(1);
+    });
+
+    test('skips decryptable events', () async {
+      when(mockClient.encryption).thenReturn(mockEncryption);
+
+      final room = MockRoom();
+      when(room.id).thenReturn('!room:example.com');
+      when(mockClient.rooms).thenReturn([room]);
+      when(mockDatabase.getEventList(room,
+              start: anyNamed('start'),
+              onlySending: anyNamed('onlySending'),
+              limit: anyNamed('limit'),),)
+          .thenAnswer((_) async => [
+                Event(
+                  type: EventTypes.Message,
+                  content: {'body': 'hello', 'msgtype': 'm.text'},
+                  eventId: r'$evt1',
+                  senderId: '@alice:example.com',
+                  originServerTs: DateTime.now(),
+                  room: room,
+                ),
+              ],);
+
+      await service.chatBackup.requestMissingRoomKeys();
 
       verifyNever(mockKeyManager.maybeAutoRequest(any, any, any));
     });
 
-    test('skips events without can_request_session', () {
+    test('skips events without can_request_session', () async {
       when(mockClient.encryption).thenReturn(mockEncryption);
 
       final room = MockRoom();
       when(room.id).thenReturn('!room:example.com');
-      when(room.lastEvent).thenReturn(Event(
-        type: EventTypes.Encrypted,
-        content: {
-          'msgtype': MessageTypes.BadEncrypted,
-          'session_id': 'sess123',
-          'sender_key': 'key456',
-        },
-        eventId: r'$evt1',
-        senderId: '@alice:example.com',
-        originServerTs: DateTime.now(),
-        room: room,
-      ),);
-
       when(mockClient.rooms).thenReturn([room]);
+      when(mockDatabase.getEventList(room,
+              start: anyNamed('start'),
+              onlySending: anyNamed('onlySending'),
+              limit: anyNamed('limit'),),)
+          .thenAnswer((_) async => [
+                badEncrypted(room,
+                    sessionId: 'sess123',
+                    senderKey: 'key456',
+                    canRequest: false,),
+              ],);
 
-      service.chatBackup.requestMissingRoomKeys();
+      await service.chatBackup.requestMissingRoomKeys();
 
       verifyNever(mockKeyManager.maybeAutoRequest(any, any, any));
     });
 
-    test('skips events missing session_id or sender_key', () {
+    test('skips events missing session_id or sender_key', () async {
       when(mockClient.encryption).thenReturn(mockEncryption);
 
       final room = MockRoom();
       when(room.id).thenReturn('!room:example.com');
-      when(room.lastEvent).thenReturn(Event(
-        type: EventTypes.Encrypted,
-        content: {
-          'msgtype': MessageTypes.BadEncrypted,
-          'can_request_session': true,
-          // Missing session_id and sender_key
-        },
-        eventId: r'$evt1',
-        senderId: '@alice:example.com',
-        originServerTs: DateTime.now(),
-        room: room,
-      ),);
-
       when(mockClient.rooms).thenReturn([room]);
+      when(mockDatabase.getEventList(room,
+              start: anyNamed('start'),
+              onlySending: anyNamed('onlySending'),
+              limit: anyNamed('limit'),),)
+          .thenAnswer((_) async => [
+                Event(
+                  type: EventTypes.Encrypted,
+                  content: {
+                    'msgtype': MessageTypes.BadEncrypted,
+                    'can_request_session': true,
+                  },
+                  eventId: r'$evt1',
+                  senderId: '@alice:example.com',
+                  originServerTs: DateTime.now(),
+                  room: room,
+                ),
+              ],);
 
-      service.chatBackup.requestMissingRoomKeys();
+      await service.chatBackup.requestMissingRoomKeys();
 
       verifyNever(mockKeyManager.maybeAutoRequest(any, any, any));
     });

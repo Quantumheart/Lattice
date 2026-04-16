@@ -13,12 +13,17 @@ import 'package:matrix/encryption.dart' as _i8;
 import 'package:matrix/encryption/cross_signing.dart' as _i11;
 import 'package:matrix/encryption/key_verification_manager.dart' as _i10;
 import 'package:matrix/encryption/olm_manager.dart' as _i9;
+import 'package:matrix/encryption/utils/olm_session.dart' as _i21;
 import 'package:matrix/encryption/utils/outbound_group_session.dart' as _i12;
 import 'package:matrix/encryption/utils/session_key.dart' as _i18;
+import 'package:matrix/encryption/utils/ssss_cache.dart' as _i19;
+import 'package:matrix/encryption/utils/stored_inbound_group_session.dart'
+    as _i20;
 import 'package:matrix/matrix.dart' as _i2;
 import 'package:matrix/matrix_api_lite/generated/fixed_model.dart' as _i6;
 import 'package:matrix/src/models/timeline_chunk.dart' as _i16;
 import 'package:matrix/src/utils/cached_stream_controller.dart' as _i3;
+import 'package:matrix/src/utils/queued_to_device_event.dart' as _i22;
 import 'package:matrix/src/utils/space_child.dart' as _i15;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i13;
@@ -11566,4 +11571,1321 @@ class MockSSSS extends _i1.Mock implements _i8.SSSS {
           ),
         ),
       ) as _i8.OpenSSSS);
+}
+
+/// A class which mocks [DatabaseApi].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockDatabaseApi extends _i1.Mock implements _i2.DatabaseApi {
+  @override
+  int get maxFileSize => (super.noSuchMethod(
+        Invocation.getter(#maxFileSize),
+        returnValue: 0,
+        returnValueForMissingStub: 0,
+      ) as int);
+
+  @override
+  bool get supportsFileStoring => (super.noSuchMethod(
+        Invocation.getter(#supportsFileStoring),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
+  _i5.Future<Map<String, dynamic>?> getClient(String? name) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getClient,
+          [name],
+        ),
+        returnValue: _i5.Future<Map<String, dynamic>?>.value(),
+        returnValueForMissingStub: _i5.Future<Map<String, dynamic>?>.value(),
+      ) as _i5.Future<Map<String, dynamic>?>);
+
+  @override
+  _i5.Future<dynamic> updateClient(
+    String? homeserverUrl,
+    String? token,
+    DateTime? tokenExpiresAt,
+    String? refreshToken,
+    String? userId,
+    String? deviceId,
+    String? deviceName,
+    String? prevBatch,
+    String? olmAccount,
+    String? oidcClientId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #updateClient,
+          [
+            homeserverUrl,
+            token,
+            tokenExpiresAt,
+            refreshToken,
+            userId,
+            deviceId,
+            deviceName,
+            prevBatch,
+            olmAccount,
+            oidcClientId,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> insertClient(
+    String? name,
+    String? homeserverUrl,
+    String? token,
+    DateTime? tokenExpiresAt,
+    String? refreshToken,
+    String? userId,
+    String? deviceId,
+    String? deviceName,
+    String? prevBatch,
+    String? olmAccount,
+    String? oidcClientId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #insertClient,
+          [
+            name,
+            homeserverUrl,
+            token,
+            tokenExpiresAt,
+            refreshToken,
+            userId,
+            deviceId,
+            deviceName,
+            prevBatch,
+            olmAccount,
+            oidcClientId,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<List<_i2.Room>> getRoomList(_i2.Client? client) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getRoomList,
+          [client],
+        ),
+        returnValue: _i5.Future<List<_i2.Room>>.value(<_i2.Room>[]),
+        returnValueForMissingStub:
+            _i5.Future<List<_i2.Room>>.value(<_i2.Room>[]),
+      ) as _i5.Future<List<_i2.Room>>);
+
+  @override
+  _i5.Future<_i2.Room?> getSingleRoom(
+    _i2.Client? client,
+    String? roomId, {
+    bool? loadImportantStates = true,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getSingleRoom,
+          [
+            client,
+            roomId,
+          ],
+          {#loadImportantStates: loadImportantStates},
+        ),
+        returnValue: _i5.Future<_i2.Room?>.value(),
+        returnValueForMissingStub: _i5.Future<_i2.Room?>.value(),
+      ) as _i5.Future<_i2.Room?>);
+
+  @override
+  _i5.Future<Map<String, _i2.BasicEvent>> getAccountData() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getAccountData,
+          [],
+        ),
+        returnValue: _i5.Future<Map<String, _i2.BasicEvent>>.value(
+            <String, _i2.BasicEvent>{}),
+        returnValueForMissingStub:
+            _i5.Future<Map<String, _i2.BasicEvent>>.value(
+                <String, _i2.BasicEvent>{}),
+      ) as _i5.Future<Map<String, _i2.BasicEvent>>);
+
+  @override
+  _i5.Future<void> storeRoomUpdate(
+    String? roomId,
+    _i2.SyncRoomUpdate? roomUpdate,
+    _i2.Event? lastEvent,
+    _i2.Client? client,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #storeRoomUpdate,
+          [
+            roomId,
+            roomUpdate,
+            lastEvent,
+            client,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> deleteTimelineForRoom(String? roomId) => (super.noSuchMethod(
+        Invocation.method(
+          #deleteTimelineForRoom,
+          [roomId],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> storeEventUpdate(
+    String? roomId,
+    _i2.StrippedStateEvent? event,
+    _i2.EventUpdateType? type,
+    _i2.Client? client,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #storeEventUpdate,
+          [
+            roomId,
+            event,
+            type,
+            client,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<_i2.Event?> getEventById(
+    String? eventId,
+    _i2.Room? room,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getEventById,
+          [
+            eventId,
+            room,
+          ],
+        ),
+        returnValue: _i5.Future<_i2.Event?>.value(),
+        returnValueForMissingStub: _i5.Future<_i2.Event?>.value(),
+      ) as _i5.Future<_i2.Event?>);
+
+  @override
+  _i5.Future<void> forgetRoom(String? roomId) => (super.noSuchMethod(
+        Invocation.method(
+          #forgetRoom,
+          [roomId],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<_i2.CachedProfileInformation?> getUserProfile(String? userId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getUserProfile,
+          [userId],
+        ),
+        returnValue: _i5.Future<_i2.CachedProfileInformation?>.value(),
+        returnValueForMissingStub:
+            _i5.Future<_i2.CachedProfileInformation?>.value(),
+      ) as _i5.Future<_i2.CachedProfileInformation?>);
+
+  @override
+  _i5.Future<void> storeUserProfile(
+    String? userId,
+    _i2.CachedProfileInformation? profile,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #storeUserProfile,
+          [
+            userId,
+            profile,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> markUserProfileAsOutdated(String? userId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #markUserProfileAsOutdated,
+          [userId],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> clearCache() => (super.noSuchMethod(
+        Invocation.method(
+          #clearCache,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> clear() => (super.noSuchMethod(
+        Invocation.method(
+          #clear,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<_i2.User?> getUser(
+    String? userId,
+    _i2.Room? room,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getUser,
+          [
+            userId,
+            room,
+          ],
+        ),
+        returnValue: _i5.Future<_i2.User?>.value(),
+        returnValueForMissingStub: _i5.Future<_i2.User?>.value(),
+      ) as _i5.Future<_i2.User?>);
+
+  @override
+  _i5.Future<List<_i2.User>> getUsers(_i2.Room? room) => (super.noSuchMethod(
+        Invocation.method(
+          #getUsers,
+          [room],
+        ),
+        returnValue: _i5.Future<List<_i2.User>>.value(<_i2.User>[]),
+        returnValueForMissingStub:
+            _i5.Future<List<_i2.User>>.value(<_i2.User>[]),
+      ) as _i5.Future<List<_i2.User>>);
+
+  @override
+  _i5.Future<List<_i2.Event>> getEventList(
+    _i2.Room? room, {
+    int? start = 0,
+    bool? onlySending = false,
+    int? limit,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getEventList,
+          [room],
+          {
+            #start: start,
+            #onlySending: onlySending,
+            #limit: limit,
+          },
+        ),
+        returnValue: _i5.Future<List<_i2.Event>>.value(<_i2.Event>[]),
+        returnValueForMissingStub:
+            _i5.Future<List<_i2.Event>>.value(<_i2.Event>[]),
+      ) as _i5.Future<List<_i2.Event>>);
+
+  @override
+  _i5.Future<List<String>> getEventIdList(
+    _i2.Room? room, {
+    int? start = 0,
+    bool? includeSending = false,
+    int? limit,
+  }) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getEventIdList,
+          [room],
+          {
+            #start: start,
+            #includeSending: includeSending,
+            #limit: limit,
+          },
+        ),
+        returnValue: _i5.Future<List<String>>.value(<String>[]),
+        returnValueForMissingStub: _i5.Future<List<String>>.value(<String>[]),
+      ) as _i5.Future<List<String>>);
+
+  @override
+  _i5.Future<_i14.Uint8List?> getFile(Uri? mxcUri) => (super.noSuchMethod(
+        Invocation.method(
+          #getFile,
+          [mxcUri],
+        ),
+        returnValue: _i5.Future<_i14.Uint8List?>.value(),
+        returnValueForMissingStub: _i5.Future<_i14.Uint8List?>.value(),
+      ) as _i5.Future<_i14.Uint8List?>);
+
+  @override
+  _i5.Future<dynamic> storeFile(
+    Uri? mxcUri,
+    _i14.Uint8List? bytes,
+    int? time,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #storeFile,
+          [
+            mxcUri,
+            bytes,
+            time,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<bool> deleteFile(Uri? mxcUri) => (super.noSuchMethod(
+        Invocation.method(
+          #deleteFile,
+          [mxcUri],
+        ),
+        returnValue: _i5.Future<bool>.value(false),
+        returnValueForMissingStub: _i5.Future<bool>.value(false),
+      ) as _i5.Future<bool>);
+
+  @override
+  _i5.Future<dynamic> storeSyncFilterId(String? syncFilterId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #storeSyncFilterId,
+          [syncFilterId],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> storeAccountData(
+    String? type,
+    Map<String, Object?>? content,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #storeAccountData,
+          [
+            type,
+            content,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> storeRoomAccountData(
+    String? roomId,
+    _i2.BasicEvent? event,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #storeRoomAccountData,
+          [
+            roomId,
+            event,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<Map<String, _i2.DeviceKeysList>> getUserDeviceKeys(
+          _i2.Client? client) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getUserDeviceKeys,
+          [client],
+        ),
+        returnValue: _i5.Future<Map<String, _i2.DeviceKeysList>>.value(
+            <String, _i2.DeviceKeysList>{}),
+        returnValueForMissingStub:
+            _i5.Future<Map<String, _i2.DeviceKeysList>>.value(
+                <String, _i2.DeviceKeysList>{}),
+      ) as _i5.Future<Map<String, _i2.DeviceKeysList>>);
+
+  @override
+  _i5.Future<_i19.SSSSCache?> getSSSSCache(String? type) => (super.noSuchMethod(
+        Invocation.method(
+          #getSSSSCache,
+          [type],
+        ),
+        returnValue: _i5.Future<_i19.SSSSCache?>.value(),
+        returnValueForMissingStub: _i5.Future<_i19.SSSSCache?>.value(),
+      ) as _i5.Future<_i19.SSSSCache?>);
+
+  @override
+  _i5.Future<_i12.OutboundGroupSession?> getOutboundGroupSession(
+    String? roomId,
+    String? userId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getOutboundGroupSession,
+          [
+            roomId,
+            userId,
+          ],
+        ),
+        returnValue: _i5.Future<_i12.OutboundGroupSession?>.value(),
+        returnValueForMissingStub:
+            _i5.Future<_i12.OutboundGroupSession?>.value(),
+      ) as _i5.Future<_i12.OutboundGroupSession?>);
+
+  @override
+  _i5.Future<List<_i20.StoredInboundGroupSession>>
+      getAllInboundGroupSessions() => (super.noSuchMethod(
+            Invocation.method(
+              #getAllInboundGroupSessions,
+              [],
+            ),
+            returnValue: _i5.Future<List<_i20.StoredInboundGroupSession>>.value(
+                <_i20.StoredInboundGroupSession>[]),
+            returnValueForMissingStub:
+                _i5.Future<List<_i20.StoredInboundGroupSession>>.value(
+                    <_i20.StoredInboundGroupSession>[]),
+          ) as _i5.Future<List<_i20.StoredInboundGroupSession>>);
+
+  @override
+  _i5.Future<_i20.StoredInboundGroupSession?> getInboundGroupSession(
+    String? roomId,
+    String? sessionId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getInboundGroupSession,
+          [
+            roomId,
+            sessionId,
+          ],
+        ),
+        returnValue: _i5.Future<_i20.StoredInboundGroupSession?>.value(),
+        returnValueForMissingStub:
+            _i5.Future<_i20.StoredInboundGroupSession?>.value(),
+      ) as _i5.Future<_i20.StoredInboundGroupSession?>);
+
+  @override
+  _i5.Future<dynamic> updateInboundGroupSessionIndexes(
+    String? indexes,
+    String? roomId,
+    String? sessionId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #updateInboundGroupSessionIndexes,
+          [
+            indexes,
+            roomId,
+            sessionId,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> storeInboundGroupSession(
+    String? roomId,
+    String? sessionId,
+    String? pickle,
+    String? content,
+    String? indexes,
+    String? allowedAtIndex,
+    String? senderKey,
+    String? senderClaimedKey,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #storeInboundGroupSession,
+          [
+            roomId,
+            sessionId,
+            pickle,
+            content,
+            indexes,
+            allowedAtIndex,
+            senderKey,
+            senderClaimedKey,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> markInboundGroupSessionAsUploaded(
+    String? roomId,
+    String? sessionId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #markInboundGroupSessionAsUploaded,
+          [
+            roomId,
+            sessionId,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> updateInboundGroupSessionAllowedAtIndex(
+    String? allowedAtIndex,
+    String? roomId,
+    String? sessionId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #updateInboundGroupSessionAllowedAtIndex,
+          [
+            allowedAtIndex,
+            roomId,
+            sessionId,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> removeOutboundGroupSession(String? roomId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #removeOutboundGroupSession,
+          [roomId],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> storeOutboundGroupSession(
+    String? roomId,
+    String? pickle,
+    String? deviceIds,
+    int? creationTime,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #storeOutboundGroupSession,
+          [
+            roomId,
+            pickle,
+            deviceIds,
+            creationTime,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> updateClientKeys(String? olmAccount) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #updateClientKeys,
+          [olmAccount],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> storeOlmSession(
+    String? identityKey,
+    String? sessionId,
+    String? pickle,
+    int? lastReceived,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #storeOlmSession,
+          [
+            identityKey,
+            sessionId,
+            pickle,
+            lastReceived,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> setLastActiveUserDeviceKey(
+    int? lastActive,
+    String? userId,
+    String? deviceId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #setLastActiveUserDeviceKey,
+          [
+            lastActive,
+            userId,
+            deviceId,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> setLastSentMessageUserDeviceKey(
+    String? lastSentMessage,
+    String? userId,
+    String? deviceId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #setLastSentMessageUserDeviceKey,
+          [
+            lastSentMessage,
+            userId,
+            deviceId,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> clearSSSSCache() => (super.noSuchMethod(
+        Invocation.method(
+          #clearSSSSCache,
+          [],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> storeSSSSCache(
+    String? type,
+    String? keyId,
+    String? ciphertext,
+    String? content,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #storeSSSSCache,
+          [
+            type,
+            keyId,
+            ciphertext,
+            content,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> markInboundGroupSessionsAsNeedingUpload() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #markInboundGroupSessionsAsNeedingUpload,
+          [],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> storePrevBatch(String? prevBatch) => (super.noSuchMethod(
+        Invocation.method(
+          #storePrevBatch,
+          [prevBatch],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> deleteOldFiles(int? savedAt) => (super.noSuchMethod(
+        Invocation.method(
+          #deleteOldFiles,
+          [savedAt],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> storeUserDeviceKeysInfo(
+    String? userId,
+    bool? outdated,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #storeUserDeviceKeysInfo,
+          [
+            userId,
+            outdated,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> storeUserDeviceKey(
+    String? userId,
+    String? deviceId,
+    String? content,
+    bool? verified,
+    bool? blocked,
+    int? lastActive,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #storeUserDeviceKey,
+          [
+            userId,
+            deviceId,
+            content,
+            verified,
+            blocked,
+            lastActive,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> removeUserDeviceKey(
+    String? userId,
+    String? deviceId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #removeUserDeviceKey,
+          [
+            userId,
+            deviceId,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> removeUserCrossSigningKey(
+    String? userId,
+    String? publicKey,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #removeUserCrossSigningKey,
+          [
+            userId,
+            publicKey,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> storeUserCrossSigningKey(
+    String? userId,
+    String? publicKey,
+    String? content,
+    bool? verified,
+    bool? blocked,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #storeUserCrossSigningKey,
+          [
+            userId,
+            publicKey,
+            content,
+            verified,
+            blocked,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> deleteFromToDeviceQueue(int? id) => (super.noSuchMethod(
+        Invocation.method(
+          #deleteFromToDeviceQueue,
+          [id],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> removeEvent(
+    String? eventId,
+    String? roomId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #removeEvent,
+          [
+            eventId,
+            roomId,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> setRoomPrevBatch(
+    String? prevBatch,
+    String? roomId,
+    _i2.Client? client,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #setRoomPrevBatch,
+          [
+            prevBatch,
+            roomId,
+            client,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> setVerifiedUserCrossSigningKey(
+    bool? verified,
+    String? userId,
+    String? publicKey,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #setVerifiedUserCrossSigningKey,
+          [
+            verified,
+            userId,
+            publicKey,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> setBlockedUserCrossSigningKey(
+    bool? blocked,
+    String? userId,
+    String? publicKey,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #setBlockedUserCrossSigningKey,
+          [
+            blocked,
+            userId,
+            publicKey,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> setVerifiedUserDeviceKey(
+    bool? verified,
+    String? userId,
+    String? deviceId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #setVerifiedUserDeviceKey,
+          [
+            verified,
+            userId,
+            deviceId,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<dynamic> setBlockedUserDeviceKey(
+    bool? blocked,
+    String? userId,
+    String? deviceId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #setBlockedUserDeviceKey,
+          [
+            blocked,
+            userId,
+            deviceId,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<List<_i2.Event>> getUnimportantRoomEventStatesForRoom(
+    List<String>? events,
+    _i2.Room? room,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getUnimportantRoomEventStatesForRoom,
+          [
+            events,
+            room,
+          ],
+        ),
+        returnValue: _i5.Future<List<_i2.Event>>.value(<_i2.Event>[]),
+        returnValueForMissingStub:
+            _i5.Future<List<_i2.Event>>.value(<_i2.Event>[]),
+      ) as _i5.Future<List<_i2.Event>>);
+
+  @override
+  _i5.Future<List<_i21.OlmSession>> getOlmSessions(
+    String? identityKey,
+    String? userId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getOlmSessions,
+          [
+            identityKey,
+            userId,
+          ],
+        ),
+        returnValue:
+            _i5.Future<List<_i21.OlmSession>>.value(<_i21.OlmSession>[]),
+        returnValueForMissingStub:
+            _i5.Future<List<_i21.OlmSession>>.value(<_i21.OlmSession>[]),
+      ) as _i5.Future<List<_i21.OlmSession>>);
+
+  @override
+  _i5.Future<Map<String, Map<dynamic, dynamic>>> getAllOlmSessions() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getAllOlmSessions,
+          [],
+        ),
+        returnValue: _i5.Future<Map<String, Map<dynamic, dynamic>>>.value(
+            <String, Map<dynamic, dynamic>>{}),
+        returnValueForMissingStub:
+            _i5.Future<Map<String, Map<dynamic, dynamic>>>.value(
+                <String, Map<dynamic, dynamic>>{}),
+      ) as _i5.Future<Map<String, Map<dynamic, dynamic>>>);
+
+  @override
+  _i5.Future<List<_i21.OlmSession>> getOlmSessionsForDevices(
+    List<String>? identityKeys,
+    String? userId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getOlmSessionsForDevices,
+          [
+            identityKeys,
+            userId,
+          ],
+        ),
+        returnValue:
+            _i5.Future<List<_i21.OlmSession>>.value(<_i21.OlmSession>[]),
+        returnValueForMissingStub:
+            _i5.Future<List<_i21.OlmSession>>.value(<_i21.OlmSession>[]),
+      ) as _i5.Future<List<_i21.OlmSession>>);
+
+  @override
+  _i5.Future<List<_i22.QueuedToDeviceEvent>> getToDeviceEventQueue() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getToDeviceEventQueue,
+          [],
+        ),
+        returnValue: _i5.Future<List<_i22.QueuedToDeviceEvent>>.value(
+            <_i22.QueuedToDeviceEvent>[]),
+        returnValueForMissingStub:
+            _i5.Future<List<_i22.QueuedToDeviceEvent>>.value(
+                <_i22.QueuedToDeviceEvent>[]),
+      ) as _i5.Future<List<_i22.QueuedToDeviceEvent>>);
+
+  @override
+  _i5.Future<dynamic> insertIntoToDeviceQueue(
+    String? type,
+    String? txnId,
+    String? content,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #insertIntoToDeviceQueue,
+          [
+            type,
+            txnId,
+            content,
+          ],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<List<String>> getLastSentMessageUserDeviceKey(
+    String? userId,
+    String? deviceId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getLastSentMessageUserDeviceKey,
+          [
+            userId,
+            deviceId,
+          ],
+        ),
+        returnValue: _i5.Future<List<String>>.value(<String>[]),
+        returnValueForMissingStub: _i5.Future<List<String>>.value(<String>[]),
+      ) as _i5.Future<List<String>>);
+
+  @override
+  _i5.Future<List<_i20.StoredInboundGroupSession>>
+      getInboundGroupSessionsToUpload() => (super.noSuchMethod(
+            Invocation.method(
+              #getInboundGroupSessionsToUpload,
+              [],
+            ),
+            returnValue: _i5.Future<List<_i20.StoredInboundGroupSession>>.value(
+                <_i20.StoredInboundGroupSession>[]),
+            returnValueForMissingStub:
+                _i5.Future<List<_i20.StoredInboundGroupSession>>.value(
+                    <_i20.StoredInboundGroupSession>[]),
+          ) as _i5.Future<List<_i20.StoredInboundGroupSession>>);
+
+  @override
+  _i5.Future<void> addSeenDeviceId(
+    String? userId,
+    String? deviceId,
+    String? publicKeys,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #addSeenDeviceId,
+          [
+            userId,
+            deviceId,
+            publicKeys,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> addSeenPublicKey(
+    String? publicKey,
+    String? deviceId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #addSeenPublicKey,
+          [
+            publicKey,
+            deviceId,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<String?> deviceIdSeen(
+    String? userId,
+    String? deviceId,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #deviceIdSeen,
+          [
+            userId,
+            deviceId,
+          ],
+        ),
+        returnValue: _i5.Future<String?>.value(),
+        returnValueForMissingStub: _i5.Future<String?>.value(),
+      ) as _i5.Future<String?>);
+
+  @override
+  _i5.Future<String?> publicKeySeen(String? publicKey) => (super.noSuchMethod(
+        Invocation.method(
+          #publicKeySeen,
+          [publicKey],
+        ),
+        returnValue: _i5.Future<String?>.value(),
+        returnValueForMissingStub: _i5.Future<String?>.value(),
+      ) as _i5.Future<String?>);
+
+  @override
+  _i5.Future<dynamic> close() => (super.noSuchMethod(
+        Invocation.method(
+          #close,
+          [],
+        ),
+        returnValue: _i5.Future<dynamic>.value(),
+        returnValueForMissingStub: _i5.Future<dynamic>.value(),
+      ) as _i5.Future<dynamic>);
+
+  @override
+  _i5.Future<void> transaction(_i5.Future<void> Function()? action) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #transaction,
+          [action],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<String> exportDump() => (super.noSuchMethod(
+        Invocation.method(
+          #exportDump,
+          [],
+        ),
+        returnValue: _i5.Future<String>.value(_i13.dummyValue<String>(
+          this,
+          Invocation.method(
+            #exportDump,
+            [],
+          ),
+        )),
+        returnValueForMissingStub:
+            _i5.Future<String>.value(_i13.dummyValue<String>(
+          this,
+          Invocation.method(
+            #exportDump,
+            [],
+          ),
+        )),
+      ) as _i5.Future<String>);
+
+  @override
+  _i5.Future<bool> importDump(String? export) => (super.noSuchMethod(
+        Invocation.method(
+          #importDump,
+          [export],
+        ),
+        returnValue: _i5.Future<bool>.value(false),
+        returnValueForMissingStub: _i5.Future<bool>.value(false),
+      ) as _i5.Future<bool>);
+
+  @override
+  _i5.Future<void> storePresence(
+    String? userId,
+    _i2.CachedPresence? presence,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #storePresence,
+          [
+            userId,
+            presence,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<_i2.CachedPresence?> getPresence(String? userId) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #getPresence,
+          [userId],
+        ),
+        returnValue: _i5.Future<_i2.CachedPresence?>.value(),
+        returnValueForMissingStub: _i5.Future<_i2.CachedPresence?>.value(),
+      ) as _i5.Future<_i2.CachedPresence?>);
+
+  @override
+  _i5.Future<void> cacheCustomObject(
+    String? cacheKey,
+    Map<String, Object?>? object,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #cacheCustomObject,
+          [
+            cacheKey,
+            object,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<({Map<String, Object?> content, DateTime savedAt})?>
+      getCustomCacheObject(String? cacheKey) => (super.noSuchMethod(
+            Invocation.method(
+              #getCustomCacheObject,
+              [cacheKey],
+            ),
+            returnValue: _i5.Future<
+                ({Map<String, Object?> content, DateTime savedAt})?>.value(),
+            returnValueForMissingStub: _i5.Future<
+                ({Map<String, Object?> content, DateTime savedAt})?>.value(),
+          ) as _i5.Future<({Map<String, Object?> content, DateTime savedAt})?>);
+
+  @override
+  _i5.Future<void> delete() => (super.noSuchMethod(
+        Invocation.method(
+          #delete,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> storeLatestReceiptState(
+    String? roomId,
+    _i2.LatestReceiptState? receiptState,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #storeLatestReceiptState,
+          [
+            roomId,
+            receiptState,
+          ],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 }

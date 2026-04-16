@@ -8134,6 +8134,16 @@ class MockAuthService extends _i1.Mock implements _i11.AuthService {
       ) as _i5.Future<void>);
 
   @override
+  _i5.Future<void> migrateKeychainToAppGroup() => (super.noSuchMethod(
+        Invocation.method(
+          #migrateKeychainToAppGroup,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
   _i5.Future<void> persistCredentials() => (super.noSuchMethod(
         Invocation.method(
           #persistCredentials,

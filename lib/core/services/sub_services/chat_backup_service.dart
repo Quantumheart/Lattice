@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:matrix/encryption.dart';
@@ -93,7 +95,7 @@ class ChatBackupService extends ChangeNotifier {
         await _handleStaleStoredKey();
       }
     } else {
-      requestMissingRoomKeys();
+      unawaited(requestMissingRoomKeys());
     }
 
     await checkChatBackupStatus();
@@ -130,28 +132,44 @@ class ChatBackupService extends ChangeNotifier {
     notifyListeners();
   }
 
-  void requestMissingRoomKeys() {
+  static const int _keyRequestScanLimit = 200;
+
+  Future<void> requestMissingRoomKeys() async {
     final encryption = _client.encryption;
     if (encryption == null) return;
 
+    final seen = <String>{};
     for (final room in _client.rooms) {
-      final event = room.lastEvent;
-      if (event != null &&
-          event.type == EventTypes.Encrypted &&
-          event.messageType == MessageTypes.BadEncrypted &&
-          event.content['can_request_session'] == true) {
+      List<Event> events;
+      try {
+        events = await _client.database
+            .getEventList(room, limit: _keyRequestScanLimit);
+      } catch (e) {
+        debugPrint('[Kohera] getEventList failed for ${room.id}: $e');
+        continue;
+      }
+
+      for (final event in events) {
+        if (event.type != EventTypes.Encrypted ||
+            event.messageType != MessageTypes.BadEncrypted ||
+            event.content['can_request_session'] != true) {
+          continue;
+        }
         final sessionId = event.content.tryGet<String>('session_id');
         final senderKey = event.content.tryGet<String>('sender_key');
-        if (sessionId != null && senderKey != null) {
-          try {
-            encryption.keyManager.maybeAutoRequest(
-              room.id,
-              sessionId,
-              senderKey,
-            );
-          } catch (e) {
-            debugPrint('[Kohera] Key request failed for ${room.id}: $e');
-          }
+        if (sessionId == null || senderKey == null) continue;
+
+        final dedupeKey = '${room.id}|$sessionId';
+        if (!seen.add(dedupeKey)) continue;
+
+        try {
+          encryption.keyManager.maybeAutoRequest(
+            room.id,
+            sessionId,
+            senderKey,
+          );
+        } catch (e) {
+          debugPrint('[Kohera] Key request failed for ${room.id}: $e');
         }
       }
     }
@@ -222,6 +240,6 @@ class ChatBackupService extends ChangeNotifier {
       debugPrint('[Kohera] Failed to load keys from backup: $e');
     }
 
-    requestMissingRoomKeys();
+    await requestMissingRoomKeys();
   }
 }
