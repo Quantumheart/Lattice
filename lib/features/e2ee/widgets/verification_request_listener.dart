@@ -71,8 +71,23 @@ class _VerificationRequestListenerState
     if (navContext == null) return;
 
     _dialogOpen = true;
-    await KeyVerificationDialog.show(navContext, verification: verification);
+    final confirmed = await KeyVerificationDialog.show(
+      navContext,
+      verification: verification,
+    );
     _dialogOpen = false;
+
+    final matrix = _matrix;
+    final isSelfVerification =
+        matrix != null && verification.userId == matrix.client.userID;
+    if (confirmed == true && isSelfVerification) {
+      try {
+        await matrix.chatBackup.runKeyRecovery();
+      } catch (e) {
+        debugPrint('[Kohera] Post-verification key recovery failed: $e');
+      }
+    }
+
     _showNextPending();
   }
 
