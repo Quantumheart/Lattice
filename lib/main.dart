@@ -55,24 +55,12 @@ class KoheraApp extends StatefulWidget {
 }
 
 class _KoheraAppState extends State<KoheraApp> {
-  GoRouter? _router;
-  MatrixService? _routerMatrixService;
+  late final GoRouter _router = buildRouter(widget.clientManager);
   final ringtoneService = RingtoneService();
-
-  /// Rebuild the router when the active [MatrixService] changes (account
-  /// switch) so that `refreshListenable` points at the right instance.
-  GoRouter _ensureRouter(MatrixService matrix) {
-    if (_routerMatrixService != matrix) {
-      _router?.dispose();
-      _router = buildRouter(matrix);
-      _routerMatrixService = matrix;
-    }
-    return _router!;
-  }
 
   @override
   void dispose() {
-    _router?.dispose();
+    _router.dispose();
     unawaited(ringtoneService.dispose());
     super.dispose();
   }
@@ -102,7 +90,7 @@ class _KoheraAppState extends State<KoheraApp> {
           return Consumer2<ClientManager, PreferencesService>(
             builder: (context, manager, prefs, _) {
               final matrix = manager.activeService;
-              final router = _ensureRouter(matrix);
+              final router = _router;
 
               return MultiProvider(
                 providers: [

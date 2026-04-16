@@ -30,11 +30,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String? _displayName;
   final _displayNameController = TextEditingController();
   bool _displayNameSaving = false;
+  MatrixService? _profileService;
 
   @override
-  void initState() {
-    super.initState();
-    unawaited(_fetchProfile());
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final service = context.read<MatrixService>();
+    if (!identical(service, _profileService)) {
+      _profileService = service;
+      _avatarUrl = null;
+      _displayName = null;
+      _displayNameController.text = '';
+      unawaited(_fetchProfile());
+    }
   }
 
   @override
@@ -305,10 +313,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ? Icon(Icons.check, color: cs.primary)
                           : null,
                       mouseCursor: SystemMouseCursors.click,
-                      onTap: () {
-                        manager.setActiveAccount(i);
-                        Navigator.pop(context);
-                      },
+                      onTap: () => manager.setActiveAccount(i),
                     ),
                   ],
                 ],
