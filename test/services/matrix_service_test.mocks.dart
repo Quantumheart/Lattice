@@ -12908,4 +12908,14 @@ class MockBackupVersionManager extends _i1.Mock
         returnValueForMissingStub:
             _i5.Future<_i2.GetRoomKeysVersionCurrentResponse?>.value(),
       ) as _i5.Future<_i2.GetRoomKeysVersionCurrentResponse?>);
+
+  @override
+  _i5.Future<bool> cachedSecretMatchesServer() => (super.noSuchMethod(
+        Invocation.method(
+          #cachedSecretMatchesServer,
+          [],
+        ),
+        returnValue: _i5.Future<bool>.value(false),
+        returnValueForMissingStub: _i5.Future<bool>.value(false),
+      ) as _i5.Future<bool>);
 }

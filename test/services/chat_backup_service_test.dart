@@ -51,6 +51,8 @@ void main() {
         .thenAnswer((_) async => fakeBackupInfo());
     when(mockBackupVersion.ensureExists())
         .thenAnswer((_) async => fakeBackupInfo());
+    when(mockBackupVersion.cachedSecretMatchesServer())
+        .thenAnswer((_) async => true);
     service = ChatBackupService(
       client: mockClient,
       storage: mockStorage,

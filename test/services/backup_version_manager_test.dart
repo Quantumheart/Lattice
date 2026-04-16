@@ -32,7 +32,7 @@ void main() {
     when(mockClient.database).thenReturn(mockDatabase);
     when(mockEncryption.keyManager).thenReturn(mockKeyManager);
     when(mockEncryption.ssss).thenReturn(mockSsss);
-    manager = BackupVersionManager(mockClient);
+    manager = BackupVersionManager(client: mockClient);
   });
 
   test('returns fetched info when server has a version', () async {

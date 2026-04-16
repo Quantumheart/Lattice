@@ -5,9 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:kohera/core/services/sub_services/backup_version_manager.dart';
 import 'package:kohera/features/e2ee/widgets/key_backup_signer.dart';
 import 'package:matrix/encryption.dart';
-import 'package:matrix/encryption/utils/base64_unpadded.dart';
 import 'package:matrix/matrix.dart';
-import 'package:vodozemac/vodozemac.dart' as vod;
 
 class ChatBackupService extends ChangeNotifier {
   ChatBackupService({
@@ -16,7 +14,8 @@ class ChatBackupService extends ChangeNotifier {
     BackupVersionManager? backupVersion,
   })  : _client = client,
         _storage = storage,
-        _backupVersion = backupVersion ?? BackupVersionManager(client);
+        _backupVersion =
+            backupVersion ?? BackupVersionManager(client: client);
 
   final Client _client;
   final FlutterSecureStorage _storage;
@@ -88,7 +87,8 @@ class ChatBackupService extends ChangeNotifier {
       debugPrint('[Kohera] Attempting auto-unlock with stored key');
       try {
         final state = await _client.getCryptoIdentityState();
-        if (state.connected && await _storedKeyMatchesServer(storedKey)) {
+        if (state.connected &&
+            await _backupVersion.cachedSecretMatchesServer()) {
           debugPrint('[Kohera] Skip restore: already connected and key valid');
         } else {
           await _client.restoreCryptoIdentity(storedKey);
@@ -127,29 +127,6 @@ class ChatBackupService extends ChangeNotifier {
     }
 
     await requestMissingRoomKeys(force: true);
-  }
-
-  Future<bool> _storedKeyMatchesServer(String storedKey) async {
-    try {
-      final encryption = _client.encryption;
-      if (encryption == null) return false;
-      final backupInfo =
-          await encryption.keyManager.getRoomKeysBackupInfo(false);
-      final serverPublicKey =
-          backupInfo.authData['public_key'] as String?;
-      if (serverPublicKey == null) return false;
-      final cachedSecret =
-          await encryption.ssss.getCached(EventTypes.MegolmBackup);
-      if (cachedSecret == null) return false;
-      final cachedBytes = base64decodeUnpadded(cachedSecret);
-      final decryption = vod.PkDecryption.fromSecretKey(
-        vod.Curve25519PublicKey.fromBytes(cachedBytes),
-      );
-      return decryption.publicKey == serverPublicKey;
-    } catch (e) {
-      debugPrint('[Kohera] Key match check failed: $e');
-      return false;
-    }
   }
 
   Future<void> _handleStaleStoredKey() async {
