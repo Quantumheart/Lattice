@@ -49,7 +49,7 @@ android/key.properties
 *.jks
 *.keystore
 /.metadata
-.claude/settings.json
+.claude/
 kohera.code-workspace
 
 # Web build artifacts
