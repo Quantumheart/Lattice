@@ -27,13 +27,16 @@ import 'package:provider/provider.dart';
 
 /// Creates the app router with auth-aware redirects.
 ///
-/// [matrixService] is used as a [Listenable] for `refreshListenable` so that
-/// login/logout automatically triggers a redirect evaluation.
-GoRouter buildRouter(MatrixService matrixService) {
+/// The router resolves the active [MatrixService] dynamically from
+/// [manager] so that account switches don't require recreating the router
+/// (which would reset the navigation stack and cause a visible flash).
+GoRouter buildRouter(ClientManager manager) {
+  final refreshListenable = _ActiveMatrixListenable(manager);
   return GoRouter(
-    refreshListenable: Listenable.merge([matrixService, matrixService.chatBackup]),
+    refreshListenable: refreshListenable,
     initialLocation: '/',
     redirect: (context, state) {
+      final matrixService = manager.activeService;
       final loggedIn = matrixService.isLoggedIn;
       final loc = state.matchedLocation;
       final onAuthRoute =
@@ -241,6 +244,50 @@ GoRouter buildRouter(MatrixService matrixService) {
       ),
     ],
   );
+}
+
+/// A [Listenable] that forwards notifications from the currently active
+/// [MatrixService] (and its [ChatBackupService]), re-binding automatically
+/// when the active account changes. Lets the router use a stable
+/// `refreshListenable` across account switches.
+class _ActiveMatrixListenable extends ChangeNotifier {
+  _ActiveMatrixListenable(this._manager) {
+    _manager.addListener(_onManagerChanged);
+    _attach(_manager.activeService);
+  }
+
+  final ClientManager _manager;
+  MatrixService? _attached;
+
+  void _onManagerChanged() {
+    final next = _manager.activeService;
+    if (!identical(next, _attached)) {
+      _detach();
+      _attach(next);
+    }
+    notifyListeners();
+  }
+
+  void _attach(MatrixService service) {
+    service.addListener(notifyListeners);
+    service.chatBackup.addListener(notifyListeners);
+    _attached = service;
+  }
+
+  void _detach() {
+    final prev = _attached;
+    if (prev == null) return;
+    prev.removeListener(notifyListeners);
+    prev.chatBackup.removeListener(notifyListeners);
+    _attached = null;
+  }
+
+  @override
+  void dispose() {
+    _manager.removeListener(_onManagerChanged);
+    _detach();
+    super.dispose();
+  }
 }
 
 class _AddAccountGuard extends StatefulWidget {
