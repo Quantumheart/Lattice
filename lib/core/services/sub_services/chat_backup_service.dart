@@ -8,15 +8,27 @@ import 'package:matrix/encryption/utils/base64_unpadded.dart';
 import 'package:matrix/matrix.dart';
 import 'package:vodozemac/vodozemac.dart' as vod;
 
+typedef BackupPubkeyDeriver = String Function(Uint8List privateKey);
+
+String _defaultDerivePubkey(Uint8List privateKey) {
+  final decryption = vod.PkDecryption.fromSecretKey(
+    vod.Curve25519PublicKey.fromBytes(privateKey),
+  );
+  return decryption.publicKey;
+}
+
 class ChatBackupService extends ChangeNotifier {
   ChatBackupService({
     required Client client,
     required FlutterSecureStorage storage,
+    BackupPubkeyDeriver? derivePubkey,
   })  : _client = client,
-        _storage = storage;
+        _storage = storage,
+        _derivePubkey = derivePubkey ?? _defaultDerivePubkey;
 
   final Client _client;
   final FlutterSecureStorage _storage;
+  final BackupPubkeyDeriver _derivePubkey;
 
   // ── Chat Backup ─────────────────────────────────────────────
   bool? _chatBackupNeeded;
@@ -104,17 +116,15 @@ class ChatBackupService extends ChangeNotifier {
 
   Future<void> runKeyRecovery({OpenSSSS? ssssKey}) async {
     final encryption = _client.encryption;
-    if (encryption == null) {
-      await checkChatBackupStatus();
-      return;
-    }
+    if (encryption == null) return;
 
-    await _ensureBackupVersionExists();
+    final backupInfo = await _ensureBackupVersionExists();
 
     await KeyBackupSigner.signWithCrossSigning(
       _client,
       encryption,
       ssssKey: ssssKey,
+      backupInfo: backupInfo,
     );
 
     try {
@@ -124,8 +134,7 @@ class ChatBackupService extends ChangeNotifier {
       debugPrint('[Kohera] Failed to load keys from backup: $e');
     }
 
-    await requestMissingRoomKeys();
-    await checkChatBackupStatus();
+    await requestMissingRoomKeys(force: true);
   }
 
   Future<bool> _storedKeyMatchesServer(String storedKey) async {
@@ -159,10 +168,20 @@ class ChatBackupService extends ChangeNotifier {
   }
 
   static const int _keyRequestScanLimit = 200;
+  static const Duration _keyRequestScanCooldown = Duration(minutes: 1);
+  DateTime? _lastKeyRequestScan;
 
-  Future<void> requestMissingRoomKeys() async {
+  Future<void> requestMissingRoomKeys({bool force = false}) async {
     final encryption = _client.encryption;
     if (encryption == null) return;
+
+    final now = DateTime.now();
+    if (!force &&
+        _lastKeyRequestScan != null &&
+        now.difference(_lastKeyRequestScan!) < _keyRequestScanCooldown) {
+      return;
+    }
+    _lastKeyRequestScan = now;
 
     final seen = <String>{};
     for (final room in _client.rooms) {
@@ -223,36 +242,39 @@ class ChatBackupService extends ChangeNotifier {
 
   // ── Private ──────────────────────────────────────────────────
 
-  Future<void> _ensureBackupVersionExists() async {
+  Future<GetRoomKeysVersionCurrentResponse?> _ensureBackupVersionExists() async {
     final encryption = _client.encryption;
-    if (encryption == null) return;
+    if (encryption == null) return null;
 
     try {
-      await encryption.keyManager.getRoomKeysBackupInfo(false);
-      return;
+      return await encryption.keyManager.getRoomKeysBackupInfo(false);
     } on MatrixException catch (e) {
-      if (e.errcode != 'M_NOT_FOUND') return;
+      if (e.errcode != 'M_NOT_FOUND') return null;
     } catch (_) {
-      return;
+      return null;
     }
 
     final cachedKey =
         await encryption.ssss.getCached(EventTypes.MegolmBackup);
-    if (cachedKey == null) return;
+    if (cachedKey == null) return null;
 
     debugPrint('[Kohera] Creating backup version from cached megolm key');
     final privateKey = base64decodeUnpadded(cachedKey);
-    final decryption = vod.PkDecryption.fromSecretKey(
-      vod.Curve25519PublicKey.fromBytes(privateKey),
-    );
+    final publicKey = _derivePubkey(privateKey);
 
     await _client.postRoomKeysVersion(
       BackupAlgorithm.mMegolmBackupV1Curve25519AesSha2,
-      <String, dynamic>{'public_key': decryption.publicKey},
+      <String, dynamic>{'public_key': publicKey},
     );
     debugPrint('[Kohera] Backup version created on server');
 
     await _client.database.markInboundGroupSessionsAsNeedingUpload();
-  }
 
+    try {
+      return await encryption.keyManager.getRoomKeysBackupInfo(false);
+    } catch (e) {
+      debugPrint('[Kohera] Post-create backup info fetch failed: $e');
+      return null;
+    }
+  }
 }

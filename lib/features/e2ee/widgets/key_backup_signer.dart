@@ -12,6 +12,7 @@ class KeyBackupSigner {
     Client client,
     Encryption encryption, {
     OpenSSSS? ssssKey,
+    GetRoomKeysVersionCurrentResponse? backupInfo,
   }) async {
     try {
       final masterKeySecret = await _readMasterKeySecret(encryption, ssssKey);
@@ -22,9 +23,9 @@ class KeyBackupSigner {
         return;
       }
 
-      final backupInfo =
+      final info = backupInfo ??
           await encryption.keyManager.getRoomKeysBackupInfo(false);
-      final authData = Map<String, Object?>.from(backupInfo.authData);
+      final authData = Map<String, Object?>.from(info.authData);
 
       final signable = Map<String, Object?>.from(authData);
       signable.remove('signatures');
@@ -59,8 +60,8 @@ class KeyBackupSigner {
       authData['signatures'] = signatures;
 
       await client.putRoomKeysVersion(
-        backupInfo.version,
-        backupInfo.algorithm,
+        info.version,
+        info.algorithm,
         authData,
       );
       debugPrint('[Bootstrap] Key backup signed with master cross-signing key');

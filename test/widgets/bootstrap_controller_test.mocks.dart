@@ -8113,10 +8113,12 @@ class MockChatBackupService extends _i1.Mock implements _i8.ChatBackupService {
       ) as _i5.Future<void>);
 
   @override
-  _i5.Future<void> requestMissingRoomKeys() => (super.noSuchMethod(
+  _i5.Future<void> requestMissingRoomKeys({bool? force = false}) =>
+      (super.noSuchMethod(
         Invocation.method(
           #requestMissingRoomKeys,
           [],
+          {#force: force},
         ),
         returnValue: _i5.Future<void>.value(),
         returnValueForMissingStub: _i5.Future<void>.value(),

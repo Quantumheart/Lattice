@@ -48,6 +48,7 @@ void main() {
     service = ChatBackupService(
       client: mockClient,
       storage: mockStorage,
+      derivePubkey: (_) => 'derived_pubkey',
     );
     service.addListener(() => changeCount++);
   });
@@ -353,6 +354,66 @@ void main() {
         'new_key',
       ),).called(1);
     });
+
+    test('second call within cooldown is skipped without force', () async {
+      final mockRoom = MockRoom();
+      when(mockClient.rooms).thenReturn([mockRoom]);
+      when(mockRoom.id).thenReturn('!room:example.com');
+      when(mockDatabase.getEventList(mockRoom,
+              start: anyNamed('start'),
+              onlySending: anyNamed('onlySending'),
+              limit: anyNamed('limit'),),)
+          .thenAnswer((_) async => [
+                Event(
+                  type: EventTypes.Encrypted,
+                  content: {
+                    'msgtype': MessageTypes.BadEncrypted,
+                    'can_request_session': true,
+                    'session_id': 'sess',
+                    'sender_key': 'key',
+                  },
+                  senderId: '@user:example.com',
+                  eventId: r'$ev1',
+                  originServerTs: DateTime.now(),
+                  room: mockRoom,
+                ),
+              ],);
+
+      await service.requestMissingRoomKeys();
+      await service.requestMissingRoomKeys();
+
+      verify(mockKeyManager.maybeAutoRequest(any, any, any)).called(1);
+    });
+
+    test('force: true bypasses cooldown', () async {
+      final mockRoom = MockRoom();
+      when(mockClient.rooms).thenReturn([mockRoom]);
+      when(mockRoom.id).thenReturn('!room:example.com');
+      when(mockDatabase.getEventList(mockRoom,
+              start: anyNamed('start'),
+              onlySending: anyNamed('onlySending'),
+              limit: anyNamed('limit'),),)
+          .thenAnswer((_) async => [
+                Event(
+                  type: EventTypes.Encrypted,
+                  content: {
+                    'msgtype': MessageTypes.BadEncrypted,
+                    'can_request_session': true,
+                    'session_id': 'sess',
+                    'sender_key': 'key',
+                  },
+                  senderId: '@user:example.com',
+                  eventId: r'$ev1',
+                  originServerTs: DateTime.now(),
+                  room: mockRoom,
+                ),
+              ],);
+
+      await service.requestMissingRoomKeys();
+      await service.requestMissingRoomKeys(force: true);
+
+      verify(mockKeyManager.maybeAutoRequest(any, any, any)).called(2);
+    });
   });
 
   group('runKeyRecovery', () {
@@ -368,8 +429,32 @@ void main() {
     });
 
     test(
-        'skips loadAllKeys recreate path gracefully when M_NOT_FOUND and no '
-        'cached megolm secret',
+        'recreates backup version from cached megolm secret before loadAllKeys '
+        'when server returns M_NOT_FOUND',
+        () async {
+      when(mockClient.userID).thenReturn('@user:example.com');
+      when(mockKeyManager.getRoomKeysBackupInfo(any)).thenThrow(
+        MatrixException.fromJson({
+          'errcode': 'M_NOT_FOUND',
+          'error': 'Unknown backup version',
+        }),
+      );
+      when(mockSsss.getCached(EventTypes.MegolmBackup))
+          .thenAnswer((_) async => 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+      when(mockClient.postRoomKeysVersion(any, any))
+          .thenAnswer((_) async => '2');
+
+      await service.runKeyRecovery();
+
+      verifyInOrder([
+        mockClient.postRoomKeysVersion(any, any),
+        mockKeyManager.loadAllKeys(),
+      ]);
+    });
+
+    test(
+        'skips postRoomKeysVersion when M_NOT_FOUND but no cached megolm '
+        'secret',
         () async {
       when(mockClient.userID).thenReturn('@user:example.com');
       when(mockKeyManager.getRoomKeysBackupInfo(any)).thenThrow(
