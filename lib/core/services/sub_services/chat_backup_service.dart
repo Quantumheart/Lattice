@@ -2,33 +2,25 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:kohera/core/services/sub_services/backup_version_manager.dart';
 import 'package:kohera/features/e2ee/widgets/key_backup_signer.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/encryption/utils/base64_unpadded.dart';
 import 'package:matrix/matrix.dart';
 import 'package:vodozemac/vodozemac.dart' as vod;
 
-typedef BackupPubkeyDeriver = String Function(Uint8List privateKey);
-
-String _defaultDerivePubkey(Uint8List privateKey) {
-  final decryption = vod.PkDecryption.fromSecretKey(
-    vod.Curve25519PublicKey.fromBytes(privateKey),
-  );
-  return decryption.publicKey;
-}
-
 class ChatBackupService extends ChangeNotifier {
   ChatBackupService({
     required Client client,
     required FlutterSecureStorage storage,
-    BackupPubkeyDeriver? derivePubkey,
+    BackupVersionManager? backupVersion,
   })  : _client = client,
         _storage = storage,
-        _derivePubkey = derivePubkey ?? _defaultDerivePubkey;
+        _backupVersion = backupVersion ?? BackupVersionManager(client);
 
   final Client _client;
   final FlutterSecureStorage _storage;
-  final BackupPubkeyDeriver _derivePubkey;
+  final BackupVersionManager _backupVersion;
 
   // ── Chat Backup ─────────────────────────────────────────────
   bool? _chatBackupNeeded;
@@ -43,7 +35,7 @@ class ChatBackupService extends ChangeNotifier {
 
   Future<void> checkChatBackupStatus() async {
     try {
-      await _ensureBackupVersionExists();
+      await _backupVersion.ensureExists();
       final state = await _client.getCryptoIdentityState();
       debugPrint('[Kohera] Backup status: initialized=${state.initialized}, '
           'connected=${state.connected}');
@@ -118,7 +110,7 @@ class ChatBackupService extends ChangeNotifier {
     final encryption = _client.encryption;
     if (encryption == null) return;
 
-    final backupInfo = await _ensureBackupVersionExists();
+    final backupInfo = await _backupVersion.ensureExists();
 
     await KeyBackupSigner.signWithCrossSigning(
       _client,
@@ -240,41 +232,4 @@ class ChatBackupService extends ChangeNotifier {
     await _storage.delete(key: 'ssss_recovery_key_$userId');
   }
 
-  // ── Private ──────────────────────────────────────────────────
-
-  Future<GetRoomKeysVersionCurrentResponse?> _ensureBackupVersionExists() async {
-    final encryption = _client.encryption;
-    if (encryption == null) return null;
-
-    try {
-      return await encryption.keyManager.getRoomKeysBackupInfo(false);
-    } on MatrixException catch (e) {
-      if (e.errcode != 'M_NOT_FOUND') return null;
-    } catch (_) {
-      return null;
-    }
-
-    final cachedKey =
-        await encryption.ssss.getCached(EventTypes.MegolmBackup);
-    if (cachedKey == null) return null;
-
-    debugPrint('[Kohera] Creating backup version from cached megolm key');
-    final privateKey = base64decodeUnpadded(cachedKey);
-    final publicKey = _derivePubkey(privateKey);
-
-    await _client.postRoomKeysVersion(
-      BackupAlgorithm.mMegolmBackupV1Curve25519AesSha2,
-      <String, dynamic>{'public_key': publicKey},
-    );
-    debugPrint('[Kohera] Backup version created on server');
-
-    await _client.database.markInboundGroupSessionsAsNeedingUpload();
-
-    try {
-      return await encryption.keyManager.getRoomKeysBackupInfo(false);
-    } catch (e) {
-      debugPrint('[Kohera] Post-create backup info fetch failed: $e');
-      return null;
-    }
-  }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/sub_services/backup_version_manager.dart';
 import 'package:matrix/encryption.dart';
 import 'package:matrix/encryption/cross_signing.dart';
 import 'package:matrix/matrix.dart';
@@ -20,6 +21,7 @@ import 'package:mockito/mockito.dart';
   MockSpec<OpenSSSS>(),
   MockSpec<SSSS>(unsupportedMembers: {#pendingShareRequests}),
   MockSpec<DatabaseApi>(),
+  MockSpec<BackupVersionManager>(),
 ])
 import 'matrix_service_test.mocks.dart';
 
