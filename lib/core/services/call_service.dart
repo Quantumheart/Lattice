@@ -634,6 +634,11 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void _handleSignalingIncomingInvite(IncomingInvite event) {
+    if (_callState != KoheraCallState.idle &&
+        _callState != KoheraCallState.failed) {
+      debugPrint('[Kohera] Ignoring duplicate invite, already in $_callState');
+      return;
+    }
     _activeCallId = event.callId;
     _ringing.pushIncomingCall(event.info);
     _setCallState(KoheraCallState.ringingIncoming);
