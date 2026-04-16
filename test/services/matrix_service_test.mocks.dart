@@ -9,6 +9,8 @@ import 'dart:typed_data' as _i14;
 import 'package:flutter/foundation.dart' as _i17;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart' as _i7;
 import 'package:http/http.dart' as _i4;
+import 'package:kohera/core/services/sub_services/backup_version_manager.dart'
+    as _i23;
 import 'package:matrix/encryption.dart' as _i8;
 import 'package:matrix/encryption/cross_signing.dart' as _i11;
 import 'package:matrix/encryption/key_verification_manager.dart' as _i10;
@@ -12888,4 +12890,22 @@ class MockDatabaseApi extends _i1.Mock implements _i2.DatabaseApi {
         returnValue: _i5.Future<void>.value(),
         returnValueForMissingStub: _i5.Future<void>.value(),
       ) as _i5.Future<void>);
+}
+
+/// A class which mocks [BackupVersionManager].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockBackupVersionManager extends _i1.Mock
+    implements _i23.BackupVersionManager {
+  @override
+  _i5.Future<_i2.GetRoomKeysVersionCurrentResponse?> ensureExists() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #ensureExists,
+          [],
+        ),
+        returnValue: _i5.Future<_i2.GetRoomKeysVersionCurrentResponse?>.value(),
+        returnValueForMissingStub:
+            _i5.Future<_i2.GetRoomKeysVersionCurrentResponse?>.value(),
+      ) as _i5.Future<_i2.GetRoomKeysVersionCurrentResponse?>);
 }

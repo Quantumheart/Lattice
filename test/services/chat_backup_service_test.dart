@@ -13,8 +13,18 @@ void main() {
   late MockKeyManager mockKeyManager;
   late MockSSSS mockSsss;
   late MockDatabaseApi mockDatabase;
+  late MockBackupVersionManager mockBackupVersion;
   late ChatBackupService service;
   late int changeCount;
+
+  GetRoomKeysVersionCurrentResponse fakeBackupInfo() =>
+      GetRoomKeysVersionCurrentResponse.fromJson({
+        'algorithm': BackupAlgorithm.mMegolmBackupV1Curve25519AesSha2.name,
+        'auth_data': <String, dynamic>{'public_key': 'fake'},
+        'count': 0,
+        'etag': '0',
+        'version': '1',
+      });
 
   setUp(() {
     mockClient = MockClient();
@@ -24,6 +34,7 @@ void main() {
     mockKeyManager = MockKeyManager();
     mockSsss = MockSSSS();
     mockDatabase = MockDatabaseApi();
+    mockBackupVersion = MockBackupVersionManager();
     changeCount = 0;
     when(mockClient.rooms).thenReturn([]);
     when(mockClient.encryption).thenReturn(mockEncryption);
@@ -36,19 +47,14 @@ void main() {
     when(mockEncryption.crossSigning).thenReturn(mockCrossSigning);
     when(mockEncryption.keyManager).thenReturn(mockKeyManager);
     when(mockEncryption.ssss).thenReturn(mockSsss);
-    when(mockKeyManager.getRoomKeysBackupInfo(any)).thenAnswer(
-      (_) async => GetRoomKeysVersionCurrentResponse.fromJson({
-        'algorithm': BackupAlgorithm.mMegolmBackupV1Curve25519AesSha2.name,
-        'auth_data': <String, dynamic>{'public_key': 'fake'},
-        'count': 0,
-        'etag': '0',
-        'version': '1',
-      }),
-    );
+    when(mockKeyManager.getRoomKeysBackupInfo(any))
+        .thenAnswer((_) async => fakeBackupInfo());
+    when(mockBackupVersion.ensureExists())
+        .thenAnswer((_) async => fakeBackupInfo());
     service = ChatBackupService(
       client: mockClient,
       storage: mockStorage,
-      derivePubkey: (_) => 'derived_pubkey',
+      backupVersion: mockBackupVersion,
     );
     service.addListener(() => changeCount++);
   });
@@ -417,74 +423,26 @@ void main() {
   });
 
   group('runKeyRecovery', () {
-    test('ensures backup version before loadAllKeys', () async {
-      when(mockClient.userID).thenReturn('@user:example.com');
-
+    test('calls BackupVersionManager.ensureExists before loadAllKeys',
+        () async {
       await service.runKeyRecovery();
 
       verifyInOrder([
-        mockKeyManager.getRoomKeysBackupInfo(false),
+        mockBackupVersion.ensureExists(),
         mockKeyManager.loadAllKeys(),
       ]);
     });
 
-    test(
-        'recreates backup version from cached megolm secret before loadAllKeys '
-        'when server returns M_NOT_FOUND',
-        () async {
-      when(mockClient.userID).thenReturn('@user:example.com');
-      when(mockKeyManager.getRoomKeysBackupInfo(any)).thenThrow(
-        MatrixException.fromJson({
-          'errcode': 'M_NOT_FOUND',
-          'error': 'Unknown backup version',
-        }),
-      );
-      when(mockSsss.getCached(EventTypes.MegolmBackup))
-          .thenAnswer((_) async => 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
-      when(mockClient.postRoomKeysVersion(any, any))
-          .thenAnswer((_) async => '2');
+    test('continues to loadAllKeys when ensureExists returns null', () async {
+      when(mockBackupVersion.ensureExists()).thenAnswer((_) async => null);
 
       await service.runKeyRecovery();
 
-      verifyInOrder([
-        mockClient.postRoomKeysVersion(any, any),
-        mockKeyManager.loadAllKeys(),
-      ]);
-    });
-
-    test(
-        'skips postRoomKeysVersion when M_NOT_FOUND but no cached megolm '
-        'secret',
-        () async {
-      when(mockClient.userID).thenReturn('@user:example.com');
-      when(mockKeyManager.getRoomKeysBackupInfo(any)).thenThrow(
-        MatrixException.fromJson({
-          'errcode': 'M_NOT_FOUND',
-          'error': 'Unknown backup version',
-        }),
-      );
-      when(mockSsss.getCached(EventTypes.MegolmBackup))
-          .thenAnswer((_) async => null);
-
-      await service.runKeyRecovery();
-
-      verifyNever(mockClient.postRoomKeysVersion(any, any));
-      verify(mockKeyManager.loadAllKeys()).called(1);
-    });
-
-    test('skips postRoomKeysVersion when server version already exists',
-        () async {
-      when(mockClient.userID).thenReturn('@user:example.com');
-
-      await service.runKeyRecovery();
-
-      verifyNever(mockClient.postRoomKeysVersion(any, any));
       verify(mockKeyManager.loadAllKeys()).called(1);
     });
 
     test('loadAllKeys failure does not skip requestMissingRoomKeys',
         () async {
-      when(mockClient.userID).thenReturn('@user:example.com');
       when(mockKeyManager.loadAllKeys())
           .thenThrow(Exception('network error'));
 
@@ -525,7 +483,7 @@ void main() {
 
       await service.runKeyRecovery();
 
-      verifyNever(mockClient.postRoomKeysVersion(any, any));
+      verifyNever(mockBackupVersion.ensureExists());
       verifyNever(mockKeyManager.loadAllKeys());
     });
   });
