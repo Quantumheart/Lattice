@@ -90,13 +90,14 @@ class MockChatBackupService extends _i1.Mock implements _i2.ChatBackupService {
       ) as _i3.Future<void>);
 
   @override
-  void requestMissingRoomKeys() => super.noSuchMethod(
+  _i3.Future<void> requestMissingRoomKeys() => (super.noSuchMethod(
         Invocation.method(
           #requestMissingRoomKeys,
           [],
         ),
-        returnValueForMissingStub: null,
-      );
+        returnValue: _i3.Future<void>.value(),
+        returnValueForMissingStub: _i3.Future<void>.value(),
+      ) as _i3.Future<void>);
 
   @override
   _i3.Future<String?> getStoredRecoveryKey() => (super.noSuchMethod(

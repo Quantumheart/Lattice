@@ -12,6 +12,7 @@ void main() {
   late MockCrossSigning mockCrossSigning;
   late MockKeyManager mockKeyManager;
   late MockSSSS mockSsss;
+  late MockDatabaseApi mockDatabase;
   late ChatBackupService service;
   late int changeCount;
 
@@ -22,9 +23,16 @@ void main() {
     mockCrossSigning = MockCrossSigning();
     mockKeyManager = MockKeyManager();
     mockSsss = MockSSSS();
+    mockDatabase = MockDatabaseApi();
     changeCount = 0;
     when(mockClient.rooms).thenReturn([]);
     when(mockClient.encryption).thenReturn(mockEncryption);
+    when(mockClient.database).thenReturn(mockDatabase);
+    when(mockDatabase.getEventList(any,
+            start: anyNamed('start'),
+            onlySending: anyNamed('onlySending'),
+            limit: anyNamed('limit'),),)
+        .thenAnswer((_) async => <Event>[]);
     when(mockEncryption.crossSigning).thenReturn(mockCrossSigning);
     when(mockEncryption.keyManager).thenReturn(mockKeyManager);
     when(mockEncryption.ssss).thenReturn(mockSsss);
@@ -132,21 +140,28 @@ void main() {
       final mockRoom = MockRoom();
       when(mockClient.rooms).thenReturn([mockRoom]);
       when(mockRoom.id).thenReturn('!room:example.com');
-      when(mockRoom.lastEvent).thenReturn(Event(
-        type: EventTypes.Encrypted,
-        content: {
-          'msgtype': MessageTypes.BadEncrypted,
-          'can_request_session': true,
-          'session_id': 'session123',
-          'sender_key': 'key456',
-        },
-        senderId: '@user:example.com',
-        eventId: r'$ev1',
-        originServerTs: DateTime.now(),
-        room: mockRoom,
-      ),);
+      when(mockDatabase.getEventList(mockRoom,
+              start: anyNamed('start'),
+              onlySending: anyNamed('onlySending'),
+              limit: anyNamed('limit'),),)
+          .thenAnswer((_) async => [
+                Event(
+                  type: EventTypes.Encrypted,
+                  content: {
+                    'msgtype': MessageTypes.BadEncrypted,
+                    'can_request_session': true,
+                    'session_id': 'session123',
+                    'sender_key': 'key456',
+                  },
+                  senderId: '@user:example.com',
+                  eventId: r'$ev1',
+                  originServerTs: DateTime.now(),
+                  room: mockRoom,
+                ),
+              ],);
 
       await service.tryAutoUnlockBackup();
+      await untilCalled(mockKeyManager.maybeAutoRequest(any, any, any));
 
       verify(
         mockKeyManager.maybeAutoRequest(
@@ -247,31 +262,37 @@ void main() {
   });
 
   group('requestMissingRoomKeys', () {
-    test('is a no-op when encryption is null', () {
+    test('is a no-op when encryption is null', () async {
       when(mockClient.encryption).thenReturn(null);
 
-      service.requestMissingRoomKeys();
+      await service.requestMissingRoomKeys();
     });
 
-    test('requests keys for undecryptable events', () {
+    test('requests keys for undecryptable cached events', () async {
       final mockRoom = MockRoom();
       when(mockClient.rooms).thenReturn([mockRoom]);
       when(mockRoom.id).thenReturn('!room:example.com');
-      when(mockRoom.lastEvent).thenReturn(Event(
-        type: EventTypes.Encrypted,
-        content: {
-          'msgtype': MessageTypes.BadEncrypted,
-          'can_request_session': true,
-          'session_id': 'session123',
-          'sender_key': 'key456',
-        },
-        senderId: '@user:example.com',
-        eventId: r'$ev1',
-        originServerTs: DateTime.now(),
-        room: mockRoom,
-      ),);
+      when(mockDatabase.getEventList(mockRoom,
+              start: anyNamed('start'),
+              onlySending: anyNamed('onlySending'),
+              limit: anyNamed('limit'),),)
+          .thenAnswer((_) async => [
+                Event(
+                  type: EventTypes.Encrypted,
+                  content: {
+                    'msgtype': MessageTypes.BadEncrypted,
+                    'can_request_session': true,
+                    'session_id': 'session123',
+                    'sender_key': 'key456',
+                  },
+                  senderId: '@user:example.com',
+                  eventId: r'$ev1',
+                  originServerTs: DateTime.now(),
+                  room: mockRoom,
+                ),
+              ],);
 
-      service.requestMissingRoomKeys();
+      await service.requestMissingRoomKeys();
 
       verify(
         mockKeyManager.maybeAutoRequest(
@@ -280,6 +301,57 @@ void main() {
           'key456',
         ),
       ).called(1);
+    });
+
+    test('scans cached history, not just lastEvent', () async {
+      final mockRoom = MockRoom();
+      when(mockClient.rooms).thenReturn([mockRoom]);
+      when(mockRoom.id).thenReturn('!room:example.com');
+      when(mockDatabase.getEventList(mockRoom,
+              start: anyNamed('start'),
+              onlySending: anyNamed('onlySending'),
+              limit: anyNamed('limit'),),)
+          .thenAnswer((_) async => [
+                Event(
+                  type: EventTypes.Encrypted,
+                  content: {
+                    'msgtype': MessageTypes.BadEncrypted,
+                    'can_request_session': true,
+                    'session_id': 'old_session',
+                    'sender_key': 'old_key',
+                  },
+                  senderId: '@user:example.com',
+                  eventId: r'$old',
+                  originServerTs: DateTime.now(),
+                  room: mockRoom,
+                ),
+                Event(
+                  type: EventTypes.Encrypted,
+                  content: {
+                    'msgtype': MessageTypes.BadEncrypted,
+                    'can_request_session': true,
+                    'session_id': 'new_session',
+                    'sender_key': 'new_key',
+                  },
+                  senderId: '@user:example.com',
+                  eventId: r'$new',
+                  originServerTs: DateTime.now(),
+                  room: mockRoom,
+                ),
+              ],);
+
+      await service.requestMissingRoomKeys();
+
+      verify(mockKeyManager.maybeAutoRequest(
+        '!room:example.com',
+        'old_session',
+        'old_key',
+      ),).called(1);
+      verify(mockKeyManager.maybeAutoRequest(
+        '!room:example.com',
+        'new_session',
+        'new_key',
+      ),).called(1);
     });
   });
 }
