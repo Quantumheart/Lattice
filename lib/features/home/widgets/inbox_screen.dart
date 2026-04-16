@@ -6,6 +6,8 @@ import 'package:kohera/core/routing/route_names.dart';
 import 'package:kohera/core/services/sub_services/selection_service.dart';
 import 'package:kohera/core/utils/reply_fallback.dart';
 import 'package:kohera/core/utils/time_format.dart';
+import 'package:kohera/features/home/screens/home_shell.dart';
+import 'package:kohera/features/home/widgets/mobile_space_drawer.dart';
 import 'package:kohera/features/notifications/models/notification_constants.dart';
 import 'package:kohera/features/notifications/services/inbox_controller.dart';
 import 'package:kohera/features/rooms/widgets/invite_tile.dart';
@@ -41,6 +43,21 @@ class _InboxScreenState extends State<InboxScreen> {
     super.dispose();
   }
 
+  List<NotificationGroup> _filterBySelection(
+    List<NotificationGroup> groups,
+    SelectionService selection,
+  ) {
+    final selected = selection.selectedSpaceIds;
+    if (selected.isEmpty) return groups;
+    final allowed = <String>{};
+    for (final id in selected) {
+      for (final room in selection.roomsForSpace(id)) {
+        allowed.add(room.id);
+      }
+    }
+    return groups.where((g) => allowed.contains(g.roomId)).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<InboxController>();
@@ -49,9 +66,22 @@ class _InboxScreenState extends State<InboxScreen> {
         selection.invitedRooms.length + selection.invitedSpaces.length;
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final visibleGroups = _filterBySelection(controller.grouped, selection);
+    final isNarrow =
+        MediaQuery.sizeOf(context).width < HomeShell.wideBreakpoint;
 
     return Scaffold(
+      drawer: isNarrow ? const MobileSpaceDrawer() : null,
       appBar: AppBar(
+        leading: isNarrow
+            ? Builder(
+                builder: (ctx) => IconButton(
+                  icon: const Icon(Icons.menu),
+                  tooltip: 'Spaces',
+                  onPressed: () => Scaffold.of(ctx).openDrawer(),
+                ),
+              )
+            : null,
         title: const Text(InboxText.title),
       ),
       body: Column(
@@ -114,7 +144,7 @@ class _InboxScreenState extends State<InboxScreen> {
                               ],
                             ),
                           )
-                        : controller.grouped.isEmpty
+                        : visibleGroups.isEmpty
                             ? Center(
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
@@ -139,17 +169,17 @@ class _InboxScreenState extends State<InboxScreen> {
                                 child: ListView.builder(
                                   padding: const EdgeInsets.symmetric(
                                       horizontal: 8, vertical: 4,),
-                                  itemCount: controller.grouped.length +
+                                  itemCount: visibleGroups.length +
                                       (controller.hasMore ? 1 : 0),
                                   itemBuilder: (context, i) {
-                                    if (i == controller.grouped.length) {
+                                    if (i == visibleGroups.length) {
                                       return _LoadMoreButton(
                                         isLoading: controller.isLoading,
                                         onPressed: controller.loadMore,
                                       );
                                     }
                                     return _NotificationGroupTile(
-                                      group: controller.grouped[i],
+                                      group: visibleGroups[i],
                                       controller: controller,
                                     );
                                   },

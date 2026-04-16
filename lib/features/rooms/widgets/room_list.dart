@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:kohera/core/services/matrix_service.dart';
 import 'package:kohera/core/services/preferences_service.dart';
 import 'package:kohera/core/services/sub_services/selection_service.dart';
+import 'package:kohera/features/home/screens/home_shell.dart';
+import 'package:kohera/features/home/widgets/mobile_space_drawer.dart';
 import 'package:kohera/features/rooms/services/room_list_search_controller.dart';
 import 'package:kohera/features/rooms/widgets/invite_tile.dart';
 import 'package:kohera/features/rooms/widgets/message_search_tiles.dart';
@@ -170,6 +172,8 @@ class _RoomListState extends State<RoomList>
     final hasMessageResults = _messageSearch.results.isNotEmpty;
     final isMessageSearchActive = _messageSearch.isLoading;
     final isEmpty = !hasRoomItems && !hasMessageResults && !isMessageSearchActive;
+    final isNarrow =
+        MediaQuery.sizeOf(context).width < HomeShell.wideBreakpoint;
 
     return PopScope(
       canPop: !_searchOpen,
@@ -177,6 +181,7 @@ class _RoomListState extends State<RoomList>
         if (!didPop) _closeSearch();
       },
       child: Scaffold(
+        drawer: isNarrow ? const MobileSpaceDrawer() : null,
         appBar: AppBar(
           title: AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
@@ -221,7 +226,15 @@ class _RoomListState extends State<RoomList>
                   icon: const Icon(Icons.arrow_back),
                   onPressed: _closeSearch,
                 )
-              : null,
+              : (isNarrow
+                  ? Builder(
+                      builder: (ctx) => IconButton(
+                        icon: const Icon(Icons.menu),
+                        tooltip: 'Spaces',
+                        onPressed: () => Scaffold.of(ctx).openDrawer(),
+                      ),
+                    )
+                  : null),
           actions: _searchOpen
               ? null
               : [

@@ -402,4 +402,42 @@ void main() {
       expect(prefs.pttSoundEnabled, isFalse);
     });
   });
+
+  group('last mobile tab', () {
+    test('defaults to inbox', () {
+      expect(prefs.lastMobileTab, MobileTab.inbox);
+    });
+
+    test('round-trips chats', () async {
+      await prefs.setLastMobileTab(MobileTab.chats);
+      expect(prefs.lastMobileTab, MobileTab.chats);
+    });
+
+    test('round-trips you', () async {
+      await prefs.setLastMobileTab(MobileTab.you);
+      expect(prefs.lastMobileTab, MobileTab.you);
+    });
+
+    test('notifies listeners on change', () async {
+      var notified = false;
+      prefs.addListener(() => notified = true);
+      await prefs.setLastMobileTab(MobileTab.chats);
+      expect(notified, isTrue);
+    });
+
+    test('falls back to inbox on unknown stored value', () async {
+      SharedPreferences.setMockInitialValues(
+        {'last_mobile_tab': 'bogus'},
+      );
+      final sp = await SharedPreferences.getInstance();
+      final badPrefs = PreferencesService(prefs: sp);
+      expect(badPrefs.lastMobileTab, MobileTab.inbox);
+    });
+
+    test('labels are human-readable', () {
+      expect(MobileTab.inbox.label, 'Inbox');
+      expect(MobileTab.chats.label, 'Chats');
+      expect(MobileTab.you.label, 'You');
+    });
+  });
 }

@@ -45,6 +45,19 @@ enum AudioQuality {
       };
 }
 
+/// Primary navigation tab shown on narrow (mobile) layouts.
+enum MobileTab {
+  inbox,
+  chats,
+  you;
+
+  String get label => switch (this) {
+        MobileTab.inbox => 'Inbox',
+        MobileTab.chats => 'Chats',
+        MobileTab.you => 'You',
+      };
+}
+
 /// Manages user preferences that persist across app restarts.
 class PreferencesService extends ChangeNotifier {
   PreferencesService({SharedPreferences? prefs}) : _prefs = prefs;
@@ -54,6 +67,7 @@ class PreferencesService extends ChangeNotifier {
   static const _densityKey = 'message_density';
   static const _themeModeKey = 'theme_mode';
   static const _themePresetKey = 'theme_preset';
+  static const _lastMobileTabKey = 'last_mobile_tab';
 
   /// Initialise the underlying [SharedPreferences] instance.
   /// Must be called (and awaited) before reading any values.
@@ -91,6 +105,23 @@ class PreferencesService extends ChangeNotifier {
   Future<void> setMessageDensity(MessageDensity density) async {
     await _prefs?.setString(_densityKey, density.name);
     debugPrint('[Kohera] Message density set to ${density.label}');
+    notifyListeners();
+  }
+
+  // ── Last mobile tab ───────────────────────────────────────────
+
+  MobileTab get lastMobileTab {
+    final stored = _prefs?.getString(_lastMobileTabKey);
+    if (stored == null) return MobileTab.inbox;
+    return MobileTab.values.firstWhere(
+      (t) => t.name == stored,
+      orElse: () => MobileTab.inbox,
+    );
+  }
+
+  Future<void> setLastMobileTab(MobileTab tab) async {
+    await _prefs?.setString(_lastMobileTabKey, tab.name);
+    debugPrint('[Kohera] Last mobile tab set to ${tab.label}');
     notifyListeners();
   }
 
