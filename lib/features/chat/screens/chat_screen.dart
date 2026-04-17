@@ -86,9 +86,11 @@ class _ChatScreenState extends State<ChatScreen>
     _actions = _createActions();
     _search = _createSearchController();
     _initControllers();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _composeFocusNode.requestFocus();
-    });
+    if (!isTouchDevice) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _composeFocusNode.requestFocus();
+      });
+    }
   }
 
   @override
@@ -104,9 +106,11 @@ class _ChatScreenState extends State<ChatScreen>
       _search.dispose();
       _actions = _createActions();
       _search = _createSearchController();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _composeFocusNode.requestFocus();
-      });
+      if (!isTouchDevice) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _composeFocusNode.requestFocus();
+        });
+      }
     }
   }
 
@@ -146,6 +150,10 @@ class _ChatScreenState extends State<ChatScreen>
   void _setReplyTo(Event event) {
     _compose.setReplyTo(event);
     _composeFocusNode.requestFocus();
+  }
+
+  void _dismissKeyboard() {
+    if (_composeFocusNode.hasFocus) _composeFocusNode.unfocus();
   }
 
   // ── Attachments ─────────────────────────────────────────
@@ -284,6 +292,7 @@ class _ChatScreenState extends State<ChatScreen>
             onToggleReaction: _actions.toggleReaction,
             onPin: _actions.togglePin,
             onHighlight: _search.setHighlight,
+            onScrollBack: isTouchDevice ? _dismissKeyboard : null,
           ),
         ),
         TypingIndicator(

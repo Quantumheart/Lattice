@@ -23,6 +23,7 @@ class MessageListView extends StatefulWidget {
     required this.onHighlight,
     this.initialEventId,
     this.highlightedEventId,
+    this.onScrollBack,
     super.key,
   });
 
@@ -35,6 +36,7 @@ class MessageListView extends StatefulWidget {
   final Future<void> Function(Event event, String emoji) onToggleReaction;
   final Future<void> Function(Event event) onPin;
   final void Function(String eventId) onHighlight;
+  final VoidCallback? onScrollBack;
 
   @override
   State<MessageListView> createState() => MessageListViewState();
@@ -45,6 +47,8 @@ class MessageListViewState extends State<MessageListView> {
   static const _scrollAnimationDuration = Duration(milliseconds: 400);
   static const _readMarkerDelay = Duration(seconds: 1);
 
+  static const _scrollBackDismissThreshold = 120.0;
+
   final _itemScrollCtrl = ItemScrollController();
   final _itemPosListener = ItemPositionsListener.create();
   Timeline? _timeline;
@@ -52,6 +56,8 @@ class MessageListViewState extends State<MessageListView> {
   Timer? _readMarkerTimer;
   int _initGeneration = 0;
   List<Event>? _cachedVisibleEvents;
+  double _scrollBackDelta = 0;
+  bool _scrollBackFired = false;
 
   Timeline? get timeline => _timeline;
 
@@ -174,6 +180,22 @@ class MessageListViewState extends State<MessageListView> {
     if (maxIndex >= _visibleEvents.length - _historyLoadThreshold && !_loadingHistory) {
       unawaited(_loadMore());
     }
+  }
+
+  bool _handleScrollNotification(ScrollNotification notification) {
+    if (widget.onScrollBack == null) return false;
+    if (notification is ScrollStartNotification) {
+      _scrollBackDelta = 0;
+      _scrollBackFired = false;
+    } else if (notification is ScrollUpdateNotification) {
+      _scrollBackDelta += notification.scrollDelta ?? 0;
+      if (!_scrollBackFired &&
+          _scrollBackDelta >= _scrollBackDismissThreshold) {
+        _scrollBackFired = true;
+        widget.onScrollBack!.call();
+      }
+    }
+    return false;
   }
 
   Future<void> _loadMore() async {
@@ -347,44 +369,47 @@ class MessageListViewState extends State<MessageListView> {
     final hasLoadingIndicator = _loadingHistory;
     final totalCount = events.length + (hasLoadingIndicator ? 1 : 0);
 
-    return ScrollablePositionedList.builder(
-      itemScrollController: _itemScrollCtrl,
-      itemPositionsListener: _itemPosListener,
-      reverse: true,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      itemCount: totalCount,
-      itemBuilder: (context, i) {
-        if (hasLoadingIndicator && i == totalCount - 1) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-          );
-        }
-        final event = events[i];
-        if (_isCallEvent(event)) {
-          return CallEventTile(
+    return NotificationListener<ScrollNotification>(
+      onNotification: _handleScrollNotification,
+      child: ScrollablePositionedList.builder(
+        itemScrollController: _itemScrollCtrl,
+        itemPositionsListener: _itemPosListener,
+        reverse: true,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        itemCount: totalCount,
+        itemBuilder: (context, i) {
+          if (hasLoadingIndicator && i == totalCount - 1) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            );
+          }
+          final event = events[i];
+          if (_isCallEvent(event)) {
+            return CallEventTile(
+              event: event,
+              isMe: event.senderId == widget.matrix.client.userID,
+              duration: _callDuration(event),
+            );
+          }
+          final prevSender = i + 1 < events.length ? events[i + 1].senderId : null;
+          return ChatMessageItem(
             event: event,
             isMe: event.senderId == widget.matrix.client.userID,
-            duration: _callDuration(event),
+            isFirst: event.senderId != prevSender,
+            isMobile: isMobile,
+            timeline: _timeline,
+            client: widget.matrix.client,
+            highlightedEventId: widget.highlightedEventId,
+            receiptMap: receiptMap,
+            onReply: widget.onReply,
+            onEdit: (event) => widget.onEdit(event, _timeline),
+            onToggleReaction: widget.onToggleReaction,
+            onPin: widget.onPin,
+            onTapReply: _navigateToEvent,
           );
-        }
-        final prevSender = i + 1 < events.length ? events[i + 1].senderId : null;
-        return ChatMessageItem(
-          event: event,
-          isMe: event.senderId == widget.matrix.client.userID,
-          isFirst: event.senderId != prevSender,
-          isMobile: isMobile,
-          timeline: _timeline,
-          client: widget.matrix.client,
-          highlightedEventId: widget.highlightedEventId,
-          receiptMap: receiptMap,
-          onReply: widget.onReply,
-          onEdit: (event) => widget.onEdit(event, _timeline),
-          onToggleReaction: widget.onToggleReaction,
-          onPin: widget.onPin,
-          onTapReply: _navigateToEvent,
-        );
-      },
+        },
+      ),
     );
   }
 }
