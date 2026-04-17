@@ -28,6 +28,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
   CallService({
     required Client client,
     RingtoneService? ringtoneService,
+    NativeCallUiService? nativeCallUiService,
   }) : _client = client {
     _rtcMembership = RtcMembershipService(client: client);
     _liveKit = LiveKitService(
@@ -36,7 +37,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
     );
     _signaling = CallSignalingService(client: client);
     _ringing = CallRingingService(ringtoneService: ringtoneService);
-    _nativeUi = NativeCallUiService();
+    _nativeUi = nativeCallUiService ?? NativeCallUiService();
   }
 
   Client _client;
@@ -576,8 +577,16 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
     required String? callId,
     required String callerName,
     required bool isVideo,
+    bool callKitAlreadyShown = false,
   }) {
     if (!_initialized) init();
+    if (_callState != KoheraCallState.idle &&
+        _callState != KoheraCallState.failed) {
+      debugPrint(
+        '[Kohera] Ignoring duplicate push invite, already in $_callState',
+      );
+      return;
+    }
     _activeCallId = callId;
     final info = model.IncomingCallInfo(
       roomId: roomId,
@@ -587,16 +596,31 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
     );
     _ringing.pushIncomingCall(info);
     _setCallState(KoheraCallState.ringingIncoming);
-    _nativeUi.showNativeIncomingCall(
-      callId: callId,
-      roomId: roomId,
-      callerName: callerName,
-      callerAvatarUrl: null,
-      isVideo: isVideo,
-    );
+    if (!callKitAlreadyShown) {
+      _nativeUi.showNativeIncomingCall(
+        callId: callId,
+        roomId: roomId,
+        callerName: callerName,
+        callerAvatarUrl: null,
+        isVideo: isVideo,
+      );
+    }
     if (kIsWeb || isNativeDesktop) {
       _ringing.playRingtone();
     }
+  }
+
+  void attachPrePresentedCallKit({required String nativeCallId}) {
+    if (!_initialized) init();
+    _nativeUi.attachExistingNativeCall(nativeCallId);
+  }
+
+  void endCallFromPushKit() {
+    if (_callState != KoheraCallState.ringingIncoming) return;
+    _ringing.stopRinging();
+    _ringing.resetIncomingCall();
+    _activeCallId = null;
+    _setCallState(KoheraCallState.idle);
   }
 
   // ── Event Handlers ─────────────────────────────────────────

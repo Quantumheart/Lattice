@@ -22,6 +22,8 @@ abstract class NotificationChannel {
 
   static const webPushAppId = 'io.github.quantumheart.kohera.web';
   static const webDefaultDeviceName = 'Web';
+
+  static const voipAppId = 'io.github.quantumheart.kohera.voip';
 }
 
 abstract class NotificationText {

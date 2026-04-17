@@ -8000,6 +8000,13 @@ class MockPreferencesService extends _i1.Mock
       ) as _i18.MessageDensity);
 
   @override
+  _i18.MobileTab get lastMobileTab => (super.noSuchMethod(
+        Invocation.getter(#lastMobileTab),
+        returnValue: _i18.MobileTab.inbox,
+        returnValueForMissingStub: _i18.MobileTab.inbox,
+      ) as _i18.MobileTab);
+
+  @override
   _i19.ThemeMode get themeMode => (super.noSuchMethod(
         Invocation.getter(#themeMode),
         returnValue: _i19.ThemeMode.system,
@@ -8151,6 +8158,13 @@ class MockPreferencesService extends _i1.Mock
       ) as bool);
 
   @override
+  bool get apnsPushEnabled => (super.noSuchMethod(
+        Invocation.getter(#apnsPushEnabled),
+        returnValue: false,
+        returnValueForMissingStub: false,
+      ) as bool);
+
+  @override
   bool get autoMuteOnJoin => (super.noSuchMethod(
         Invocation.getter(#autoMuteOnJoin),
         returnValue: false,
@@ -8274,6 +8288,16 @@ class MockPreferencesService extends _i1.Mock
         Invocation.method(
           #setMessageDensity,
           [density],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> setLastMobileTab(_i18.MobileTab? tab) => (super.noSuchMethod(
+        Invocation.method(
+          #setLastMobileTab,
+          [tab],
         ),
         returnValue: _i5.Future<void>.value(),
         returnValueForMissingStub: _i5.Future<void>.value(),
@@ -8495,6 +8519,16 @@ class MockPreferencesService extends _i1.Mock
   _i5.Future<void> setWebPushEnabled(bool? value) => (super.noSuchMethod(
         Invocation.method(
           #setWebPushEnabled,
+          [value],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> setApnsPushEnabled(bool? value) => (super.noSuchMethod(
+        Invocation.method(
+          #setApnsPushEnabled,
           [value],
         ),
         returnValue: _i5.Future<void>.value(),

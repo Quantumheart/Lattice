@@ -22,11 +22,9 @@ import 'package:kohera/core/services/sub_services/sync_service.dart' as _i6;
 import 'package:kohera/core/services/sub_services/uia_service.dart' as _i3;
 import 'package:kohera/features/calling/models/call_participant.dart' as _i22;
 import 'package:kohera/features/calling/models/call_state.dart' as _i24;
-import 'package:kohera/features/calling/models/incoming_call_info.dart'
-    as _i23;
+import 'package:kohera/features/calling/models/incoming_call_info.dart' as _i23;
 import 'package:kohera/features/calling/services/livekit_service.dart' as _i20;
-import 'package:kohera/features/calling/services/ringtone_service.dart'
-    as _i26;
+import 'package:kohera/features/calling/services/ringtone_service.dart' as _i26;
 import 'package:livekit_client/livekit_client.dart' as _i21;
 import 'package:matrix/encryption.dart' as _i17;
 import 'package:matrix/matrix.dart' as _i2;
@@ -11430,6 +11428,7 @@ class MockCallService extends _i1.Mock implements _i19.CallService {
     required String? callId,
     required String? callerName,
     required bool? isVideo,
+    bool? callKitAlreadyShown = false,
   }) =>
       super.noSuchMethod(
         Invocation.method(
@@ -11440,7 +11439,28 @@ class MockCallService extends _i1.Mock implements _i19.CallService {
             #callId: callId,
             #callerName: callerName,
             #isVideo: isVideo,
+            #callKitAlreadyShown: callKitAlreadyShown,
           },
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void attachPrePresentedCallKit({required String? nativeCallId}) =>
+      super.noSuchMethod(
+        Invocation.method(
+          #attachPrePresentedCallKit,
+          [],
+          {#nativeCallId: nativeCallId},
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  void endCallFromPushKit() => super.noSuchMethod(
+        Invocation.method(
+          #endCallFromPushKit,
+          [],
         ),
         returnValueForMissingStub: null,
       );

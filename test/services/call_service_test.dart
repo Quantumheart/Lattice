@@ -808,6 +808,103 @@ void main() {
     });
   });
 
+  group('push call foundation', () {
+    late FakeNativeCallUiService fakeNative;
+    late CallService pushService;
+
+    setUp(() {
+      fakeNative = FakeNativeCallUiService();
+      pushService = CallService(
+        client: mockClient,
+        nativeCallUiService: fakeNative,
+      );
+    });
+
+    tearDown(() {
+      pushService.dispose();
+    });
+
+    test('handlePushCallInvite(callKitAlreadyShown: true) skips native show',
+        () {
+      pushService.handlePushCallInvite(
+        roomId: '!room:example.com',
+        callId: 'call1',
+        callerName: 'Alice',
+        isVideo: false,
+        callKitAlreadyShown: true,
+      );
+
+      expect(pushService.callState, KoheraCallState.ringingIncoming);
+      expect(fakeNative.showIncomingCalls, 0);
+    });
+
+    test('handlePushCallInvite(callKitAlreadyShown: false) shows native', () {
+      pushService.handlePushCallInvite(
+        roomId: '!room:example.com',
+        callId: 'call1',
+        callerName: 'Alice',
+        isVideo: false,
+      );
+
+      expect(pushService.callState, KoheraCallState.ringingIncoming);
+      expect(fakeNative.showIncomingCalls, 1);
+    });
+
+    test('handlePushCallInvite ignores duplicate when not idle/failed', () {
+      pushService.handlePushCallInvite(
+        roomId: '!room:example.com',
+        callId: 'call1',
+        callerName: 'Alice',
+        isVideo: false,
+      );
+      expect(fakeNative.showIncomingCalls, 1);
+
+      pushService.handlePushCallInvite(
+        roomId: '!room:example.com',
+        callId: 'call1',
+        callerName: 'Alice',
+        isVideo: false,
+      );
+
+      expect(fakeNative.showIncomingCalls, 1);
+      expect(pushService.callState, KoheraCallState.ringingIncoming);
+    });
+
+    test('attachPrePresentedCallKit forwards UUID to native service', () {
+      pushService.attachPrePresentedCallKit(nativeCallId: 'uuid-1234');
+
+      expect(fakeNative.attachExistingCalls, 1);
+      expect(fakeNative.lastAttachedCallId, 'uuid-1234');
+    });
+
+    test('endCallFromPushKit dismisses native call when ringingIncoming', () {
+      pushService.handlePushCallInvite(
+        roomId: '!room:example.com',
+        callId: 'call1',
+        callerName: 'Alice',
+        isVideo: false,
+        callKitAlreadyShown: true,
+      );
+      expect(pushService.callState, KoheraCallState.ringingIncoming);
+
+      final endsBefore = fakeNative.endNativeCalls;
+      pushService.endCallFromPushKit();
+
+      expect(fakeNative.endNativeCalls, endsBefore + 1);
+      expect(pushService.callState, KoheraCallState.idle);
+    });
+
+    test('endCallFromPushKit is a no-op when not ringingIncoming', () {
+      expect(pushService.callState, KoheraCallState.idle);
+
+      final endsBefore = fakeNative.endNativeCalls;
+      pushService.endCallFromPushKit();
+
+      expect(fakeNative.endNativeCalls, endsBefore);
+      expect(pushService.callState, KoheraCallState.idle);
+    });
+  });
+
   group('updateClient', () {
     test('resets state on client change', () async {
       setupLiveKitMocks();

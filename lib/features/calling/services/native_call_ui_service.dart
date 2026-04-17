@@ -123,6 +123,11 @@ class NativeCallUiService {
     unawaited(FlutterCallkitIncoming.startCall(params));
   }
 
+  void attachExistingNativeCall(String nativeCallId) {
+    if (!_isMobile) return;
+    _nativeCallId = nativeCallId;
+  }
+
   void updateNativeCallConnected() {
     if (!_isMobile || _nativeCallId == null) return;
     unawaited(FlutterCallkitIncoming.setCallConnected(_nativeCallId!));

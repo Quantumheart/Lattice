@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kohera/features/calling/services/native_call_ui_service.dart';
 import 'package:kohera/features/calling/services/ringtone_service.dart';
 import 'package:livekit_client/livekit_client.dart' as livekit;
 import 'package:matrix/matrix.dart';
@@ -235,6 +236,67 @@ class FakeEvent extends Fake implements Event {
 
   @override
   User get senderFromMemoryOrFallback => _sender ?? FakeUser();
+}
+
+// ── Fake Native Call UI Service ───────────────────────────
+
+class FakeNativeCallUiService extends Fake implements NativeCallUiService {
+  int showIncomingCalls = 0;
+  int showOutgoingCalls = 0;
+  int attachExistingCalls = 0;
+  int endNativeCalls = 0;
+  int updateConnectedCalls = 0;
+  String? lastAttachedCallId;
+
+  final _actions = StreamController<NativeCallAction>.broadcast();
+  final _nativeAccepted = StreamController<String>.broadcast();
+
+  @override
+  Stream<NativeCallAction> get actions => _actions.stream;
+
+  @override
+  Stream<String> get nativeAcceptedCallStream => _nativeAccepted.stream;
+
+  @override
+  void init({required String Function() getCallState}) {}
+
+  @override
+  void showNativeIncomingCall({
+    required String? callId,
+    required String roomId,
+    required String callerName,
+    required Uri? callerAvatarUrl,
+    required bool isVideo,
+  }) {
+    showIncomingCalls++;
+  }
+
+  @override
+  void showNativeOutgoingCall(String roomId, String callerName, bool isVideo) {
+    showOutgoingCalls++;
+  }
+
+  @override
+  void attachExistingNativeCall(String nativeCallId) {
+    attachExistingCalls++;
+    lastAttachedCallId = nativeCallId;
+  }
+
+  @override
+  void updateNativeCallConnected() {
+    updateConnectedCalls++;
+  }
+
+  @override
+  void endNativeCall() {
+    endNativeCalls++;
+  }
+
+  @override
+  void dispose() {
+    unawaited(_actions.close());
+    unawaited(_nativeAccepted.close());
+  }
 }
 
 // ── Fake Ringtone Service ─────────────────────────────────
