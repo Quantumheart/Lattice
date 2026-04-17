@@ -26,58 +26,85 @@ import 'package:kohera/features/notifications/widgets/notification_lifecycle_obs
 import 'package:media_kit/media_kit.dart';
 import 'package:provider/provider.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  MediaKit.ensureInitialized();
-  await initVodozemac();
-  await AppConfig.load();
-  final clientManager = ClientManager();
-  await clientManager.init();
-
-  final pendingSso = await checkPendingSsoLogin();
-  if (pendingSso != null) {
-    await clientManager.activeService.completeSsoLogin(
-      homeserver: pendingSso.homeserver,
-      loginToken: pendingSso.loginToken,
-    );
-  }
-
-  runApp(KoheraApp(clientManager: clientManager));
+  runApp(const KoheraApp());
 }
 
 class KoheraApp extends StatefulWidget {
-  const KoheraApp({required this.clientManager, super.key});
-
-  final ClientManager clientManager;
+  const KoheraApp({super.key});
 
   @override
   State<KoheraApp> createState() => _KoheraAppState();
 }
 
 class _KoheraAppState extends State<KoheraApp> {
-  late final GoRouter _router = buildRouter(widget.clientManager);
-  final ringtoneService = RingtoneService();
+  ClientManager? _clientManager;
+  PreferencesService? _preferencesService;
+  GoRouter? _router;
+  final _ringtoneService = RingtoneService();
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_init());
+  }
+
+  Future<void> _init() async {
+    MediaKit.ensureInitialized();
+
+    final prefs = PreferencesService();
+    await Future.wait([initVodozemac(), AppConfig.load(), prefs.init()]);
+
+    final clientManager = ClientManager();
+    await clientManager.init();
+
+    final pendingSso = await checkPendingSsoLogin();
+    if (pendingSso != null) {
+      await clientManager.activeService.completeSsoLogin(
+        homeserver: pendingSso.homeserver,
+        loginToken: pendingSso.loginToken,
+      );
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _clientManager = clientManager;
+      _preferencesService = prefs;
+      _router = buildRouter(clientManager);
+    });
+  }
 
   @override
   void dispose() {
-    _router.dispose();
-    unawaited(ringtoneService.dispose());
+    _router?.dispose();
+    unawaited(_ringtoneService.dispose());
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final clientManager = _clientManager;
+    if (clientManager == null) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData.light(),
+        darkTheme: ThemeData.dark(),
+        home: const Scaffold(
+          body: Center(
+            child: CircularProgressIndicator.adaptive(),
+          ),
+        ),
+      );
+    }
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<ClientManager>.value(
-          value: widget.clientManager,
+          value: clientManager,
         ),
-        ChangeNotifierProvider(
-          create: (_) {
-            final prefs = PreferencesService();
-            unawaited(prefs.init());
-            return prefs;
-          },
+        ChangeNotifierProvider<PreferencesService>.value(
+          value: _preferencesService!,
         ),
         ChangeNotifierProvider(create: (_) => MediaPlaybackService()),
         Provider(
@@ -90,7 +117,7 @@ class _KoheraAppState extends State<KoheraApp> {
           return Consumer2<ClientManager, PreferencesService>(
             builder: (context, manager, prefs, _) {
               final matrix = manager.activeService;
-              final router = _router;
+              final router = _router!;
 
               return MultiProvider(
                 providers: [
@@ -119,7 +146,7 @@ class _KoheraAppState extends State<KoheraApp> {
                     create: (ctx) {
                       final cs = CallService(
                         client: ctx.read<MatrixService>().client,
-                        ringtoneService: ringtoneService,
+                        ringtoneService: _ringtoneService,
                       )..preferencesService = prefs;
                       if (ctx.read<MatrixService>().isLoggedIn) cs.init();
                       return cs;
@@ -128,7 +155,7 @@ class _KoheraAppState extends State<KoheraApp> {
                       if (previous == null) {
                         final cs = CallService(
                           client: matrix.client,
-                          ringtoneService: ringtoneService,
+                          ringtoneService: _ringtoneService,
                         )..preferencesService = prefs;
                         if (matrix.isLoggedIn) cs.init();
                         return cs;
@@ -147,7 +174,7 @@ class _KoheraAppState extends State<KoheraApp> {
                   create: (ctx) => PushToTalkService(
                     callService: ctx.read<CallService>(),
                     prefs: prefs,
-                    ringtoneService: ringtoneService,
+                    ringtoneService: _ringtoneService,
                   ),
                   child: Builder(
                     builder: (context) {

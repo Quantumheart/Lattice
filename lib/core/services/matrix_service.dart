@@ -246,12 +246,13 @@ class MatrixService extends ChangeNotifier {
 
   Future<void> _activateSession() async {
     auth.activateRestoredSession();
-    try {
-      await sync.startSync();
-    } on TimeoutException {
-      debugPrint('[Kohera] Initial sync timed out during session restore – '
-          'continuing in background');
-    }
+    unawaited(
+      sync.startSync().catchError((Object e) {
+        if (e is! TimeoutException) {
+          debugPrint('[Kohera] Background sync error: $e');
+        }
+      }),
+    );
   }
 
   // ── Private: Session Keys ──────────────────────────────────────
