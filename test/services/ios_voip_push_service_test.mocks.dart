@@ -8322,6 +8322,15 @@ class MockCallService extends _i1.Mock implements _i19.CallService {
       ) as _i10.Future<void>);
 
   @override
+  void setVoipPushHandlesCallKit(bool? value) => super.noSuchMethod(
+        Invocation.method(
+          #setVoipPushHandlesCallKit,
+          [value],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
   void init() => super.noSuchMethod(
         Invocation.method(
           #init,

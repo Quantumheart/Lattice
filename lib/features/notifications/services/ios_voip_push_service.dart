@@ -154,6 +154,7 @@ class IosVoipPushService {
       debugPrint('[Kohera] Failed to unregister VoIP: $e');
     }
     _currentToken = null;
+    callService.setVoipPushHandlesCallKit(false);
     debugPrint('[Kohera] VoIP unregistered');
   }
 
@@ -184,6 +185,7 @@ class IosVoipPushService {
         ),
         append: true,
       );
+      callService.setVoipPushHandlesCallKit(true);
       debugPrint('[Kohera] VoIP pusher registered with gateway $gatewayUrl');
     } catch (e) {
       debugPrint('[Kohera] Failed to register VoIP pusher: $e');
