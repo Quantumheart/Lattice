@@ -67,6 +67,7 @@ class ChatBackupService extends ChangeNotifier {
         if (e.errcode != 'M_NOT_FOUND') rethrow;
         debugPrint('[Kohera] No server-side key backup to delete');
       }
+      _backupVersion.invalidateCache();
       await deleteStoredRecoveryKey();
       _chatBackupNeeded = true;
     } catch (e) {

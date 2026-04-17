@@ -8,20 +8,42 @@ class BackupVersionManager {
 
   final Client _client;
 
-  Future<bool> hasVersion() async {
+  static const Duration _hasVersionTtl = Duration(seconds: 30);
+  bool? _cachedHasVersion;
+  DateTime? _cachedHasVersionAt;
+
+  void invalidateCache() {
+    _cachedHasVersion = null;
+    _cachedHasVersionAt = null;
+  }
+
+  Future<bool> hasVersion({bool refresh = false}) async {
+    if (!refresh &&
+        _cachedHasVersion != null &&
+        _cachedHasVersionAt != null &&
+        DateTime.now().difference(_cachedHasVersionAt!) < _hasVersionTtl) {
+      return _cachedHasVersion!;
+    }
+
     final encryption = _client.encryption;
-    if (encryption == null) return false;
+    if (encryption == null) return _rememberHasVersion(false);
     try {
       await encryption.keyManager.getRoomKeysBackupInfo(false);
-      return true;
+      return _rememberHasVersion(true);
     } on MatrixException catch (e) {
-      if (e.errcode == 'M_NOT_FOUND') return false;
+      if (e.errcode == 'M_NOT_FOUND') return _rememberHasVersion(false);
       debugPrint('[Kohera] hasVersion MatrixException: $e');
-      return false;
+      return _rememberHasVersion(false);
     } catch (e) {
       debugPrint('[Kohera] hasVersion error: $e');
-      return false;
+      return _rememberHasVersion(false);
     }
+  }
+
+  bool _rememberHasVersion(bool value) {
+    _cachedHasVersion = value;
+    _cachedHasVersionAt = DateTime.now();
+    return value;
   }
 
   Future<GetRoomKeysVersionCurrentResponse?> ensureExists() async {
@@ -48,6 +70,7 @@ class BackupVersionManager {
       <String, dynamic>{'public_key': publicKey},
     );
     debugPrint('[Kohera] Backup version created on server');
+    _rememberHasVersion(true);
 
     await _client.database.markInboundGroupSessionsAsNeedingUpload();
 

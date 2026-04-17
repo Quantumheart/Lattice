@@ -12898,10 +12898,20 @@ class MockDatabaseApi extends _i1.Mock implements _i2.DatabaseApi {
 class MockBackupVersionManager extends _i1.Mock
     implements _i23.BackupVersionManager {
   @override
-  _i5.Future<bool> hasVersion() => (super.noSuchMethod(
+  void invalidateCache() => super.noSuchMethod(
+        Invocation.method(
+          #invalidateCache,
+          [],
+        ),
+        returnValueForMissingStub: null,
+      );
+
+  @override
+  _i5.Future<bool> hasVersion({bool? refresh = false}) => (super.noSuchMethod(
         Invocation.method(
           #hasVersion,
           [],
+          {#refresh: refresh},
         ),
         returnValue: _i5.Future<bool>.value(false),
         returnValueForMissingStub: _i5.Future<bool>.value(false),

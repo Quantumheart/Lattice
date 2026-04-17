@@ -76,6 +76,7 @@ class _VerificationRequestListenerState
       verification: verification,
     );
     _dialogOpen = false;
+    if (!mounted) return;
 
     final matrix = _matrix;
     final isSelfVerification =
@@ -86,6 +87,7 @@ class _VerificationRequestListenerState
       } catch (e) {
         debugPrint('[Kohera] Post-verification key recovery failed: $e');
       }
+      if (!mounted) return;
     }
 
     _showNextPending();

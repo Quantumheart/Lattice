@@ -134,5 +134,37 @@ void main() {
 
       verifyNever(mockClient.postRoomKeysVersion(any, any));
     });
+
+    test('caches result across consecutive calls within the TTL', () async {
+      when(mockKeyManager.getRoomKeysBackupInfo(any))
+          .thenAnswer((_) async => fakeInfo());
+
+      await manager.hasVersion();
+      await manager.hasVersion();
+      await manager.hasVersion();
+
+      verify(mockKeyManager.getRoomKeysBackupInfo(false)).called(1);
+    });
+
+    test('refresh: true bypasses the cache', () async {
+      when(mockKeyManager.getRoomKeysBackupInfo(any))
+          .thenAnswer((_) async => fakeInfo());
+
+      await manager.hasVersion();
+      await manager.hasVersion(refresh: true);
+
+      verify(mockKeyManager.getRoomKeysBackupInfo(false)).called(2);
+    });
+
+    test('invalidateCache forces the next call to re-fetch', () async {
+      when(mockKeyManager.getRoomKeysBackupInfo(any))
+          .thenAnswer((_) async => fakeInfo());
+
+      await manager.hasVersion();
+      manager.invalidateCache();
+      await manager.hasVersion();
+
+      verify(mockKeyManager.getRoomKeysBackupInfo(false)).called(2);
+    });
   });
 }

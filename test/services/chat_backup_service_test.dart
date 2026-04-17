@@ -268,6 +268,18 @@ void main() {
       expect(service.chatBackupError, isNotNull);
       expect(service.chatBackupLoading, isFalse);
     });
+
+    test('invalidates BackupVersionManager cache after deletion', () async {
+      when(mockClient.userID).thenReturn('@user:example.com');
+      when(mockKeyManager.getRoomKeysBackupInfo())
+          .thenAnswer((_) async => fakeBackupInfo());
+      when(mockClient.deleteRoomKeysVersion(any))
+          .thenAnswer((_) async {});
+
+      await service.disableChatBackup();
+
+      verify(mockBackupVersion.invalidateCache()).called(1);
+    });
   });
 
   group('resetChatBackupState', () {
