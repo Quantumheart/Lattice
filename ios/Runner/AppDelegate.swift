@@ -3,15 +3,23 @@ import UIKit
 import flutter_callkit_incoming
 import AVFAudio
 import CallKit
+import PushKit
 import UserNotifications
 
 @main
-@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate, CallkitIncomingAppDelegate {
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate, CallkitIncomingAppDelegate, PKPushRegistryDelegate {
   private var apnsChannel: FlutterMethodChannel?
   private var pendingPushPayloads: [[AnyHashable: Any]] = []
   private var pendingNotificationActions: [(action: String, roomId: String, eventId: String?, replyText: String?)] = []
   private var channelReady = false
   private static let maxPendingPayloads = 20
+
+  // ── PushKit / VoIP ──────────────────────────────────────────
+  private var voipRegistry: PKPushRegistry?
+  private var voipChannel: FlutterMethodChannel?
+  private var pendingVoipPayloads: [[AnyHashable: Any]] = []
+  private var voipChannelReady = false
+  private var cachedVoipToken: String?
 
   override func application(
     _ application: UIApplication,
@@ -35,6 +43,12 @@ import UserNotifications
     UNUserNotificationCenter.current().setNotificationCategories([category])
     UNUserNotificationCenter.current().delegate = self
     application.applicationIconBadgeNumber = 0
+
+    let registry = PKPushRegistry(queue: .main)
+    registry.delegate = self
+    registry.desiredPushTypes = [.voIP]
+    voipRegistry = registry
+
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
@@ -146,6 +160,13 @@ import UserNotifications
     pendingNotificationActions.removeAll()
   }
 
+  private func flushPendingVoipPayloads() {
+    for payload in pendingVoipPayloads {
+      voipChannel?.invokeMethod("onVoipMessage", arguments: payload)
+    }
+    pendingVoipPayloads.removeAll()
+  }
+
   // ── Flutter engine ──────────────────────────────────────────
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
@@ -190,6 +211,133 @@ import UserNotifications
       default:
         result(FlutterMethodNotImplemented)
       }
+    }
+
+    voipChannel = FlutterMethodChannel(name: "kohera/voip", binaryMessenger: messenger)
+    voipChannel?.setMethodCallHandler { [weak self] (call, result) in
+      guard let self = self else {
+        result(nil)
+        return
+      }
+      switch call.method {
+      case "requestVoipToken":
+        self.voipChannelReady = true
+        self.flushPendingVoipPayloads()
+        if let cached = self.cachedVoipToken {
+          self.voipChannel?.invokeMethod("onVoipToken", arguments: cached)
+        }
+        result(nil)
+      case "unregisterVoip":
+        self.voipRegistry?.desiredPushTypes = []
+        self.cachedVoipToken = nil
+        result(nil)
+      case "getCachedVoipToken":
+        result(self.cachedVoipToken)
+      default:
+        result(FlutterMethodNotImplemented)
+      }
+    }
+  }
+
+  // ── PushKit delegate ────────────────────────────────────────
+
+  func pushRegistry(_ registry: PKPushRegistry, didUpdate credentials: PKPushCredentials, for type: PKPushType) {
+    guard type == .voIP else { return }
+    let token = credentials.token.map { String(format: "%02x", $0) }.joined()
+    cachedVoipToken = token
+    voipChannel?.invokeMethod("onVoipToken", arguments: token)
+    SwiftFlutterCallkitIncomingPlugin.sharedInstance?.setDevicePushTokenVoIP(token)
+  }
+
+  func pushRegistry(_ registry: PKPushRegistry, didInvalidatePushTokenFor type: PKPushType) {
+    guard type == .voIP else { return }
+    cachedVoipToken = nil
+    voipChannel?.invokeMethod("onVoipTokenInvalidated", arguments: nil)
+  }
+
+  func pushRegistry(
+    _ registry: PKPushRegistry,
+    didReceiveIncomingPushWith payload: PKPushPayload,
+    for type: PKPushType,
+    completion: @escaping () -> Void
+  ) {
+    // iOS terminates the process if `completion` isn't invoked, so guarantee
+    // it fires on every code path via a one-shot guard.
+    var completed = false
+    let finish: () -> Void = {
+      guard !completed else { return }
+      completed = true
+      completion()
+    }
+
+    guard type == .voIP else {
+      finish()
+      return
+    }
+
+    let dict = payload.dictionaryPayload
+    let notification = (dict["notification"] as? [AnyHashable: Any]) ?? dict
+
+    guard let roomId = notification["room_id"] as? String else {
+      finish()
+      return
+    }
+
+    let callId = notification["call_id"] as? String
+    let eventId = notification["event_id"] as? String
+    let senderDisplayName = (notification["sender_display_name"] as? String) ?? "Unknown"
+    let callerAvatarUrl = notification["caller_avatar_url"] as? String
+    let isVideoValue = notification["is_video"]
+    let isVideo: Bool = {
+      if let b = isVideoValue as? Bool { return b }
+      if let s = isVideoValue as? String { return s == "true" || s == "1" }
+      if let n = isVideoValue as? NSNumber { return n.boolValue }
+      return false
+    }()
+
+    let nativeCallId = UUID().uuidString
+
+    // Strategy (a): rely on the flutter_callkit_incoming plugin being
+    // registered as part of the implicit Flutter engine boot (happens during
+    // super.application(... didFinishLaunching ...) before iOS can deliver a
+    // push). If sharedInstance is still nil at this point we log and complete
+    // defensively; iOS may treat this as a missed call, but we avoid the
+    // process-termination strike caused by not calling `completion`.
+    var callKitShown = false
+    if let plugin = SwiftFlutterCallkitIncomingPlugin.sharedInstance {
+      callKitShown = true
+      let data = flutter_callkit_incoming.Data(
+        id: nativeCallId,
+        nameCaller: senderDisplayName,
+        handle: roomId,
+        type: isVideo ? 1 : 0
+      )
+      data.appName = "Kohera"
+      data.avatar = callerAvatarUrl ?? ""
+      data.supportsVideo = true
+      data.duration = 60000
+      data.extra = [
+        "roomId": roomId,
+        "withVideo": isVideo ? "true" : "false",
+      ]
+      plugin.showCallkitIncoming(data, fromPushKit: true) {
+        finish()
+      }
+    } else {
+      NSLog("[Kohera] PushKit: SwiftFlutterCallkitIncomingPlugin.sharedInstance nil; dropping call")
+      finish()
+      return
+    }
+
+    var enriched: [AnyHashable: Any] = [:]
+    for (k, v) in dict { enriched[k] = v }
+    enriched["nativeCallId"] = nativeCallId
+    enriched["callKitAlreadyShown"] = callKitShown
+
+    if voipChannelReady {
+      voipChannel?.invokeMethod("onVoipMessage", arguments: enriched)
+    } else if pendingVoipPayloads.count < AppDelegate.maxPendingPayloads {
+      pendingVoipPayloads.append(enriched)
     }
   }
 

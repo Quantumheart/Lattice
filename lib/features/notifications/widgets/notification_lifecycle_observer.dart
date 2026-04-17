@@ -8,6 +8,7 @@ import 'package:kohera/core/services/matrix_service.dart';
 import 'package:kohera/core/services/preferences_service.dart';
 import 'package:kohera/core/utils/platform_info.dart';
 import 'package:kohera/features/notifications/services/apns_push_service.dart';
+import 'package:kohera/features/notifications/services/ios_voip_push_service.dart';
 import 'package:kohera/features/notifications/services/notification_service.dart';
 import 'package:kohera/features/notifications/services/push_service.dart';
 import 'package:kohera/features/notifications/services/web_focus_listener.dart';
@@ -40,6 +41,7 @@ class _NotificationLifecycleObserverState
   NotificationService? _notificationService;
   PushService? _pushService;
   ApnsPushService? _apnsPushService;
+  IosVoipPushService? _iosVoipPushService;
   WebPushService? _webPushService;
   bool _wasLoggedIn = false;
   String? _lastSelectedRoomId;
@@ -83,6 +85,14 @@ class _NotificationLifecycleObserverState
     );
     await apnsPushService.init();
 
+    final iosVoipPushService = IosVoipPushService(
+      matrixService: widget.matrixService,
+      preferencesService: widget.preferencesService,
+      notificationService: notificationService,
+      callService: widget.callService,
+    );
+    await iosVoipPushService.init();
+
     final webPushService = WebPushService(
       matrixService: widget.matrixService,
       preferencesService: widget.preferencesService,
@@ -95,6 +105,7 @@ class _NotificationLifecycleObserverState
       unawaited(pushService.register());
       if (isNativeIOS) {
         unawaited(apnsPushService.register());
+        unawaited(iosVoipPushService.register());
       }
       if (kIsWeb) {
         unawaited(_registerWebPush(webPushService));
@@ -107,6 +118,7 @@ class _NotificationLifecycleObserverState
         _notificationService = notificationService;
         _pushService = pushService;
         _apnsPushService = apnsPushService;
+        _iosVoipPushService = iosVoipPushService;
         _webPushService = webPushService;
         _wasLoggedIn = loggedIn;
       });
@@ -149,6 +161,8 @@ class _NotificationLifecycleObserverState
       _pushService = null;
       _apnsPushService?.dispose();
       _apnsPushService = null;
+      _iosVoipPushService?.dispose();
+      _iosVoipPushService = null;
       _webPushService?.dispose();
       _webPushService = null;
       unawaited(_initServices());
@@ -162,6 +176,7 @@ class _NotificationLifecycleObserverState
         unawaited(_pushService?.register());
         if (isNativeIOS) {
           unawaited(_apnsPushService?.register());
+          unawaited(_iosVoipPushService?.register());
         }
         if (kIsWeb && _webPushService != null) {
           unawaited(_registerWebPush(_webPushService!));
@@ -171,6 +186,7 @@ class _NotificationLifecycleObserverState
         unawaited(_notificationService?.cancelAll());
         unawaited(_pushService?.unregister());
         unawaited(_apnsPushService?.unregister());
+        unawaited(_iosVoipPushService?.unregister());
         unawaited(_webPushService?.unregister());
       }
     }
@@ -184,6 +200,7 @@ class _NotificationLifecycleObserverState
     _notificationService?.dispose();
     _pushService?.dispose();
     _apnsPushService?.dispose();
+    _iosVoipPushService?.dispose();
     _webPushService?.dispose();
     super.dispose();
   }
@@ -202,6 +219,13 @@ class _NotificationLifecycleObserverState
     if (apnsPush != null) {
       child = Provider<ApnsPushService>.value(
         value: apnsPush,
+        child: child,
+      );
+    }
+    final iosVoipPush = _iosVoipPushService;
+    if (iosVoipPush != null) {
+      child = Provider<IosVoipPushService>.value(
+        value: iosVoipPush,
         child: child,
       );
     }
