@@ -106,115 +106,126 @@ class _HomeserverScreenState extends State<HomeserverScreen>
               ),
             )
           : null,
-      body: Center(
-        child: FadeTransition(
-          opacity: _fadeAnim,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 380),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const AppLogoHeader(
-                    subtitle: 'Connect to the Matrix network',
-                  ),
-
-                  // ── Homeserver ──
-                  TextField(
-                    controller: _homeserverCtrl,
-                    enabled: !isChecking,
-                    decoration: InputDecoration(
-                      prefixIcon: Icon(Icons.dns_outlined,
-                          color: cs.onSurfaceVariant,),
-                      hintText: 'Homeserver',
-                      errorText: hasError ? _controller.error : null,
-                      suffixIcon: isChecking
-                          ? const Padding(
-                              padding: EdgeInsets.all(12),
-                              child: SizedBox(
-                                width: 20,
-                                height: 20,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
-                              ),
-                            )
-                          : null,
-                    ),
-                    textInputAction: TextInputAction.done,
-                    onSubmitted: isChecking ? null : (_) => _continue(),
-                  ),
-                  const SizedBox(height: 4),
-
-                  // ── Set as default ──
-                  Transform.translate(
-                    offset: const Offset(-8, 0),
-                    child: GestureDetector(
-                      onTap: isChecking
-                          ? null
-                          : () => setState(
-                              () => _setAsDefault = !_setAsDefault,),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Checkbox.adaptive(
-                            value: _setAsDefault,
-                            visualDensity: VisualDensity.compact,
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            splashRadius: 16,
-                            onChanged: isChecking
-                                ? null
-                                : (v) => setState(
-                                    () => _setAsDefault = v ?? false,),
-                          ),
-                          Text(
-                            'Set as default',
-                            style: Theme.of(context).textTheme.labelSmall
-                                ?.copyWith(color: cs.onSurfaceVariant),
-                          ),
-                        ],
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          FadeTransition(
+            opacity: ReverseAnimation(_fadeAnim),
+            child: const Center(child: CircularProgressIndicator()),
+          ),
+          Center(
+            child: FadeTransition(
+              opacity: _fadeAnim,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 380),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const AppLogoHeader(
+                        subtitle: 'Connect to the Matrix network',
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
 
-                  // ── Continue button ──
-                  SizedBox(
-                    width: double.infinity,
-                    height: 52,
-                    child: FilledButton(
-                      onPressed: isChecking ? null : _continue,
-                      style: FilledButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
+                      // ── Homeserver ──
+                      TextField(
+                        controller: _homeserverCtrl,
+                        enabled: !isChecking,
+                        decoration: InputDecoration(
+                          prefixIcon: Icon(Icons.dns_outlined,
+                              color: cs.onSurfaceVariant,),
+                          hintText: 'Homeserver',
+                          errorText: hasError ? _controller.error : null,
+                          suffixIcon: isChecking
+                              ? const Padding(
+                                  padding: EdgeInsets.all(12),
+                                  child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                )
+                              : null,
+                        ),
+                        textInputAction: TextInputAction.done,
+                        onSubmitted:
+                            isChecking ? null : (_) => _continue(),
+                      ),
+                      const SizedBox(height: 4),
+
+                      // ── Set as default ──
+                      Transform.translate(
+                        offset: const Offset(-8, 0),
+                        child: GestureDetector(
+                          onTap: isChecking
+                              ? null
+                              : () => setState(
+                                  () => _setAsDefault = !_setAsDefault,),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Checkbox.adaptive(
+                                value: _setAsDefault,
+                                visualDensity: VisualDensity.compact,
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                                splashRadius: 16,
+                                onChanged: isChecking
+                                    ? null
+                                    : (v) => setState(
+                                        () => _setAsDefault = v ?? false,),
+                              ),
+                              Text(
+                                'Set as default',
+                                style: Theme.of(context).textTheme.labelSmall
+                                    ?.copyWith(color: cs.onSurfaceVariant),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      child: isChecking
-                          ? SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                color: cs.onPrimary,
-                              ),
-                            )
-                          : const Text('Continue'),
-                    ),
+                      const SizedBox(height: 8),
+
+                      // ── Continue button ──
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: FilledButton(
+                          onPressed: isChecking ? null : _continue,
+                          style: FilledButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: isChecking
+                              ? SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: cs.onPrimary,
+                                  ),
+                                )
+                              : const Text('Continue'),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: _openRegistration,
+                        child: Text(
+                          'Create an account',
+                          style: TextStyle(color: cs.primary),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: _openRegistration,
-                    child: Text(
-                      'Create an account',
-                      style: TextStyle(color: cs.primary),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
