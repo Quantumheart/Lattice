@@ -172,4 +172,31 @@ void main() {
 
     expect(find.textContaining('token=abc+xyz'), findsOneWidget);
   });
+
+  testWidgets('createLoginService failure shows error dialog',
+      (tester) async {
+    when(matrix.isLoggedIn).thenReturn(true);
+    when(manager.createLoginService())
+        .thenThrow(StateError('boom'));
+
+    await service.start();
+    await tester.pumpWidget(buildApp());
+    await tester.pumpAndSettle();
+
+    source.emit(Uri.parse('kohera://register?server=matrix.org&token=abc'));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Create account'));
+    await tester.pumpAndSettle();
+
+    expect(find.text("Couldn't start new account"), findsOneWidget);
+    expect(find.textContaining('try the invite link again'), findsOneWidget);
+    expect(find.textContaining('add:/add-account/register?'), findsNothing);
+
+    await tester.tap(find.text('OK'));
+    await tester.pumpAndSettle();
+    expect(find.text("Couldn't start new account"), findsNothing);
+    expect(service.pending, isNull);
+  });
 }

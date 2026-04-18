@@ -104,7 +104,13 @@ class _DeepLinkListenerState extends State<DeepLinkListener> {
     if (confirmed != true || !mounted) return;
 
     final manager = context.read<ClientManager>();
-    await manager.createLoginService();
+    try {
+      await manager.createLoginService();
+    } catch (e) {
+      debugPrint('[Kohera] createLoginService failed: $e');
+      await _showAddAccountError();
+      return;
+    }
 
     if (!mounted) return;
     final uri = Uri(
@@ -112,6 +118,28 @@ class _DeepLinkListenerState extends State<DeepLinkListener> {
       queryParameters: {'server': intent.server, 'token': intent.token},
     );
     widget.router.go(uri.toString());
+  }
+
+  Future<void> _showAddAccountError() async {
+    final navContext =
+        widget.router.routerDelegate.navigatorKey.currentContext;
+    if (navContext == null) return;
+    await showDialog<void>(
+      context: navContext,
+      builder: (ctx) => AlertDialog(
+        title: const Text("Couldn't start new account"),
+        content: const Text(
+          'Something went wrong setting up a new account slot. Please '
+          'try the invite link again.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
