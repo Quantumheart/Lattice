@@ -10,11 +10,12 @@ import 'package:kohera/features/auth/widgets/registration_views.dart';
 import 'package:provider/provider.dart';
 
 class RegistrationScreen extends StatefulWidget {
-  RegistrationScreen({super.key, String? initialHomeserver})
+  RegistrationScreen({super.key, String? initialHomeserver, this.initialToken})
       : initialHomeserver =
             initialHomeserver ?? AppConfig.instance.defaultHomeserver;
 
   final String initialHomeserver;
+  final String? initialToken;
 
   @override
   State<RegistrationScreen> createState() => _RegistrationScreenState();
@@ -26,7 +27,7 @@ class _RegistrationScreenState extends State<RegistrationScreen>
   final _usernameCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   final _confirmPasswordCtrl = TextEditingController();
-  final _tokenCtrl = TextEditingController();
+  late final TextEditingController _tokenCtrl;
 
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -42,6 +43,7 @@ class _RegistrationScreenState extends State<RegistrationScreen>
   void initState() {
     super.initState();
     _homeserverCtrl = TextEditingController(text: widget.initialHomeserver);
+    _tokenCtrl = TextEditingController(text: widget.initialToken ?? '');
     _fadeCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),

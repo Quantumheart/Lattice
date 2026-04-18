@@ -90,7 +90,10 @@ void main() {
         .thenThrow(Exception('Connection refused'));
   }
 
-  Widget buildTestWidget({String homeserver = 'matrix.org'}) {
+  Widget buildTestWidget({
+    String homeserver = 'matrix.org',
+    String? initialToken,
+  }) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider<MatrixService>.value(value: matrixService),
@@ -100,7 +103,10 @@ void main() {
         ChangeNotifierProvider<ClientManager>.value(value: clientManager),
       ],
       child: MaterialApp(
-        home: RegistrationScreen(initialHomeserver: homeserver),
+        home: RegistrationScreen(
+          initialHomeserver: homeserver,
+          initialToken: initialToken,
+        ),
       ),
     );
   }
@@ -385,6 +391,54 @@ void main() {
 
       expect(find.text('This server does not support registration'),
           findsOneWidget,);
+    });
+
+    // ── initialToken ──────────────────────────────────────────
+
+    testWidgets('initialToken pre-fills the token field', (tester) async {
+      stubServerSupportsRegistration(
+        registrationStages: ['m.login.registration_token', 'm.login.dummy'],
+      );
+      await tester.pumpWidget(buildTestWidget(initialToken: 'abc123'));
+      await tester.pumpAndSettle();
+
+      final field = tester.widget<TextField>(
+        find.widgetWithText(TextField, 'Registration token'),
+      );
+      expect(field.controller?.text, 'abc123');
+    });
+
+    testWidgets('initialToken null leaves the token field empty',
+        (tester) async {
+      stubServerSupportsRegistration(
+        registrationStages: ['m.login.registration_token', 'm.login.dummy'],
+      );
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpAndSettle();
+
+      final field = tester.widget<TextField>(
+        find.widgetWithText(TextField, 'Registration token'),
+      );
+      expect(field.controller?.text, '');
+    });
+
+    testWidgets('seeded token field remains editable', (tester) async {
+      stubServerSupportsRegistration(
+        registrationStages: ['m.login.registration_token', 'm.login.dummy'],
+      );
+      await tester.pumpWidget(buildTestWidget(initialToken: 'abc123'));
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Registration token'),
+        'overwrite',
+      );
+      await tester.pump();
+
+      final field = tester.widget<TextField>(
+        find.widgetWithText(TextField, 'Registration token'),
+      );
+      expect(field.controller?.text, 'overwrite');
     });
   });
 }

@@ -85,10 +85,21 @@ GoRouter buildRouter(ClientManager manager) {
         path: '/register',
         name: Routes.register,
         builder: (context, state) {
-          final homeserver = state.extra as String? ??
+          final queryServer = state.uri.queryParameters['server']?.trim();
+          final queryToken = state.uri.queryParameters['token']?.trim();
+          final homeserver = (state.extra as String?) ??
+              (queryServer != null && queryServer.isNotEmpty
+                  ? queryServer
+                  : null) ??
               context.read<PreferencesService>().defaultHomeserver ??
               AppConfig.instance.defaultHomeserver;
-          return RegistrationScreen(initialHomeserver: homeserver);
+          final token =
+              queryToken != null && queryToken.isNotEmpty ? queryToken : null;
+          return RegistrationScreen(
+            key: ValueKey('register|$homeserver|$token'),
+            initialHomeserver: homeserver,
+            initialToken: token,
+          );
         },
       ),
 
