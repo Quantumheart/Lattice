@@ -130,5 +130,40 @@ void main() {
         findsWidgets,
       );
     });
+
+    testWidgets('landing HTML escapes </script> to prevent tag breakout',
+        (tester) async {
+      await tester.pumpWidget(buildApp());
+      await tester.pumpAndSettle();
+
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Registration token'),
+        'evil</script><img>',
+      );
+      await tester.pumpAndSettle();
+
+      await tester.dragUntilVisible(
+        find.text('Landing-page HTML'),
+        find.byType(ListView),
+        const Offset(0, -200),
+      );
+
+      // The generated HTML must not contain a raw </script> sequence
+      // inside the embedded JS string literal. URL encoding of the token
+      // during Uri.toString() is the first line of defence; the
+      // </ → <\/ pass in _jsScriptSafeString is belt-and-braces.
+      final htmlSelectables = tester
+          .widgetList<SelectableText>(find.byType(SelectableText))
+          .map((w) => w.data ?? '')
+          .where((t) => t.contains('<!DOCTYPE html>'))
+          .toList();
+      expect(htmlSelectables, isNotEmpty);
+      final html = htmlSelectables.first;
+      final jsLine = html
+          .split('\n')
+          .firstWhere((l) => l.contains('window.location.replace('));
+      expect(jsLine.contains('</script>'), isFalse,
+          reason: 'embedded JS string must not contain </script>',);
+    });
   });
 }

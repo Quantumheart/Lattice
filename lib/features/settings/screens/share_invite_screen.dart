@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kohera/core/services/matrix_service.dart';
@@ -62,7 +64,7 @@ class _ShareInviteScreenState extends State<ShareInviteScreen> {
     <a href="https://github.com/Quantumheart/kohera/releases">download it</a>.
   </p>
   <script>
-    window.location.replace(${_jsonString(_deepLink)});
+    window.location.replace(${_jsScriptSafeString(_deepLink)});
     setTimeout(function () {
       document.getElementById('fallback').style.display = 'block';
     }, 2500);
@@ -71,13 +73,12 @@ class _ShareInviteScreenState extends State<ShareInviteScreen> {
 </html>
 ''';
 
-  static String _jsonString(String s) {
-    final escaped = s
-        .replaceAll(r'\', r'\\')
-        .replaceAll("'", r"\'")
-        .replaceAll('\n', r'\n');
-    return "'$escaped'";
-  }
+  /// JSON-encodes [s] for embedding inside an HTML `<script>` block.
+  /// `jsonEncode` handles quote/backslash/control-char escaping; the extra
+  /// `</` → `<\/` replacement prevents the encoded string from prematurely
+  /// closing the surrounding `<script>` tag if [s] contains `</script>`.
+  static String _jsScriptSafeString(String s) =>
+      jsonEncode(s).replaceAll('</', r'<\/');
 
   Future<void> _copy(String value, String label) async {
     await Clipboard.setData(ClipboardData(text: value));
