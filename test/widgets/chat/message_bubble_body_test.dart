@@ -121,7 +121,6 @@ void main() {
       final event = _makeEvent(
         msgtype: MessageTypes.Emote,
         body: 'waves',
-        senderDisplayName: 'Alice',
       );
       await tester.pumpWidget(_buildBody(event));
 
@@ -219,7 +218,6 @@ void main() {
     testWidgets('non-emote html renders HtmlMessageText without prefix',
         (tester) async {
       final event = _makeEvent(
-        body: 'hello',
         formattedText: '<b>hello</b>',
       );
       await tester.pumpWidget(_buildBody(event));
