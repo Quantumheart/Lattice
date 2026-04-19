@@ -8,6 +8,9 @@ import 'package:kohera/features/calling/models/call_constants.dart';
 import 'package:kohera/features/chat/widgets/call_event_tile.dart';
 import 'package:kohera/features/chat/widgets/chat_message_item.dart';
 import 'package:kohera/features/chat/widgets/read_receipts.dart';
+import 'package:kohera/features/chat/widgets/state_event_tile.dart';
+import 'package:kohera/features/chat/widgets/sticker_bubble.dart';
+import 'package:kohera/features/chat/widgets/unread_divider.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
 import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
@@ -52,6 +55,7 @@ class MessageListViewState extends State<MessageListView> {
   Timer? _readMarkerTimer;
   int _initGeneration = 0;
   List<Event>? _cachedVisibleEvents;
+  String? _initialFullyReadId;
 
   Timeline? get timeline => _timeline;
 
@@ -78,6 +82,9 @@ class MessageListViewState extends State<MessageListView> {
 
   Future<void> _initTimeline() async {
     final gen = ++_initGeneration;
+    final snapshotFullyRead = widget.room.fullyRead;
+    _initialFullyReadId =
+        snapshotFullyRead.isNotEmpty ? snapshotFullyRead : null;
     _timeline = await widget.room.getTimeline(
       eventContextId: widget.initialEventId,
       onUpdate: () {
@@ -141,7 +148,9 @@ class MessageListViewState extends State<MessageListView> {
             ((e.type == EventTypes.Message || e.type == EventTypes.Encrypted) &&
                 e.relationshipType != RelationshipTypes.edit &&
                 !_isCallMemberEvent(e)) ||
-            callEventTypes.contains(e.type),)
+            callEventTypes.contains(e.type) ||
+            _isStateEvent(e) ||
+            e.type == EventTypes.Sticker,)
         .toList();
     return _cachedVisibleEvents!;
   }
@@ -274,6 +283,37 @@ class MessageListViewState extends State<MessageListView> {
 
   static bool _isCallEvent(Event event) => callEventTypes.contains(event.type);
 
+  static bool _isStateEvent(Event event) {
+    if (event.type == EventTypes.RoomName ||
+        event.type == EventTypes.RoomTopic ||
+        event.type == EventTypes.RoomAvatar ||
+        event.type == EventTypes.RoomTombstone) {
+      return true;
+    }
+    if (event.type == EventTypes.RoomMember) {
+      return !_isNoOpMemberEvent(event);
+    }
+    return false;
+  }
+
+  static bool _isNoOpMemberEvent(Event event) {
+    final prev = event.prevContent;
+    if (prev == null) return false;
+    final curr = event.content;
+    final prevMembership = prev.tryGet<String>('membership');
+    final currMembership = curr.tryGet<String>('membership');
+    if (prevMembership != currMembership) return false;
+    if (prev.tryGet<String>('displayname') !=
+        curr.tryGet<String>('displayname')) {
+      return false;
+    }
+    if (prev.tryGet<String>('avatar_url') !=
+        curr.tryGet<String>('avatar_url')) {
+      return false;
+    }
+    return true;
+  }
+
   static bool _isCallMemberEvent(Event event) =>
       event.type == kCallMember ||
       event.type == kCallMemberMsc ||
@@ -361,30 +401,64 @@ class MessageListViewState extends State<MessageListView> {
           );
         }
         final event = events[i];
+
+        final Widget tile;
         if (_isCallEvent(event)) {
-          return CallEventTile(
+          tile = CallEventTile(
             event: event,
             isMe: event.senderId == widget.matrix.client.userID,
             duration: _callDuration(event),
           );
+        } else if (_isStateEvent(event)) {
+          tile = StateEventTile(event: event);
+        } else if (event.type == EventTypes.Sticker) {
+          tile = StickerBubble(
+            event: event,
+            isMe: event.senderId == widget.matrix.client.userID,
+          );
+        } else {
+          final prevSender =
+              i + 1 < events.length ? events[i + 1].senderId : null;
+          tile = ChatMessageItem(
+            event: event,
+            isMe: event.senderId == widget.matrix.client.userID,
+            isFirst: event.senderId != prevSender,
+            isMobile: isMobile,
+            timeline: _timeline,
+            client: widget.matrix.client,
+            highlightedEventId: widget.highlightedEventId,
+            receiptMap: receiptMap,
+            onReply: widget.onReply,
+            onEdit: (event) => widget.onEdit(event, _timeline),
+            onToggleReaction: widget.onToggleReaction,
+            onPin: widget.onPin,
+            onTapReply: _navigateToEvent,
+          );
         }
-        final prevSender = i + 1 < events.length ? events[i + 1].senderId : null;
-        return ChatMessageItem(
-          event: event,
-          isMe: event.senderId == widget.matrix.client.userID,
-          isFirst: event.senderId != prevSender,
-          isMobile: isMobile,
-          timeline: _timeline,
-          client: widget.matrix.client,
-          highlightedEventId: widget.highlightedEventId,
-          receiptMap: receiptMap,
-          onReply: widget.onReply,
-          onEdit: (event) => widget.onEdit(event, _timeline),
-          onToggleReaction: widget.onToggleReaction,
-          onPin: widget.onPin,
-          onTapReply: _navigateToEvent,
-        );
+
+        if (_shouldShowUnreadDivider(event, i, events)) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              tile,
+              const UnreadDivider(),
+            ],
+          );
+        }
+        return tile;
       },
     );
+  }
+
+  bool _shouldShowUnreadDivider(
+    Event event,
+    int index,
+    List<Event> events,
+  ) {
+    final markerId = _initialFullyReadId;
+    if (markerId == null) return false;
+    if (event.eventId != markerId) return false;
+    if (index == 0) return false;
+    return true;
   }
 }
