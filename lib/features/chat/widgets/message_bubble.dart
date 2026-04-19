@@ -17,6 +17,7 @@ import 'package:kohera/features/chat/widgets/inline_image_preview.dart';
 import 'package:kohera/features/chat/widgets/inline_reply_preview.dart';
 import 'package:kohera/features/chat/widgets/link_preview_card.dart';
 import 'package:kohera/features/chat/widgets/linkable_text.dart';
+import 'package:kohera/features/chat/widgets/verification_request_tile.dart';
 import 'package:kohera/features/chat/widgets/video_bubble.dart';
 import 'package:kohera/shared/widgets/user_avatar.dart';
 import 'package:matrix/matrix.dart';
@@ -575,30 +576,81 @@ class _MessageBubbleState extends State<MessageBubble> {
       return FileBubble(event: widget.event, isMe: widget.isMe);
     }
 
+    if (widget.event.messageType == MessageTypes.KeyVerificationRequest) {
+      return VerificationRequestTile(event: widget.event);
+    }
+
     // Check for HTML formatted body.
     final formattedBody = widget.event.formattedText;
     final hasHtml = formattedBody.isNotEmpty &&
         widget.event.content['format'] == 'org.matrix.custom.html';
 
-    final textStyle = tt.bodyLarge?.copyWith(
+    final isEmote = widget.event.messageType == MessageTypes.Emote;
+    final isServerNotice =
+        widget.event.messageType == MessageTypes.ServerNotice;
+
+    var textStyle = tt.bodyLarge?.copyWith(
       color: widget.isMe ? cs.onPrimary : cs.onSurface,
       fontSize: metrics.bodyFontSize,
       height: metrics.bodyLineHeight,
     );
 
+    if (isEmote) {
+      textStyle = textStyle?.copyWith(fontStyle: FontStyle.italic);
+    }
+    if (isServerNotice) {
+      textStyle = textStyle?.copyWith(
+        color: widget.isMe
+            ? cs.onPrimary.withValues(alpha: 0.8)
+            : cs.onSurfaceVariant,
+      );
+    }
+
     if (hasHtml) {
-      return HtmlMessageText(
-        html: formattedBody,
+      final html = isEmote
+          ? '* ${widget.event.senderFromMemoryOrFallback.calcDisplayname()} '
+              '$formattedBody'
+          : formattedBody;
+      final htmlWidget = HtmlMessageText(
+        html: html,
         style: textStyle,
         isMe: widget.isMe,
         room: widget.event.room,
       );
+      if (isServerNotice) return _wrapWithServerNoticeIcon(htmlWidget, cs);
+      return htmlWidget;
     }
 
-    return LinkableText(
-      text: bodyText,
+    final displayText = isEmote
+        ? '* ${widget.event.senderFromMemoryOrFallback.calcDisplayname()} '
+            '$bodyText'
+        : bodyText;
+    final textWidget = LinkableText(
+      text: displayText,
       style: textStyle,
       isMe: widget.isMe,
+    );
+    if (isServerNotice) return _wrapWithServerNoticeIcon(textWidget, cs);
+    return textWidget;
+  }
+
+  Widget _wrapWithServerNoticeIcon(Widget child, ColorScheme cs) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 2, right: 6),
+          child: Icon(
+            Icons.campaign_outlined,
+            size: 16,
+            color: widget.isMe
+                ? cs.onPrimary.withValues(alpha: 0.8)
+                : cs.onSurfaceVariant,
+          ),
+        ),
+        Flexible(child: child),
+      ],
     );
   }
 
