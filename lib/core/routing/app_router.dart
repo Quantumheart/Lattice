@@ -1,42 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:kohera/core/models/server_auth_capabilities.dart';
-import 'package:kohera/core/routing/route_names.dart';
-import 'package:kohera/core/services/app_config.dart';
-import 'package:kohera/core/services/client_manager.dart';
-import 'package:kohera/core/services/matrix_service.dart';
-import 'package:kohera/core/services/preferences_service.dart';
-import 'package:kohera/features/auth/screens/homeserver_screen.dart';
-import 'package:kohera/features/auth/screens/login_screen.dart';
-import 'package:kohera/features/auth/screens/registration_screen.dart';
-import 'package:kohera/features/calling/screens/call_pane.dart';
-import 'package:kohera/features/calling/screens/call_screen.dart';
-import 'package:kohera/features/chat/screens/chat_screen.dart';
-import 'package:kohera/features/e2ee/screens/e2ee_setup_screen.dart';
-import 'package:kohera/features/home/screens/home_shell.dart';
-import 'package:kohera/features/home/widgets/inbox_screen.dart';
-import 'package:kohera/features/rooms/widgets/room_details_panel.dart';
-import 'package:kohera/features/rooms/widgets/room_list.dart';
-import 'package:kohera/features/settings/screens/appearance_screen.dart';
-import 'package:kohera/features/settings/screens/devices_screen.dart';
-import 'package:kohera/features/settings/screens/notification_settings_screen.dart';
-import 'package:kohera/features/settings/screens/settings_screen.dart';
-import 'package:kohera/features/settings/screens/voice_video_settings_screen.dart';
-import 'package:kohera/features/spaces/widgets/space_details_panel.dart';
+import 'package:lattice/core/models/server_auth_capabilities.dart';
+import 'package:lattice/core/routing/route_names.dart';
+import 'package:lattice/core/services/app_config.dart';
+import 'package:lattice/core/services/client_manager.dart';
+import 'package:lattice/core/services/matrix_service.dart';
+import 'package:lattice/core/services/preferences_service.dart';
+import 'package:lattice/features/auth/screens/homeserver_screen.dart';
+import 'package:lattice/features/auth/screens/login_screen.dart';
+import 'package:lattice/features/auth/screens/registration_screen.dart';
+import 'package:lattice/features/calling/screens/call_pane.dart';
+import 'package:lattice/features/calling/screens/call_screen.dart';
+import 'package:lattice/features/chat/screens/chat_screen.dart';
+import 'package:lattice/features/e2ee/screens/e2ee_setup_screen.dart';
+import 'package:lattice/features/home/screens/home_shell.dart';
+import 'package:lattice/features/home/widgets/inbox_screen.dart';
+import 'package:lattice/features/rooms/widgets/room_details_panel.dart';
+import 'package:lattice/features/rooms/widgets/room_list.dart';
+import 'package:lattice/features/settings/screens/appearance_screen.dart';
+import 'package:lattice/features/settings/screens/devices_screen.dart';
+import 'package:lattice/features/settings/screens/notification_settings_screen.dart';
+import 'package:lattice/features/settings/screens/settings_screen.dart';
+import 'package:lattice/features/settings/screens/admin_invites_screen.dart';
+import 'package:lattice/features/settings/screens/voice_video_settings_screen.dart';
+import 'package:lattice/features/spaces/widgets/space_details_panel.dart';
 import 'package:provider/provider.dart';
 
 /// Creates the app router with auth-aware redirects.
 ///
-/// The router resolves the active [MatrixService] dynamically from
-/// [manager] so that account switches don't require recreating the router
-/// (which would reset the navigation stack and cause a visible flash).
-GoRouter buildRouter(ClientManager manager) {
-  final refreshListenable = _ActiveMatrixListenable(manager);
+/// [matrixService] is used as a [Listenable] for `refreshListenable` so that
+/// login/logout automatically triggers a redirect evaluation.
+GoRouter buildRouter(MatrixService matrixService) {
   return GoRouter(
-    refreshListenable: refreshListenable,
+    refreshListenable: Listenable.merge([matrixService, matrixService.chatBackup]),
     initialLocation: '/',
     redirect: (context, state) {
-      final matrixService = manager.activeService;
       final loggedIn = matrixService.isLoggedIn;
       final loc = state.matchedLocation;
       final onAuthRoute =
@@ -51,7 +49,7 @@ GoRouter buildRouter(ClientManager manager) {
           !onSetupRoute &&
           !onAuthRoute &&
           !onAddAccountRoute &&
-          matrixService.chatBackup.chatBackupNeeded == true &&
+          matrixService.chatBackup.chatBackupNeeded != false &&
           !matrixService.hasSkippedSetup) {
         return '/e2ee-setup';
       }
@@ -85,10 +83,22 @@ GoRouter buildRouter(ClientManager manager) {
         path: '/register',
         name: Routes.register,
         builder: (context, state) {
-          final homeserver = state.extra as String? ??
+          String? homeserver;
+          String? token;
+          final extra = state.extra;
+          if (extra is String) {
+            homeserver = extra;
+          } else if (extra is Map) {
+            homeserver = extra['server'] as String?;
+            token = extra['token'] as String?;
+          }
+          homeserver ??=
               context.read<PreferencesService>().defaultHomeserver ??
-              AppConfig.instance.defaultHomeserver;
-          return RegistrationScreen(initialHomeserver: homeserver);
+                  AppConfig.instance.defaultHomeserver;
+          return RegistrationScreen(
+            initialHomeserver: homeserver,
+            initialToken: token,
+          );
         },
       ),
 
@@ -236,6 +246,12 @@ GoRouter buildRouter(ClientManager manager) {
                     builder: (context, state) =>
                         const VoiceVideoSettingsScreen(),
                   ),
+                  GoRoute(
+                    path: 'admin',
+                    name: Routes.settingsAdmin,
+                    builder: (context, state) =>
+                        const AdminInvitesScreen(),
+                  ),
                 ],
               ),
             ],
@@ -244,50 +260,6 @@ GoRouter buildRouter(ClientManager manager) {
       ),
     ],
   );
-}
-
-/// A [Listenable] that forwards notifications from the currently active
-/// [MatrixService] (and its [ChatBackupService]), re-binding automatically
-/// when the active account changes. Lets the router use a stable
-/// `refreshListenable` across account switches.
-class _ActiveMatrixListenable extends ChangeNotifier {
-  _ActiveMatrixListenable(this._manager) {
-    _manager.addListener(_onManagerChanged);
-    _attach(_manager.activeService);
-  }
-
-  final ClientManager _manager;
-  MatrixService? _attached;
-
-  void _onManagerChanged() {
-    final next = _manager.activeService;
-    if (!identical(next, _attached)) {
-      _detach();
-      _attach(next);
-    }
-    notifyListeners();
-  }
-
-  void _attach(MatrixService service) {
-    service.addListener(notifyListeners);
-    service.chatBackup.addListener(notifyListeners);
-    _attached = service;
-  }
-
-  void _detach() {
-    final prev = _attached;
-    if (prev == null) return;
-    prev.removeListener(notifyListeners);
-    prev.chatBackup.removeListener(notifyListeners);
-    _attached = null;
-  }
-
-  @override
-  void dispose() {
-    _manager.removeListener(_onManagerChanged);
-    _detach();
-    super.dispose();
-  }
 }
 
 class _AddAccountGuard extends StatefulWidget {
