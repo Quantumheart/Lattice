@@ -1,6 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:kohera/features/chat/widgets/density_metrics.dart';
 
+BorderRadius bubbleRadii({
+  required bool isMe,
+  required bool isFirst,
+  required double radius,
+}) {
+  final r = Radius.circular(radius);
+  const tail = Radius.circular(4);
+  return BorderRadius.only(
+    topLeft: r,
+    topRight: r,
+    bottomLeft: isMe ? r : (isFirst ? tail : r),
+    bottomRight: isMe ? (isFirst ? tail : r) : r,
+  );
+}
+
 class MessageBubbleSkin extends StatelessWidget {
   const MessageBubbleSkin({
     required this.isMe,
@@ -40,7 +55,11 @@ class MessageBubbleSkin extends StatelessWidget {
               color: isMe
                   ? cs.primary
                   : cs.primaryContainer.withValues(alpha: 0.6),
-              borderRadius: _bubbleRadii(),
+              borderRadius: bubbleRadii(
+                isMe: isMe,
+                isFirst: isFirst,
+                radius: metrics.bubbleRadius,
+              ),
             ),
             child: child,
           ),
@@ -56,14 +75,4 @@ class MessageBubbleSkin extends StatelessWidget {
     );
   }
 
-  BorderRadius _bubbleRadii() {
-    final r = Radius.circular(metrics.bubbleRadius);
-    const tail = Radius.circular(4);
-    return BorderRadius.only(
-      topLeft: r,
-      topRight: r,
-      bottomLeft: isMe ? r : (isFirst ? tail : r),
-      bottomRight: isMe ? (isFirst ? tail : r) : r,
-    );
-  }
 }

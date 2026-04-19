@@ -11,6 +11,25 @@ import 'package:matrix/matrix.dart';
 
 const _msgtypeServerNotice = 'm.server_notice';
 
+String escapeHtml(String input) => input
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+
+String redactionLabel({
+  required bool isMe,
+  required String senderId,
+  String? redactor,
+  String? redactorDisplayName,
+}) {
+  if (isMe) return 'You deleted this message';
+  if (redactor == null) return 'This message was deleted';
+  if (redactor == senderId) return 'This message was deleted';
+  return 'Deleted by ${redactorDisplayName ?? redactor}';
+}
+
 class MessageBubbleBody extends StatelessWidget {
   const MessageBubbleBody({
     required this.event,
@@ -76,7 +95,7 @@ class MessageBubbleBody extends StatelessWidget {
 
     if (hasHtml) {
       final html = isEmote
-          ? '* ${_escapeHtml(event.senderFromMemoryOrFallback.calcDisplayname())} '
+          ? '* ${escapeHtml(event.senderFromMemoryOrFallback.calcDisplayname())} '
               '$formattedBody'
           : formattedBody;
       final htmlWidget = HtmlMessageText(
@@ -123,12 +142,6 @@ class MessageBubbleBody extends StatelessWidget {
     );
   }
 
-  static String _escapeHtml(String input) => input
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#39;');
 }
 
 class _RedactedBody extends StatelessWidget {
@@ -143,19 +156,17 @@ class _RedactedBody extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
 
     final redactor = event.redactedBecause?.senderId;
-    final isSelfRedact = redactor == event.senderId;
-    String label;
-    if (isMe) {
-      label = 'You deleted this message';
-    } else if (isSelfRedact) {
-      label = 'This message was deleted';
-    } else if (redactor != null) {
-      final redactorUser = event.room.unsafeGetUserFromMemoryOrFallback(redactor);
-      final displayName = redactorUser.displayName ?? redactor;
-      label = 'Deleted by $displayName';
-    } else {
-      label = 'This message was deleted';
+    String? redactorDisplayName;
+    if (redactor != null && !isMe && redactor != event.senderId) {
+      redactorDisplayName =
+          event.room.unsafeGetUserFromMemoryOrFallback(redactor).displayName;
     }
+    final label = redactionLabel(
+      isMe: isMe,
+      senderId: event.senderId,
+      redactor: redactor,
+      redactorDisplayName: redactorDisplayName,
+    );
     return Text(
       label,
       style: tt.bodyMedium?.copyWith(
