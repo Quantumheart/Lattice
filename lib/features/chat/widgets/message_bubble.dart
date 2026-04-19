@@ -576,7 +576,7 @@ class _MessageBubbleState extends State<MessageBubble> {
       return FileBubble(event: widget.event, isMe: widget.isMe);
     }
 
-    if (widget.event.messageType == MessageTypes.KeyVerificationRequest) {
+    if (widget.event.messageType == EventTypes.KeyVerificationRequest) {
       return VerificationRequestTile(event: widget.event);
     }
 
@@ -586,8 +586,7 @@ class _MessageBubbleState extends State<MessageBubble> {
         widget.event.content['format'] == 'org.matrix.custom.html';
 
     final isEmote = widget.event.messageType == MessageTypes.Emote;
-    final isServerNotice =
-        widget.event.messageType == MessageTypes.ServerNotice;
+    final isServerNotice = widget.event.messageType == 'm.server_notice';
 
     var textStyle = tt.bodyLarge?.copyWith(
       color: widget.isMe ? cs.onPrimary : cs.onSurface,
@@ -608,7 +607,7 @@ class _MessageBubbleState extends State<MessageBubble> {
 
     if (hasHtml) {
       final html = isEmote
-          ? '* ${widget.event.senderFromMemoryOrFallback.calcDisplayname()} '
+          ? '* ${_escapeHtml(widget.event.senderFromMemoryOrFallback.calcDisplayname())} '
               '$formattedBody'
           : formattedBody;
       final htmlWidget = HtmlMessageText(
@@ -633,6 +632,13 @@ class _MessageBubbleState extends State<MessageBubble> {
     if (isServerNotice) return _wrapWithServerNoticeIcon(textWidget, cs);
     return textWidget;
   }
+
+  static String _escapeHtml(String input) => input
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
 
   Widget _wrapWithServerNoticeIcon(Widget child, ColorScheme cs) {
     return Row(
