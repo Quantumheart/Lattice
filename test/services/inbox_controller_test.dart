@@ -159,7 +159,7 @@ void main() {
         limit: anyNamed('limit'),
         only: anyNamed('only'),
       ),).thenAnswer((_) async => _makeResponse([
-            _makeNotification(eventId: 'e1', roomId: '!old:x', ts: 1000),
+            _makeNotification(eventId: 'e1', roomId: '!old:x'),
             _makeNotification(eventId: 'e2', roomId: '!new:x', ts: 3000),
             _makeNotification(eventId: 'e3', roomId: '!mid:x', ts: 2000),
           ]),);
