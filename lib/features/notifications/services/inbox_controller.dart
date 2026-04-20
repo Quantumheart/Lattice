@@ -371,31 +371,25 @@ class InboxController extends ChangeNotifier {
       map[n.roomId]!.add(n);
     }
 
-    final groups = <NotificationGroup>[];
-    for (final roomId in order) {
+    final insertionIndex = <String, int>{
+      for (var i = 0; i < order.length; i++) order[i]: i,
+    };
+    int maxTs(String roomId) =>
+        map[roomId]!.map((n) => n.ts).reduce((a, b) => a > b ? a : b);
+    order.sort((a, b) {
+      final cmp = maxTs(b).compareTo(maxTs(a));
+      if (cmp != 0) return cmp;
+      return insertionIndex[a]!.compareTo(insertionIndex[b]!);
+    });
+
+    return order.map((roomId) {
       final room = _client.getRoomById(roomId);
-      groups.add(NotificationGroup(
+      return NotificationGroup(
         roomId: roomId,
         roomName: room?.getLocalizedDisplayname() ?? roomId,
         notifications: map[roomId]!,
-      ),);
-    }
-
-    final indexed = <(int, NotificationGroup)>[
-      for (var i = 0; i < groups.length; i++) (i, groups[i]),
-    ];
-    indexed.sort((a, b) {
-      final aMax = a.$2.notifications
-          .map((n) => n.ts)
-          .reduce((x, y) => x > y ? x : y);
-      final bMax = b.$2.notifications
-          .map((n) => n.ts)
-          .reduce((x, y) => x > y ? x : y);
-      final cmp = bMax.compareTo(aMax);
-      if (cmp != 0) return cmp;
-      return a.$1.compareTo(b.$1);
-    });
-    return [for (final entry in indexed) entry.$2];
+      );
+    }).toList();
   }
 
   @override
