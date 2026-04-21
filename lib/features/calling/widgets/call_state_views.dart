@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:kohera/core/services/call_service.dart';
@@ -14,17 +15,62 @@ String formatCallElapsed(Duration d) {
   return '$minutes:$seconds';
 }
 
-class CallJoiningView extends StatelessWidget {
+const _authenticatingPhrases = [
+  'Cracking the mainframe...',
+  'Punching through the firewall...',
+  'Consulting the oracle...',
+  'Unfurling the scroll...',
+  'Inserting coin...',
+  'Press START...',
+  'Jacking in...',
+  'Loading operator...',
+  'Forging the keys...',
+  'Decoding runes...',
+];
+
+const _connectingMediaPhrases = [
+  'Spinning up the warp core...',
+  'Weaving the portal...',
+  'Loading level 1...',
+  'Tracing the signal...',
+  'Syncing ley lines...',
+  'Spawning player...',
+  'Aligning tachyons...',
+  'Opening the gate...',
+  'Calibrating the matrix...',
+  'Dropping into the grid...',
+];
+
+class CallJoiningView extends StatefulWidget {
   const CallJoiningView({required this.displayName, this.phase, super.key});
 
   final String displayName;
   final JoinPhase? phase;
 
-  String get _phaseLabel => switch (phase) {
-        JoinPhase.authenticating => 'Authenticating...',
-        JoinPhase.connectingMedia => 'Connecting media...',
+  @override
+  State<CallJoiningView> createState() => _CallJoiningViewState();
+}
+
+class _CallJoiningViewState extends State<CallJoiningView> {
+  static final _rng = Random();
+
+  late String _label = _labelFor(widget.phase);
+
+  String _labelFor(JoinPhase? phase) => switch (phase) {
+        JoinPhase.authenticating =>
+          _authenticatingPhrases[_rng.nextInt(_authenticatingPhrases.length)],
+        JoinPhase.connectingMedia =>
+          _connectingMediaPhrases[_rng.nextInt(_connectingMediaPhrases.length)],
         null => 'Joining call...',
       };
+
+  @override
+  void didUpdateWidget(covariant CallJoiningView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.phase != widget.phase) {
+      _label = _labelFor(widget.phase);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,15 +80,15 @@ class CallJoiningView extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          PulsingAvatar(displayName: displayName),
+          PulsingAvatar(displayName: widget.displayName),
           const SizedBox(height: 24),
-          Text(displayName, style: tt.titleMedium),
+          Text(widget.displayName, style: tt.titleMedium),
           const SizedBox(height: 8),
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             child: Text(
-              _phaseLabel,
-              key: ValueKey(phase),
+              _label,
+              key: ValueKey(_label),
               style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
             ),
           ),
