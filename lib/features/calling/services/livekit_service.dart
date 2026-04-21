@@ -461,21 +461,43 @@ class LiveKitService {
     _livekitListener = _livekitRoom!.createListener();
     _subscribeLiveKitEvents();
 
-    if (!autoMuteOnJoin) {
-      await _livekitRoom!.localParticipant?.setMicrophoneEnabled(true);
-      _isMicEnabled = true;
-    } else {
-      _isMicEnabled = false;
-    }
+    _isMicEnabled = !autoMuteOnJoin;
     _isCameraEnabled = false;
     _isScreenShareEnabled = false;
     _isScreenAudioEnabled = false;
     _syncParticipants();
 
+    unawaited(
+      _applyPostConnectAudio(
+        autoMuteOnJoin: autoMuteOnJoin,
+        inputVolume: inputVolume,
+        outputDeviceId: outputDeviceId,
+      ),
+    );
+  }
+
+  Future<void> _applyPostConnectAudio({
+    required bool autoMuteOnJoin,
+    required double inputVolume,
+    required String? outputDeviceId,
+  }) async {
+    final localParticipant = _livekitRoom?.localParticipant;
+    if (localParticipant == null) return;
+
+    if (!autoMuteOnJoin) {
+      try {
+        await localParticipant.setMicrophoneEnabled(true);
+      } catch (e) {
+        debugPrint('[Kohera] Failed to enable microphone on join: $e');
+        _isMicEnabled = false;
+        _onChanged();
+      }
+    }
+
     if (inputVolume != 1.0) {
       try {
-        final audioTrack = _livekitRoom!.localParticipant?.audioTrackPublications
-            .firstOrNull?.track;
+        final audioTrack =
+            localParticipant.audioTrackPublications.firstOrNull?.track;
         if (audioTrack != null) {
           await rtc.Helper.setVolume(inputVolume, audioTrack.mediaStreamTrack);
         }
