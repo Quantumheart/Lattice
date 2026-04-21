@@ -34,6 +34,7 @@ class CallPane extends StatelessWidget {
       KoheraCallState.ringingIncoming ||
       KoheraCallState.joining => CallJoiningView(
           displayName: _resolveRoomName(context, callService),
+          phase: callService.joinPhase,
         ),
       KoheraCallState.connected => const ConnectedCallView(),
       KoheraCallState.reconnecting => const CallReconnectingView(),

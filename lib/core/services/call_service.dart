@@ -20,6 +20,7 @@ export 'package:kohera/features/calling/models/call_state.dart';
 export 'package:kohera/features/calling/services/livekit_service.dart'
     show
         HttpPostFunction,
+        JoinPhase,
         LiveKitParticipantEvent,
         LiveKitParticipantJoined,
         LiveKitParticipantLeft,
@@ -107,6 +108,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
   List<livekit.Participant> get activeSpeakers => _liveKit.activeSpeakers;
   String? get cachedLivekitServiceUrl => _liveKit.cachedLivekitServiceUrl;
   bool get isCallingAvailable => _liveKit.cachedLivekitServiceUrl != null;
+  JoinPhase? get joinPhase => _liveKit.joinPhase;
 
   List<ui.CallParticipant> get allParticipants =>
       _liveKit.allParticipants(activeCallRoomId: _activeCallRoomId);

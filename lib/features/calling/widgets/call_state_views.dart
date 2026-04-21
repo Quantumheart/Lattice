@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:kohera/core/services/call_service.dart';
 import 'package:kohera/shared/widgets/pulsing_avatar.dart';
 
 // coverage:ignore-start
@@ -14,9 +15,16 @@ String formatCallElapsed(Duration d) {
 }
 
 class CallJoiningView extends StatelessWidget {
-  const CallJoiningView({required this.displayName, super.key});
+  const CallJoiningView({required this.displayName, this.phase, super.key});
 
   final String displayName;
+  final JoinPhase? phase;
+
+  String get _phaseLabel => switch (phase) {
+        JoinPhase.authenticating => 'Authenticating...',
+        JoinPhase.connectingMedia => 'Connecting media...',
+        null => 'Joining call...',
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -30,9 +38,13 @@ class CallJoiningView extends StatelessWidget {
           const SizedBox(height: 24),
           Text(displayName, style: tt.titleMedium),
           const SizedBox(height: 8),
-          Text(
-            'Joining call...',
-            style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 200),
+            child: Text(
+              _phaseLabel,
+              key: ValueKey(phase),
+              style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+            ),
           ),
         ],
       ),

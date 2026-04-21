@@ -32,6 +32,10 @@ class LiveKitReconnected extends LiveKitConnectionEvent {}
 
 class LiveKitDisconnected extends LiveKitConnectionEvent {}
 
+// ── Join Phase ─────────────────────────────────────────────
+
+enum JoinPhase { authenticating, connectingMedia }
+
 // ── LiveKit Participant Events ─────────────────────────────
 
 sealed class LiveKitParticipantEvent {
@@ -107,6 +111,15 @@ class LiveKitService {
   List<ui.CallParticipant>? _cachedParticipants;
   String? _cachedParticipantsRoomId;
   bool _participantsDirty = true;
+
+  JoinPhase? _joinPhase;
+  JoinPhase? get joinPhase => _joinPhase;
+
+  void _setJoinPhase(JoinPhase? phase) {
+    if (_joinPhase == phase) return;
+    _joinPhase = phase;
+    _onChanged();
+  }
 
   final _connectionEventController =
       StreamController<LiveKitConnectionEvent>.broadcast();
@@ -425,12 +438,16 @@ class LiveKitService {
     double inputVolume = 1.0,
     double outputVolume = 1.0,
   }) async {
+    _setJoinPhase(JoinPhase.authenticating);
     final credentials = await _fetchLiveKitToken(
       livekitServiceUrl: livekitServiceUrl,
       livekitAlias: livekitAlias,
     );
 
-    if (currentState() != KoheraCallState.joining) return;
+    if (currentState() != KoheraCallState.joining) {
+      _setJoinPhase(null);
+      return;
+    }
 
     _outputVolume = outputVolume;
 
@@ -451,12 +468,16 @@ class LiveKitService {
       ),
     );
 
+    _setJoinPhase(JoinPhase.connectingMedia);
     await _livekitRoom!.connect(credentials.url, credentials.token);
 
     if (currentState() != KoheraCallState.joining) {
+      _setJoinPhase(null);
       await cleanupLiveKit();
       return;
     }
+
+    _setJoinPhase(null);
 
     _livekitListener = _livekitRoom!.createListener();
     _subscribeLiveKitEvents();
@@ -641,6 +662,7 @@ class LiveKitService {
     _isScreenShareEnabled = false;
     _isScreenAudioEnabled = false;
     _outputVolume = 1;
+    _joinPhase = null;
 
     try {
       await listener?.dispose();
