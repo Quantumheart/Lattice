@@ -502,12 +502,11 @@ class LiveKitService {
     required double inputVolume,
     required String? outputDeviceId,
   }) async {
-    final localParticipant = _livekitRoom?.localParticipant;
-    if (localParticipant == null) return;
+    if (_livekitRoom?.localParticipant == null) return;
 
     if (!autoMuteOnJoin) {
       try {
-        await localParticipant.setMicrophoneEnabled(true);
+        await _livekitRoom?.localParticipant?.setMicrophoneEnabled(true);
       } catch (e) {
         debugPrint('[Kohera] Failed to enable microphone on join: $e');
         _isMicEnabled = false;
@@ -515,10 +514,12 @@ class LiveKitService {
       }
     }
 
+    if (_livekitRoom == null) return;
+
     if (inputVolume != 1.0) {
       try {
-        final audioTrack =
-            localParticipant.audioTrackPublications.firstOrNull?.track;
+        final audioTrack = _livekitRoom
+            ?.localParticipant?.audioTrackPublications.firstOrNull?.track;
         if (audioTrack != null) {
           await rtc.Helper.setVolume(inputVolume, audioTrack.mediaStreamTrack);
         }
@@ -527,9 +528,12 @@ class LiveKitService {
       }
     }
 
+    if (_livekitRoom == null) return;
+
     if (outputDeviceId != null) {
       try {
         final outputs = await livekit.Hardware.instance.audioOutputs();
+        if (_livekitRoom == null) return;
         final device = outputs.firstWhere(
           (d) => d.deviceId == outputDeviceId,
           orElse: () => outputs.first,
@@ -539,6 +543,8 @@ class LiveKitService {
         debugPrint('[Kohera] Failed to set output device: $e');
       }
     }
+
+    if (_livekitRoom == null) return;
 
     if (_outputVolume != 1.0) {
       await _applyOutputVolume();

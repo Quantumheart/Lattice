@@ -931,4 +931,106 @@ void main() {
       expect(service.callState, KoheraCallState.connected);
     });
   });
+
+  group('transition sounds', () {
+    late FakeRingtoneService fakeRingtone;
+    late CallService soundService;
+
+    setUp(() {
+      fakeRingtone = FakeRingtoneService();
+      soundService = CallService(
+        client: mockClient,
+        ringtoneService: fakeRingtone,
+      );
+    });
+
+    tearDown(() => soundService.dispose());
+
+    test('plays join sound on joining -> connected', () async {
+      final fakeRoom = FakeLiveKitRoom();
+      soundService.roomFactoryForTest = ({roomOptions}) => fakeRoom;
+      when(mockClient.requestOpenIdToken(any, any)).thenAnswer(
+        (_) async => OpenIdCredentials(
+          accessToken: 't',
+          expiresIn: 3600,
+          matrixServerName: 'example.com',
+          tokenType: 'Bearer',
+        ),
+      );
+      when(mockClient.setRoomStateWithKey(any, any, any, any))
+          .thenAnswer((_) async => 'event_id');
+      soundService.httpPostForTest = (client, url, {headers, body}) async =>
+          http.Response(
+            jsonEncode({'url': 'wss://lk.example.com', 'jwt': 'lk_token'}),
+            200,
+          );
+      soundService.cachedLivekitServiceUrlForTest = 'https://lk-jwt.example.com';
+      setupMockRoom();
+
+      await soundService.joinCall('!room:example.com');
+
+      expect(soundService.callState, KoheraCallState.connected);
+      expect(fakeRingtone.userJoinedCalls, 1);
+      expect(fakeRingtone.userLeftCalls, 0);
+    });
+
+    test('plays leave sound on connected -> idle (leaveCall)', () async {
+      final fakeRoom = FakeLiveKitRoom();
+      soundService.roomFactoryForTest = ({roomOptions}) => fakeRoom;
+      when(mockClient.requestOpenIdToken(any, any)).thenAnswer(
+        (_) async => OpenIdCredentials(
+          accessToken: 't',
+          expiresIn: 3600,
+          matrixServerName: 'example.com',
+          tokenType: 'Bearer',
+        ),
+      );
+      when(mockClient.setRoomStateWithKey(any, any, any, any))
+          .thenAnswer((_) async => 'event_id');
+      soundService.httpPostForTest = (client, url, {headers, body}) async =>
+          http.Response(
+            jsonEncode({'url': 'wss://lk.example.com', 'jwt': 'lk_token'}),
+            200,
+          );
+      soundService.cachedLivekitServiceUrlForTest = 'https://lk-jwt.example.com';
+      final mockRoom = setupMockRoom();
+      when(mockRoom.isDirectChat).thenReturn(false);
+
+      await soundService.joinCall('!room:example.com');
+      fakeRingtone.userJoinedCalls = 0;
+
+      await soundService.leaveCall();
+
+      expect(soundService.callState, KoheraCallState.idle);
+      expect(fakeRingtone.userLeftCalls, 1);
+    });
+
+    test('no join sound on failed connect', () async {
+      final fakeRoom = FakeLiveKitRoom()..throwOnConnect = true;
+      soundService.roomFactoryForTest = ({roomOptions}) => fakeRoom;
+      when(mockClient.requestOpenIdToken(any, any)).thenAnswer(
+        (_) async => OpenIdCredentials(
+          accessToken: 't',
+          expiresIn: 3600,
+          matrixServerName: 'example.com',
+          tokenType: 'Bearer',
+        ),
+      );
+      when(mockClient.setRoomStateWithKey(any, any, any, any))
+          .thenAnswer((_) async => 'event_id');
+      soundService.httpPostForTest = (client, url, {headers, body}) async =>
+          http.Response(
+            jsonEncode({'url': 'wss://lk.example.com', 'jwt': 'lk_token'}),
+            200,
+          );
+      soundService.cachedLivekitServiceUrlForTest = 'https://lk-jwt.example.com';
+      setupMockRoom();
+
+      await soundService.joinCall('!room:example.com');
+
+      expect(soundService.callState, KoheraCallState.failed);
+      expect(fakeRingtone.userJoinedCalls, 0);
+      expect(fakeRingtone.userLeftCalls, 0);
+    });
+  });
 }

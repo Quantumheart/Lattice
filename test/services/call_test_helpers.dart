@@ -314,6 +314,8 @@ class FakeRingtoneService extends Fake implements RingtoneService {
   String? lastPlayed;
   bool disposed = false;
   bool stopped = false;
+  int userJoinedCalls = 0;
+  int userLeftCalls = 0;
 
   @override
   Future<void> playRingtone({bool loop = true}) async {
@@ -325,6 +327,18 @@ class FakeRingtoneService extends Fake implements RingtoneService {
   Future<void> playDialtone({bool loop = true}) async {
     playing = true;
     lastPlayed = 'dialtone';
+  }
+
+  @override
+  Future<void> playUserJoined() async {
+    userJoinedCalls++;
+    lastPlayed = 'user_join';
+  }
+
+  @override
+  Future<void> playUserLeft() async {
+    userLeftCalls++;
+    lastPlayed = 'user_leave';
   }
 
   @override

@@ -161,11 +161,9 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
     final prev = _callState;
     _callState = next;
     notifyListeners();
+    _playStateTransitionSound(prev, next);
     switch (next) {
       case KoheraCallState.connected:
-        if (prev != KoheraCallState.reconnecting) {
-          _ringing.playUserJoined();
-        }
         if (_currentCallFromPushKit) {
           _nativeUi.dismissCallKitSilently();
         } else {
@@ -174,14 +172,24 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
       case KoheraCallState.idle:
       case KoheraCallState.disconnecting:
       case KoheraCallState.failed:
-        if (prev == KoheraCallState.connected ||
-            prev == KoheraCallState.reconnecting) {
-          _ringing.playUserLeft();
-        }
         _nativeUi.resetEndingGuard();
         _nativeUi.endNativeCall();
       default:
         break;
+    }
+  }
+
+  void _playStateTransitionSound(KoheraCallState prev, KoheraCallState next) {
+    final wasInCall = prev == KoheraCallState.connected ||
+        prev == KoheraCallState.reconnecting;
+    if (next == KoheraCallState.connected &&
+        prev != KoheraCallState.reconnecting) {
+      _ringing.playUserJoined();
+    } else if (wasInCall &&
+        (next == KoheraCallState.idle ||
+            next == KoheraCallState.disconnecting ||
+            next == KoheraCallState.failed)) {
+      _ringing.playUserLeft();
     }
   }
 
@@ -204,6 +212,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
   String? _activeCallId;
   String? _lastInitiatedRoomId;
   bool _hadRemoteParticipant = false;
+  Future<void>? _pendingMembershipSend;
 
   // ── Membership Watcher ──────────────────────────────────────
 
@@ -340,6 +349,13 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> _teardownCall({String? roomId}) async {
     await _liveKit.cleanupLiveKit();
     _rtcMembership.cancelMembershipRenewal();
+    final pending = _pendingMembershipSend;
+    _pendingMembershipSend = null;
+    if (pending != null) {
+      try {
+        await pending;
+      } catch (_) {}
+    }
     if (roomId != null) {
       try {
         await _rtcMembership.removeMembershipEvent(roomId);
@@ -393,9 +409,14 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
         .catchError((Object e) {
       debugPrint('[Kohera] Initial membership send failed: $e');
     });
+    _pendingMembershipSend = membershipFuture;
 
     await Future.wait([
-      membershipFuture,
+      membershipFuture.whenComplete(() {
+        if (identical(_pendingMembershipSend, membershipFuture)) {
+          _pendingMembershipSend = null;
+        }
+      }),
       _liveKit.connectLiveKit(
         livekitServiceUrl: livekitServiceUrl,
         livekitAlias: livekitAlias,

@@ -100,6 +100,36 @@ void main() {
     });
   });
 
+  // ── playUserJoined / playUserLeft ───────────────────────────
+
+  group('playUserJoined', () {
+    test('delegates to ringtone service', () {
+      service.playUserJoined();
+      expect(fakeRingtone.lastPlayed, 'user_join');
+      expect(fakeRingtone.userJoinedCalls, 1);
+    });
+
+    test('handles null ringtone service', () {
+      final bare = CallRingingService();
+      expect(bare.playUserJoined, returnsNormally);
+      bare.dispose();
+    });
+  });
+
+  group('playUserLeft', () {
+    test('delegates to ringtone service', () {
+      service.playUserLeft();
+      expect(fakeRingtone.lastPlayed, 'user_leave');
+      expect(fakeRingtone.userLeftCalls, 1);
+    });
+
+    test('handles null ringtone service', () {
+      final bare = CallRingingService();
+      expect(bare.playUserLeft, returnsNormally);
+      bare.dispose();
+    });
+  });
+
   // ── startRingingTimer ───────────────────────────────────────
 
   group('startRingingTimer', () {
