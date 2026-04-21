@@ -376,34 +376,42 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
 
     _activeCallRoomId = roomId;
 
-    await _rtcMembership.sendMembershipEvent(
-      roomId,
-      livekitAlias,
-      livekitServiceUrl: livekitServiceUrl,
-    );
     _rtcMembership.startMembershipRenewal(
       roomId,
       livekitAlias,
       livekitServiceUrl: livekitServiceUrl,
     );
 
-    await _liveKit.connectLiveKit(
+    final membershipFuture = _rtcMembership
+        .sendMembershipEvent(
+      roomId,
+      livekitAlias,
       livekitServiceUrl: livekitServiceUrl,
-      livekitAlias: livekitAlias,
-      currentState: () => _callState,
-      autoMuteOnJoin: _prefs?.autoMuteOnJoin ?? false,
-      noiseSuppression: _prefs?.noiseSuppression ?? true,
-      echoCancellation: _prefs?.echoCancellation ?? true,
-      autoGainControl: _prefs?.autoGainControl ?? true,
-      voiceIsolation: _prefs?.voiceIsolation ?? true,
-      typingNoiseDetection: _prefs?.typingNoiseDetection ?? true,
-      highPassFilter: _prefs?.highPassFilter ?? false,
-      audioEncoding: _audioEncodingFromQuality(_prefs?.audioQuality),
-      inputDeviceId: _prefs?.inputDeviceId,
-      outputDeviceId: _prefs?.outputDeviceId,
-      inputVolume: _prefs?.inputVolume ?? 1.0,
-      outputVolume: _prefs?.outputVolume ?? 1.0,
-    );
+    )
+        .catchError((Object e) {
+      debugPrint('[Kohera] Initial membership send failed: $e');
+    });
+
+    await Future.wait([
+      membershipFuture,
+      _liveKit.connectLiveKit(
+        livekitServiceUrl: livekitServiceUrl,
+        livekitAlias: livekitAlias,
+        currentState: () => _callState,
+        autoMuteOnJoin: _prefs?.autoMuteOnJoin ?? false,
+        noiseSuppression: _prefs?.noiseSuppression ?? true,
+        echoCancellation: _prefs?.echoCancellation ?? true,
+        autoGainControl: _prefs?.autoGainControl ?? true,
+        voiceIsolation: _prefs?.voiceIsolation ?? true,
+        typingNoiseDetection: _prefs?.typingNoiseDetection ?? true,
+        highPassFilter: _prefs?.highPassFilter ?? false,
+        audioEncoding: _audioEncodingFromQuality(_prefs?.audioQuality),
+        inputDeviceId: _prefs?.inputDeviceId,
+        outputDeviceId: _prefs?.outputDeviceId,
+        inputVolume: _prefs?.inputVolume ?? 1.0,
+        outputVolume: _prefs?.outputVolume ?? 1.0,
+      ),
+    ]);
   }
 
   static livekit.AudioEncoding? _audioEncodingFromQuality(
