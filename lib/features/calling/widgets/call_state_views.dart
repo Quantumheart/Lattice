@@ -21,15 +21,19 @@ class CallJoiningView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tt = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const CircularProgressIndicator(),
+          PulsingAvatar(displayName: displayName),
           const SizedBox(height: 24),
-          Text('Connecting...', style: tt.titleMedium),
+          Text(displayName, style: tt.titleMedium),
           const SizedBox(height: 8),
-          Text(displayName, style: tt.bodyMedium),
+          Text(
+            'Joining call...',
+            style: tt.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
+          ),
         ],
       ),
     );
