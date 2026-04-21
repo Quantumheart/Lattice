@@ -47,6 +47,30 @@ class RingtoneService {
     await _ensurePttPlayer().open(Media('asset:///assets/audio/ptt_off.mp3'));
   }
 
+  // ── Participant join/leave sounds ──────────────────────────
+
+  Player? _participantPlayer;
+
+  Player _ensureParticipantPlayer() => _participantPlayer ??= Player();
+
+  Future<void> playUserJoined() async {
+    try {
+      await _ensureParticipantPlayer()
+          .open(Media('asset:///assets/audio/user_join.mp3'));
+    } catch (e) {
+      debugPrint('[Kohera] playUserJoined failed: $e');
+    }
+  }
+
+  Future<void> playUserLeft() async {
+    try {
+      await _ensureParticipantPlayer()
+          .open(Media('asset:///assets/audio/user_leave.mp3'));
+    } catch (e) {
+      debugPrint('[Kohera] playUserLeft failed: $e');
+    }
+  }
+
   Future<void> dispose() async {
     await stop();
     try {
@@ -57,6 +81,10 @@ class RingtoneService {
       await _pttPlayer?.dispose();
     } catch (_) {}
     _pttPlayer = null;
+    try {
+      await _participantPlayer?.dispose();
+    } catch (_) {}
+    _participantPlayer = null;
   }
 }
 // coverage:ignore-end

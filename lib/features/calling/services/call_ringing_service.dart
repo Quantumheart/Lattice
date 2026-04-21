@@ -44,6 +44,14 @@ class CallRingingService {
     unawaited(_ringtoneService?.playDialtone());
   }
 
+  void playUserJoined() {
+    unawaited(_ringtoneService?.playUserJoined());
+  }
+
+  void playUserLeft() {
+    unawaited(_ringtoneService?.playUserLeft());
+  }
+
   void startRingingTimer(Duration duration, void Function() onTimeout) {
     _ringingTimer?.cancel();
     _ringingTimer = Timer(duration, onTimeout);

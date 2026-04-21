@@ -32,6 +32,21 @@ class LiveKitReconnected extends LiveKitConnectionEvent {}
 
 class LiveKitDisconnected extends LiveKitConnectionEvent {}
 
+// ── LiveKit Participant Events ─────────────────────────────
+
+sealed class LiveKitParticipantEvent {
+  LiveKitParticipantEvent(this.identity);
+  final String identity;
+}
+
+class LiveKitParticipantJoined extends LiveKitParticipantEvent {
+  LiveKitParticipantJoined(super.identity);
+}
+
+class LiveKitParticipantLeft extends LiveKitParticipantEvent {
+  LiveKitParticipantLeft(super.identity);
+}
+
 // ── LiveKit Service ────────────────────────────────────────
 
 class LiveKitService {
@@ -98,6 +113,12 @@ class LiveKitService {
 
   Stream<LiveKitConnectionEvent> get connectionEvents =>
       _connectionEventController.stream;
+
+  final _participantEventController =
+      StreamController<LiveKitParticipantEvent>.broadcast();
+
+  Stream<LiveKitParticipantEvent> get participantEvents =>
+      _participantEventController.stream;
 
   // ── Participant Aggregation ────────────────────────────────
 
@@ -521,15 +542,19 @@ class LiveKitService {
       _connectionEventController.add(LiveKitDisconnected());
     });
 
-    listener.on<livekit.ParticipantConnectedEvent>((_) {
+    listener.on<livekit.ParticipantConnectedEvent>((event) {
       _syncParticipants();
       _invalidateParticipants();
+      _participantEventController
+          .add(LiveKitParticipantJoined(event.participant.identity));
       _onChanged();
     });
 
-    listener.on<livekit.ParticipantDisconnectedEvent>((_) {
+    listener.on<livekit.ParticipantDisconnectedEvent>((event) {
       _syncParticipants();
       _invalidateParticipants();
+      _participantEventController
+          .add(LiveKitParticipantLeft(event.participant.identity));
       _onChanged();
     });
 
@@ -658,5 +683,6 @@ class LiveKitService {
 
   void dispose() {
     unawaited(_connectionEventController.close());
+    unawaited(_participantEventController.close());
   }
 }

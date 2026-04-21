@@ -18,7 +18,12 @@ import 'package:matrix/matrix.dart';
 
 export 'package:kohera/features/calling/models/call_state.dart';
 export 'package:kohera/features/calling/services/livekit_service.dart'
-    show HttpPostFunction, LiveKitRoomFactory;
+    show
+        HttpPostFunction,
+        LiveKitParticipantEvent,
+        LiveKitParticipantJoined,
+        LiveKitParticipantLeft,
+        LiveKitRoomFactory;
 export 'package:kohera/features/calling/services/rtc_membership_service.dart'
     show callMemberEventType, membershipExpiresMs, membershipRenewalInterval;
 
@@ -61,6 +66,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
   StreamSubscription<SignalingEvent>? _signalingEventSub;
   StreamSubscription<NativeCallAction>? _nativeActionSub;
   StreamSubscription<LiveKitConnectionEvent>? _liveKitConnectionSub;
+  StreamSubscription<LiveKitParticipantEvent>? _liveKitParticipantSub;
   StreamSubscription<({String roomId, StrippedStateEvent state})>?
       _membershipWatcherSub;
 
@@ -150,10 +156,14 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
       assert(false, 'Invalid call state transition: $_callState → $next');
       return;
     }
+    final prev = _callState;
     _callState = next;
     notifyListeners();
     switch (next) {
       case KoheraCallState.connected:
+        if (prev != KoheraCallState.reconnecting) {
+          _ringing.playUserJoined();
+        }
         if (_currentCallFromPushKit) {
           _nativeUi.dismissCallKitSilently();
         } else {
@@ -162,6 +172,10 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
       case KoheraCallState.idle:
       case KoheraCallState.disconnecting:
       case KoheraCallState.failed:
+        if (prev == KoheraCallState.connected ||
+            prev == KoheraCallState.reconnecting) {
+          _ringing.playUserLeft();
+        }
         _nativeUi.resetEndingGuard();
         _nativeUi.endNativeCall();
       default:
@@ -249,6 +263,8 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
     _signalingEventSub = _signaling.events.listen(_onSignalingEvent);
     _nativeActionSub = _nativeUi.actions.listen(_onNativeAction);
     _liveKitConnectionSub = _liveKit.connectionEvents.listen(_onLiveKitConnection);
+    _liveKitParticipantSub =
+        _liveKit.participantEvents.listen(_onLiveKitParticipant);
 
     debugPrint('[Kohera] CallService initialized');
   }
@@ -274,6 +290,8 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
     _nativeActionSub = null;
     unawaited(_liveKitConnectionSub?.cancel());
     _liveKitConnectionSub = null;
+    unawaited(_liveKitParticipantSub?.cancel());
+    _liveKitParticipantSub = null;
     _stopMembershipWatcher();
   }
 
@@ -733,6 +751,16 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
         } else {
           cancelOutgoingCall(isTimeout: true);
         }
+    }
+  }
+
+  void _onLiveKitParticipant(LiveKitParticipantEvent event) {
+    if (_callState != KoheraCallState.connected) return;
+    switch (event) {
+      case LiveKitParticipantJoined():
+        _ringing.playUserJoined();
+      case LiveKitParticipantLeft():
+        _ringing.playUserLeft();
     }
   }
 
