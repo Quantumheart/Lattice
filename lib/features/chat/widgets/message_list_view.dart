@@ -106,6 +106,21 @@ class MessageListViewState extends State<MessageListView> {
     _markAsRead();
     _requestMissingKeys();
     if (widget.initialEventId != null) _jumpToEvent(widget.initialEventId!);
+    await _autoPaginateUntilVisible(gen);
+  }
+
+  Future<void> _autoPaginateUntilVisible(int gen) async {
+    const maxRounds = 5;
+    var rounds = 0;
+    while (mounted &&
+        gen == _initGeneration &&
+        _visibleEvents.isEmpty &&
+        (_timeline?.events.isNotEmpty ?? false) &&
+        (_timeline?.canRequestHistory ?? false) &&
+        rounds < maxRounds) {
+      rounds++;
+      await _loadMore();
+    }
   }
 
   void _requestMissingKeys() {
