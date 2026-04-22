@@ -269,14 +269,32 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
       ({String roomId, StrippedStateEvent state}) update,) {
     if (update.state.type != callMemberEventType) return;
 
+    debugPrint(
+      '[Kohera] onRoomState m.call.member in ${update.roomId} '
+      'stateKey=${update.state.stateKey} contentEmpty=${update.state.content.isEmpty}',
+    );
+
     final stateKey = update.state.stateKey;
-    if (stateKey == null) return;
+    if (stateKey == null) {
+      debugPrint('[Kohera]   skip: null stateKey');
+      return;
+    }
 
     final localPrefix = '_${_client.userID ?? ''}_';
-    if (stateKey.startsWith(localPrefix)) return;
+    if (stateKey.startsWith(localPrefix)) {
+      debugPrint('[Kohera]   skip: own stateKey');
+      return;
+    }
 
     final room = _client.getRoomById(update.roomId);
-    if (room == null || !room.isDirectChat) return;
+    if (room == null) {
+      debugPrint('[Kohera]   skip: room not in memory');
+      return;
+    }
+    if (!room.isDirectChat) {
+      debugPrint('[Kohera]   skip: room not DM (isDirectChat=false)');
+      return;
+    }
 
     final content = update.state.content;
     final isActive = content.isNotEmpty;
@@ -747,7 +765,12 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
       }
     } catch (e) {
       debugPrint('[Kohera] Failed to send ring-phase membership: $e');
-      cancelOutgoingCall();
+      _stopMembershipWatcher();
+      _ringing.stopRinging();
+      _activeCallId = null;
+      _lastInitiatedRoomId = null;
+      _activeCallRoomId = null;
+      _setCallState(KoheraCallState.failed);
     }
   }
 
