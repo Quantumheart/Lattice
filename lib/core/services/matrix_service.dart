@@ -9,6 +9,7 @@ import 'package:kohera/core/services/sub_services/selection_service.dart';
 import 'package:kohera/core/services/sub_services/sync_service.dart';
 import 'package:kohera/core/services/sub_services/uia_service.dart';
 import 'package:kohera/core/utils/network_error.dart';
+import 'package:kohera/features/notifications/services/call_push_rule_manager.dart';
 import 'package:matrix/matrix.dart';
 // ignore: implementation_imports, no public API for ClientInitException
 import 'package:matrix/src/utils/client_init_exception.dart';
@@ -57,8 +58,11 @@ class MatrixService extends ChangeNotifier {
       storage: _storage,
       clientName: clientName,
     );
+    callPushRuleManager = CallPushRuleManager(client: _client);
     auth.addListener(_onAuthChanged);
   }
+
+  late final CallPushRuleManager callPushRuleManager;
 
   // ── Fields ──────────────────────────────────────────────────────
 
@@ -216,6 +220,7 @@ class MatrixService extends ChangeNotifier {
     if (auth.isLoggedIn) {
       uia.listenForUia();
       _listenForLoginState();
+      unawaited(callPushRuleManager.ensureRule());
     } else {
       unawaited(_loginStateSub?.cancel());
       _loginStateSub = null;

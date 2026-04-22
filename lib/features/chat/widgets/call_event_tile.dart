@@ -74,7 +74,10 @@ class CallEventTile extends StatelessWidget {
 
     switch (event.type) {
       case kCallInvite:
-        return (Icons.call_rounded, '$sender started a call');
+        return (
+          Icons.call_missed_rounded,
+          'Missed call from $sender — legacy client',
+        );
 
       case kCallHangup:
         final reason = event.content.tryGet<String>('reason');

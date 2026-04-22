@@ -20,6 +20,12 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: flutter analyze
+      - name: Enforce NSE has no CallKit/PushKit imports
+        run: |
+          if grep -rE '^import (CallKit|PushKit)' ios/KoheraNotificationService/; then
+            echo "::error::Notification Service Extension must not import CallKit or PushKit"
+            exit 1
+          fi
 
   test:
     runs-on: ubuntu-latest

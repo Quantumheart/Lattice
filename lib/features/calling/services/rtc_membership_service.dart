@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:kohera/features/calling/models/call_constants.dart';
 import 'package:matrix/matrix.dart';
 
 // ── Constants ──────────────────────────────────────────────
@@ -25,13 +26,16 @@ class RtcMembershipService {
 
   Map<String, dynamic> makeMembershipContent(
     String livekitServiceUrl,
-    String livekitAlias,
-  ) => {
+    String livekitAlias, {
+    bool isVideo = false,
+    int expiresMs = membershipExpiresMs,
+  }) => {
     'application': 'm.call',
     'call_id': '',
     'scope': 'm.room',
     'device_id': _client.deviceID,
-    'expires': membershipExpiresMs,
+    'expires': expiresMs,
+    kIoKoheraIsVideo: isVideo,
     'focus_active': {
       'type': 'livekit',
       'focus_selection': 'oldest_membership',
@@ -49,12 +53,19 @@ class RtcMembershipService {
     String roomId,
     String livekitAlias, {
     required String livekitServiceUrl,
+    bool isVideo = false,
+    int expiresMs = membershipExpiresMs,
   }) async {
     await _client.setRoomStateWithKey(
       roomId,
       callMemberEventType,
       membershipStateKey,
-      makeMembershipContent(livekitServiceUrl, livekitAlias),
+      makeMembershipContent(
+        livekitServiceUrl,
+        livekitAlias,
+        isVideo: isVideo,
+        expiresMs: expiresMs,
+      ),
     );
   }
 
@@ -71,6 +82,7 @@ class RtcMembershipService {
     String roomId,
     String livekitAlias, {
     required String livekitServiceUrl,
+    bool isVideo = false,
   }) {
     cancelMembershipRenewal();
     _membershipRenewalTimer = Timer.periodic(
@@ -79,6 +91,7 @@ class RtcMembershipService {
         roomId,
         livekitAlias,
         livekitServiceUrl: livekitServiceUrl,
+        isVideo: isVideo,
       ).catchError(
         (Object e) => debugPrint('[Kohera] Failed to renew membership: $e'),
       ),
@@ -118,6 +131,9 @@ class RtcMembershipService {
   }
 
   static final _stateKeyUserIdRegex = RegExp('_(@[^:]+:[^_]+)_');
+
+  static String? userIdFromStateKey(String stateKey) =>
+      _stateKeyUserIdRegex.firstMatch(stateKey)?.group(1);
 
   static Set<String> activeCallParticipantUserIds(
     Client client,

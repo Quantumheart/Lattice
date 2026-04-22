@@ -472,3 +472,30 @@ SDK Database (IndexedDB on web, SQLite on native)
 ```
 
 **Source:** `lib/core/services/matrix_service.dart` — `koheraKey()` helper; `lib/core/services/session_backup.dart`; `lib/core/services/sub_services/chat_backup_service.dart` — `storeRecoveryKey()`; `lib/core/services/sub_services/uia_service.dart`; `lib/core/services/client_factory_web.dart` — `MatrixSdkDatabase.init()`
+
+---
+
+## Call Signaling Metadata
+
+1:1 voice/video calls in Kohera use MatrixRTC (MSC3401) `m.call.member` state events for signaling. State events are **not** E2EE — they are written in clear at the Matrix state layer so the homeserver and push gateway can route VoIP pushes on event type without decrypting anything.
+
+What the homeserver sees for a 1:1 call:
+
+- Event type `org.matrix.msc3401.call.member`.
+- State key `_{user_id}_{device_id}_m.call` — identifies the caller's user + device.
+- Content fields: `call_id` (empty string, room-scoped), `application: "m.call"`, `scope: "m.room"`, `device_id`, `expires`, `io.kohera.is_video`, LiveKit focus selection + alias.
+
+What this leaks to an admin operating the homeserver:
+
+- Who is calling whom, and when.
+- Whether a call is audio or video.
+- Which Kohera device initiated the call.
+
+What remains encrypted:
+
+- All chat messages (unchanged).
+- LiveKit media streams (encrypted via LiveKit's own transport security; end-to-end media encryption via insertable streams is not yet wired — tracked separately).
+
+This is an intentional trade for reliable ring-while-locked on iOS: CallKit cannot be triggered on an encrypted state layer the push gateway cannot inspect. The gateway routes VoIP pushes only for `m.call.member` events; message events never reach the VoIP pusher.
+
+**Source:** `lib/features/calling/services/rtc_membership_service.dart`; `lib/features/notifications/services/call_push_rule_manager.dart`; issue #183.

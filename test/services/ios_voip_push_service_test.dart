@@ -11,7 +11,6 @@ import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'call_test_helpers.dart';
 
 @GenerateNiceMocks([
   MockSpec<MatrixService>(),
@@ -209,22 +208,33 @@ void main() {
 
   // ── onVoipMessage ───────────────────────────────────────────
 
+  Map<String, dynamic> validPayload({
+    String roomId = '!room:example.com',
+    String callId = 'call_42',
+    String sender = 'Bob',
+    bool isVideo = true,
+    String? nativeCallId = 'native-uuid-1',
+    bool callKitAlreadyShown = true,
+  }) =>
+      {
+        'notification': {
+          'event_type': 'org.matrix.msc3401.call.member',
+          'room_id': roomId,
+          'call_id': callId,
+          'sender_display_name': sender,
+          'is_video': isVideo,
+        },
+        if (nativeCallId != null) 'nativeCallId': nativeCallId,
+        'callKitAlreadyShown': callKitAlreadyShown,
+      };
+
   group('onVoipMessage', () {
     test('calls attachPrePresentedCallKit + handlePushCallInvite', () async {
       when(mockClient.oneShotSync(timeout: anyNamed('timeout')))
           .thenAnswer((_) async {});
       when(mockClient.getRoomById(any)).thenReturn(null);
 
-      await service.onVoipMessage({
-        'notification': {
-          'room_id': '!room:example.com',
-          'call_id': 'call_42',
-          'sender_display_name': 'Bob',
-          'is_video': true,
-        },
-        'nativeCallId': 'native-uuid-1',
-        'callKitAlreadyShown': true,
-      });
+      await service.onVoipMessage(validPayload());
 
       verify(
         mockCallService.attachPrePresentedCallKit(
@@ -250,9 +260,11 @@ void main() {
 
       await service.onVoipMessage({
         'notification': {
+          'event_type': 'org.matrix.msc3401.call.member',
           'room_id': '!room:example.com',
           'call_id': 'call_42',
           'sender_display_name': 'Bob',
+          'is_video': false,
         },
         'nativeCallId': 'native-uuid-1',
       });
@@ -269,114 +281,90 @@ void main() {
       ).called(1);
     });
 
-    test('defaults callerName to Unknown when absent', () async {
-      when(mockClient.oneShotSync(timeout: anyNamed('timeout')))
-          .thenAnswer((_) async {});
-      when(mockClient.getRoomById(any)).thenReturn(null);
-
+    test('rejects payload missing event_type', () async {
       await service.onVoipMessage({
-        'notification': {'room_id': '!room:example.com'},
-        'callKitAlreadyShown': true,
+        'notification': {
+          'room_id': '!room:example.com',
+          'call_id': 'call_42',
+        },
       });
 
-      verify(
+      verifyNever(
         mockCallService.handlePushCallInvite(
-          roomId: '!room:example.com',
-          callId: null,
-          callerName: 'Unknown',
-          isVideo: false,
-          callKitAlreadyShown: true,
+          roomId: anyNamed('roomId'),
+          callId: anyNamed('callId'),
+          callerName: anyNamed('callerName'),
+          isVideo: anyNamed('isVideo'),
+          callKitAlreadyShown: anyNamed('callKitAlreadyShown'),
         ),
-      ).called(1);
+      );
     });
 
-    test('calls endCallFromPushKit when hangup found and state is ringing',
+    test('rejects payload with wrong event_type', () async {
+      await service.onVoipMessage({
+        'notification': {
+          'event_type': 'm.call.invite',
+          'room_id': '!room:example.com',
+          'call_id': 'call_42',
+        },
+      });
+
+      verifyNever(
+        mockCallService.handlePushCallInvite(
+          roomId: anyNamed('roomId'),
+          callId: anyNamed('callId'),
+          callerName: anyNamed('callerName'),
+          isVideo: anyNamed('isVideo'),
+          callKitAlreadyShown: anyNamed('callKitAlreadyShown'),
+        ),
+      );
+    });
+
+    test('rejects payload missing call_id', () async {
+      await service.onVoipMessage({
+        'notification': {
+          'event_type': 'org.matrix.msc3401.call.member',
+          'room_id': '!room:example.com',
+        },
+      });
+
+      verifyNever(
+        mockCallService.handlePushCallInvite(
+          roomId: anyNamed('roomId'),
+          callId: anyNamed('callId'),
+          callerName: anyNamed('callerName'),
+          isVideo: anyNamed('isVideo'),
+          callKitAlreadyShown: anyNamed('callKitAlreadyShown'),
+        ),
+      );
+    });
+
+    test(
+        'ends CallKit when post-sync shows caller has no remote membership',
         () async {
       when(mockClient.oneShotSync(timeout: anyNamed('timeout')))
           .thenAnswer((_) async {});
 
       final mockRoom = MockRoom();
       when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      final mockTimeline = MockTimeline();
-      when(mockRoom.getTimeline(limit: anyNamed('limit')))
-          .thenAnswer((_) async => mockTimeline);
-
-      final hangupEvent = FakeEvent(
-        content: const {'call_id': 'call_42'},
-        originServerTs: DateTime.now().millisecondsSinceEpoch,
-        type: 'm.call.hangup',
-      );
-      when(mockTimeline.events).thenReturn([hangupEvent]);
+      when(mockClient.userID).thenReturn('@alice:example.com');
+      when(mockRoom.states).thenReturn({});
       when(mockCallService.callState)
           .thenReturn(KoheraCallState.ringingIncoming);
 
-      await service.onVoipMessage({
-        'notification': {
-          'room_id': '!room:example.com',
-          'call_id': 'call_42',
-          'sender_display_name': 'Bob',
-        },
-        'nativeCallId': 'native-uuid-1',
-      });
+      await service.onVoipMessage(validPayload());
 
       verify(mockCallService.endCallFromPushKit()).called(1);
     });
 
-    test('does NOT endCallFromPushKit when state is not ringingIncoming',
+    test('does NOT end CallKit when call state is not ringingIncoming',
         () async {
       when(mockClient.oneShotSync(timeout: anyNamed('timeout')))
           .thenAnswer((_) async {});
 
-      final mockRoom = MockRoom();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      final mockTimeline = MockTimeline();
-      when(mockRoom.getTimeline(limit: anyNamed('limit')))
-          .thenAnswer((_) async => mockTimeline);
-
-      final hangupEvent = FakeEvent(
-        content: const {'call_id': 'call_42'},
-        originServerTs: DateTime.now().millisecondsSinceEpoch,
-        type: 'm.call.hangup',
-      );
-      when(mockTimeline.events).thenReturn([hangupEvent]);
       when(mockCallService.callState).thenReturn(KoheraCallState.connected);
 
-      await service.onVoipMessage({
-        'notification': {
-          'room_id': '!room:example.com',
-          'call_id': 'call_42',
-          'sender_display_name': 'Bob',
-        },
-        'nativeCallId': 'native-uuid-1',
-      });
-
-      verifyNever(mockCallService.endCallFromPushKit());
-    });
-
-    test('does NOT endCallFromPushKit when no matching hangup', () async {
-      when(mockClient.oneShotSync(timeout: anyNamed('timeout')))
-          .thenAnswer((_) async {});
-
-      final mockRoom = MockRoom();
-      when(mockClient.getRoomById('!room:example.com')).thenReturn(mockRoom);
-
-      final mockTimeline = MockTimeline();
-      when(mockRoom.getTimeline(limit: anyNamed('limit')))
-          .thenAnswer((_) async => mockTimeline);
-      when(mockTimeline.events).thenReturn([]);
-      when(mockCallService.callState)
-          .thenReturn(KoheraCallState.ringingIncoming);
-
-      await service.onVoipMessage({
-        'notification': {
-          'room_id': '!room:example.com',
-          'call_id': 'call_42',
-          'sender_display_name': 'Bob',
-        },
-        'nativeCallId': 'native-uuid-1',
-      });
+      await service.onVoipMessage(validPayload());
 
       verifyNever(mockCallService.endCallFromPushKit());
     });

@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:kohera/core/services/preferences_service.dart';
 import 'package:kohera/core/utils/platform_info.dart';
+import 'package:kohera/features/calling/models/call_constants.dart';
 import 'package:kohera/features/calling/models/call_participant.dart' as ui;
 import 'package:kohera/features/calling/models/call_state.dart';
 import 'package:kohera/features/calling/models/incoming_call_info.dart' as model;
@@ -70,6 +71,10 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
   StreamSubscription<LiveKitParticipantEvent>? _liveKitParticipantSub;
   StreamSubscription<({String roomId, StrippedStateEvent state})>?
       _membershipWatcherSub;
+  StreamSubscription<({String roomId, StrippedStateEvent state})>?
+      _incomingRingSub;
+
+  String? _incomingCallerStateKey;
 
   // ── Ringtone Injection ─────────────────────────────────────
 
@@ -258,6 +263,110 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
     _membershipWatcherSub = null;
   }
 
+  // ── Incoming Ring (m.call.member) ───────────────────────────
+
+  void _onGlobalRoomState(
+      ({String roomId, StrippedStateEvent state}) update,) {
+    if (update.state.type != callMemberEventType) return;
+
+    final stateKey = update.state.stateKey;
+    if (stateKey == null) return;
+
+    final localPrefix = '_${_client.userID ?? ''}_';
+    if (stateKey.startsWith(localPrefix)) return;
+
+    final room = _client.getRoomById(update.roomId);
+    if (room == null || !room.isDirectChat) return;
+
+    final content = update.state.content;
+    final isActive = content.isNotEmpty;
+
+    if (isActive) {
+      _handleRemoteMembershipJoined(
+        roomId: update.roomId,
+        stateKey: stateKey,
+        content: content,
+        room: room,
+      );
+    } else {
+      _handleRemoteMembershipRemoved(roomId: update.roomId, stateKey: stateKey);
+    }
+  }
+
+  void _handleRemoteMembershipJoined({
+    required String roomId,
+    required String stateKey,
+    required Map<String, Object?> content,
+    required Room room,
+  }) {
+    if (_callState != KoheraCallState.idle &&
+        _callState != KoheraCallState.failed) {
+      return;
+    }
+
+    final isVideo = content[kIoKoheraIsVideo] == true;
+
+    final senderId =
+        RtcMembershipService.userIdFromStateKey(stateKey) ?? stateKey;
+    final sender = room.unsafeGetUserFromMemoryOrFallback(senderId);
+    final callerName = sender.calcDisplayname();
+    final callerAvatarUrl = sender.avatarUrl;
+
+    final info = model.IncomingCallInfo(
+      roomId: roomId,
+      callId: '',
+      callerName: callerName,
+      callerAvatarUrl: callerAvatarUrl,
+      isVideo: isVideo,
+    );
+
+    _incomingCallerStateKey = stateKey;
+    _activeCallId = '';
+    _currentCallFromPushKit = _voipPushHandlesCallKit;
+    _ringing.pushIncomingCall(info);
+    _setCallState(KoheraCallState.ringingIncoming);
+
+    if (!_voipPushHandlesCallKit) {
+      _nativeUi.showNativeIncomingCall(
+        callId: '',
+        roomId: roomId,
+        callerName: callerName,
+        callerAvatarUrl: callerAvatarUrl,
+        isVideo: isVideo,
+      );
+    }
+    if (kIsWeb || isNativeDesktop) {
+      _ringing.playRingtone();
+    }
+    debugPrint(
+      '[Kohera] Incoming m.call.member from $senderId in $roomId '
+      '(video=$isVideo)',
+    );
+  }
+
+  void _handleRemoteMembershipRemoved({
+    required String roomId,
+    required String stateKey,
+  }) {
+    if (_callState != KoheraCallState.ringingIncoming) return;
+
+    if (_incomingCallerStateKey != null) {
+      if (_incomingCallerStateKey != stateKey) return;
+    } else {
+      if (RtcMembershipService.roomHasRemoteActiveCall(_client, roomId)) {
+        return;
+      }
+    }
+
+    debugPrint('[Kohera] Caller cancelled before answer; tearing down ring');
+    _incomingCallerStateKey = null;
+    _ringing.stopRinging();
+    _ringing.resetIncomingCall();
+    _activeCallId = null;
+    _nativeUi.endNativeCall();
+    _setCallState(KoheraCallState.idle);
+  }
+
   // ── Lifecycle ──────────────────────────────────────────────
 
   void init() {
@@ -265,10 +374,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
     _initialized = true;
     WidgetsBinding.instance.addObserver(this);
     unawaited(_liveKit.fetchWellKnownLiveKit());
-    _signaling.startSignalingListener(
-      getActiveCallId: () => _activeCallId,
-      getCallState: () => _callState.name,
-    );
+    _signaling.startSignalingListener();
     _nativeUi.init(getCallState: () => _callState.name);
 
     _signalingEventSub = _signaling.events.listen(_onSignalingEvent);
@@ -276,6 +382,7 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
     _liveKitConnectionSub = _liveKit.connectionEvents.listen(_onLiveKitConnection);
     _liveKitParticipantSub =
         _liveKit.participantEvents.listen(_onLiveKitParticipant);
+    _incomingRingSub = _client.onRoomState.stream.listen(_onGlobalRoomState);
 
     debugPrint('[Kohera] CallService initialized');
   }
@@ -303,6 +410,9 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
     _liveKitConnectionSub = null;
     unawaited(_liveKitParticipantSub?.cancel());
     _liveKitParticipantSub = null;
+    unawaited(_incomingRingSub?.cancel());
+    _incomingRingSub = null;
+    _incomingCallerStateKey = null;
     _stopMembershipWatcher();
   }
 
@@ -507,12 +617,6 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
     debugPrint('[Kohera] Leaving call in room $roomId');
     _stopMembershipWatcher();
 
-    final callId = _activeCallId;
-    final room = _client.getRoomById(roomId);
-    if (callId != null && room != null && room.isDirectChat) {
-      unawaited(_signaling.sendCallHangup(roomId, callId));
-    }
-
     _activeCallId = null;
     _lastInitiatedRoomId = null;
     _ringing.stopRinging();
@@ -531,24 +635,17 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
 
     _ringing.resetIncomingCall();
     _ringing.stopRinging();
-
-    if (info.callId != null) {
-      unawaited(_signaling.sendCallAnswer(info.roomId, info.callId!));
-    }
+    _incomingCallerStateKey = null;
 
     await joinCall(info.roomId);
   }
 
   void declineCall() {
     if (_callState != KoheraCallState.ringingIncoming) return;
-    final info = _ringing.incomingCall;
-
-    if (info?.callId != null) {
-      unawaited(_signaling.sendCallReject(info!.roomId, info.callId!));
-    }
 
     _ringing.stopRinging();
     _ringing.resetIncomingCall();
+    _incomingCallerStateKey = null;
     _setCallState(KoheraCallState.idle);
   }
 
@@ -558,11 +655,14 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
 
-    final callId = _activeCallId;
-    if (callId != null && _lastInitiatedRoomId != null) {
-      final reason = isTimeout ? 'invite_timeout' : 'user_hangup';
+    final roomId = _lastInitiatedRoomId;
+    if (roomId != null) {
       unawaited(
-        _signaling.sendCallHangup(_lastInitiatedRoomId!, callId, reason: reason),
+        _rtcMembership.removeMembershipEvent(roomId).catchError(
+          (Object e) => debugPrint(
+            '[Kohera] Failed to remove ring-phase membership: $e',
+          ),
+        ),
       );
     }
 
@@ -588,14 +688,15 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
 
-    final callId = _signaling.generateCallId();
-    _activeCallId = callId;
+    final room = _client.getRoomById(roomId);
+    if (room == null) return;
+
+    _activeCallId = '';
     _lastInitiatedRoomId = roomId;
     _activeCallRoomId = roomId;
     _setCallState(KoheraCallState.ringingOutgoing);
 
-    final room = _client.getRoomById(roomId);
-    final callerName = room?.getLocalizedDisplayname() ?? roomId;
+    final callerName = room.getLocalizedDisplayname();
     final isVideo = type == model.CallType.video;
     _nativeUi.showNativeOutgoingCall(roomId, callerName, isVideo);
 
@@ -610,11 +711,44 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
 
     _startMembershipWatcher(roomId);
 
-    await _signaling.sendCallInvite(
-      roomId,
-      callId,
-      isVideo: type == model.CallType.video,
-    );
+    if (_liveKit.cachedLivekitServiceUrl == null) {
+      await _liveKit.fetchWellKnownLiveKit();
+    }
+    final livekitServiceUrl = _liveKit.cachedLivekitServiceUrl;
+    if (livekitServiceUrl == null) {
+      debugPrint('[Kohera] initiateCall aborted: LiveKit service URL missing');
+      cancelOutgoingCall();
+      return;
+    }
+    final livekitAlias =
+        room.canonicalAlias.isNotEmpty ? room.canonicalAlias : room.id;
+
+    try {
+      await _rtcMembership.sendMembershipEvent(
+        roomId,
+        livekitAlias,
+        livekitServiceUrl: livekitServiceUrl,
+        isVideo: isVideo,
+        expiresMs: ringPhaseExpiresMs,
+      );
+      debugPrint('[Kohera] Ring-phase m.call.member sent for $roomId');
+      if (_callState != KoheraCallState.ringingOutgoing) {
+        debugPrint(
+          '[Kohera] Outgoing call was cancelled mid-send; removing stale '
+          'membership',
+        );
+        unawaited(
+          _rtcMembership.removeMembershipEvent(roomId).catchError(
+            (Object e) => debugPrint(
+              '[Kohera] Failed to remove stale ring-phase membership: $e',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('[Kohera] Failed to send ring-phase membership: $e');
+      cancelOutgoingCall();
+    }
   }
 
   // ── Queries ────────────────────────────────────────────────
@@ -689,57 +823,11 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
 
   void _onSignalingEvent(SignalingEvent event) {
     switch (event) {
-      case IncomingInvite():
-        _handleSignalingIncomingInvite(event);
-      case AnswerReceived():
-        _stopMembershipWatcher();
-        unawaited(joinCall(event.roomId));
-      case RejectReceived():
-        _stopMembershipWatcher();
-        _activeCallId = null;
-        _activeCallRoomId = null;
-        _lastInitiatedRoomId = null;
-        _ringing.stopRinging();
-        _setCallState(KoheraCallState.idle);
-      case HangupReceived():
-        _activeCallId = null;
-        if (_callState == KoheraCallState.connected ||
-            _callState == KoheraCallState.reconnecting) {
-          unawaited(leaveCall());
-        } else {
-          _handleCallEnded();
-        }
-      case GlareResolved():
-        _activeCallId = null;
-        _activeCallRoomId = null;
-        _lastInitiatedRoomId = null;
-        _ringing.stopRinging();
-        _setCallState(KoheraCallState.idle);
-        _handleSignalingIncomingInvite(event.incomingInvite);
-    }
-  }
-
-  void _handleSignalingIncomingInvite(IncomingInvite event) {
-    if (_callState != KoheraCallState.idle &&
-        _callState != KoheraCallState.failed) {
-      debugPrint('[Kohera] Ignoring duplicate invite, already in $_callState');
-      return;
-    }
-    _activeCallId = event.callId;
-    _currentCallFromPushKit = _voipPushHandlesCallKit;
-    _ringing.pushIncomingCall(event.info);
-    _setCallState(KoheraCallState.ringingIncoming);
-    if (!_voipPushHandlesCallKit) {
-      _nativeUi.showNativeIncomingCall(
-        callId: event.info.callId,
-        roomId: event.info.roomId,
-        callerName: event.info.callerName,
-        callerAvatarUrl: event.info.callerAvatarUrl,
-        isVideo: event.info.isVideo,
-      );
-    }
-    if (kIsWeb || isNativeDesktop) {
-      _ringing.playRingtone();
+      case LegacyCallAttempt():
+        debugPrint(
+          '[Kohera] Legacy call attempt in ${event.roomId} from '
+          '${event.senderId} — surfaced as missed-call marker, no ring',
+        );
     }
   }
 
@@ -764,18 +852,9 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
         unawaited(leaveCall());
       case NativeCallTimedOut():
         if (_callState == KoheraCallState.ringingIncoming) {
-          final info = _ringing.incomingCall;
           _ringing.stopRinging();
           _ringing.resetIncomingCall();
-          if (info?.callId != null) {
-            unawaited(
-              _signaling.sendCallHangup(
-                info!.roomId,
-                info.callId!,
-                reason: 'invite_timeout',
-              ),
-            );
-          }
+          _incomingCallerStateKey = null;
           _activeCallId = null;
           _activeCallRoomId = null;
           _setCallState(KoheraCallState.idle);

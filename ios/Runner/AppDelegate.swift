@@ -283,7 +283,18 @@ import UserNotifications
       return
     }
 
-    let callId = notification["call_id"] as? String
+    let eventType = notification["event_type"] as? String
+    guard eventType == "org.matrix.msc3401.call.member" else {
+      NSLog("[Kohera] VoIP push rejected: event_type=\(eventType ?? "nil")")
+      finish()
+      return
+    }
+
+    guard notification["call_id"] is String else {
+      NSLog("[Kohera] VoIP push rejected: missing call_id")
+      finish()
+      return
+    }
     let eventId = notification["event_id"] as? String
     let senderDisplayName = (notification["sender_display_name"] as? String) ?? "Unknown"
     let callerAvatarUrl = notification["caller_avatar_url"] as? String

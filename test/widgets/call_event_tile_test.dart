@@ -37,13 +37,16 @@ void main() {
     );
   }
 
-  testWidgets('renders call invite', (tester) async {
+  testWidgets('renders legacy invite as missed-call marker', (tester) async {
     when(mockEvent.type).thenReturn('m.call.invite');
     when(mockEvent.content).thenReturn({});
     await tester.pumpWidget(buildWidget(mockEvent));
 
-    expect(find.text('Alice started a call'), findsOneWidget);
-    expect(find.byIcon(Icons.call_rounded), findsOneWidget);
+    expect(
+      find.text('Missed call from Alice — legacy client'),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.call_missed_rounded), findsWidgets);
   });
 
   testWidgets('renders call hangup', (tester) async {

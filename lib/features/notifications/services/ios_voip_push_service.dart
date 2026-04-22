@@ -7,7 +7,7 @@ import 'package:kohera/core/services/call_service.dart';
 import 'package:kohera/core/services/matrix_service.dart';
 import 'package:kohera/core/services/preferences_service.dart';
 import 'package:kohera/core/utils/platform_info.dart';
-import 'package:kohera/features/calling/models/call_constants.dart';
+import 'package:kohera/features/calling/services/rtc_membership_service.dart';
 import 'package:kohera/features/notifications/models/notification_constants.dart';
 import 'package:kohera/features/notifications/services/notification_service.dart';
 import 'package:matrix/matrix.dart';
@@ -86,7 +86,21 @@ class IosVoipPushService {
       final roomId = notification['room_id'] as String?;
       if (roomId == null) return;
 
+      final eventType = notification['event_type'] as String?;
+      if (eventType != callMemberEventType) {
+        debugPrint(
+          '[Kohera] VoIP push rejected: event_type=$eventType (expected '
+          '$callMemberEventType)',
+        );
+        return;
+      }
+
       final callId = notification['call_id'] as String?;
+      if (callId == null) {
+        debugPrint('[Kohera] VoIP push rejected: missing call_id');
+        return;
+      }
+
       final senderDisplayName =
           (notification['sender_display_name'] as String?) ?? 'Unknown';
       final isVideoRaw = notification['is_video'];
@@ -118,9 +132,7 @@ class IosVoipPushService {
         return;
       }
 
-      if (callId != null) {
-        await _maybeEndCallFromHangup(roomId, callId);
-      }
+      _maybeEndCallIfCallerGone(roomId);
     } catch (e) {
       debugPrint('[Kohera] VoIP push message processing error: $e');
     }
@@ -203,32 +215,20 @@ class IosVoipPushService {
     debugPrint('[Kohera] VoIP pusher unregistered from homeserver');
   }
 
-  // ── Hangup race check ────────────────────────────────────────
+  // ── Cancel check (caller removed m.call.member before answer) ───
 
-  Future<void> _maybeEndCallFromHangup(String roomId, String callId) async {
+  void _maybeEndCallIfCallerGone(String roomId) {
     if (_disposed) return;
-    final client = matrixService.client;
-    final room = client.getRoomById(roomId);
-    if (room == null) return;
+    if (callService.callState != KoheraCallState.ringingIncoming) return;
 
-    try {
-      final timeline = await room.getTimeline(limit: 20);
-      try {
-        for (final event in timeline.events) {
-          if (event.type == kCallHangup &&
-              event.content['call_id'] == callId) {
-            if (callService.callState == KoheraCallState.ringingIncoming) {
-              callService.endCallFromPushKit();
-            }
-            return;
-          }
-        }
-      } finally {
-        timeline.cancelSubscriptions();
-      }
-    } catch (e) {
-      debugPrint('[Kohera] VoIP hangup scan failed: $e');
-    }
+    final stillRinging = RtcMembershipService.roomHasRemoteActiveCall(
+      matrixService.client,
+      roomId,
+    );
+    if (stillRinging) return;
+
+    debugPrint('[Kohera] VoIP post-sync: caller gone, ending CallKit ring');
+    callService.endCallFromPushKit();
   }
 
   // ── Gateway resolution ───────────────────────────────────────

@@ -7,6 +7,7 @@ import 'package:kohera/core/services/matrix_service.dart';
 import 'package:kohera/core/services/preferences_service.dart';
 import 'package:kohera/core/utils/notification_filter.dart';
 import 'package:kohera/core/utils/platform_info.dart';
+import 'package:kohera/features/calling/models/call_constants.dart';
 import 'package:kohera/features/notifications/models/notification_constants.dart';
 import 'package:kohera/features/notifications/services/notification_service.dart';
 import 'package:matrix/matrix.dart';
@@ -196,8 +197,7 @@ class PushService {
         return;
       }
 
-      if (matrixEvent.type == 'm.call.invite' ||
-          matrixEvent.type == 'm.call.member') {
+      if (matrixEvent.type == 'org.matrix.msc3401.call.member') {
         _handleCallEvent(roomId, matrixEvent, room);
         return;
       }
@@ -253,14 +253,10 @@ class PushService {
 
   void _handleCallEvent(String roomId, MatrixEvent event, Room? room) {
     final content = event.content;
-    final callId = content['call_id'] as String?;
+    if (content.isEmpty) return;
+    final callId = content['call_id'] as String? ?? '';
     final callerName = room?.getLocalizedDisplayname() ?? roomId;
-    final isVideo =
-        (content['offer'] as Map?)
-            ?['sdp']
-            ?.toString()
-            .contains('m=video') ??
-        false;
+    final isVideo = content[kIoKoheraIsVideo] == true;
 
     callService.handlePushCallInvite(
       roomId: roomId,
