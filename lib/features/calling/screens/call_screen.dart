@@ -77,7 +77,10 @@ class _CallScreenState extends State<CallScreen> {
             onCancel: callService.cancelOutgoingCall,
           ),
         KoheraCallState.ringingIncoming => CallJoiningView(displayName: widget.displayName),
-        KoheraCallState.joining => CallJoiningView(displayName: widget.displayName),
+        KoheraCallState.joining => CallJoiningView(
+            displayName: widget.displayName,
+            phase: callService.joinPhase,
+          ),
         KoheraCallState.connected => const ConnectedCallView(),
         KoheraCallState.reconnecting => const CallReconnectingView(),
         KoheraCallState.disconnecting ||
