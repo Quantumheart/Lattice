@@ -280,10 +280,9 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
       return;
     }
 
-    final ownPrefix =
-        '_${_client.userID ?? ''}_${_client.deviceID ?? ''}_';
-    if (stateKey.startsWith(ownPrefix)) {
-      debugPrint('[Kohera]   skip: own device stateKey');
+    final ownUserPrefix = '_${_client.userID ?? ''}_';
+    if (stateKey.startsWith(ownUserPrefix)) {
+      debugPrint('[Kohera]   skip: own user stateKey');
       return;
     }
 

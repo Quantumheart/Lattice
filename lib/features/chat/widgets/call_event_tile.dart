@@ -32,34 +32,38 @@ class CallEventTile extends StatelessWidget {
               isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
           children: [
             if (!isMe) const SizedBox(width: 40),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(icon, size: 16, color: cs.onSurfaceVariant),
-                  const SizedBox(width: 6),
-                  Flexible(
-                    child: Text(
-                      text,
-                      style: tt.bodySmall?.copyWith(
-                        color: cs.onSurfaceVariant,
+            Flexible(
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, size: 16, color: cs.onSurfaceVariant),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        text,
+                        style: tt.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    formatMessageTime(event.originServerTs),
-                    style: tt.bodySmall?.copyWith(
-                      fontSize: 11,
-                      color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                    const SizedBox(width: 8),
+                    Text(
+                      formatMessageTime(event.originServerTs),
+                      style: tt.bodySmall?.copyWith(
+                        fontSize: 11,
+                        color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
             if (isMe) const SizedBox(width: 40),
