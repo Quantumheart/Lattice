@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:kohera/core/services/preferences_service.dart';
 import 'package:kohera/core/utils/platform_info.dart';
@@ -195,9 +196,12 @@ class _MessageBubbleState extends State<MessageBubble> {
         onExit: (_) {
           if (!_quickReactOpen.value) _hovering.value = false;
         },
-        child: GestureDetector(
-          onSecondaryTapUp: (details) =>
-              _openContextMenu(details.globalPosition),
+        child: Listener(
+          onPointerDown: (event) {
+            if (event.buttons == kSecondaryMouseButton) {
+              _openContextMenu(event.position);
+            }
+          },
           child: bubble,
         ),
       );
