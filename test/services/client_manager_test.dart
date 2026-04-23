@@ -235,6 +235,69 @@ void main() {
     });
   });
 
+  group('signOut', () {
+    test(
+      'switches active before logging out when other accounts exist',
+      () async {
+        when(mockPrefs.getStringList('kohera_client_names'))
+            .thenReturn(['default', 'work']);
+        when(mockPrefs.setStringList(any, any)).thenAnswer((_) async => true);
+        when(mockStorage.delete(key: anyNamed('key')))
+            .thenAnswer((_) async {});
+
+        final services = <MatrixService>[];
+        final manager = ClientManager(
+          storage: mockStorage,
+          prefs: mockPrefs,
+          serviceFactory: _TestServiceFactory(trackServices: services),
+        );
+        await manager.init();
+
+        // Active is services[0] ('default'). Sign out of it.
+        final target = services[0];
+
+        // Record manager notifications: each time ClientManager notifies,
+        // capture the currently active service's logged-in state.
+        final activeLoggedSnapshots = <bool>[];
+        manager.addListener(() {
+          activeLoggedSnapshots
+              .add(manager.activeService.isLoggedIn);
+        });
+
+        await manager.signOut(target);
+
+        // Regression: active must switch *before* logout, so every
+        // notification during sign-out observes a logged-in active.
+        expect(activeLoggedSnapshots, isNotEmpty);
+        expect(activeLoggedSnapshots, everyElement(isTrue));
+
+        expect(manager.services, hasLength(1));
+        expect(manager.activeService.clientName, 'work');
+      },
+    );
+
+    test('falls through to login flow when last account signs out',
+        () async {
+      when(mockPrefs.getStringList('kohera_client_names')).thenReturn(null);
+      when(mockPrefs.setStringList(any, any)).thenAnswer((_) async => true);
+      when(mockStorage.delete(key: anyNamed('key')))
+          .thenAnswer((_) async {});
+
+      final services = <MatrixService>[];
+      final manager = ClientManager(
+        storage: mockStorage,
+        prefs: mockPrefs,
+        serviceFactory: _TestServiceFactory(trackServices: services),
+      );
+      await manager.init();
+
+      await manager.signOut(services[0]);
+
+      // Fresh default was created; it's not logged in (fresh client).
+      expect(manager.services, hasLength(1));
+    });
+  });
+
   group('hasMultipleAccounts', () {
     test('returns false with single account', () async {
       when(mockPrefs.getStringList('kohera_client_names')).thenReturn(null);

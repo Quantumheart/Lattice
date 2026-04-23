@@ -154,6 +154,20 @@ class ClientManager extends ChangeNotifier {
 
   // ── Removing Accounts ─────────────────────────────────────────
 
+  /// Signs out of [service]. If other accounts exist, switches the active
+  /// index to another one *before* logging out so the router redirect
+  /// doesn't briefly flash the login screen.
+  Future<void> signOut(MatrixService service) async {
+    final index = _services.indexOf(service);
+    if (index == -1) return;
+    if (_services.length > 1 && index == _activeIndex) {
+      _activeIndex = index == 0 ? 1 : 0;
+      notifyListeners();
+    }
+    await service.logout();
+    await removeService(service);
+  }
+
   Future<void> removeService(MatrixService service) async {
     final index = _services.indexOf(service);
     if (index == -1) return;
