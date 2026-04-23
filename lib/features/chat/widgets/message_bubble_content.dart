@@ -57,48 +57,50 @@ class MessageBubbleContent extends StatelessWidget {
         (displayEvent.messageType == MessageTypes.Text ||
             displayEvent.messageType == MessageTypes.Notice);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (replyEventId != null)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: InlineReplyPreview(
-              event: event,
-              timeline: timeline,
-              isMe: isMe,
-              onTap: onTapReply,
-            ),
-          ),
-        if (!isMe && isFirst)
-          Padding(
-            padding: EdgeInsets.only(bottom: metrics.senderNameBottomPad),
-            child: Text(
-              event.senderFromMemoryOrFallback.displayName ?? event.senderId,
-              style: tt.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                fontSize: metrics.senderNameFontSize,
-                color: senderColor(event.senderId, cs),
+    return SelectionArea(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (replyEventId != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: InlineReplyPreview(
+                event: event,
+                timeline: timeline,
+                isMe: isMe,
+                onTap: onTapReply,
               ),
             ),
+          if (!isMe && isFirst)
+            Padding(
+              padding: EdgeInsets.only(bottom: metrics.senderNameBottomPad),
+              child: Text(
+                event.senderFromMemoryOrFallback.displayName ?? event.senderId,
+                style: tt.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  fontSize: metrics.senderNameFontSize,
+                  color: senderColor(event.senderId, cs),
+                ),
+              ),
+            ),
+          MessageBubbleBody(
+            event: event,
+            displayEvent: displayEvent,
+            bodyText: bodyText,
+            isMe: isMe,
+            metrics: metrics,
           ),
-        MessageBubbleBody(
-          event: event,
-          displayEvent: displayEvent,
-          bodyText: bodyText,
-          isMe: isMe,
-          metrics: metrics,
-        ),
-        if (isTextMessage)
-          MessageBubbleLinkPreview(bodyText: bodyText, isMe: isMe),
-        MessageBubbleTimestamp(
-          event: event,
-          isMe: isMe,
-          isPinned: isPinned,
-          isEdited: isEdited,
-          metrics: metrics,
-        ),
-      ],
+          if (isTextMessage)
+            MessageBubbleLinkPreview(bodyText: bodyText, isMe: isMe),
+          MessageBubbleTimestamp(
+            event: event,
+            isMe: isMe,
+            isPinned: isPinned,
+            isEdited: isEdited,
+            metrics: metrics,
+          ),
+        ],
+      ),
     );
   }
 }
