@@ -50,6 +50,8 @@ void main() {
     when(mockMatrix.chatBackup).thenReturn(mockChatBackup);
     when(mockChatBackup.runKeyRecovery(ssssKey: anyNamed('ssssKey')))
         .thenAnswer((_) => Future<void>.value());
+    when(mockChatBackup.checkChatBackupStatus())
+        .thenAnswer((_) => Future<void>.value());
   });
 
   Future<GoRouter> pumpListener(WidgetTester tester) async {
@@ -94,6 +96,42 @@ void main() {
 
     verify(mockChatBackup.runKeyRecovery(ssssKey: anyNamed('ssssKey')))
         .called(1);
+  });
+
+  testWidgets(
+      'self verification confirmed refreshes chat backup status '
+      '(regression for #309)', (tester) async {
+    await pumpListener(tester);
+
+    final verification = _FakeVerification(userId: selfUserId);
+    verificationStream.add(verification);
+    await tester.pump();
+
+    verification.simulateStateChange(KeyVerificationState.done);
+    await tester.pump();
+
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+
+    verify(mockChatBackup.checkChatBackupStatus()).called(1);
+  });
+
+  testWidgets(
+      'cross-user verification confirmed does not refresh chat backup status',
+      (tester) async {
+    await pumpListener(tester);
+
+    final verification = _FakeVerification(userId: otherUserId);
+    verificationStream.add(verification);
+    await tester.pump();
+
+    verification.simulateStateChange(KeyVerificationState.done);
+    await tester.pump();
+
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+
+    verifyNever(mockChatBackup.checkChatBackupStatus());
   });
 
   testWidgets('self verification cancelled does not trigger runKeyRecovery',

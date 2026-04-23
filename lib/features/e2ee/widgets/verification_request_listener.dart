@@ -88,6 +88,12 @@ class _VerificationRequestListenerState
         debugPrint('[Kohera] Post-verification key recovery failed: $e');
       }
       if (!mounted) return;
+      try {
+        await matrix.chatBackup.checkChatBackupStatus();
+      } catch (e) {
+        debugPrint('[Kohera] Post-verification backup status check failed: $e');
+      }
+      if (!mounted) return;
     }
 
     _showNextPending();
