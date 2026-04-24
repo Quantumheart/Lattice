@@ -496,6 +496,52 @@ void main() {
       expect(service.callState, KoheraCallState.idle);
     });
 
+    test('declineCall removes RTC membership for incoming roomId', () async {
+      when(mockClient.setRoomStateWithKey(any, any, any, any))
+          .thenAnswer((_) async => 'event_id');
+
+      service.handlePushCallInvite(
+        roomId: '!room:example.com',
+        callId: 'call1',
+        callerName: 'Alice',
+        isVideo: false,
+        callKitAlreadyShown: true,
+      );
+      expect(service.callState, KoheraCallState.ringingIncoming);
+
+      service.declineCall();
+      await Future<void>.delayed(Duration.zero);
+
+      expect(service.callState, KoheraCallState.idle);
+      verify(
+        mockClient.setRoomStateWithKey(
+          '!room:example.com',
+          'org.matrix.msc3401.call.member',
+          '_@user:example.com_DEVICE1_m.call',
+          <String, dynamic>{},
+        ),
+      ).called(1);
+    });
+
+    test('acceptCall joins and reaches connected', () async {
+      setupLiveKitMocks();
+      setupMockRoom();
+
+      service.handlePushCallInvite(
+        roomId: '!room:example.com',
+        callId: 'call1',
+        callerName: 'Alice',
+        isVideo: false,
+        callKitAlreadyShown: true,
+      );
+      expect(service.callState, KoheraCallState.ringingIncoming);
+
+      await service.acceptCall();
+
+      expect(service.callState, KoheraCallState.connected);
+      expect(service.activeCallRoomId, '!room:example.com');
+    });
+
     test('cancelOutgoingCall resets state', () {
       service.cancelOutgoingCall();
       expect(service.callState, KoheraCallState.idle);

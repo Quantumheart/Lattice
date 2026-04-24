@@ -661,9 +661,22 @@ class CallService extends ChangeNotifier with WidgetsBindingObserver {
   void declineCall() {
     if (_callState != KoheraCallState.ringingIncoming) return;
 
+    final roomId = _ringing.incomingCall?.roomId;
+
     _ringing.stopRinging();
     _ringing.resetIncomingCall();
     _incomingCallerStateKey = null;
+
+    if (roomId != null) {
+      unawaited(
+        _rtcMembership.removeMembershipEvent(roomId).catchError(
+          (Object e) => debugPrint(
+            '[Kohera] Failed to remove membership on decline: $e',
+          ),
+        ),
+      );
+    }
+
     _setCallState(KoheraCallState.idle);
   }
 
