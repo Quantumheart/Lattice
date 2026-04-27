@@ -9,6 +9,7 @@ import 'package:kohera/features/e2ee/widgets/bootstrap_controller.dart';
 import 'package:kohera/features/e2ee/widgets/key_verification_inline.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // ── Screen-local steps (outside bootstrap lifecycle) ───────────
 
@@ -85,6 +86,20 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
   Future<void> _showUiaPasswordPrompt(UiaRequest<dynamic> request) async {
     if (!mounted || _uiaPromptShowing) return;
     _uiaPromptShowing = true;
+    final stage =
+        request.nextStages.isNotEmpty ? request.nextStages.first : '';
+    try {
+      if (stage == AuthenticationTypes.password) {
+        await _runPasswordPrompt(request);
+      } else {
+        await _runFallbackPrompt(request, stage);
+      }
+    } finally {
+      _uiaPromptShowing = false;
+    }
+  }
+
+  Future<void> _runPasswordPrompt(UiaRequest<dynamic> request) async {
     var passwordValue = '';
     final password = await showDialog<String>(
       context: context,
@@ -113,9 +128,76 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
         ],
       ),
     );
-    _uiaPromptShowing = false;
     if (password != null && password.isNotEmpty) {
       _matrixService.uia.completeUiaWithPassword(request, password);
+    } else {
+      request.cancel();
+    }
+  }
+
+  Future<void> _runFallbackPrompt(
+    UiaRequest<dynamic> request,
+    String stage,
+  ) async {
+    final homeserver = _matrixService.client.homeserver;
+    if (homeserver == null) {
+      request.cancel();
+      return;
+    }
+    final fallbackUrl = Uri.parse(
+      '$homeserver/_matrix/client/v3/auth/$stage/fallback/web'
+      '?session=${Uri.encodeQueryComponent(request.session ?? '')}',
+    );
+    var browserOpened = false;
+    final completed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: const Text('Authentication required'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Your homeserver requires you to authenticate in a browser '
+                'to continue (stage: $stage).',
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                '1. Open the authentication page in your browser.\n'
+                '2. Complete the prompts there.\n'
+                '3. Return here and tap Continue.',
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final ok = await launchUrl(
+                  fallbackUrl,
+                  mode: LaunchMode.externalApplication,
+                );
+                if (ok) setLocal(() => browserOpened = true);
+              },
+              child: const Text('Open in browser'),
+            ),
+            FilledButton(
+              onPressed: browserOpened
+                  ? () => Navigator.pop(ctx, true)
+                  : null,
+              child: const Text('Continue'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (completed == true) {
+      _matrixService.uia.completeUiaFallback(request);
     } else {
       request.cancel();
     }

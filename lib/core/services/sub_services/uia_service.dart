@@ -57,9 +57,29 @@ class UiaService {
           ),
         );
       default:
-        debugPrint('[Kohera] UIA: unsupported stage $stage, cancelling');
-        uiaRequest.cancel();
+        debugPrint(
+          '[Kohera] UIA: stage $stage requires fallback, forwarding to UI',
+        );
+        _uiaController.add(uiaRequest);
     }
+  }
+
+  /// Completes a UIA stage that was authenticated via the homeserver's
+  /// `/auth/<type>/fallback/web` flow. The browser-completed session is
+  /// re-submitted with only `{ session, type }`; the server recognises the
+  /// stage as already satisfied.
+  void completeUiaFallback(UiaRequest<dynamic> request) {
+    final stage =
+        request.nextStages.isNotEmpty ? request.nextStages.first : null;
+    if (stage == null) return;
+    unawaited(
+      request.completeStage(
+        AuthenticationData(
+          type: stage,
+          session: request.session,
+        ),
+      ),
+    );
   }
 
   void completeUiaWithPassword(UiaRequest<dynamic> request, String password) {
