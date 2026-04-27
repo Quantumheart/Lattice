@@ -143,7 +143,7 @@ jobs:
           echo -n "$IOS_RUNNER_PROVISION_PROFILE" | base64 --decode -o ~/Library/MobileDevice/Provisioning\ Profiles/runner.mobileprovision
           echo -n "$IOS_NSE_PROVISION_PROFILE" | base64 --decode -o ~/Library/MobileDevice/Provisioning\ Profiles/nse.mobileprovision
       - run: flutter pub get
-      - run: flutter build ipa --release --export-options-plist=ios/ExportOptions.plist --dart-define=GIPHY_API_KEY=${{ secrets.GIPHY_API_KEY }}
+      - run: flutter build ipa --release --export-options-plist=ios/ExportOptions.plist --build-number=${{ github.run_number }} --dart-define=GIPHY_API_KEY=${{ secrets.GIPHY_API_KEY }}
       - name: Upload to TestFlight
         env:
           APPSTORE_CONNECT_API_KEY: ${{ secrets.APPSTORE_CONNECT_API_KEY }}
