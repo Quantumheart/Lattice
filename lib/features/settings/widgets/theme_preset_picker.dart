@@ -33,24 +33,10 @@ class ThemePresetPicker extends StatelessWidget {
       ),
     ];
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        const spacing = 8.0;
-        const minChipWidth = 80.0;
-        final columns =
-            (constraints.maxWidth / (minChipWidth + spacing)).floor().clamp(3, 6);
-        final chipWidth =
-            (constraints.maxWidth - spacing * (columns - 1)) / columns;
-
-        return Wrap(
-          spacing: spacing,
-          runSpacing: spacing,
-          children: [
-            for (final chip in chips)
-              SizedBox(width: chipWidth, child: chip),
-          ],
-        );
-      },
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: chips,
     );
   }
 }
@@ -91,6 +77,8 @@ class _PresetChip extends StatelessWidget {
           ),
           child: Text(
             label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 13,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w400,

@@ -84,7 +84,7 @@ class CustomThemeEditor extends StatelessWidget {
         LayoutBuilder(
           builder: (context, constraints) {
             const spacing = 12.0;
-            const columns = 5;
+            const columns = 4;
             final slotWidth =
                 (constraints.maxWidth - spacing * (columns - 1)) / columns;
 
@@ -143,6 +143,8 @@ class _ColorSlot extends StatelessWidget {
       children: [
         Text(
           label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: Theme.of(context).textTheme.bodyMedium,
         ),
         const SizedBox(height: 4),
