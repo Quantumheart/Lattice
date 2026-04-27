@@ -195,7 +195,7 @@ class _SpaceRailState extends State<SpaceRail> {
             child: Builder(
               builder: (btnContext) => _RailIcon(
                 label: '+',
-                tooltip: 'Join or create a space',
+                tooltip: 'Add, join, or explore spaces',
                 isSelected: false,
                 color: cs.outlineVariant,
                 outlined: true,

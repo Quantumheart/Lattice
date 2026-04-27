@@ -8,7 +8,7 @@ import 'package:provider/provider.dart';
 
 // ── Popover menu ────────────────────────────────────────────────
 
-enum _SpaceAction { create, join }
+enum _SpaceAction { create, join, discover }
 
 /// Shows a two-option popover anchored to the right of the "+" rail icon.
 Future<void> showSpaceActionMenu(
@@ -39,6 +39,16 @@ Future<void> showSpaceActionMenu(
           ],
         ),
       ),
+      PopupMenuItem(
+        value: _SpaceAction.discover,
+        child: Row(
+          children: [
+            Icon(Icons.explore_outlined),
+            SizedBox(width: 10),
+            Text('Explore spaces'),
+          ],
+        ),
+      ),
     ],
   );
 
@@ -50,6 +60,8 @@ Future<void> showSpaceActionMenu(
       await CreateSpaceDialog.show(context, matrixService: matrix);
     case _SpaceAction.join:
       await JoinSpaceDialog.show(context, matrixService: matrix);
+    case _SpaceAction.discover:
+      await SpaceDiscoveryDialog.show(context, matrixService: matrix);
   }
 }
 
@@ -362,6 +374,126 @@ class _JoinSpaceDialogState extends State<JoinSpaceDialog> {
                   child: CircularProgressIndicator(strokeWidth: 2.5),
                 )
               : const Text('Join'),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Space Discovery dialog ──────────────────────────────────────
+
+class SpaceDiscoveryDialog extends StatefulWidget {
+  const SpaceDiscoveryDialog._({required this.matrixService});
+
+  final MatrixService matrixService;
+
+  static Future<void> show(
+    BuildContext context, {
+    required MatrixService matrixService,
+  }) {
+    return showDialog(
+      context: context,
+      builder: (_) => SpaceDiscoveryDialog._(matrixService: matrixService),
+    );
+  }
+
+  @override
+  State<SpaceDiscoveryDialog> createState() => _SpaceDiscoveryDialogState();
+}
+
+class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
+  List<PublishedRoomsChunk>? _results;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    unawaited(_load());
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _results = null;
+      _error = null;
+    });
+    try {
+      final resp =
+          await widget.matrixService.client.queryPublicRooms(limit: 50);
+      if (!mounted) return;
+      setState(() => _results = resp.chunk);
+    } catch (e) {
+      debugPrint('[Kohera] Space discovery load failed: $e');
+      if (!mounted) return;
+      setState(() => _error = MatrixService.friendlyAuthError(e));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+
+    Widget body;
+    if (_error != null) {
+      body = Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _error!,
+              style: TextStyle(color: cs.error),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            FilledButton.tonal(
+              onPressed: _load,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    } else if (_results == null) {
+      body = const Center(
+        child: SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(strokeWidth: 2.5),
+        ),
+      );
+    } else if (_results!.isEmpty) {
+      body = Center(
+        child: Text(
+          'No public spaces found.',
+          style: TextStyle(color: cs.onSurfaceVariant),
+        ),
+      );
+    } else {
+      body = ListView.builder(
+        itemCount: _results!.length,
+        itemBuilder: (context, i) {
+          final chunk = _results![i];
+          final title = chunk.name ??
+              chunk.canonicalAlias ??
+              chunk.roomId;
+          return ListTile(
+            title: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis),
+            subtitle: Text('${chunk.numJoinedMembers} members'),
+            onTap: () => Navigator.pop(context),
+          );
+        },
+      );
+    }
+
+    return AlertDialog(
+      title: const Text('Explore spaces'),
+      content: SizedBox(
+        width: 480,
+        height: 520,
+        child: body,
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Close'),
         ),
       ],
     );
