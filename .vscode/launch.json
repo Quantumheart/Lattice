@@ -13,15 +13,9 @@
         {
             "name": "kohera",
             "request": "launch",
-            "type": "dart"
-        },
-        {
-            "name": "kohera (linux)",
-            "request": "launch",
             "type": "dart",
-            "args": [
-                "-d",
-                "linux"
+            "toolArgs": [
+                "--dart-define=GIPHY_API_KEY=${env:GIPHY_API_KEY}"
             ]
         },
         {
