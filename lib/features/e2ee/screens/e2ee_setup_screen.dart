@@ -124,10 +124,12 @@ class _E2eeSetupScreenState extends State<E2eeSetupScreen> {
   // ── Finish / Skip ─────────────────────────────────────────────
 
   Future<void> _finishSetup() async {
-    if (_controller?.keyCopied ?? false) {
+    final shouldClearClipboard = _controller?.keyCopied ?? false;
+    _matrixService.skipSetup();
+    if (mounted) context.go('/');
+    if (shouldClearClipboard) {
       unawaited(Clipboard.setData(const ClipboardData(text: '')));
     }
-    if (mounted) context.go('/');
   }
 
   void _skip() {
