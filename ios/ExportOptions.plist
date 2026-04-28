@@ -5,9 +5,11 @@
 	<key>method</key>
 	<string>app-store-connect</string>
 	<key>destination</key>
-	<string>upload</string>
+	<string>export</string>
 	<key>signingStyle</key>
 	<string>manual</string>
+	<key>teamID</key>
+	<string>54H5SS9R29</string>
 	<key>provisioningProfiles</key>
 	<dict>
 		<key>io.github.quantumheart.kohera</key>
