@@ -12,6 +12,10 @@
 	<string>Kohera needs camera access for video calls.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Kohera needs microphone access for voice and video calls.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Kohera needs photo library access to attach images and videos to your messages.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Kohera needs permission to save images and videos from messages to your photo library.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
