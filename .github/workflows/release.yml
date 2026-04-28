@@ -150,8 +150,8 @@ jobs:
           APPSTORE_CONNECT_KEY_ID: ${{ secrets.APPSTORE_CONNECT_KEY_ID }}
           APPSTORE_CONNECT_ISSUER_ID: ${{ secrets.APPSTORE_CONNECT_ISSUER_ID }}
         run: |
-          API_KEY_PATH=$RUNNER_TEMP/AuthKey.p8
-          echo -n "$APPSTORE_CONNECT_API_KEY" | base64 --decode -o "$API_KEY_PATH"
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo -n "$APPSTORE_CONNECT_API_KEY" | base64 --decode -o ~/.appstoreconnect/private_keys/AuthKey_${APPSTORE_CONNECT_KEY_ID}.p8
           xcrun altool --upload-app \
             -f build/ios/ipa/kohera.ipa \
             -t ios \
