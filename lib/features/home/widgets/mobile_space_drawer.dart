@@ -110,6 +110,17 @@ class MobileSpaceDrawer extends StatelessWidget {
                 unawaited(JoinSpaceDialog.show(context, matrixService: matrix));
               },
             ),
+            ListTile(
+              leading: Icon(Icons.travel_explore, color: cs.primary),
+              title: const Text('Explore spaces'),
+              onTap: () {
+                final matrix = context.read<MatrixService>();
+                Navigator.of(context).pop();
+                unawaited(
+                  SpaceDiscoveryDialog.show(context, matrixService: matrix),
+                );
+              },
+            ),
           ],
         ),
       ),
