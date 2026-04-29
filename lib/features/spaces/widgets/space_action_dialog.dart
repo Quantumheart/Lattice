@@ -556,22 +556,27 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
       );
     }
 
-    return AlertDialog(
-      title: const Text('Explore spaces'),
-      insetPadding: isWide
-          ? const EdgeInsets.symmetric(horizontal: 40, vertical: 24)
-          : const EdgeInsets.all(12),
-      content: SizedBox(
-        width: isWide ? 480 : size.width,
-        height: isWide ? 520 : size.height * 0.75,
-        child: body,
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Close'),
+    final isJoiningAny = _joiningRoomId != null;
+
+    return PopScope(
+      canPop: !isJoiningAny,
+      child: AlertDialog(
+        title: const Text('Explore spaces'),
+        insetPadding: isWide
+            ? const EdgeInsets.symmetric(horizontal: 40, vertical: 24)
+            : const EdgeInsets.all(12),
+        content: SizedBox(
+          width: isWide ? 480 : size.width,
+          height: isWide ? 520 : size.height * 0.75,
+          child: body,
         ),
-      ],
+        actions: [
+          TextButton(
+            onPressed: isJoiningAny ? null : () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
     );
   }
 }
