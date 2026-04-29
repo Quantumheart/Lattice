@@ -52,6 +52,8 @@ class AuthService extends ChangeNotifier {
       await _client.checkHomeserver(Uri.parse(hs));
       debugPrint('[Kohera] Homeserver OK');
 
+      await _resetStaleClientState();
+
       debugPrint('[Kohera] Logging in as $username ...');
       await _client.login(
         LoginType.mLoginPassword,
@@ -84,6 +86,18 @@ class AuthService extends ChangeNotifier {
     }
   }
 
+  Future<void> _resetStaleClientState() async {
+    if (isLoggedIn) return;
+    if (_client.onLoginStateChanged.value != LoginState.loggedIn) return;
+    debugPrint('[Kohera] Detected stale SDK login state before login; '
+        'clearing client to allow fresh sign-in');
+    try {
+      await _client.clear();
+    } catch (e) {
+      debugPrint('[Kohera] Failed to clear stale client state: $e');
+    }
+  }
+
   // ── SSO Login ─────────────────────────────────────────────────
 
   Future<bool> completeSsoLogin({
@@ -98,6 +112,8 @@ class AuthService extends ChangeNotifier {
       if (!hs.startsWith('http')) hs = 'https://$hs';
 
       await _client.checkHomeserver(Uri.parse(hs));
+
+      await _resetStaleClientState();
 
       debugPrint('[Kohera] Completing SSO login ...');
       await _client.login(

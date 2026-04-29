@@ -338,7 +338,13 @@ class MatrixService extends ChangeNotifier {
           'encryption=${_client.encryption != null ? "available" : "null"}, '
           'encryptionEnabled=${_client.encryptionEnabled}');
       await _activateSession();
-      await auth.saveSessionBackup();
+      try {
+        await auth.saveSessionBackup();
+      } catch (e) {
+        debugPrint('[Kohera] saveSessionBackup after restore failed '
+            '(non-fatal): $e');
+      }
+      return;
     } catch (e, s) {
       debugPrint('[Kohera] Session restore failed: $e');
       debugPrint('[Kohera] Stack trace:\n$s');
@@ -362,11 +368,16 @@ class MatrixService extends ChangeNotifier {
     try {
       await _client.init();
       if (_client.isLogged()) {
-        if (_client.accessToken != null) {
-          await auth.persistCredentials();
-        }
         await _activateSession();
-        await auth.saveSessionBackup();
+        try {
+          if (_client.accessToken != null) {
+            await auth.persistCredentials();
+          }
+          await auth.saveSessionBackup();
+        } catch (e) {
+          debugPrint('[Kohera] Persisting restored session failed '
+              '(non-fatal): $e');
+        }
         debugPrint('[Kohera] Session restored via database token refresh');
         return true;
       }
