@@ -419,14 +419,17 @@ class _PreviewFrame {
     required this.roomId,
     this.fallbackName,
     this.fallbackAvatar,
+    this.canonicalAlias,
   });
 
   final String roomId;
   final String? fallbackName;
   final Uri? fallbackAvatar;
+  final String? canonicalAlias;
 
   GetSpaceHierarchyResponse? hierarchy;
   String? error;
+  bool previewForbidden = false;
 }
 
 const int _maxPreviewDepth = 5;
@@ -619,6 +622,7 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
       roomId: chunk.roomId,
       fallbackName: chunk.name ?? chunk.canonicalAlias,
       fallbackAvatar: chunk.avatarUrl,
+      canonicalAlias: chunk.canonicalAlias,
     );
     setState(() {
       _previewStack.add(frame);
@@ -637,6 +641,7 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
       roomId: child.roomId,
       fallbackName: child.name ?? child.canonicalAlias,
       fallbackAvatar: child.avatarUrl,
+      canonicalAlias: child.canonicalAlias,
     );
     setState(() {
       _previewStack.add(frame);
@@ -665,7 +670,11 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
     } catch (e) {
       debugPrint('[Kohera] Space hierarchy fetch failed: $e');
       if (!mounted) return;
-      setState(() => frame.error = MatrixService.friendlyAuthError(e));
+      final forbidden = e is MatrixException && e.errcode == 'M_FORBIDDEN';
+      setState(() {
+        frame.previewForbidden = forbidden;
+        frame.error = MatrixService.friendlyAuthError(e);
+      });
     }
   }
 
@@ -673,6 +682,7 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
     setState(() {
       frame.error = null;
       frame.hierarchy = null;
+      frame.previewForbidden = false;
     });
     await _loadHierarchy(frame);
   }
@@ -929,6 +939,56 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
     final cs = Theme.of(context).colorScheme;
 
     if (frame.error != null) {
+      if (frame.previewForbidden) {
+        final joining = _joiningRoomId == frame.roomId;
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.lock_outline, color: cs.onSurfaceVariant, size: 32),
+                const SizedBox(height: 12),
+                Text(
+                  'Preview unavailable',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'This space disables previews for non-members. Join to see its rooms.',
+                  style: TextStyle(color: cs.onSurfaceVariant),
+                  textAlign: TextAlign.center,
+                ),
+                if (_joinError != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    _joinError!,
+                    style: TextStyle(color: cs.error),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: joining
+                      ? null
+                      : () => _joinChunk(
+                            roomId: frame.roomId,
+                            alias: frame.canonicalAlias,
+                            via: _viaFromAlias(frame.canonicalAlias),
+                          ),
+                  child: joining
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Join space'),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
