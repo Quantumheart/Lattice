@@ -1035,7 +1035,29 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
   }
 
   Widget _avatarFor(String mxc, String fallback, {required double size}) {
+    final cs = Theme.of(context).colorScheme;
     final letter = fallback.isNotEmpty ? fallback[0].toUpperCase() : '?';
+
+    final placeholder = Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      color: cs.surfaceContainerHighest,
+      child: Text(
+        letter,
+        style: TextStyle(
+          fontSize: size * 0.45,
+          fontWeight: FontWeight.w600,
+          color: cs.onSurfaceVariant,
+          height: 1,
+        ),
+      ),
+    );
+
+    if (mxc.isEmpty) {
+      return ClipOval(child: placeholder);
+    }
+
     return ClipOval(
       child: SizedBox(
         width: size,
@@ -1047,6 +1069,8 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
           fallbackStyle: TextStyle(
             fontSize: size * 0.45,
             fontWeight: FontWeight.w600,
+            color: cs.onSurfaceVariant,
+            height: 1,
           ),
           width: size,
           height: size,
