@@ -4,6 +4,7 @@ import 'package:flutter/material.dart' hide Visibility;
 import 'package:kohera/core/services/matrix_service.dart';
 import 'package:kohera/core/services/sub_services/selection_service.dart';
 import 'package:kohera/features/home/screens/home_shell.dart';
+import 'package:kohera/features/spaces/services/space_discovery_data_source.dart';
 import 'package:kohera/shared/widgets/mxc_image.dart';
 import 'package:matrix/matrix.dart';
 import 'package:provider/provider.dart';
@@ -385,17 +386,27 @@ class _JoinSpaceDialogState extends State<JoinSpaceDialog> {
 // ── Space Discovery dialog ──────────────────────────────────────
 
 class SpaceDiscoveryDialog extends StatefulWidget {
-  const SpaceDiscoveryDialog._({required this.matrixService});
+  const SpaceDiscoveryDialog._({
+    required this.matrixService,
+    required this.dataSource,
+  });
 
   final MatrixService matrixService;
+  final SpaceDiscoveryDataSource dataSource;
 
   static Future<void> show(
     BuildContext context, {
     required MatrixService matrixService,
+    SpaceDiscoveryDataSource? dataSource,
   }) {
+    final ds = dataSource ??
+        defaultSpaceDiscoveryDataSource(matrixService.client);
     return showDialog(
       context: context,
-      builder: (_) => SpaceDiscoveryDialog._(matrixService: matrixService),
+      builder: (_) => SpaceDiscoveryDialog._(
+        matrixService: matrixService,
+        dataSource: ds,
+      ),
     );
   }
 
@@ -449,7 +460,7 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
       _seenRoomIds.clear();
     });
     try {
-      final resp = await widget.matrixService.client.queryPublicRooms(
+      final resp = await widget.dataSource.queryPublicRooms(
         limit: _pageSize,
         filter: PublicRoomQueryFilter(
           roomTypes: ['m.space'],
@@ -510,7 +521,7 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
       _paginationError = null;
     });
     try {
-      final resp = await widget.matrixService.client.queryPublicRooms(
+      final resp = await widget.dataSource.queryPublicRooms(
         limit: _pageSize,
         since: _nextBatch,
         filter: PublicRoomQueryFilter(
@@ -541,10 +552,7 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
     return [alias.substring(idx + 1)];
   }
 
-  bool _isMember(String roomId) {
-    final room = widget.matrixService.client.getRoomById(roomId);
-    return room != null && room.membership == Membership.join;
-  }
+  bool _isMember(String roomId) => widget.dataSource.isMember(roomId);
 
   // ── Preview navigation ──────────────────────────────────────────
 
@@ -590,7 +598,7 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
 
   Future<void> _loadHierarchy(_PreviewFrame frame) async {
     try {
-      final resp = await widget.matrixService.client.getSpaceHierarchy(
+      final resp = await widget.dataSource.getSpaceHierarchy(
         frame.roomId,
         maxDepth: 1,
         suggestedOnly: false,
@@ -620,7 +628,6 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
     List<String>? via,
   }) async {
     if (_joiningRoomId != null) return;
-    final client = widget.matrixService.client;
     final target = alias ?? roomId;
 
     setState(() {
@@ -629,14 +636,11 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
     });
 
     try {
-      final joinedId = await client.joinRoom(target, via: via);
-      await client
-          .waitForRoomInSync(joinedId, join: true)
-          .timeout(const Duration(seconds: 30));
+      final joinedId =
+          await widget.dataSource.joinRoom(target, via: via);
 
       if (!mounted) return;
-      final room = client.getRoomById(joinedId);
-      if (room != null && room.isSpace) {
+      if (widget.dataSource.isSpace(joinedId)) {
         context.read<SelectionService>().selectSpace(joinedId);
         Navigator.pop(context);
         return;
