@@ -445,9 +445,47 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
   String? _paginationError;
   final Set<String> _seenRoomIds = {};
 
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _debounceTimer;
+  String _query = '';
+  static const Duration _debounceDuration = Duration(milliseconds: 300);
+
   @override
   void initState() {
     super.initState();
+    unawaited(_load());
+  }
+
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  PublicRoomQueryFilter _buildFilter() {
+    return PublicRoomQueryFilter(
+      roomTypes: ['m.space'],
+      genericSearchTerm: _query.isEmpty ? null : _query,
+    );
+  }
+
+  void _onSearchChanged(String text) {
+    _debounceTimer?.cancel();
+    final next = text.trim();
+    _debounceTimer = Timer(_debounceDuration, () {
+      if (!mounted) return;
+      if (next == _query) return;
+      _query = next;
+      unawaited(_load());
+    });
+  }
+
+  void _clearSearch() {
+    _debounceTimer?.cancel();
+    _searchController.clear();
+    if (_query.isEmpty) return;
+    _query = '';
     unawaited(_load());
   }
 
@@ -462,9 +500,7 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
     try {
       final resp = await widget.dataSource.queryPublicRooms(
         limit: _pageSize,
-        filter: PublicRoomQueryFilter(
-          roomTypes: ['m.space'],
-        ),
+        filter: _buildFilter(),
       );
       if (!mounted) return;
       final unique = resp.chunk.where((c) => _seenRoomIds.add(c.roomId)).toList();
@@ -524,9 +560,7 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
       final resp = await widget.dataSource.queryPublicRooms(
         limit: _pageSize,
         since: _nextBatch,
-        filter: PublicRoomQueryFilter(
-          roomTypes: ['m.space'],
-        ),
+        filter: _buildFilter(),
       );
       if (!mounted) return;
       final additions = resp.chunk.where((c) => _seenRoomIds.add(c.roomId)).toList();
@@ -731,8 +765,9 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
   Widget _buildList() {
     final cs = Theme.of(context).colorScheme;
 
+    Widget body;
     if (_error != null) {
-      return Center(
+      body = Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -749,28 +784,52 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
           ],
         ),
       );
-    }
-    if (_results == null) {
-      return const Center(
+    } else if (_results == null) {
+      body = const Center(
         child: SizedBox(
           width: 22,
           height: 22,
           child: CircularProgressIndicator(strokeWidth: 2.5),
         ),
       );
-    }
-    if (_results!.isEmpty) {
-      return Center(
+    } else if (_results!.isEmpty) {
+      body = Center(
         child: Text(
-          'No public spaces found.',
+          _query.isEmpty
+              ? 'No public spaces found.'
+              : 'No spaces match "$_query".',
           style: TextStyle(color: cs.onSurfaceVariant),
+          textAlign: TextAlign.center,
         ),
       );
+    } else {
+      body = _buildResultsList();
     }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: TextField(
+            controller: _searchController,
+            onChanged: _onSearchChanged,
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              hintText: 'Search spaces',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _query.isEmpty && _searchController.text.isEmpty
+                  ? null
+                  : IconButton(
+                      icon: const Icon(Icons.close),
+                      tooltip: 'Clear search',
+                      onPressed: _clearSearch,
+                    ),
+              isDense: true,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        ),
         if (_joinError != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),
@@ -779,38 +838,38 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
               style: TextStyle(color: cs.error),
             ),
           ),
-        Expanded(
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (notification) {
-              if (notification.metrics.pixels >=
-                  notification.metrics.maxScrollExtent - 200) {
-                unawaited(_loadMore());
-              }
-              return false;
-            },
-            child: ListView.builder(
-              itemCount: _results!.length + (_hasSentinel ? 1 : 0),
-              itemBuilder: (context, i) {
-                if (i == _results!.length) return _buildSentinel();
-                final chunk = _results![i];
-                final name =
-                    chunk.name ?? chunk.canonicalAlias ?? chunk.roomId;
-                return ListTile(
-                  leading: _avatarFor(
-                    chunk.avatarUrl?.toString() ?? '',
-                    name,
-                    size: 40,
-                  ),
-                  title:
-                      Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  subtitle: Text('${chunk.numJoinedMembers} members'),
-                  onTap: () => _openPreview(chunk),
-                );
-              },
-            ),
-          ),
-        ),
+        Expanded(child: body),
       ],
+    );
+  }
+
+  Widget _buildResultsList() {
+    return NotificationListener<ScrollNotification>(
+      onNotification: (notification) {
+        if (notification.metrics.pixels >=
+            notification.metrics.maxScrollExtent - 200) {
+          unawaited(_loadMore());
+        }
+        return false;
+      },
+      child: ListView.builder(
+        itemCount: _results!.length + (_hasSentinel ? 1 : 0),
+        itemBuilder: (context, i) {
+          if (i == _results!.length) return _buildSentinel();
+          final chunk = _results![i];
+          final name = chunk.name ?? chunk.canonicalAlias ?? chunk.roomId;
+          return ListTile(
+            leading: _avatarFor(
+              chunk.avatarUrl?.toString() ?? '',
+              name,
+              size: 40,
+            ),
+            title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
+            subtitle: Text('${chunk.numJoinedMembers} members'),
+            onTap: () => _openPreview(chunk),
+          );
+        },
+      ),
     );
   }
 
