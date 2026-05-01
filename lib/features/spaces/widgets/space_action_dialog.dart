@@ -421,11 +421,18 @@ class _PreviewFrame {
 const int _maxPreviewDepth = 5;
 
 class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
+  static const int _pageSize = 50;
+
   List<PublishedRoomsChunk>? _results;
   String? _error;
   String? _joiningRoomId;
   String? _joinError;
   final List<_PreviewFrame> _previewStack = [];
+
+  String? _nextBatch;
+  bool _loadingMore = false;
+  String? _paginationError;
+  final Set<String> _seenRoomIds = {};
 
   @override
   void initState() {
@@ -437,20 +444,93 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
     setState(() {
       _results = null;
       _error = null;
+      _nextBatch = null;
+      _paginationError = null;
+      _seenRoomIds.clear();
     });
     try {
       final resp = await widget.matrixService.client.queryPublicRooms(
-        limit: 50,
+        limit: _pageSize,
         filter: PublicRoomQueryFilter(
           roomTypes: ['m.space'],
         ),
       );
       if (!mounted) return;
-      setState(() => _results = resp.chunk);
+      final unique = resp.chunk.where((c) => _seenRoomIds.add(c.roomId)).toList();
+      setState(() {
+        _results = unique;
+        _nextBatch = resp.nextBatch;
+      });
     } catch (e) {
       debugPrint('[Kohera] Space discovery load failed: $e');
       if (!mounted) return;
       setState(() => _error = MatrixService.friendlyAuthError(e));
+    }
+  }
+
+  bool get _hasSentinel => _nextBatch != null || _paginationError != null;
+
+  Widget _buildSentinel() {
+    final cs = Theme.of(context).colorScheme;
+    if (_paginationError != null) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Text(
+              _paginationError!,
+              style: TextStyle(color: cs.error),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            FilledButton.tonal(
+              onPressed: _loadMore,
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 16),
+      child: Center(
+        child: SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(strokeWidth: 2.5),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingMore || _nextBatch == null || _results == null) return;
+    setState(() {
+      _loadingMore = true;
+      _paginationError = null;
+    });
+    try {
+      final resp = await widget.matrixService.client.queryPublicRooms(
+        limit: _pageSize,
+        since: _nextBatch,
+        filter: PublicRoomQueryFilter(
+          roomTypes: ['m.space'],
+        ),
+      );
+      if (!mounted) return;
+      final additions = resp.chunk.where((c) => _seenRoomIds.add(c.roomId)).toList();
+      setState(() {
+        _results!.addAll(additions);
+        _nextBatch = resp.nextBatch;
+        _loadingMore = false;
+      });
+    } catch (e) {
+      debugPrint('[Kohera] Space discovery pagination failed: $e');
+      if (!mounted) return;
+      setState(() {
+        _paginationError = MatrixService.friendlyAuthError(e);
+        _loadingMore = false;
+      });
     }
   }
 
@@ -696,22 +776,34 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
             ),
           ),
         Expanded(
-          child: ListView.builder(
-            itemCount: _results!.length,
-            itemBuilder: (context, i) {
-              final chunk = _results![i];
-              final name = chunk.name ?? chunk.canonicalAlias ?? chunk.roomId;
-              return ListTile(
-                leading: _avatarFor(
-                  chunk.avatarUrl?.toString() ?? '',
-                  name,
-                  size: 40,
-                ),
-                title: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                subtitle: Text('${chunk.numJoinedMembers} members'),
-                onTap: () => _openPreview(chunk),
-              );
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (notification) {
+              if (notification.metrics.pixels >=
+                  notification.metrics.maxScrollExtent - 200) {
+                unawaited(_loadMore());
+              }
+              return false;
             },
+            child: ListView.builder(
+              itemCount: _results!.length + (_hasSentinel ? 1 : 0),
+              itemBuilder: (context, i) {
+                if (i == _results!.length) return _buildSentinel();
+                final chunk = _results![i];
+                final name =
+                    chunk.name ?? chunk.canonicalAlias ?? chunk.roomId;
+                return ListTile(
+                  leading: _avatarFor(
+                    chunk.avatarUrl?.toString() ?? '',
+                    name,
+                    size: 40,
+                  ),
+                  title:
+                      Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                  subtitle: Text('${chunk.numJoinedMembers} members'),
+                  onTap: () => _openPreview(chunk),
+                );
+              },
+            ),
           ),
         ),
       ],
