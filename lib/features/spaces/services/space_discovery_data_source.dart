@@ -113,15 +113,28 @@ class FakeSpaceDiscoveryDataSource implements SpaceDiscoveryDataSource {
     PublicRoomQueryFilter? filter,
   }) async {
     await Future<void>.delayed(delay);
+    final term = filter?.genericSearchTerm?.trim().toLowerCase();
+    final filtered = (term == null || term.isEmpty)
+        ? _allSpaces
+        : _allSpaces.where((c) {
+            final hay = [
+              c.name,
+              c.topic,
+              c.canonicalAlias,
+            ].whereType<String>().map((s) => s.toLowerCase());
+            return hay.any((s) => s.contains(term));
+          }).toList();
     final pageSize = limit ?? 20;
     final start = since == null ? 0 : int.tryParse(since) ?? 0;
-    final end = math.min(start + pageSize, _allSpaces.length);
-    final chunk = _allSpaces.sublist(start, end);
-    final nextBatch = end < _allSpaces.length ? end.toString() : null;
+    final end = math.min(start + pageSize, filtered.length);
+    final chunk = start >= filtered.length
+        ? <PublishedRoomsChunk>[]
+        : filtered.sublist(start, end);
+    final nextBatch = end < filtered.length ? end.toString() : null;
     return QueryPublicRoomsResponse(
       chunk: chunk,
       nextBatch: nextBatch,
-      totalRoomCountEstimate: _allSpaces.length,
+      totalRoomCountEstimate: filtered.length,
     );
   }
 
