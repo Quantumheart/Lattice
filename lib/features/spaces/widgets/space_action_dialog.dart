@@ -450,6 +450,13 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
   String _query = '';
   static const Duration _debounceDuration = Duration(milliseconds: 300);
 
+  static const String _matrixDotOrg = 'matrix.org';
+  String? _selectedServer;
+
+  String? get _ownHomeserverHost =>
+      widget.matrixService.client.homeserver?.host;
+  bool get _showServerSelector => _ownHomeserverHost != _matrixDotOrg;
+
   @override
   void initState() {
     super.initState();
@@ -489,6 +496,17 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
     unawaited(_load());
   }
 
+  void _onServerChanged(String? server) {
+    if (server == _selectedServer) return;
+    _debounceTimer?.cancel();
+    _searchController.clear();
+    setState(() {
+      _selectedServer = server;
+      _query = '';
+    });
+    unawaited(_load());
+  }
+
   Future<void> _load() async {
     setState(() {
       _results = null;
@@ -500,6 +518,7 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
     try {
       final resp = await widget.dataSource.queryPublicRooms(
         limit: _pageSize,
+        server: _selectedServer,
         filter: _buildFilter(),
       );
       if (!mounted) return;
@@ -511,7 +530,10 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
     } catch (e) {
       debugPrint('[Kohera] Space discovery load failed: $e');
       if (!mounted) return;
-      setState(() => _error = MatrixService.friendlyAuthError(e));
+      final base = MatrixService.friendlyAuthError(e);
+      setState(() {
+        _error = _selectedServer == null ? base : '$_selectedServer: $base';
+      });
     }
   }
 
@@ -560,6 +582,7 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
       final resp = await widget.dataSource.queryPublicRooms(
         limit: _pageSize,
         since: _nextBatch,
+        server: _selectedServer,
         filter: _buildFilter(),
       );
       if (!mounted) return;
@@ -793,11 +816,17 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
         ),
       );
     } else if (_results!.isEmpty) {
+      final String emptyMessage;
+      if (_query.isNotEmpty) {
+        emptyMessage = 'No spaces match "$_query".';
+      } else if (_selectedServer != null) {
+        emptyMessage = "$_selectedServer didn't return any spaces.";
+      } else {
+        emptyMessage = 'No public spaces found.';
+      }
       body = Center(
         child: Text(
-          _query.isEmpty
-              ? 'No public spaces found.'
-              : 'No spaces match "$_query".',
+          emptyMessage,
           style: TextStyle(color: cs.onSurfaceVariant),
           textAlign: TextAlign.center,
         ),
@@ -809,6 +838,27 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        if (_showServerSelector)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: SegmentedButton<String?>(
+                segments: [
+                  ButtonSegment<String?>(
+                    value: null,
+                    label: Text(_ownHomeserverHost ?? 'My server'),
+                  ),
+                  const ButtonSegment<String?>(
+                    value: _matrixDotOrg,
+                    label: Text(_matrixDotOrg),
+                  ),
+                ],
+                selected: {_selectedServer},
+                onSelectionChanged: (s) => _onServerChanged(s.first),
+              ),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: TextField(

@@ -90,17 +90,22 @@ class FakeSpaceDiscoveryDataSource implements SpaceDiscoveryDataSource {
   FakeSpaceDiscoveryDataSource({
     this.delay = const Duration(milliseconds: 400),
     this.failHierarchyForRoomId = '!fake-broken:example.org',
+    this.failingServers = const {},
   });
 
   final Duration delay;
   final String failHierarchyForRoomId;
+  final Set<String> failingServers;
   final Set<String> _joined = {};
 
   static final List<PublishedRoomsChunk> _allSpaces = _generateSpaces();
+  static final List<PublishedRoomsChunk> _matrixOrgSpaces =
+      _generateMatrixOrgSpaces();
   static final Map<String, GetSpaceHierarchyResponse> _hierarchies =
       _generateHierarchies();
   static final Set<String> _spaceIds = {
     ..._allSpaces.map((c) => c.roomId),
+    ..._matrixOrgSpaces.map((c) => c.roomId),
     '!fake-subspace-tech:example.org',
     '!fake-subspace-deep:example.org',
   };
@@ -113,10 +118,21 @@ class FakeSpaceDiscoveryDataSource implements SpaceDiscoveryDataSource {
     PublicRoomQueryFilter? filter,
   }) async {
     await Future<void>.delayed(delay);
+    if (server != null && failingServers.contains(server)) {
+      throw MatrixException.fromJson(<String, Object?>{
+        'errcode': 'M_FORBIDDEN',
+        'error': 'Federation denied by $server',
+      });
+    }
+    final source = switch (server) {
+      null => _allSpaces,
+      'matrix.org' => _matrixOrgSpaces,
+      _ => const <PublishedRoomsChunk>[],
+    };
     final term = filter?.genericSearchTerm?.trim().toLowerCase();
     final filtered = (term == null || term.isEmpty)
-        ? _allSpaces
-        : _allSpaces.where((c) {
+        ? source
+        : source.where((c) {
             final hay = [
               c.name,
               c.topic,
@@ -231,6 +247,34 @@ class FakeSpaceDiscoveryDataSource implements SpaceDiscoveryDataSource {
           canonicalAlias:
               '#${themes[i][0]!.toLowerCase().replaceAll(RegExp('[^a-z0-9]+'), '-')}'
               ':example.org',
+          roomType: 'm.space',
+        ),
+    ];
+  }
+
+  static List<PublishedRoomsChunk> _generateMatrixOrgSpaces() {
+    const themes = [
+      ['matrix.org Lounge', 'General chat for matrix.org users.'],
+      ['Synapse', 'Discussion of the Synapse homeserver.'],
+      ['Element', 'Element client community.'],
+      ['Matrix Spec', 'Spec process and proposals.'],
+      ['Bridges', 'IRC, XMPP, Discord, Slack bridges.'],
+      ['Federation', 'Cross-server topics.'],
+      ['New to Matrix', 'Newcomer questions and pointers.'],
+    ];
+    final rng = math.Random(7);
+    return [
+      for (var i = 0; i < themes.length; i++)
+        PublishedRoomsChunk(
+          guestCanJoin: false,
+          numJoinedMembers: 200 + rng.nextInt(40000),
+          roomId: '!fake-mxorg-$i:matrix.org',
+          worldReadable: true,
+          name: themes[i][0],
+          topic: themes[i][1],
+          canonicalAlias:
+              '#${themes[i][0].toLowerCase().replaceAll(RegExp('[^a-z0-9]+'), '-')}'
+              ':matrix.org',
           roomType: 'm.space',
         ),
     ];
