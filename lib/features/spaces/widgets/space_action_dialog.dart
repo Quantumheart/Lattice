@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart' hide Visibility;
 import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
 import 'package:kohera/core/services/sub_services/selection_service.dart';
 import 'package:kohera/features/home/screens/home_shell.dart';
 import 'package:kohera/features/spaces/services/space_discovery_data_source.dart';
@@ -453,12 +454,136 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
   String _query = '';
   static const Duration _debounceDuration = Duration(milliseconds: 300);
 
-  static const String _matrixDotOrg = 'matrix.org';
   String? _selectedServer;
 
   String? get _ownHomeserverHost =>
       widget.matrixService.client.homeserver?.host;
-  bool get _showServerSelector => _ownHomeserverHost != _matrixDotOrg;
+
+  static final RegExp _hostRegex = RegExp(
+    r'^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+(:\d{1,5})?$',
+  );
+
+  String? _validateHost(String input, List<String> existing) {
+    final v = input.trim().toLowerCase();
+    if (v.isEmpty) return 'Enter a hostname.';
+    if (v.contains('://') || v.contains(' ') || v.contains('/')) {
+      return 'Hostname only (no scheme or path).';
+    }
+    if (!_hostRegex.hasMatch(v)) return 'Invalid hostname.';
+    if (v == _ownHomeserverHost) return 'This is already your homeserver.';
+    if (existing.contains(v)) return 'Server already added.';
+    return null;
+  }
+
+  Future<void> _openAddServerDialog() async {
+    final controller = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final prefs = context.read<PreferencesService>();
+    final existing = prefs.browseServers;
+
+    final added = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Add server'),
+        content: Form(
+          key: formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          child: TextFormField(
+            controller: controller,
+            autofocus: true,
+            decoration: const InputDecoration(
+              hintText: 'matrix.example.org',
+              border: OutlineInputBorder(),
+            ),
+            validator: (v) => _validateHost(v ?? '', existing),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.pop(ctx, controller.text.trim().toLowerCase());
+              }
+            },
+            child: const Text('Add'),
+          ),
+        ],
+      ),
+    );
+
+    if (added == null || !mounted) return;
+    await prefs.setBrowseServers([...existing, added]);
+    if (!mounted) return;
+    _onServerChanged(added);
+  }
+
+  Widget _buildServerStrip(BuildContext context) {
+    final prefs = context.watch<PreferencesService>();
+    final ownHost = _ownHomeserverHost;
+    final browse = prefs.browseServers
+        .where((h) => h != ownHost)
+        .toList(growable: false);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: [
+          ChoiceChip(
+            label: Text(ownHost ?? 'My server'),
+            selected: _selectedServer == null,
+            onSelected: (_) => _onServerChanged(null),
+          ),
+          for (final host in browse)
+            InputChip(
+              label: Text(host),
+              selected: _selectedServer == host,
+              onSelected: (_) => _onServerChanged(host),
+              onDeleted: () => _confirmRemoveServer(host),
+              deleteButtonTooltipMessage: 'Remove $host',
+            ),
+          ActionChip(
+            avatar: const Icon(Icons.add, size: 18),
+            label: const Text('Add server'),
+            onPressed: _openAddServerDialog,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _confirmRemoveServer(String host) async {
+    final prefs = context.read<PreferencesService>();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Remove server?'),
+        content: Text('Remove "$host" from your browse list?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    final next =
+        prefs.browseServers.where((h) => h != host).toList(growable: false);
+    await prefs.setBrowseServers(next);
+    if (!mounted) return;
+    if (_selectedServer == host) {
+      _onServerChanged(null);
+    }
+  }
 
   @override
   void initState() {
@@ -848,27 +973,7 @@ class _SpaceDiscoveryDialogState extends State<SpaceDiscoveryDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (_showServerSelector)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: SegmentedButton<String?>(
-                segments: [
-                  ButtonSegment<String?>(
-                    value: null,
-                    label: Text(_ownHomeserverHost ?? 'My server'),
-                  ),
-                  const ButtonSegment<String?>(
-                    value: _matrixDotOrg,
-                    label: Text(_matrixDotOrg),
-                  ),
-                ],
-                selected: {_selectedServer},
-                onSelectionChanged: (s) => _onServerChanged(s.first),
-              ),
-            ),
-          ),
+        _buildServerStrip(context),
         Padding(
           padding: const EdgeInsets.only(bottom: 8),
           child: TextField(

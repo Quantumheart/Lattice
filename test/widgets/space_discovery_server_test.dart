@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kohera/core/services/matrix_service.dart';
+import 'package:kohera/core/services/preferences_service.dart';
 import 'package:kohera/core/services/sub_services/selection_service.dart';
 import 'package:kohera/features/spaces/services/space_discovery_data_source.dart';
 import 'package:kohera/features/spaces/widgets/space_action_dialog.dart';
@@ -9,6 +10,7 @@ import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 @GenerateNiceMocks([
   MockSpec<Client>(),
@@ -44,11 +46,14 @@ class _SpyFakeDataSource extends FakeSpaceDiscoveryDataSource {
 }
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late MockClient mockClient;
   late MockMatrixService mockMatrixService;
   late SelectionService selectionService;
+  late PreferencesService prefsService;
 
-  void configureClient({required Uri homeserverUri}) {
+  Future<void> configureClient({required Uri homeserverUri}) async {
+    SharedPreferences.setMockInitialValues({});
     mockClient = MockClient();
     mockMatrixService = MockMatrixService();
     when(mockMatrixService.client).thenReturn(mockClient);
@@ -57,6 +62,8 @@ void main() {
     when(mockClient.homeserver).thenReturn(homeserverUri);
     selectionService = SelectionService(client: mockClient);
     when(mockMatrixService.selection).thenReturn(selectionService);
+    prefsService = PreferencesService();
+    await prefsService.init();
   }
 
   Widget buildHarness(SpaceDiscoveryDataSource dataSource) {
@@ -64,6 +71,7 @@ void main() {
       providers: [
         ChangeNotifierProvider<MatrixService>.value(value: mockMatrixService),
         ChangeNotifierProvider<SelectionService>.value(value: selectionService),
+        ChangeNotifierProvider<PreferencesService>.value(value: prefsService),
       ],
       child: MaterialApp(
         home: Builder(
@@ -89,7 +97,7 @@ void main() {
 
   testWidgets('switching to matrix.org queries it and resets cursor + search',
       (tester) async {
-    configureClient(homeserverUri: Uri.parse('https://example.org'));
+    await configureClient(homeserverUri: Uri.parse('https://example.org'));
     final ds = _SpyFakeDataSource();
     await tester.pumpWidget(buildHarness(ds));
     await openDialog(tester);
@@ -116,7 +124,7 @@ void main() {
   });
 
   testWidgets('federation failure shows server-named error', (tester) async {
-    configureClient(homeserverUri: Uri.parse('https://example.org'));
+    await configureClient(homeserverUri: Uri.parse('https://example.org'));
     final ds = _SpyFakeDataSource(failingServers: const {'matrix.org'});
     await tester.pumpWidget(buildHarness(ds));
     await openDialog(tester);
@@ -131,14 +139,15 @@ void main() {
     expect(find.text('Retry'), findsOneWidget);
   });
 
-  testWidgets('selector hidden when own homeserver is matrix.org',
+  testWidgets('matrix.org user: own host shown without delete; defaults null',
       (tester) async {
-    configureClient(homeserverUri: Uri.parse('https://matrix.org'));
+    await configureClient(homeserverUri: Uri.parse('https://matrix.org'));
     final ds = _SpyFakeDataSource();
     await tester.pumpWidget(buildHarness(ds));
     await openDialog(tester);
 
-    expect(find.byType(SegmentedButton<String?>), findsNothing);
     expect(ds.queriedServers, [null]);
+    expect(find.widgetWithText(ChoiceChip, 'matrix.org'), findsOneWidget);
+    expect(find.widgetWithText(InputChip, 'matrix.org'), findsNothing);
   });
 }

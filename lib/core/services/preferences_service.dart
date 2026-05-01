@@ -232,6 +232,18 @@ class PreferencesService extends ChangeNotifier {
     notifyListeners();
   }
 
+  // ── Space discovery: browse servers ───────────────────────
+  static const _browseServersKey = 'browse_servers';
+  static const List<String> _defaultBrowseServers = ['matrix.org'];
+
+  List<String> get browseServers =>
+      _prefs?.getStringList(_browseServersKey) ?? _defaultBrowseServers;
+
+  Future<void> setBrowseServers(List<String> hosts) async {
+    await _prefs?.setStringList(_browseServersKey, hosts);
+    notifyListeners();
+  }
+
   // ── Room list panel width ─────────────────────────────────
 
   static const _panelWidthKey = 'room_list_panel_width';

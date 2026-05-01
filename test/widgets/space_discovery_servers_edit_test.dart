@@ -16,13 +16,12 @@ import 'package:shared_preferences/shared_preferences.dart';
   MockSpec<Client>(),
   MockSpec<MatrixService>(),
 ])
-import 'space_discovery_search_test.mocks.dart';
+import 'space_discovery_servers_edit_test.mocks.dart';
 
 class _SpyFakeDataSource extends FakeSpaceDiscoveryDataSource {
   _SpyFakeDataSource() : super(delay: Duration.zero);
 
-  int queryCallCount = 0;
-  final List<String?> queriedTerms = [];
+  final List<String?> queriedServers = [];
 
   @override
   Future<QueryPublicRoomsResponse> queryPublicRooms({
@@ -31,8 +30,7 @@ class _SpyFakeDataSource extends FakeSpaceDiscoveryDataSource {
     String? server,
     PublicRoomQueryFilter? filter,
   }) {
-    queryCallCount++;
-    queriedTerms.add(filter?.genericSearchTerm);
+    queriedServers.add(server);
     return super.queryPublicRooms(
       limit: limit,
       since: since,
@@ -49,19 +47,20 @@ void main() {
   late SelectionService selectionService;
   late PreferencesService prefsService;
 
-  setUp(() async {
+  Future<void> configure() async {
     SharedPreferences.setMockInitialValues({});
     mockClient = MockClient();
     mockMatrixService = MockMatrixService();
     when(mockMatrixService.client).thenReturn(mockClient);
     when(mockClient.onSync).thenReturn(CachedStreamController<SyncUpdate>());
     when(mockClient.rooms).thenReturn([]);
-    when(mockClient.homeserver).thenReturn(Uri.parse('https://example.org'));
+    when(mockClient.homeserver)
+        .thenReturn(Uri.parse('https://example.org'));
     selectionService = SelectionService(client: mockClient);
     when(mockMatrixService.selection).thenReturn(selectionService);
     prefsService = PreferencesService();
     await prefsService.init();
-  });
+  }
 
   Widget buildHarness(SpaceDiscoveryDataSource dataSource) {
     return MultiProvider(
@@ -92,74 +91,111 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('typing filters server-side after debounce', (tester) async {
+  testWidgets('add valid host: chip + prefs updated + query fires',
+      (tester) async {
+    await configure();
     final ds = _SpyFakeDataSource();
     await tester.pumpWidget(buildHarness(ds));
     await openDialog(tester);
 
-    expect(find.text('Linux'), findsOneWidget);
-    expect(ds.queryCallCount, 1);
-    expect(ds.queriedTerms.last, isNull);
-
-    await tester.enterText(find.byType(TextField), 'rust');
-    await tester.pump(const Duration(milliseconds: 100));
-    expect(ds.queryCallCount, 1);
-
+    await tester.tap(find.widgetWithText(ActionChip, 'Add server'));
     await tester.pumpAndSettle();
 
-    expect(ds.queryCallCount, 2);
-    expect(ds.queriedTerms.last, 'rust');
-    expect(find.text('Rust'), findsOneWidget);
-    expect(find.text('Linux'), findsNothing);
+    await tester.enterText(find.byType(TextFormField), 'matrix.example.org');
+    await tester.tap(find.widgetWithText(FilledButton, 'Add'));
+    await tester.pumpAndSettle();
+
+    expect(prefsService.browseServers, contains('matrix.example.org'));
+    expect(
+      find.widgetWithText(InputChip, 'matrix.example.org'),
+      findsOneWidget,
+    );
+    expect(ds.queriedServers.last, 'matrix.example.org');
   });
 
-  testWidgets('rapid typing fires only one request', (tester) async {
+  testWidgets('invalid host shows inline error and does not save',
+      (tester) async {
+    await configure();
     final ds = _SpyFakeDataSource();
     await tester.pumpWidget(buildHarness(ds));
     await openDialog(tester);
 
-    final initialCalls = ds.queryCallCount;
+    final before = List<String>.from(prefsService.browseServers);
 
-    await tester.enterText(find.byType(TextField), 'r');
-    await tester.pump(const Duration(milliseconds: 50));
-    await tester.enterText(find.byType(TextField), 'ru');
-    await tester.pump(const Duration(milliseconds: 50));
-    await tester.enterText(find.byType(TextField), 'rus');
-    await tester.pump(const Duration(milliseconds: 50));
-    await tester.enterText(find.byType(TextField), 'rust');
-    await tester.pump(const Duration(milliseconds: 200));
-    expect(ds.queryCallCount - initialCalls, 0);
-    await tester.pump(const Duration(milliseconds: 200));
+    await tester.tap(find.widgetWithText(ActionChip, 'Add server'));
     await tester.pumpAndSettle();
 
-    expect(ds.queryCallCount - initialCalls, 1);
-    expect(ds.queriedTerms.last, 'rust');
+    await tester.enterText(find.byType(TextFormField), 'http://x');
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Add'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Hostname only (no scheme or path).'), findsOneWidget);
+    expect(prefsService.browseServers, before);
   });
 
-  testWidgets('clear button restores unfiltered list', (tester) async {
+  testWidgets('remove non-default after confirm; selected falls back',
+      (tester) async {
+    await configure();
     final ds = _SpyFakeDataSource();
     await tester.pumpWidget(buildHarness(ds));
     await openDialog(tester);
 
-    await tester.enterText(find.byType(TextField), 'rust');
+    // Select matrix.org first.
+    await tester.tap(find.widgetWithText(InputChip, 'matrix.org'));
     await tester.pumpAndSettle();
-    expect(find.text('Linux'), findsNothing);
+    expect(ds.queriedServers.last, 'matrix.org');
 
-    await tester.tap(find.byTooltip('Clear search'));
+    // Tap delete on the matrix.org chip.
+    await tester.tap(find.byTooltip('Remove matrix.org'));
     await tester.pumpAndSettle();
 
-    expect(ds.queriedTerms.last, isNull);
-    expect(find.text('Linux'), findsOneWidget);
+    await tester.tap(find.widgetWithText(FilledButton, 'Remove'));
+    await tester.pumpAndSettle();
+
+    expect(prefsService.browseServers, isNot(contains('matrix.org')));
+    expect(find.widgetWithText(InputChip, 'matrix.org'), findsNothing);
+    // Selection fell back to own server (null).
+    expect(ds.queriedServers.last, isNull);
   });
 
-  testWidgets('empty result shows query-specific message', (tester) async {
+  testWidgets('own homeserver chip has no delete icon', (tester) async {
+    await configure();
     final ds = _SpyFakeDataSource();
     await tester.pumpWidget(buildHarness(ds));
     await openDialog(tester);
 
-    await tester.enterText(find.byType(TextField), 'zzzzzzz');
+    expect(find.byTooltip('Remove example.org'), findsNothing);
+    expect(find.widgetWithText(ChoiceChip, 'example.org'), findsOneWidget);
+  });
+
+  testWidgets('rejects duplicate of existing server', (tester) async {
+    await configure();
+    final ds = _SpyFakeDataSource();
+    await tester.pumpWidget(buildHarness(ds));
+    await openDialog(tester);
+
+    await tester.tap(find.widgetWithText(ActionChip, 'Add server'));
     await tester.pumpAndSettle();
 
-    expect(find.text('No spaces match "zzzzzzz".'), findsOneWidget);
+    await tester.enterText(find.byType(TextFormField), 'matrix.org');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Server already added.'), findsOneWidget);
+  });
+
+  testWidgets('rejects own homeserver as duplicate', (tester) async {
+    await configure();
+    final ds = _SpyFakeDataSource();
+    await tester.pumpWidget(buildHarness(ds));
+    await openDialog(tester);
+
+    await tester.tap(find.widgetWithText(ActionChip, 'Add server'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextFormField), 'example.org');
+    await tester.pumpAndSettle();
+
+    expect(find.text('This is already your homeserver.'), findsOneWidget);
   });
 }
